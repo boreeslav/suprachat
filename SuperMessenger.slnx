@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SuperMessenger.Core/SuperMessenger.Core.csproj" />
+    <Project Path="src/SuperMessenger.Infrastructure/SuperMessenger.Infrastructure.csproj" />
+    <Project Path="src/SuperMessenger.Web/SuperMessenger.Web.csproj" />
+  </Folder>
+</Solution>

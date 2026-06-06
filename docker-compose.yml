@@ -1,0 +1,15 @@
+services:
+  supermessenger:
+    build: .
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:80"
+    environment:
+      - Admin__Login=${ADMIN_LOGIN:-admin}
+      - Admin__Password=${ADMIN_PASSWORD:-ChangeMe123!}
+      - App__PublicUrl=${PUBLIC_URL:-}
+    volumes:
+      - supermessenger-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  supermessenger-data:

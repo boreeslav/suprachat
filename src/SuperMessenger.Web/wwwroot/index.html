@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru" data-splash-ssr="1">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="sm-build" content="0"/>
+  <meta name="sm-app-version" content="<!--SM_APP_VERSION-->"/>
+  <title><!--SM_APP_TITLE--></title>
+  <link rel="manifest" href="/manifest.webmanifest"/>
+  <meta name="theme-color" content="<!--SM_THEME_COLOR-->"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="<!--SM_APP_TITLE-->"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png"/>
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png"/>
+  <!--SM_LOGO_PRELOAD-->
+  <style id="app-splash-css"><!--SM_SPLASH_CSS--></style>
+  <style id="app-splash-critical-css">
+    html.sm-splash-active,html.sm-splash-active body{margin:0;overflow:hidden}
+    html.sm-splash-active #chat{visibility:hidden}
+    html[data-splash-ssr="1"] #app-splash-root{
+      position:fixed;inset:0;z-index:2147483646;display:flex;align-items:center;justify-content:center;
+      background:#fff;overflow:hidden;touch-action:none
+    }
+    html[data-splash-ssr="1"] #app-splash-root:not(.sm-splash-animate) .sm-splash-logo-fallback,
+    html[data-splash-ssr="1"] #app-splash-root:not(.sm-splash-animate) .sm-splash-fallback-logo,
+    html[data-splash-ssr="1"] #app-splash-root:not(.sm-splash-animate) .sm-splash-logo:not([hidden]),
+    html[data-splash-ssr="1"] #app-splash-root:not(.sm-splash-animate) .sm-splash-app-name{
+      opacity:1!important;transform:none!important;animation:none!important
+    }
+    #chat.sm-index-chat{min-height:100dvh;background:#f0f2f5}
+    body.sm-messenger-active .mapp-root{display:flex;min-height:100dvh;width:100%;background:#f0f2f5}
+    body.sm-messenger-active .mapp-sidebar{background:#fff;min-height:100dvh}
+  </style>
+  <link rel="preload" href="/messenger/app-script-cache.js?v=auto" as="script"/>
+  <link rel="preload" href="/messenger/supra-messenger.css?v=auto" as="style"/>
+  <link rel="preload" href="/messenger/app-splash.js?v=auto" as="script"/>
+  <!--SM_APPEARANCE_BOOT-->
+  <link rel="stylesheet" href="/messenger/supra-messenger.css?v=auto" media="print" onload="this.media='all'"/>
+  <noscript><link rel="stylesheet" href="/messenger/supra-messenger.css?v=auto"/></noscript>
+  <script src="/messenger/app-boot-timing.js?v=auto"></script>
+  <script src="/messenger/app-update-notifier.js?v=auto"></script>
+  <script>
+    (function (g) {
+      if (g.__bootMark) g.__bootMark('head-boot');
+      g.__authMePromise = fetch('/api/auth/me', { credentials: 'same-origin' })
+        .then(function (r) {
+          if (g.__bootMark) g.__bootMark('auth-me-response', { status: r.status });
+          if (r.status === 401 || r.status === 403) return null;
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          var ct = r.headers.get('content-type') || '';
+          if (!ct.includes('application/json')) throw new Error('Unexpected response type');
+          return r.json();
+        })
+        .catch(function (e) { g.__authMeError = e; return undefined; });
+      if (g.__bootMark) g.__bootMark('appearance-prefetch-start');
+      g.__appAppearancePromise = fetch('/api/app/appearance', { credentials: 'same-origin' })
+        .then(function (r) {
+          if (g.__bootMark) g.__bootMark('appearance-prefetch-done', { status: r.status });
+          return r.ok ? r.json() : null;
+        })
+        .catch(function () { return null; });
+      var proto = 'auto';
+      var subtle = false;
+      try { subtle = !!(g.crypto && g.crypto.subtle && g.crypto.subtle.generateKey); } catch (_) {}
+      g.SupraEnv = {
+        deployProtocol: proto,
+        hasNativeSubtle: subtle,
+        isSecureContext: g.isSecureContext === true,
+        get secure() {
+          if (this.deployProtocol === 'http') return false;
+          return this.isSecureContext && this.hasNativeSubtle;
+        },
+        get serviceWorkerEnabled() {
+          return this.secure && typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
+        }
+      };
+      var bn = (document.querySelector('meta[name="sm-build"]') || {}).content || '0';
+      if (bn !== '0' && g.SupraEnv.serviceWorkerEnabled) {
+        if (g.__bootMark) g.__bootMark('sw-register-start');
+        navigator.serviceWorker.register('/sw.js?v=' + bn)
+          .then(function () { if (g.__bootMark) g.__bootMark('sw-register-done'); })
+          .catch(function () {});
+      }
+    })(window);
+  </script>
+</head>
+<body class="sm-index-shell sm-splash-active">
+  <div id="app-splash-root" class="sm-splash-overlay" role="status" aria-live="polite" aria-label="Загрузка приложения">
+    <!--SM_SPLASH_HTML-->
+  </div>
+  <div id="chat" class="sm-index-chat"></div>
+  <script src="/messenger/app-script-cache.js?v=auto"></script>
+  <script defer src="/messenger/app-splash.js?v=auto"></script>
+</body>
+</html>

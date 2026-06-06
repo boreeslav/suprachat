@@ -1,0 +1,27 @@
+# Local scratch / artifacts (not for repo)
+tmp/
+
+# Secrets and generated deploy config
+deploy/deploy.env
+src/SuperMessenger.Web/deploy-branding.json
+
+# .NET build output
+[Bb]in/
+[Oo]bj/
+
+# Node
+node_modules/
+
+# Runtime app data (users, keys, uploads)
+**/data/
+
+# IDE
+.cursor/
+.vs/
+*.user
+*.suo
+*.DotSettings.user
+
+# OS
+Thumbs.db
+.DS_Store
