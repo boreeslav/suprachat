@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-app-title="Профиль"></title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f0f2f5; margin: 0; padding: 24px; }
+    .wrap { max-width: 480px; margin: 0 auto; }
+    a.back { color: #4a7fc1; }
+    section { background: #fff; padding: 24px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+    h2 { margin: 0 0 16px; font-size: 1.1rem; }
+    label { display: block; margin-bottom: 12px; font-size: 14px; }
+    input { width: 100%; box-sizing: border-box; padding: 10px; margin-top: 4px; border: 1px solid #ccc; border-radius: 8px; }
+    button { padding: 10px 20px; background: #4a7fc1; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+    .msg { color: green; font-size: 14px; margin-top: 8px; }
+    .err { color: #c00; font-size: 14px; }
+    #avatarPreview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; background: #ddd; }
+  </style>
+  <script src="/messenger/app-branding.js?v=auto"></script>
+</head>
+<body>
+  <div class="wrap">
+    <p><a class="back" href="/">← К мессенджеру</a></p>
+    <section>
+      <h2>Профиль</h2>
+      <img id="avatarPreview" alt="" hidden/>
+      <form id="profileForm">
+        <label>Логин<input id="login" disabled/></label>
+        <label>Имя<input name="displayName" required/></label>
+        <label>Email<input name="email" type="email"/></label>
+        <label>Телефон<input name="phone"/></label>
+        <label>Новое фото<input name="photo" type="file" accept="image/*"/></label>
+        <button type="submit">Сохранить</button>
+        <div class="msg" id="profileMsg" hidden></div>
+      </form>
+    </section>
+    <section>
+      <h2>Смена пароля</h2>
+      <form id="pwdForm">
+        <label>Текущий пароль<input name="currentPassword" type="password" required/></label>
+        <label>Новый пароль<input name="newPassword" type="password" required minlength="6"/></label>
+        <button type="submit">Сменить пароль</button>
+        <div class="msg" id="pwdMsg" hidden></div>
+        <div class="err" id="pwdErr" hidden></div>
+      </form>
+    </section>
+  </div>
+  <script src="/avatar-upload.js"></script>
+  <script>
+    fetch('/api/auth/me', { credentials: 'same-origin' })
+      .then(r => { if (!r.ok) location.href = '/login.html'; return r.json(); })
+      .then(() => fetch('/api/profile', { credentials: 'same-origin' }))
+      .then(r => r.json())
+      .then(p => {
+        document.getElementById('login').value = p.login;
+        document.querySelector('[name=displayName]').value = p.displayName || '';
+        document.querySelector('[name=email]').value = p.email || '';
+        document.querySelector('[name=phone]').value = p.phone || '';
+        if (p.avatar) {
+          const img = document.getElementById('avatarPreview');
+          img.src = p.avatar; img.hidden = false;
+        }
+      });
+    document.querySelector('[name=photo]').addEventListener('change', async (e) => {
+      const f = e.target.files?.[0];
+      if (!f) return;
+      const compressed = await AvatarUpload.compress(f);
+      const img = document.getElementById('avatarPreview');
+      img.src = URL.createObjectURL(compressed);
+      img.hidden = false;
+    });
+    document.getElementById('profileForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const fd = new FormData(form);
+      const photo = form.querySelector('[name=photo]').files?.[0];
+      if (photo) {
+        fd.delete('photo');
+        fd.append('photo', await AvatarUpload.compress(photo));
+      }
+      const r = await fetch('/api/profile', { method: 'PUT', body: fd, credentials: 'same-origin' });
+      const j = await r.json().catch(() => ({}));
+      const msg = document.getElementById('profileMsg');
+      msg.hidden = false;
+      msg.className = r.ok ? 'msg' : 'err';
+      msg.textContent = r.ok ? 'Сохранено' : (j.error || 'Ошибка');
+      if (r.ok) location.reload();
+    };
+    document.getElementById('pwdForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const r = await fetch('/api/profile/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          currentPassword: fd.get('currentPassword'),
+          newPassword: fd.get('newPassword'),
+        }),
+      });
+      const j = await r.json().catch(() => ({}));
+      document.getElementById('pwdErr').hidden = r.ok;
+      document.getElementById('pwdMsg').hidden = !r.ok;
+      if (!r.ok) document.getElementById('pwdErr').textContent = j.error || 'Ошибка';
+      else { document.getElementById('pwdMsg').textContent = 'Пароль изменён'; e.target.reset(); }
+    };
+  </script>
+</body>
+</html>

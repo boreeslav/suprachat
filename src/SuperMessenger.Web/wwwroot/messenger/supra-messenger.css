@@ -1,0 +1,6225 @@
+.mc-root *,
+.mapp-root * {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+/* Без системной подсветки касаний / выделения на UI (текст — в блоке ниже) */
+.mc-root,
+.mapp-root {
+	-webkit-tap-highlight-color: transparent;
+	tap-highlight-color: transparent;
+}
+
+.mc-root {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+	background: var(--m-chat-bg);
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	font-size: 14px;
+	color: #1c1c1e;
+	overflow: hidden;
+	transition: background .3s;
+}
+
+.mc-header {
+	background: var(--m-header-bg);
+	padding: 9px 14px;
+	border-bottom: 1px solid var(--m-header-border);
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, .08);
+	flex-shrink: 0;
+	z-index: 50;
+	transition: background .3s, border-color .3s;
+}
+
+.mc-header-info {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	min-width: 0;
+	flex: 1;
+}
+
+.mc-back-btn {
+	display: none;
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--m-dots-color);
+	padding: 4px;
+	border-radius: 6px;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	transition: background .15s;
+}
+
+.mc-back-btn:hover {
+	background: var(--m-menu-hover);
+}
+
+.mc-header-name-wrap {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.mc-header-name {
+	font-weight: 600;
+	font-size: 14px;
+	color: var(--m-header-text);
+	transition: color .3s;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.mc-header-sub {
+	font-size: 11px;
+	color: var(--m-header-text);
+	opacity: .55;
+	margin-top: 1px;
+}
+
+.mc-avatar {
+	width: var(--mc-avatar-size, 40px);
+	height: var(--mc-avatar-size, 40px);
+	min-width: var(--mc-avatar-size, 40px);
+	font-size: calc(var(--mc-avatar-size, 40px) * 0.36);
+	background: var(--mc-avatar-bg, transparent);
+	border-radius: 50%;
+	overflow: hidden;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 600;
+	color: #fff;
+	user-select: none;
+}
+
+.mc-avatar-img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.mc-avatar-initials {
+	line-height: 1;
+}
+
+.mc-menu-wrap {
+	position: relative;
+	flex-shrink: 0;
+}
+
+.mc-dots-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 5px;
+	color: var(--m-dots-color);
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background .15s, color .3s;
+}
+
+.mc-dots-btn:hover {
+	background: var(--m-menu-hover);
+}
+
+.mc-menu {
+	display: none;
+	position: absolute;
+	right: 0;
+	top: calc(100% + 6px);
+	background: var(--m-menu-bg);
+	border: 1px solid var(--m-menu-border);
+	border-radius: 10px;
+	min-width: 160px;
+	z-index: 100;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, .15);
+	transition: background .3s;
+}
+
+.mc-menu--open {
+	display: block;
+}
+
+.mc-menu-item {
+	padding: 9px 14px;
+	cursor: pointer;
+	color: var(--m-menu-text);
+	font-size: 13px;
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 8px;
+	transition: background .12s;
+	position: relative;
+	user-select: none;
+}
+
+.mc-menu-item--sub {
+	justify-content: space-between;
+}
+
+.mc-menu-item--hint {
+	cursor: default;
+	font-size: 11px;
+	line-height: 1.35;
+	opacity: .75;
+	pointer-events: none;
+	white-space: normal;
+}
+
+.mc-menu-item--hint:hover {
+	background: transparent;
+}
+
+.mc-menu-item:first-child {
+	border-radius: 10px 10px 0 0;
+}
+
+.mc-menu-item:last-child {
+	border-radius: 0 0 10px 10px;
+}
+
+.mc-menu-item:only-child {
+	border-radius: 10px;
+}
+
+.mc-menu-item:hover {
+	background: var(--m-menu-hover);
+}
+
+.mc-menu-item--active {
+	font-weight: 600;
+}
+
+.mc-menu-arrow {
+	font-size: 16px;
+	opacity: .5;
+	line-height: 1;
+}
+
+.mc-submenu {
+	display: none;
+	position: absolute;
+	right: calc(100% + 6px);
+	top: -1px;
+	background: var(--m-menu-bg);
+	border: 1px solid var(--m-menu-border);
+	border-radius: 10px;
+	min-width: 170px;
+	z-index: 101;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, .15);
+	max-height: 320px;
+	overflow-y: auto;
+}
+
+.mc-submenu--open {
+	display: block;
+}
+
+.mc-submenu::-webkit-scrollbar {
+	width: 3px;
+}
+
+.mc-submenu::-webkit-scrollbar-thumb {
+	background: var(--m-scroll-thumb);
+	border-radius: 3px;
+}
+
+.mc-messages {
+	flex: 1;
+	overflow-y: auto;
+	padding: 10px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	transition: background .3s;
+}
+
+.mc-messages::-webkit-scrollbar {
+	width: 4px;
+}
+
+.mc-messages::-webkit-scrollbar-thumb {
+	background: var(--m-scroll-thumb);
+	border-radius: 4px;
+}
+
+.mc-top-loader {
+	display: flex;
+	justify-content: center;
+	padding: 8px 0;
+}
+
+.mc-top-loader[hidden] {
+	display: none !important;
+}
+
+.mc-loader-spinner {
+	width: 20px;
+	height: 20px;
+	border: 2px solid rgba(128, 128, 128, .2);
+	border-top-color: var(--m-accent);
+	border-radius: 50%;
+	animation: mc-spin .7s linear infinite;
+}
+
+.mc-msg-row {
+	display: flex;
+	align-items: flex-end;
+	gap: 7px;
+}
+
+.mc-msg-row--mine {
+	flex-direction: row-reverse;
+}
+
+.mc-msg-row--other {
+	flex-direction: row;
+}
+
+.mc-msg-scroll-spacer {
+	width: 100%;
+	pointer-events: none;
+	flex-shrink: 0;
+}
+
+.mc-msg-row--highlighted .mc-bubble {
+	outline: 2px solid var(--m-accent, #4a9eff);
+	outline-offset: 2px;
+}
+
+.mc-msg-row--selectable {
+	cursor: pointer;
+}
+
+.mc-msg-row--selected .mc-bubble {
+	outline: 2px solid var(--m-accent, #4a9eff);
+	outline-offset: 2px;
+}
+
+.mc-msg-quote {
+	border-left: 3px solid var(--m-accent, #4a9eff);
+	padding: 4px 8px;
+	margin-bottom: 6px;
+	border-radius: 4px;
+	background: rgba(0, 0, 0, .06);
+	cursor: pointer;
+}
+
+.mc-msg-row--mine .mc-msg-quote {
+	background: rgba(255, 255, 255, .12);
+}
+
+.mc-msg-quote-author {
+	font-size: 12px;
+	font-weight: 600;
+	opacity: .85;
+}
+
+.mc-msg-quote-text {
+	font-size: 12px;
+	opacity: .75;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 220px;
+}
+
+.mc-msg-quote-preview--image {
+	line-height: 0;
+}
+
+.mc-msg-quote-thumb {
+	width: 48px;
+	height: 48px;
+	object-fit: cover;
+	border-radius: 6px;
+	display: block;
+}
+
+.mc-msg-forward-label {
+	font-size: 12px;
+	opacity: .7;
+	margin-bottom: 4px;
+	font-style: italic;
+}
+
+.mc-msg-edited {
+	font-size: 11px;
+	opacity: .5;
+	margin-right: 4px;
+}
+
+.mc-msg-text--deleted {
+	font-style: italic;
+	opacity: .6;
+}
+
+.mc-msg-text--locked {
+	font-style: italic;
+	color: inherit;
+	opacity: .82;
+}
+
+.mc-msg-row--mine .mc-msg-text--locked {
+	color: var(--m-my-bubble-text, inherit);
+	opacity: .95;
+}
+
+.mc-msg-row--other .mc-msg-text--locked {
+	color: var(--m-other-bubble-text, inherit);
+	opacity: .78;
+}
+
+.mc-msg-quote-text--locked {
+	font-style: italic;
+	color: inherit;
+}
+
+.mc-msg-tier-lock {
+	display: inline-flex;
+	align-items: center;
+	line-height: 0;
+	margin-right: 3px;
+	opacity: .55;
+}
+
+.mc-msg-tier-lock svg {
+	display: block;
+}
+
+.mc-reply-bar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-top: 1px solid var(--m-border, rgba(0, 0, 0, .1));
+	background: var(--m-panel-bg, #f5f5f5);
+}
+
+.mc-reply-bar-body {
+	flex: 1;
+	min-width: 0;
+	border-left: 3px solid var(--m-accent, #4a9eff);
+	padding-left: 8px;
+}
+
+.mc-reply-bar-author {
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.mc-reply-bar-preview {
+	font-size: 12px;
+	opacity: .75;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.mc-reply-bar-preview--image {
+	display: flex;
+	align-items: center;
+	line-height: 0;
+	white-space: normal;
+	overflow: visible;
+}
+
+.mc-reply-bar-thumb {
+	width: 40px;
+	height: 40px;
+	object-fit: cover;
+	border-radius: 6px;
+	flex-shrink: 0;
+}
+
+.mc-reply-bar-close {
+	border: none;
+	background: transparent;
+	font-size: 22px;
+	line-height: 1;
+	cursor: pointer;
+	opacity: .6;
+	padding: 0 4px;
+}
+
+.mc-select-bar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	border-top: 1px solid var(--m-border, rgba(0, 0, 0, .1));
+	background: var(--m-panel-bg, #f5f5f5);
+}
+
+.mc-select-bar-count {
+	flex: 1;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.mc-select-bar-btn {
+	border: none;
+	background: var(--m-accent, #4a9eff);
+	color: #fff;
+	padding: 8px 14px;
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 13px;
+}
+
+.mc-select-bar-btn--danger {
+	background: #e53935;
+}
+
+.mc-select-bar-btn:disabled {
+	opacity: .5;
+	cursor: default;
+}
+
+.mc-msg-context-menu {
+	position: fixed;
+	z-index: 10050;
+}
+
+.mc-edit-msg-field {
+	width: 100%;
+	min-height: 80px;
+	resize: vertical;
+	border: 1px solid var(--m-border, #ccc);
+	border-radius: 8px;
+	padding: 8px;
+	font: inherit;
+	box-sizing: border-box;
+	margin-top: 8px;
+}
+
+.mc-msg-avatar {
+	flex-shrink: 0;
+	align-self: flex-end;
+}
+
+.mc-bubble {
+	max-width: 68%;
+	padding: 7px 11px 5px;
+	border-radius: 14px;
+	word-break: break-word;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
+	transition: background .3s, color .3s;
+}
+
+.mc-msg-row--mine .mc-bubble {
+	background: var(--m-my-bubble-bg);
+	color: var(--m-my-bubble-text);
+	border-bottom-right-radius: 4px;
+}
+
+.mc-msg-row--other .mc-bubble {
+	background: var(--m-other-bubble-bg);
+	color: var(--m-other-bubble-text);
+	border-bottom-left-radius: 4px;
+}
+
+.mc-msg-sender {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--m-sender-name);
+	margin-bottom: 2px;
+	transition: color .3s;
+}
+
+.mc-msg-text {
+	line-height: 1.45;
+}
+
+.mc-msg-footer {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 3px;
+	margin-top: 3px;
+}
+
+.mc-msg-time {
+	font-size: 11px;
+	opacity: .55;
+	white-space: nowrap;
+}
+
+.mc-msg-status {
+	display: flex;
+	align-items: center;
+	opacity: .8;
+}
+
+.mc-msg-status--sending .mc-spinner {
+	display: block;
+	width: 11px;
+	height: 11px;
+	border: 1.6px solid rgba(255, 255, 255, .3);
+	border-top-color: rgba(255, 255, 255, .9);
+	border-radius: 50%;
+	animation: mc-spin .7s linear infinite;
+}
+
+.mc-msg-status svg {
+	display: block;
+}
+
+.mc-input-area {
+	background: var(--m-input-bg);
+	padding: 9px 12px;
+	border-top: 1px solid var(--m-input-area-border);
+	display: flex;
+	align-items: flex-end;
+	gap: 8px;
+	flex-shrink: 0;
+	transition: background .3s, border-color .3s;
+}
+
+.mc-input-field {
+	flex: 1;
+	background: var(--m-input-field-bg);
+	border: 1px solid var(--m-input-field-border);
+	border-radius: 20px;
+	padding: 8px 14px;
+	font-size: 14px;
+	resize: none;
+	overflow: hidden;
+	outline: none;
+	line-height: 1.4;
+	max-height: 120px;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	color: var(--m-input-text);
+	transition: border-color .2s, background .3s, color .3s;
+}
+
+.mc-input-field::placeholder {
+	color: var(--m-input-placeholder);
+}
+
+.mc-input-field:focus {
+	border-color: var(--m-accent);
+}
+
+.mc-send-btn {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	border: none;
+	background: var(--m-accent);
+	color: #fff;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	transition: opacity .15s, transform .1s, background .3s;
+}
+
+.mc-send-btn:hover {
+	opacity: .88;
+}
+
+.mc-send-btn:active {
+	transform: scale(.93);
+}
+
+.mc-header-sub-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.mc-header-sub {
+	flex-shrink: 0;
+	white-space: nowrap;
+}
+
+.mc-activity-bar {
+	display: none;
+	align-items: center;
+	gap: 5px;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.mc-activity-bar--visible {
+	display: flex;
+}
+
+.mc-activity-dots {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	flex-shrink: 0;
+}
+
+.mc-activity-dots span {
+	display: block;
+	width: 4px;
+	height: 4px;
+	border-radius: 50%;
+	background: var(--m-header-text, currentColor);
+	opacity: .45;
+	animation: mc-dot-bounce 1.2s ease-in-out infinite;
+}
+
+.mc-activity-dots span:nth-child(1) {
+	animation-delay: 0s;
+}
+
+.mc-activity-dots span:nth-child(2) {
+	animation-delay: .18s;
+}
+
+.mc-activity-dots span:nth-child(3) {
+	animation-delay: .36s;
+}
+
+@keyframes mc-dot-bounce {
+
+	0%,
+	60%,
+	100% {
+		transform: translateY(0);
+		opacity: .45;
+	}
+
+	30% {
+		transform: translateY(-3px);
+		opacity: 1;
+	}
+}
+
+.mc-activity-text {
+	font-size: 11px;
+	color: var(--m-header-text);
+	opacity: .6;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
+}
+
+.mc-file-bubble-clickable {
+	cursor: pointer;
+	transition: opacity .15s;
+}
+
+.mc-file-bubble-clickable:hover {
+	opacity: .85;
+}
+
+.mc-image-bubble {
+	padding: 4px !important;
+	min-width: 0;
+	max-width: 260px;
+}
+
+.mc-file-bubble {
+	min-width: 200px;
+	max-width: 300px;
+}
+
+.mc-file-bubble-header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.mc-file-bubble-icon {
+	flex-shrink: 0;
+	opacity: .75;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.mc-file-bubble-meta {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.mc-file-bubble-name {
+	font-size: 13px;
+	font-weight: 600;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.mc-file-bubble-size {
+	font-size: 11px;
+	opacity: .6;
+}
+
+.mc-file-progress-wrap {
+	margin-top: 8px;
+	height: 3px;
+	border-radius: 2px;
+	background: rgba(255, 255, 255, .25);
+	overflow: hidden;
+}
+
+.mc-msg-row--other .mc-file-progress-wrap {
+	background: rgba(0, 0, 0, .12);
+}
+
+.mc-file-progress-bar {
+	height: 100%;
+	width: 0%;
+	background: currentColor;
+	border-radius: 2px;
+	transition: width .2s ease;
+	opacity: .75;
+}
+
+.mc-file-status {
+	font-size: 11px;
+	margin-top: 4px;
+	opacity: .6;
+}
+
+.mc-file-status--error {
+	opacity: 1;
+	color: #ff4d4f;
+}
+
+.mc-msg-row--mine .mc-file-status--error {
+	color: #ffb3b3;
+}
+
+.mc-attach-wrap {
+	position: relative;
+	flex-shrink: 0;
+	display: flex;
+	align-items: flex-end;
+}
+
+.mc-attach-btn {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	border: none;
+	background: transparent;
+	color: var(--m-dots-color);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	transition: background .15s, color .15s;
+}
+
+.mc-attach-btn:hover {
+	background: var(--m-menu-hover);
+	color: var(--m-accent);
+}
+
+.mc-attach-menu {
+	display: none;
+	position: absolute;
+	bottom: calc(100% + 8px);
+	left: 0;
+	background: var(--m-menu-bg);
+	border: 1px solid var(--m-menu-border);
+	border-radius: 12px;
+	min-width: 180px;
+	z-index: 200;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, .18);
+	overflow: hidden;
+	flex-direction: column;
+}
+
+.mc-attach-menu--open {
+	display: flex;
+}
+
+.mc-attach-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 16px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 13px;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	color: var(--m-menu-text);
+	text-align: left;
+	transition: background .12s;
+}
+
+.mc-attach-menu-item:hover {
+	background: var(--m-menu-hover);
+}
+
+.mc-attach-menu-item svg {
+	flex-shrink: 0;
+	opacity: .7;
+}
+
+.mc-file-download-btn {
+	flex-shrink: 0;
+	font-size: 11px;
+	font-weight: 600;
+	padding: 4px 9px;
+	border-radius: 8px;
+	border: 1px solid currentColor;
+	background: transparent;
+	cursor: pointer;
+	color: inherit;
+	text-decoration: none;
+	opacity: .75;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	transition: opacity .15s;
+}
+
+.mc-file-download-btn:hover {
+	opacity: 1;
+}
+
+.mc-bubble-image {
+	display: block;
+	width: 100%;
+	max-width: 250px;
+	border-radius: 10px;
+	cursor: zoom-in;
+	object-fit: cover;
+	transition: opacity .15s;
+	touch-action: manipulation;
+	-webkit-touch-callout: none;
+	user-select: none;
+}
+
+.mc-bubble-image:hover {
+	opacity: .9;
+}
+
+.mc-img-viewer {
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: auto;
+}
+
+.mc-img-viewer-backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0);
+	transition: background .2s;
+}
+
+.mc-img-viewer--visible .mc-img-viewer-backdrop {
+	background: rgba(0, 0, 0, .88);
+}
+
+.mc-img-viewer-img {
+	position: relative;
+	z-index: 2;
+	max-width: 94vw;
+	max-height: 92vh;
+	border-radius: 8px;
+	object-fit: contain;
+	box-shadow: 0 8px 48px rgba(0, 0, 0, .5);
+	opacity: 0;
+	transform: scale(.95);
+	transition: opacity .2s;
+}
+
+.mc-img-viewer--visible .mc-img-viewer-img {
+	opacity: 1;
+	transform: scale(1);
+}
+
+.mc-img-viewer-img--pan.mc-img-viewer-img--gallery-anim {
+	transition: opacity .14s ease, transform .14s ease;
+}
+
+.mc-img-viewer-img--exit-left {
+	opacity: 0;
+	transform: translateX(-28px) scale(.96);
+}
+
+.mc-img-viewer-img--exit-right {
+	opacity: 0;
+	transform: translateX(28px) scale(.96);
+}
+
+.mc-img-viewer-img--enter-left {
+	opacity: 0;
+	transform: translateX(-28px) scale(.96);
+}
+
+.mc-img-viewer-img--enter-right {
+	opacity: 0;
+	transform: translateX(28px) scale(.96);
+}
+
+.mc-img-viewer-img--gallery-anim.mc-img-viewer-img--enter-left,
+.mc-img-viewer-img--gallery-anim.mc-img-viewer-img--enter-right {
+	opacity: 1;
+	transform: translateX(0) scale(1);
+}
+
+.mc-img-viewer-close {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+	background: rgba(255, 255, 255, .12);
+	border: none;
+	border-radius: 50%;
+	width: 44px;
+	height: 44px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	cursor: pointer;
+	transition: background .15s;
+	z-index: 1;
+}
+
+.mc-img-viewer-close:hover {
+	background: rgba(255, 255, 255, .22);
+}
+
+.mc-date-separator--hidden {
+	display: none;
+}
+
+.mc-date-separator-pill--has-tooltip {
+	position: relative;
+	cursor: default;
+}
+
+.mc-date-separator.mc-date-separator--float {
+	position: absolute;
+	top: 8px;
+	left: 0;
+	right: 0;
+	z-index: 30;
+	display: flex;
+	pointer-events: none;
+	user-select: none;
+	padding: 0;
+	transform-origin: top center;
+	will-change: transform;
+}
+
+.mc-date-separator.mc-date-separator--float[hidden] {
+	display: none !important;
+}
+
+.mc-date-separator-pill--has-tooltip::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	bottom: calc(100% + 6px);
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(0, 0, 0, 0.75);
+	color: #fff;
+	font-size: 11px;
+	white-space: nowrap;
+	padding: 4px 8px;
+	border-radius: 6px;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.18s ease;
+	z-index: 10;
+}
+
+.mc-date-separator-pill--has-tooltip:hover::after {
+	opacity: 1;
+}
+
+/* ─── App layout ──────────────────────────────────────────── */
+
+.mapp-root {
+	display: flex;
+	width: 100%;
+	height: 100%;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	font-size: 14px;
+	overflow: hidden;
+	background: var(--mapp-content-bg);
+}
+
+.mapp-sidebar {
+	width: 320px;
+	min-width: 280px;
+	max-width: 360px;
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	background: var(--mapp-sidebar-bg);
+	border-right: 1px solid var(--mapp-border);
+	overflow: hidden;
+	transition: background .3s;
+}
+
+.mapp-sidebar-topbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 14px 8px;
+	border-bottom: 1px solid var(--mapp-border);
+	gap: 8px;
+}
+
+.mapp-app-logo {
+	height: 34px;
+	max-width: 100px;
+	width: auto;
+	object-fit: contain;
+	flex-shrink: 0;
+	margin-right: 0;
+}
+
+.mapp-app-logo:not(.mapp-app-logo--svg-themed) {
+	filter: brightness(0);
+}
+
+.mapp-root.mapp-theme-dark .mapp-app-logo:not(.mapp-app-logo--svg-themed) {
+	filter: brightness(0) invert(1);
+}
+
+.mapp-app-logo--svg-themed {
+	display: inline-block;
+	height: 34px;
+	max-width: 100px;
+	flex-shrink: 0;
+	margin-right: 0;
+	background-color: var(--mapp-logo-color, #000);
+	-webkit-mask-image: var(--mapp-logo-mask);
+	mask-image: var(--mapp-logo-mask);
+	-webkit-mask-size: contain;
+	mask-size: contain;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+	-webkit-mask-position: center;
+	mask-position: center;
+}
+
+.mapp-app-logo--clickable {
+	cursor: pointer;
+}
+
+.mapp-sidebar-topbar-actions {
+	display: flex;
+	align-items: center;
+	gap: 0;
+	flex-shrink: 0;
+}
+
+/* ─── Sidebar user block — opens profile modal ───────────── */
+
+.mapp-sidebar-user {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	flex: 1;
+	min-width: 0;
+	cursor: pointer;
+	border-radius: 8px;
+	padding: 4px 6px;
+	margin: -4px -6px;
+	transition: background 150ms ease;
+	touch-action: manipulation;
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.mapp-sidebar-user:hover,
+.mapp-sidebar-user--interactive:active {
+	background: var(--mapp-hover);
+}
+
+.mapp-sidebar-user * {
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.mc-header-profile-hit.mapp-sidebar-user {
+	margin: 0;
+	padding: 2px 4px;
+	flex: 1;
+	min-width: 0;
+}
+
+.mc-header-profile-hit .mc-header-name-wrap {
+	flex: 1;
+	min-width: 0;
+}
+
+.mapp-sidebar-avatar-wrap {
+	position: relative;
+	flex-shrink: 0;
+}
+
+.mapp-sidebar-username {
+	font-weight: 600;
+	font-size: 14px;
+	color: var(--mapp-text);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	flex: 1;
+	min-width: 0;
+}
+
+.mapp-sidebar-user-text {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.mapp-sidebar-user-text .mapp-sidebar-username {
+	flex: none;
+}
+
+.mapp-sidebar-user-status {
+	font-size: 11px;
+	color: var(--mapp-sub-text, #888);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	margin-top: 1px;
+}
+
+/* ─── Profile modal (compact panel window) ─────────────────── */
+
+.mc-panel-window--profile,
+.mc-panel-window--profile * {
+	box-sizing: border-box;
+}
+
+.mc-panel-window.mc-panel-window--profile {
+	max-width: 420px;
+	width: 100%;
+	height: min(720px, 85vh);
+	max-height: min(720px, 85vh);
+}
+
+.mc-panel-window.mc-panel-window--profile.mc-panel-window--group-profile {
+	height: min(720px, 85vh);
+	max-height: min(720px, 85vh);
+}
+
+.mc-panel-window--group-profile .mapp-group-profile-scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.mc-panel-window--group-profile .mapp-group-profile-status-bar {
+	flex-shrink: 0;
+	padding: 8px 16px 12px;
+	border-top: 1px solid var(--mapp-border, #e5e5e5);
+	font-size: 13px;
+	min-height: 36px;
+}
+
+.mc-panel-window--group-profile .mapp-group-profile-status-bar:empty {
+	display: none;
+}
+
+.mc-panel-window--group-profile .mapp-group-members-list {
+	max-height: none;
+	overflow: visible;
+}
+
+.mc-panel-window--profile .mc-panel-window-header {
+	padding: 12px 16px 10px;
+	flex-shrink: 0;
+}
+
+.mc-panel-window--profile .mc-panel-window-body {
+	padding: 0;
+	overflow: hidden;
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.mapp-profile-window-content {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-height: 0;
+	width: 100%;
+	overflow: hidden;
+}
+
+.mc-panel-window--profile .mapp-modal-tabs {
+	padding: 6px 12px 0;
+	gap: 2px;
+	flex-shrink: 0;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.mc-panel-window--profile .mapp-modal-tabs::-webkit-scrollbar {
+	display: none;
+}
+
+.mc-panel-window--profile .mapp-modal-tab {
+	padding: 4px 10px 7px;
+	font-size: 12px;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.mapp-profile-panels {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+.mapp-profile-tab-panel {
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.mapp-profile-tab-panel[hidden] {
+	display: none !important;
+}
+
+.mapp-profile-tab-panel--menu,
+.mapp-profile-tab-panel.mapp-settings-view {
+	overflow-x: hidden;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.mapp-profile-tab-scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+.mapp-profile-tab-footer {
+	flex-shrink: 0;
+	padding: 8px 14px;
+}
+
+.mapp-settings-views {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+.mapp-settings-hub {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	padding: 16px 0 8px;
+	text-align: center;
+	min-width: 0;
+	width: 100%;
+}
+
+.mapp-settings-hub-avatar,
+.mapp-settings-hub-name,
+.mapp-settings-hub-login,
+.mapp-settings-hub-status,
+.mapp-settings-hub > .mapp-profile-status-msg {
+	align-self: center;
+	max-width: 100%;
+}
+
+.mapp-settings-hub-avatar {
+	flex-shrink: 0;
+	margin-bottom: 12px;
+	cursor: pointer;
+}
+
+.mapp-settings-hub-name {
+	font-size: 20px;
+	font-weight: 600;
+	line-height: 1.25;
+	max-width: 100%;
+	outline: none;
+	cursor: text;
+	padding: 2px 6px;
+	border-radius: 6px;
+}
+
+.mapp-settings-hub-name--editing {
+	background: var(--mapp-hover, #f0f0f0);
+	box-shadow: inset 0 0 0 1px var(--m-accent, #4a7fc1);
+}
+
+.mapp-settings-hub-login {
+	font-size: 13px;
+	color: var(--mapp-sub-text, #888);
+	margin-top: 4px;
+}
+
+.mapp-settings-hub-status {
+	margin-top: 10px;
+	max-width: 100%;
+}
+
+.mapp-settings-nav-list {
+	width: 100%;
+	margin-top: 18px;
+	border-top: 1px solid var(--mapp-border, #e5e5e5);
+}
+
+.mapp-settings-nav-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	padding: 14px 16px;
+	border: none;
+	border-bottom: 1px solid var(--mapp-border, #e5e5e5);
+	background: none;
+	color: var(--mapp-text, #1a1a1a);
+	font-size: 15px;
+	cursor: pointer;
+	text-align: left;
+	transition: background 120ms;
+}
+
+.mapp-settings-nav-item:hover {
+	background: var(--mapp-hover, #f0f0f0);
+}
+
+.mapp-settings-nav-label {
+	flex: 1;
+	min-width: 0;
+}
+
+.mapp-about-version-line {
+	margin-bottom: 0;
+}
+.mapp-about-debug-btn {
+	margin-top: 16px;
+	margin-bottom: 0;
+}
+.mapp-about-version-link {
+	display: inline-block;
+	padding: 0;
+	border: none;
+	background: none;
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--m-accent, var(--mapp-accent, #4a7fc1));
+	cursor: pointer;
+	text-decoration: underline;
+}
+.mapp-about-version-link:disabled {
+	color: var(--mapp-sub-text, #888);
+	cursor: default;
+	text-decoration: none;
+}
+.mapp-app-html-content {
+	font-size: 14px;
+	line-height: 1.55;
+	color: var(--mapp-text, #333);
+	word-break: break-word;
+}
+.mapp-app-html-content h3 {
+	font-size: 15px;
+	margin: 12px 0 6px;
+}
+.mapp-app-html-content ul,
+.mapp-app-html-content ol {
+	margin: 0 0 10px;
+	padding-left: 1.25em;
+}
+.mapp-app-html-content p {
+	margin: 0 0 10px;
+}
+.mapp-app-html-content a {
+	color: var(--m-accent, var(--mapp-accent, #4a7fc1));
+}
+.mapp-app-html-content--empty {
+	color: var(--mapp-sub-text, #888);
+	font-style: italic;
+}
+.mc-dialog.mc-dialog--html {
+	max-width: min(520px, 92vw);
+	max-height: 85vh;
+	display: flex;
+	flex-direction: column;
+}
+.mc-dialog-html-body {
+	overflow: auto;
+	max-height: 60vh;
+	margin-bottom: 12px;
+	text-align: left;
+}
+
+.mapp-settings-nav-chevron {
+	color: var(--mapp-sub-text, #aaa);
+	font-size: 20px;
+	line-height: 1;
+	flex-shrink: 0;
+	margin-left: 8px;
+}
+
+.mapp-settings-header-back {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--m-header-text, var(--mapp-sub-text, #888));
+	padding: 4px;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	transition: background 120ms, color 120ms;
+}
+
+.mapp-settings-header-back:hover {
+	background: var(--m-menu-hover, var(--mapp-hover, #f0f0f0));
+	color: var(--m-header-text, var(--mapp-text, #1a1a1a));
+}
+
+.mapp-avatar-viewer-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 12000;
+	background: rgba(0, 0, 0, .92);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	opacity: 0;
+	transition: opacity .2s;
+}
+
+.mapp-avatar-viewer-overlay--visible {
+	opacity: 1;
+}
+
+.mapp-avatar-viewer-img {
+	max-width: min(100%, 480px);
+	max-height: calc(100vh - 120px);
+	object-fit: contain;
+	border-radius: 8px;
+	user-select: none;
+}
+
+.mapp-avatar-viewer-close {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	background: none;
+	border: none;
+	color: #fff;
+	cursor: pointer;
+	padding: 8px;
+	border-radius: 8px;
+	opacity: .85;
+}
+
+.mapp-avatar-viewer-close:hover {
+	opacity: 1;
+	background: rgba(255, 255, 255, .12);
+}
+
+.mapp-avatar-viewer-toolbar {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+	display: flex;
+	justify-content: center;
+}
+
+.mapp-avatar-viewer-edit {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 20px;
+	border: none;
+	border-radius: 24px;
+	background: rgba(255, 255, 255, .16);
+	color: #fff;
+	font-size: 15px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.mapp-avatar-viewer-edit:hover {
+	background: rgba(255, 255, 255, .24);
+}
+
+.mapp-avatar-viewer-edit svg {
+	flex-shrink: 0;
+}
+
+.mapp-profile-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 14px 6px;
+	min-width: 0;
+}
+
+.mapp-profile-head-avatar {
+	flex-shrink: 0;
+}
+
+.mapp-profile-head-avatar--zoom {
+	cursor: zoom-in;
+}
+
+
+.mapp-profile-head-avatar--editable {
+	cursor: pointer;
+	position: relative;
+	border-radius: 50%;
+	transition: opacity .2s;
+}
+
+.mapp-profile-head-avatar--editable:hover {
+	opacity: .82;
+}
+
+.mapp-profile-head-avatar--editable::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	box-shadow: inset 0 0 0 2px var(--m-accent, #4a7fc1);
+	opacity: 0;
+	transition: opacity .2s;
+	pointer-events: none;
+}
+
+.mapp-profile-head-avatar--editable:hover::after {
+	opacity: 1;
+}
+
+.mapp-profile-head-text {
+	min-width: 0;
+	flex: 1;
+}
+
+.mapp-profile-head-text .mapp-sidebar-username {
+	font-size: 15px;
+}
+
+.mapp-profile-head-text .mapp-chat-item-preview {
+	font-size: 12px;
+}
+
+.mapp-profile-form-page {
+	padding: 16px;
+	box-sizing: border-box;
+}
+
+.mapp-profile-form-page form {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	width: 100%;
+}
+
+.mapp-profile-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	width: 100%;
+	min-width: 0;
+}
+
+.mc-panel-window--profile .mapp-section-label {
+	padding: 0 0 2px;
+	font-size: 11px;
+	letter-spacing: .04em;
+}
+
+/* Поля ввода в профиле/группе — см. блок UI KIT ниже */
+
+/* Пароли в настройках — см. .mapp-profile-password-field в UI KIT */
+
+.mapp-settings-hub-avatar {
+	position: relative;
+}
+
+.mapp-avatar-camera-badge {
+	position: absolute;
+	right: -2px;
+	bottom: -2px;
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	background: var(--mapp-accent, #4a7fc1);
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 1px 6px rgba(0, 0, 0, .2);
+	pointer-events: none;
+}
+
+.mapp-theme-picker-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+}
+
+.mapp-theme-picker-item {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	text-align: left;
+	padding: 12px 14px;
+	font-size: 15px;
+	border: none;
+	border-radius: 10px;
+	background: var(--mapp-input-bg, #f0f2f5);
+	color: var(--mapp-input-text, #1a1a1a);
+	cursor: pointer;
+	font-family: inherit;
+	transition: background .15s;
+}
+
+.mapp-theme-picker-item:hover {
+	background: var(--mapp-hover, #ebebeb);
+}
+
+.mapp-theme-picker-item--active {
+	background: var(--mapp-item-active-bg, rgba(74, 127, 193, .13));
+	font-weight: 600;
+	color: var(--mapp-accent, #4a7fc1);
+}
+
+.mapp-profile-form-page .mapp-folder-settings {
+	padding: 0;
+}
+
+.mapp-profile-checkbox-field {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 10px 14px;
+	font-size: 13px;
+	color: var(--mapp-text, #1a1a1a);
+	cursor: pointer;
+}
+
+.mapp-profile-checkbox-field input[type="checkbox"] {
+	margin-top: 2px;
+	flex-shrink: 0;
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+}
+
+.mapp-profile-checkbox-field span {
+	line-height: 1.4;
+}
+
+.mapp-new-chat-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 6px;
+	color: var(--mapp-accent);
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	transition: background .15s;
+}
+
+.mapp-new-chat-btn:hover {
+	background: var(--mapp-hover);
+}
+
+.mapp-search-wrap {
+	padding: 8px 14px;
+}
+
+.mapp-search-input {
+	width: 100%;
+	background: var(--mapp-input-bg);
+	border: 1px solid var(--mapp-input-border);
+	border-radius: 18px;
+	padding: 7px 12px;
+	font-size: 13px;
+	outline: none;
+	color: var(--mapp-input-text);
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	transition: border-color .2s;
+}
+
+.mapp-search-input:focus {
+	border-color: var(--mapp-accent);
+}
+
+.mapp-chat-list-viewport {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+	position: relative;
+}
+
+.mapp-chat-list-track {
+	display: flex;
+	height: 100%;
+	will-change: transform;
+	transition: transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.mapp-chat-list-track--dragging {
+	transition: none;
+}
+
+.mapp-chat-list-panel {
+	flex: 0 0 100%;
+	width: 100%;
+	height: 100%;
+	overflow-y: auto;
+	padding-bottom: 8px;
+	-webkit-overflow-scrolling: touch;
+}
+
+/* Neighbor folder panel during a slide: an absolute overlay over the viewport.
+   It never affects layout (the live panel and track keep their size), which
+   prevents the whole list from shifting or a panel peeking on the right. */
+.mapp-chat-list-neighbor {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	background: var(--mapp-sidebar-bg, #fff);
+	will-change: transform;
+	transition: transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@media (max-width: 1199px) {
+	.mapp-root,
+	.mapp-sidebar,
+	.mapp-chat-list-viewport {
+		overscroll-behavior-x: none;
+	}
+
+	.mapp-chat-list-viewport {
+		touch-action: pan-y pinch-zoom;
+	}
+
+	.mapp-chat-list-panel {
+		overscroll-behavior-x: none;
+	}
+}
+
+.mapp-chat-list-panel::-webkit-scrollbar {
+	width: 3px;
+}
+
+.mapp-chat-list-panel::-webkit-scrollbar-thumb {
+	background: var(--mapp-scroll-thumb);
+	border-radius: 3px;
+}
+
+.mapp-section {
+	margin-top: 4px;
+}
+
+.mapp-section-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: .05em;
+	color: var(--mapp-sub-text);
+	padding: 8px 14px 4px;
+	opacity: .7;
+}
+
+.mapp-list-empty {
+	padding: 24px 14px;
+	text-align: center;
+	color: var(--mapp-sub-text);
+	font-size: 13px;
+	opacity: .7;
+}
+
+.mapp-chat-item {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	padding: 9px 14px 9px 8px;
+	cursor: pointer;
+	border-radius: 8px;
+	margin: 1px 8px 1px 4px;
+	transition: background .12s;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.mapp-chat-item:hover {
+	background: var(--mapp-hover);
+}
+
+.mapp-chat-item--active {
+	background: var(--mapp-item-active-bg);
+}
+
+/* On mobile a tapped chat opens fullscreen, so the list item must not stay
+   highlighted (only tablet/web keep the side-by-side selection). */
+@media (max-width: 680px) {
+	.mapp-chat-item--active {
+		background: transparent;
+	}
+}
+
+.mapp-chat-item-info {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.mapp-chat-item-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
+}
+
+.mapp-chat-item-name {
+	font-weight: 600;
+	font-size: 14px;
+	color: var(--mapp-text);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	flex: 1;
+	min-width: 0;
+}
+
+.mapp-chat-item-type-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 18px;
+	height: 18px;
+	margin-right: 4px;
+	color: var(--mapp-sub-text, #888);
+}
+.mapp-chat-item-type-icon svg {
+	display: block;
+}
+
+.mapp-chat-item-time {
+	font-size: 11px;
+	color: var(--mapp-sub-text);
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.mapp-chat-item-preview {
+	font-size: 12px;
+	color: var(--mapp-sub-text);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	flex: 1;
+}
+
+.mapp-chat-item-preview--locked {
+	flex: 0 0 auto;
+	max-width: none;
+}
+
+.mapp-badge-wrap {
+	flex-shrink: 0;
+}
+
+.mapp-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	background: var(--mapp-accent);
+	color: #fff;
+	font-size: 10px;
+	font-weight: 700;
+	border-radius: 9px;
+}
+
+.mapp-avatar {
+	border-radius: 50%;
+	overflow: hidden;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 600;
+	color: #fff;
+	user-select: none;
+}
+
+.mapp-avatar-img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.mapp-avatar-initials {
+	line-height: 1;
+}
+
+.mapp-content {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.mapp-empty {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	color: var(--mapp-sub-text);
+}
+
+.mapp-empty-icon {
+	opacity: .25;
+}
+
+.mapp-empty-text {
+	font-size: 15px;
+	opacity: .6;
+}
+
+.mapp-chat-area {
+	flex: 1;
+	display: grid;
+	grid-template: 1fr / 1fr;
+	overflow: hidden;
+	min-height: 0;
+	min-width: 0;
+}
+
+.mapp-chat-area > .mapp-placeholder,
+.mapp-chat-area > .mapp-chat-panel {
+	grid-area: 1 / 1;
+	min-height: 0;
+	min-width: 0;
+}
+
+.mapp-messenger-holder {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.mapp-messenger-holder .mc-root {
+	flex: 1;
+	min-height: 0;
+}
+
+.mapp-chat-panel {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	width: 100%;
+	height: 100%;
+	min-height: 0;
+	overflow: hidden;
+}
+
+.mapp-panel-pool-host {
+	display: none !important;
+}
+
+.mapp-chat-panel .mc-messages {
+	min-height: 0;
+}
+
+/* ─── Modal overlay (shared by all modals) ────────────────── */
+
+.mapp-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, .45);
+	z-index: 2000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+}
+
+/* ─── New-chat modal — theme-variable wiring ──────────────── */
+
+.mapp-modal {
+	background: var(--mapp-sidebar-bg, #fff);
+	color: var(--mapp-text, #1a1a1a);
+	border-radius: 16px;
+	width: 100%;
+	max-width: 420px;
+	max-height: 80vh;
+	display: flex;
+	flex-direction: column;
+	box-shadow: 0 8px 40px rgba(0, 0, 0, .25);
+	overflow: hidden;
+	border: 1px solid var(--mapp-border, #e5e5e5);
+	box-sizing: border-box;
+}
+
+.mapp-modal * {
+	box-sizing: border-box;
+}
+
+.mapp-modal-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 16px;
+	border-bottom: 1px solid var(--mapp-border, #e5e5e5);
+}
+
+.mapp-modal-title {
+	font-weight: 700;
+	font-size: 15px;
+	color: var(--mapp-text, #1a1a1a);
+}
+
+.mapp-modal-close {
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 22px;
+	line-height: 1;
+	color: var(--mapp-sub-text, #888);
+	padding: 2px 6px;
+	border-radius: 6px;
+	transition: background .15s;
+}
+
+.mapp-modal-close:hover {
+	background: var(--mapp-hover, #f0f0f0);
+}
+
+.mapp-qr-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, .45);
+	z-index: 10050;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+}
+
+.mapp-qr-dialog {
+	background: var(--mapp-sidebar-bg, #fff);
+	border-radius: 12px;
+	padding: 20px;
+	max-width: 320px;
+	width: 100%;
+	text-align: center;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, .2);
+	border: 1px solid var(--mapp-border, #e5e5e5);
+}
+
+.mapp-qr-dialog-title {
+	margin: 0 0 12px;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--mapp-text, #1a1a1a);
+}
+
+.mapp-qr-canvas {
+	display: inline-block;
+}
+
+.mapp-qr-canvas img,
+.mapp-qr-canvas canvas {
+	display: block;
+	max-width: 100%;
+	height: auto;
+}
+
+.mapp-qr-link {
+	font-size: 11px;
+	word-break: break-all;
+	color: var(--mapp-sub-text, #666);
+	margin: 12px 0 16px;
+}
+
+.mapp-qr-close-btn {
+	width: 100%;
+}
+
+.mapp-group-join-link-field {
+	padding: 0 14px 4px;
+}
+
+.mapp-group-link-section {
+	padding: 0 14px 10px;
+}
+
+.mapp-invites-hint {
+	padding: 10px 14px 6px;
+	font-size: 12px;
+	color: var(--mapp-sub-text, #888);
+	line-height: 1.4;
+}
+
+.mapp-invites-count {
+	padding: 0 14px 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--mapp-text, #1a1a1a);
+}
+
+.mapp-invites-list {
+	padding: 0 14px 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.mapp-invites-generate-btn {
+	margin: 0 14px 12px;
+	width: calc(100% - 28px);
+}
+
+.mapp-invite-row {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 10px 12px;
+	border: 1px solid var(--mapp-border, #e5e5e5);
+	border-radius: 10px;
+	background: var(--mapp-input-bg, #f9f9f9);
+}
+
+.mapp-invite-row-meta {
+	min-width: 0;
+	flex: 1;
+}
+
+.mapp-invite-status {
+	font-size: 12px;
+	font-weight: 600;
+	color: #2a7;
+	margin-bottom: 4px;
+}
+
+.mapp-invite-expires {
+	font-size: 11px;
+	color: var(--mapp-sub-text, #888);
+	margin-bottom: 6px;
+}
+
+.mapp-invite-link {
+	font-size: 11px;
+	word-break: break-all;
+	color: var(--mapp-text, #333);
+}
+
+.mapp-invite-actions {
+	display: flex;
+	flex-shrink: 0;
+	gap: 4px;
+}
+
+.mapp-invite-action-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--mapp-sub-text, #888);
+	padding: 6px;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 120ms, color 120ms;
+}
+
+.mapp-invite-action-btn:hover {
+	background: var(--mapp-hover, #eee);
+	color: var(--mapp-text, #1a1a1a);
+}
+
+.mapp-modal-tabs {
+	display: flex;
+	padding: 10px 16px 0;
+	gap: 6px;
+	border-bottom: 1px solid var(--mapp-border, #e5e5e5);
+}
+
+.mapp-modal-tab {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 6px 14px 10px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--mapp-sub-text, #888);
+	border-bottom: 2px solid transparent;
+	transition: color .15s, border-color .15s;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.mapp-modal-tab--active {
+	color: var(--mapp-accent, #2688eb);
+	border-bottom-color: var(--mapp-accent, #2688eb);
+}
+
+.mapp-modal-group-name-wrap {
+	padding: 20px 16px 6px;
+	min-width: 0;
+}
+
+.mapp-modal-group-name-wrap .mapp-profile-field {
+	padding: 0;
+	border: none;
+	gap: 6px;
+}
+
+.mapp-modal-group-name-wrap[hidden] {
+	display: none !important;
+}
+
+.mapp-modal-extra-pwd {
+	display: flex;
+	margin-top: 10px;
+	font-size: 13px;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.mapp-modal-extra-pwd[hidden] {
+	display: none !important;
+}
+
+.mapp-modal-extra-pwd-hint {
+	color: var(--mapp-sub-text, #666);
+	font-size: 12px;
+}
+
+.mapp-modal-bottom-loader {
+	display: flex;
+	justify-content: center;
+	padding: 8px 0;
+}
+
+.mapp-modal-bottom-loader[hidden] {
+	display: none !important;
+}
+
+.mapp-modal--narrow {
+	max-width: 320px;
+}
+
+.mapp-modal-body-pad {
+	padding: 16px;
+}
+
+.mapp-modal-search-wrap {
+	padding: 10px 16px 6px;
+	min-width: 0;
+}
+
+.mapp-modal-search {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	background: var(--mapp-input-bg, #f5f5f5);
+	border: 1px solid var(--mapp-input-border, #ddd);
+	border-radius: 18px;
+	padding: 7px 12px;
+	font-size: 13px;
+	outline: none;
+	color: var(--mapp-input-text, #333);
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	transition: border-color .2s;
+}
+
+.mapp-modal-search:focus {
+	border-color: var(--mapp-accent, #2688eb);
+}
+
+.mapp-modal-selected {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding: 6px 16px;
+	min-height: 0;
+}
+
+.mapp-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	background: var(--mapp-accent, #2688eb);
+	color: #fff;
+	border-radius: 14px;
+	padding: 3px 8px 3px 10px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.mapp-chip-remove {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: rgba(255, 255, 255, .8);
+	font-size: 16px;
+	line-height: 1;
+	padding: 0 2px;
+	display: flex;
+	align-items: center;
+}
+
+.mapp-chip-remove:hover {
+	color: #fff;
+}
+
+.mapp-modal-contacts {
+	flex: 1;
+	overflow-y: auto;
+	padding: 4px 8px 4px 2px;
+	min-height: 0;
+}
+
+.mapp-modal-contacts::-webkit-scrollbar {
+	width: 3px;
+}
+
+.mapp-modal-contacts::-webkit-scrollbar-thumb {
+	background: var(--mapp-scroll-thumb);
+	border-radius: 3px;
+}
+
+.mapp-modal-loading,
+.mapp-modal-contacts-empty {
+	padding: 20px;
+	text-align: center;
+	color: var(--mapp-sub-text, #888);
+	font-size: 13px;
+	opacity: .7;
+}
+
+.mapp-modal-contact-item {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	padding: 8px 8px 8px 2px;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: background .12s;
+}
+
+.mapp-modal-contact-item:hover {
+	background: var(--mapp-hover, #f0f0f0);
+}
+
+.mapp-modal-contact-item--selected {
+	background: var(--mapp-item-active-bg, #e3f0fd);
+}
+
+.mapp-modal-contact-name {
+	flex: 1;
+	font-size: 14px;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	color: var(--mapp-text, #1a1a1a);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.mapp-modal-contact-check {
+	flex-shrink: 0;
+	width: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--mapp-accent, #2688eb);
+}
+
+.mapp-modal-footer {
+	padding: 12px 16px 16px;
+	border-top: 1px solid var(--mapp-border, #e5e5e5);
+	display: block;
+}
+
+.mapp-modal-footer .mapp-btn,
+.mapp-modal-footer .mapp-modal-footer-btn,
+.mapp-modal-footer .mapp-modal-create-btn {
+	display: flex;
+	width: 100%;
+	box-sizing: border-box;
+	justify-content: center;
+}
+
+.mapp-modal-create-btn {
+	background: var(--mapp-accent, #2688eb);
+	color: #fff;
+	border: none;
+	border-radius: 9999px;
+	padding: 12px 22px;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	font-family: inherit;
+	transition: transform .15s ease, filter .22s ease, box-shadow .22s ease;
+	box-shadow: 0 4px 14px color-mix(in srgb, var(--mapp-accent, #4a7fc1) 28%, transparent);
+}
+
+.mapp-modal-create-btn:disabled {
+	opacity: .55;
+	cursor: default;
+	transform: none;
+}
+
+.mapp-modal-create-btn:not(:disabled):hover {
+	filter: brightness(1.05);
+}
+
+/* On mobile every modal window opens fullscreen (the avatar-source chooser
+   is excluded because it falls back to a bottom sheet on small screens). */
+@media (max-width: 680px) {
+	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) {
+		padding: 0;
+		align-items: stretch;
+		justify-content: stretch;
+		background: var(--mapp-sidebar-bg, #fff);
+		height: 100dvh;
+		max-height: 100dvh;
+	}
+
+	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) > .mapp-modal,
+	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) > .mc-panel-window {
+		width: 100% !important;
+		height: 100% !important;
+		max-width: none !important;
+		max-height: none !important;
+		min-height: 0;
+		flex: 1;
+		border-radius: 0;
+		border: none;
+		box-shadow: none;
+		overflow-y: auto;
+	}
+
+	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) .mc-panel-window-body {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) .mapp-modal-header,
+	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) .mc-panel-window-header {
+		padding-top: calc(14px + env(safe-area-inset-top, 0px));
+		flex-shrink: 0;
+	}
+
+	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) .mapp-modal-footer,
+	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) .mc-panel-window-body > .mapp-modal-footer {
+		padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+		flex-shrink: 0;
+	}
+}
+
+/* ─── Panel window (Settings modal & reusable builder) ────── */
+
+.mc-panel-window {
+	background: var(--mapp-sidebar-bg, #fff);
+    color: var(--mapp-text, #1a1a1a);
+    border-radius: 16px;
+    width: 100%;
+    height: min(520px, 85vh);
+    max-width: 420px;
+    max-height: min(520px, 85vh);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, .25);
+    overflow: hidden;
+    border: 1px solid var(--mapp-border, #e5e5e5);
+}
+
+.mc-panel-window-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 16px 20px 12px;
+	border-bottom: 1px solid var(--m-header-border, var(--mapp-border, #e5e5e5));
+	flex-shrink: 0;
+}
+
+.mc-panel-window-title-row,
+.mapp-modal-title-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	flex: 1;
+}
+
+.mc-panel-window-qr-btn,
+.mapp-modal-qr-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--m-header-text, var(--mapp-sub-text, #888));
+	padding: 4px;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	transition: background 120ms, color 120ms;
+}
+
+.mc-panel-window-qr-btn:hover,
+.mapp-modal-qr-btn:hover {
+	background: var(--m-menu-hover, var(--mapp-hover, #f0f0f0));
+	color: var(--m-header-text, var(--mapp-text, #1a1a1a));
+}
+
+.mc-panel-window-qr-btn[hidden],
+.mapp-modal-qr-btn[hidden] {
+	display: none !important;
+}
+
+.mc-panel-window-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--m-header-text, var(--mapp-text, #1a1a1a));
+	min-width: 0;
+}
+
+.mc-panel-window-close {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--m-header-text, var(--mapp-sub-text, #888));
+	padding: 4px;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 20px;
+	line-height: 1;
+	transition: background 120ms;
+}
+
+.mc-panel-window-close:hover {
+	background: var(--m-menu-hover, var(--mapp-hover, #f0f0f0));
+}
+
+.mc-panel-window-body {
+	padding: 8px 0;
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+/* ─── Action Menu ─────────────────────────────────────────── */
+
+.mc-action-menu {
+	display: flex;
+	flex-direction: column;
+	background: var(--m-menu-bg, var(--mapp-sidebar-bg, #fff));
+}
+
+.mc-action-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 12px 20px;
+	font-size: 14px;
+	color: var(--m-menu-text, var(--mapp-text, #1a1a1a));
+	cursor: pointer;
+	user-select: none;
+	transition: background 120ms;
+	border: none;
+	background: none;
+	text-align: left;
+}
+
+.mc-action-menu-item:hover {
+	background: var(--m-menu-hover, var(--mapp-hover, #f0f0f0));
+}
+
+.mc-action-menu-item--danger {
+	color: #e53935;
+}
+
+.mc-action-menu-item--danger:hover {
+	background: rgba(229, 57, 53, 0.08);
+}
+
+.mc-action-menu-item--has-submenu::after {
+	content: '›';
+	margin-left: auto;
+	font-size: 18px;
+	line-height: 1;
+	opacity: 0.5;
+	transform: rotate(90deg);
+	transition: transform 220ms ease;
+}
+
+.mc-action-menu-item--open.mc-action-menu-item--has-submenu::after {
+	transform: rotate(-90deg);
+}
+
+.mc-action-menu-item--open {
+	background: var(--m-menu-hover, var(--mapp-hover, #f0f0f0));
+}
+
+.mc-action-submenu {
+	max-height: 0;
+	overflow: hidden;
+	transition: max-height 260ms ease;
+	background: var(--m-chat-bg, var(--mapp-content-bg, #f7f7f7));
+}
+
+.mc-action-submenu .mc-action-menu-item {
+	padding-left: 36px;
+	font-size: 13px;
+}
+
+.mc-action-submenu .mc-action-menu-item--active {
+	color: var(--m-accent, var(--mapp-accent, #2688eb));
+	font-weight: 600;
+}
+
+.mc-action-submenu .mc-action-menu-item--active::before {
+	content: '✓';
+	margin-right: 6px;
+	font-size: 13px;
+}
+
+/* ─── Confirm / Alert Dialog ──────────────────────────────── */
+
+.mc-dialog-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, .45);
+	z-index: 9999;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	animation: mc-dialog-fade-in 160ms ease;
+}
+
+@keyframes mc-dialog-fade-in {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+
+.mc-dialog {
+	background: var(--m-header-bg, #fff);
+	border-radius: 14px;
+	padding: 28px 28px 20px;
+	width: 340px;
+	max-width: 92vw;
+	box-shadow: 0 12px 40px rgba(0, 0, 0, .22);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	animation: mc-dialog-pop 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes mc-dialog-pop {
+	from { transform: scale(0.88); opacity: 0; }
+	to   { transform: scale(1);    opacity: 1; }
+}
+
+.mc-dialog-icon {
+	font-size: 36px;
+	line-height: 1;
+	width: 60px;
+	height: 60px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 4px;
+}
+
+.mc-dialog-icon--info    { background: rgba(33,  150, 243, 0.12); }
+.mc-dialog-icon--warning { background: rgba(255, 152,   0, 0.12); }
+.mc-dialog-icon--danger  { background: rgba(229,  57,  53, 0.12); }
+.mc-dialog-icon--success { background: rgba( 76, 175,  80, 0.12); }
+
+.mc-dialog-title {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--m-header-text, #1a1a1a);
+	text-align: center;
+}
+
+.mc-dialog-message {
+	font-size: 13px;
+	color: var(--m-header-text, #555);
+	text-align: center;
+	line-height: 1.55;
+	opacity: 0.82;
+}
+
+.mc-dialog--form {
+	align-items: stretch;
+	width: 360px;
+}
+
+.mc-dialog-inline-err {
+	font-size: 12px;
+	color: #c44;
+	text-align: center;
+	width: 100%;
+}
+
+.mc-password-field {
+	position: relative;
+	width: 100%;
+}
+
+.mc-dialog-input {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	margin: 8px 0 4px;
+	padding: 11px 14px;
+	font-size: 14px;
+	line-height: 1.4;
+	min-height: 44px;
+	border: 1.5px solid transparent;
+	border-radius: 12px;
+	background: var(--mapp-input-bg, #f0f2f5);
+	color: var(--mapp-input-text, #1a1a1a);
+	font-family: inherit;
+	transition: border-color .22s ease, box-shadow .22s ease, background .22s ease;
+}
+
+.mc-dialog-input:focus {
+	outline: none;
+	border-color: var(--mapp-accent, #4a7fc1);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--mapp-accent, #4a7fc1) 22%, transparent);
+}
+
+.mc-dialog-input--masked {
+	-webkit-text-security: disc;
+	text-security: disc;
+}
+
+.mc-password-field .mc-dialog-input {
+	margin: 8px 0 4px;
+	padding-right: 42px;
+}
+
+.mc-password-toggle {
+	position: absolute;
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	margin-top: 4px;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: var(--m-header-text, #666);
+	cursor: pointer;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 0.75;
+}
+
+.mc-password-toggle:hover {
+	opacity: 1;
+	background: rgba(0, 0, 0, .06);
+}
+
+/* Диалоги подтверждения/ввода пароля поверх экрана мастер-пароля (z-index 100000). */
+.supra-master-unlock-overlay ~ .mc-dialog-overlay {
+	z-index: 100001;
+}
+
+.supra-master-unlock-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	background: rgba(0, 0, 0, .5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+	box-sizing: border-box;
+}
+
+.supra-master-unlock-card {
+	background: #fff;
+	border-radius: 14px;
+	padding: 28px 24px 22px;
+	width: 100%;
+	max-width: 400px;
+	box-shadow: 0 12px 40px rgba(0, 0, 0, .2);
+	box-sizing: border-box;
+}
+
+.supra-master-unlock-title {
+	margin: 0 0 8px;
+	font-size: 1.25rem;
+	color: #1c1c1e;
+}
+
+.supra-master-unlock-welcome {
+	font-size: 14px;
+	line-height: 1.5;
+	color: var(--mapp-text, #333);
+	margin: 0 0 12px;
+	text-align: left;
+}
+.supra-master-unlock-welcome p {
+	margin: 0 0 8px;
+}
+.supra-master-unlock-welcome p:last-child {
+	margin-bottom: 0;
+}
+.supra-master-unlock-hint {
+	margin: 0 0 16px;
+	font-size: 13px;
+	color: #666;
+	line-height: 1.45;
+}
+
+.supra-master-unlock-err {
+	color: #c00;
+	font-size: 13px;
+	margin-bottom: 10px;
+}
+
+.supra-master-unlock-form {
+	margin: 0;
+}
+
+.supra-master-unlock-same,
+.mapp-master-same-login {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	font-size: 14px;
+	line-height: 1.4;
+	margin: 0 0 12px;
+	cursor: pointer;
+	color: var(--brand-text, #333);
+}
+
+.supra-master-unlock-same input,
+.mapp-master-same-login input {
+	margin-top: 3px;
+	flex-shrink: 0;
+}
+
+.supra-master-unlock-submit {
+	width: 100%;
+	padding: 12px;
+	margin-top: 12px;
+	background: var(--brand-accent, #4a7fc1);
+	color: #fff;
+	border: none;
+	border-radius: 8px;
+	font-size: 16px;
+	cursor: pointer;
+}
+
+.supra-master-unlock-reset {
+	width: 100%;
+	margin-top: 14px;
+	padding: 0;
+	border: none;
+	background: none;
+	color: #c44;
+	font-size: 13px;
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+.mc-dialog-actions {
+	display: flex;
+	gap: 10px;
+	width: 100%;
+	margin-top: 8px;
+}
+
+.mc-dialog-actions--stack {
+	flex-direction: column;
+}
+
+.mc-dialog-btn {
+	flex: 1;
+	padding: 12px 22px;
+	border-radius: 9999px;
+	font-size: 14px;
+	font-weight: 600;
+	border: none;
+	cursor: pointer;
+	font-family: inherit;
+	transition: transform .15s ease, filter .22s ease, box-shadow .22s ease, background .22s ease;
+}
+
+.mc-dialog-btn:active {
+	transform: scale(.97);
+}
+
+.mc-dialog-btn--confirm {
+	background: var(--mapp-accent, #4a7fc1);
+	color: #fff;
+	box-shadow: 0 4px 14px color-mix(in srgb, var(--mapp-accent, #4a7fc1) 28%, transparent);
+}
+
+.mc-dialog-btn--confirm:hover {
+	filter: brightness(1.05);
+}
+
+.mc-dialog-btn--danger {
+	background: #e53935;
+	color: #fff;
+	box-shadow: 0 4px 14px rgba(229, 57, 53, .25);
+}
+
+.mc-dialog-btn--danger:hover {
+	filter: brightness(1.05);
+}
+
+.mc-dialog-btn--cancel {
+	background: var(--mapp-input-bg, #f0f2f5);
+	color: var(--mapp-text, #1a1a1a);
+	border: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+}
+
+.mc-dialog-btn--cancel:hover {
+	background: var(--mapp-hover, #ebebeb);
+}
+
+.mc-action-menu-item {
+	display: flex;
+	align-items: center;
+}
+
+.mc-action-menu-item-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	margin-right: 10px;
+	line-height: 1;
+}
+
+.mc-action-menu-item-icon svg {
+	display: block;
+	vertical-align: middle;
+}
+
+
+/* ─── Scroll, separators, misc ────────────────────────────── */
+
+.mc-messages-wrap {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.mc-header,
+.mc-input-area {
+	flex-shrink: 0;
+}
+
+.mc-scroll-down-btn {
+	position: absolute;
+	bottom: 14px;
+	right: 14px;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	border: none;
+	background: var(--m-other-bubble-bg);
+	color: var(--m-accent);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, .22);
+	z-index: 20;
+	transition: opacity .15s, transform .1s, background .3s;
+	flex-shrink: 0;
+}
+
+.mc-scroll-down-btn[hidden] {
+	display: none !important;
+}
+
+.mc-scroll-down-btn:hover {
+	opacity: .88;
+}
+
+.mc-scroll-down-btn:active {
+	transform: scale(.93);
+}
+
+.mc-date-separator {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 8px 0;
+	pointer-events: none;
+	user-select: none;
+	flex-shrink: 0;
+}
+
+.mc-date-separator-pill {
+	background: var(--m-date-sep-bg, rgba(120, 120, 128, .22));
+	color: var(--m-date-sep-text, #555);
+	font-size: 11px;
+	font-weight: 500;
+	padding: 3px 12px;
+	border-radius: 999px;
+	backdrop-filter: blur(6px);
+	-webkit-backdrop-filter: blur(6px);
+	white-space: nowrap;
+}
+
+.mc-system-event {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 8px 0;
+	pointer-events: none;
+	user-select: none;
+	flex-shrink: 0;
+}
+
+.mc-system-event-pill {
+	background: var(--m-date-sep-bg, rgba(120, 120, 128, .22));
+	color: var(--m-date-sep-text, #555);
+	font-size: 11px;
+	font-weight: 500;
+	padding: 3px 12px;
+	border-radius: 999px;
+	backdrop-filter: blur(6px);
+	-webkit-backdrop-filter: blur(6px);
+	white-space: nowrap;
+	text-align: center;
+	max-width: min(92%, 420px);
+}
+
+.mc-new-msg-divider {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 8px 0;
+	pointer-events: none;
+	user-select: none;
+	flex-shrink: 0;
+}
+
+.mc-new-msg-divider-pill {
+	background: var(--m-accent);
+	color: #fff;
+	font-size: 11px;
+	font-weight: 600;
+	padding: 3px 14px;
+	border-radius: 999px;
+	opacity: .88;
+	white-space: nowrap;
+}
+
+/* ─── Animations ──────────────────────────────────────────── */
+
+@keyframes mc-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* ─── Responsive ──────────────────────────────────────────── */
+
+@media (max-width: 680px) {
+	/* Embedded in MobilePortal (.content has padding-top / optional bottom inset):
+	   full viewport height pushes the composer below the visible scrollport. */
+	.mapp-root {
+		position: relative;
+		overflow: hidden;
+		overscroll-behavior: none;
+	}
+
+	.mapp-root.mapp-no-ui {
+		height: 100dvh;
+		min-height: 0;
+	}
+
+	.mapp-root.mapp-has-ui {
+		height: 100%;
+		min-height: 0;
+	}
+
+	.mapp-chat-area,
+	.mapp-chat-panel,
+	.mapp-chat-panel .mc-root {
+		height: 100%;
+		min-height: 0;
+	}
+
+	.mapp-sidebar {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		max-width: 100%;
+		z-index: 10;
+		transition: transform .25s ease, opacity .25s ease;
+	}
+
+	.mapp-chat-area {
+		position: absolute;
+		inset: 0;
+		z-index: 20;
+		transform: translateX(100%);
+		transition: transform .25s ease;
+		background: var(--mapp-content-bg);
+	}
+
+	.mapp-root.mapp-show-chat .mapp-chat-area {
+		transform: translateX(0);
+	}
+
+	.mapp-chat-panel .mc-header {
+		padding-top: 9px;
+	}
+
+	.mapp-chat-panel .mc-input-area {
+		padding-left: max(16px, env(safe-area-inset-left, 0px));
+		padding-right: max(16px, env(safe-area-inset-right, 0px));
+		padding-bottom: calc(9px + env(safe-area-inset-bottom, 0px));
+	}
+
+	/* Сообщения: отступ от краёв экрана, пузыри не на всю ширину */
+	.mc-messages {
+		padding-left: max(16px, env(safe-area-inset-left, 0px));
+		padding-right: max(16px, env(safe-area-inset-right, 0px));
+	}
+
+	.mc-bubble {
+		max-width: min(72%, calc(100% - 24px));
+	}
+
+	.mc-file-bubble {
+		min-width: 0;
+		max-width: min(300px, 100%);
+	}
+
+	.mc-image-bubble {
+		max-width: min(260px, 100%);
+	}
+
+	.mc-system-event-pill {
+		max-width: min(82%, calc(100% - 32px));
+	}
+
+	.mc-dialog-overlay {
+		padding: max(16px, env(safe-area-inset-top, 0px))
+			max(16px, env(safe-area-inset-right, 0px))
+			max(16px, env(safe-area-inset-bottom, 0px))
+			max(16px, env(safe-area-inset-left, 0px));
+		box-sizing: border-box;
+	}
+
+	.mc-dialog {
+		width: 100%;
+		max-width: min(340px, calc(100% - 32px));
+	}
+
+	.mapp-root.mapp-no-ui .mapp-chat-area,
+	.mapp-root.mapp-no-ui .mapp-chat-panel,
+	.mapp-root.mapp-no-ui .mapp-chat-panel .mc-root {
+		height: 100%;
+		min-height: 0;
+	}
+
+	.mc-back-btn {
+		display: flex !important;
+	}
+}
+
+@media (min-width: 681px) {
+	.mc-back-btn {
+		display: none !important;
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	.mc-date-separator-pill {
+		background: rgba(180, 180, 190, .18);
+		color: #bbb;
+	}
+}
+
+.mapp-placeholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 15px;
+	color: var(--mapp-sub-text, #888);
+	opacity: .6;
+	user-select: none;
+}
+
+.mapp-placeholder[hidden] {
+	display: none !important;
+}
+
+/* ===== STATUS TEXT ===== */
+.mapp-profile-status-text {
+	font-size: 13px;
+	color: var(--mapp-sub-text, #888);
+	margin-top: 4px;
+	line-height: 1.35;
+	max-width: 100%;
+	word-break: break-word;
+}
+
+.mapp-settings-hub .mapp-profile-status-text {
+	text-align: center;
+	width: 100%;
+	box-sizing: border-box;
+	padding-left: 16px;
+	padding-right: 16px;
+}
+
+.mapp-profile-status-text--editable {
+	cursor: pointer;
+	border-radius: 4px;
+	padding: 2px 0;
+	transition: color .12s;
+}
+
+.mapp-settings-hub .mapp-profile-status-text--editable {
+	padding: 2px 16px;
+}
+
+.mapp-profile-status-text--editable:hover {
+	color: var(--mapp-text, #555);
+}
+
+.mapp-profile-status-text--empty {
+	opacity: .72;
+}
+
+.mapp-profile-status-text--editing {
+	cursor: text;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 2px 16px;
+}
+
+.mapp-profile-status-input {
+	display: block;
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	border: none;
+	background: transparent;
+	font: inherit;
+	font-size: 13px;
+	color: var(--mapp-text, #333);
+	padding: 0;
+	margin: 0;
+	text-align: center;
+	outline: none;
+	box-sizing: border-box;
+}
+
+/* ===== PRIVACY SELECT ===== */
+.mapp-privacy-select {
+	width: 100%;
+	padding: 8px 10px;
+	border-radius: 8px;
+	border: 1px solid var(--mapp-input-border, #e0e0e0);
+	background: var(--mapp-input-bg, #f7f7f7);
+	color: var(--mapp-text, #1c1c1e);
+	font-size: 14px;
+	font-family: inherit;
+	cursor: pointer;
+	appearance: auto;
+}
+
+/* ===== CHAT HEADER MENU (new style) ===== */
+.mc-menu-item-icon {
+	display: inline-flex;
+	align-items: center;
+	margin-right: 8px;
+	opacity: .7;
+	flex-shrink: 0;
+}
+.mc-menu-item {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	padding: 9px 14px;
+	cursor: pointer;
+	color: var(--m-menu-text, #1c1c1e);
+	font-size: 14px;
+	white-space: nowrap;
+	gap: 8px;
+	transition: background .12s;
+}
+.mc-menu-item:hover {
+	background: var(--m-menu-hover, #f0f0f0);
+}
+.mc-menu-item--danger {
+	color: #c44;
+}
+
+/* ===== CONTEXT MENU ===== */
+.mapp-chat-context-menu {
+	position: fixed;
+	z-index: 9999;
+	min-width: 200px;
+	background: var(--m-menu-bg, #fff);
+	border: 1px solid var(--m-menu-border, #e5e5e5);
+	border-radius: 10px;
+	box-shadow: 0 4px 24px rgba(0,0,0,.15);
+	padding: 4px 0;
+	font-size: 14px;
+	overflow: visible;
+}
+.mapp-context-menu-item {
+	display: flex;
+	align-items: center;
+	padding: 9px 14px;
+	cursor: pointer;
+	color: var(--m-menu-text, #1c1c1e);
+	gap: 8px;
+	transition: background .12s;
+	position: relative;
+	white-space: nowrap;
+}
+.mapp-context-menu-item:hover {
+	background: var(--m-menu-hover, #f0f0f0);
+}
+.mapp-context-menu-item--danger {
+	color: #c44;
+}
+.mapp-context-menu-item-icon {
+	display: inline-flex;
+	align-items: center;
+	opacity: .7;
+	flex-shrink: 0;
+}
+.mapp-context-menu-arrow {
+	margin-left: auto;
+	font-size: 16px;
+	opacity: .5;
+}
+.mapp-context-menu-item--sub {
+	padding-right: 8px;
+}
+.mapp-context-menu-item--active {
+	color: var(--m-accent, var(--mapp-accent, #2688eb));
+	font-weight: 600;
+}
+.mapp-context-menu-check {
+	margin-left: auto;
+	display: inline-flex;
+	align-items: center;
+	color: var(--m-accent, var(--mapp-accent, #2688eb));
+	flex-shrink: 0;
+}
+.mapp-context-menu-check svg {
+	display: block;
+}
+.mapp-context-submenu {
+	display: none;
+	position: absolute;
+	left: 100%;
+	top: -4px;
+	min-width: 180px;
+	background: var(--m-menu-bg, #fff);
+	border: 1px solid var(--m-menu-border, #e5e5e5);
+	border-radius: 10px;
+	box-shadow: 0 4px 20px rgba(0,0,0,.12);
+	padding: 4px 0;
+	z-index: 1;
+}
+.mapp-context-submenu--open {
+	display: block;
+}
+
+/* ===== MOBILE BOTTOM SHEET MENU ===== */
+.mapp-sheet-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 10050;
+	background: rgba(0, 0, 0, .42);
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	animation: mapp-sheet-overlay-in .2s ease;
+}
+
+@keyframes mapp-sheet-overlay-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+.mapp-bottom-sheet {
+	width: 100%;
+	max-width: 100%;
+	max-height: min(72vh, 100%);
+	background: var(--m-menu-bg, #fff);
+	border-radius: 16px 16px 0 0;
+	box-shadow: 0 -8px 32px rgba(0, 0, 0, .18);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	animation: mapp-sheet-in .24s ease;
+	padding-bottom: env(safe-area-inset-bottom, 0);
+	touch-action: auto;
+	position: relative;
+	z-index: 1;
+}
+
+body.mapp-scroll-lock .mapp-bottom-sheet {
+	touch-action: auto;
+}
+
+@keyframes mapp-sheet-in {
+	from { transform: translateY(100%); }
+	to { transform: translateY(0); }
+}
+
+.mapp-sheet-msg-preview {
+	flex-shrink: 0;
+	display: flex;
+	justify-content: center;
+	padding: 10px 16px 4px;
+	pointer-events: none;
+}
+
+.mapp-sheet-msg-preview-row {
+	max-width: min(78%, 300px);
+}
+
+.mapp-sheet-msg-preview-row .mc-bubble {
+	box-shadow: 0 4px 16px rgba(0, 0, 0, .18);
+}
+
+.mapp-sheet-handle {
+	width: 40px;
+	height: 4px;
+	border-radius: 2px;
+	background: rgba(128, 128, 128, .45);
+	margin: 10px auto 6px;
+	flex-shrink: 0;
+	touch-action: none;
+	cursor: grab;
+}
+
+.mapp-sheet-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 16px 8px;
+	min-height: 36px;
+	flex-shrink: 0;
+	touch-action: none;
+}
+
+.mapp-sheet-back {
+	border: none;
+	background: none;
+	color: var(--m-header-text, var(--mapp-sub-text, #888));
+	padding: 4px;
+	border-radius: 6px;
+	cursor: pointer;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 120ms, color 120ms;
+}
+
+.mapp-sheet-back:hover {
+	background: var(--m-menu-hover, var(--mapp-hover, #f0f0f0));
+	color: var(--m-header-text, var(--mapp-text, #1a1a1a));
+}
+
+.mapp-sheet-back svg {
+	display: block;
+}
+
+.mapp-sheet-title {
+	flex: 1;
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--m-menu-text, #1c1c1e);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mapp-sheet-list {
+	overflow-y: auto;
+	flex: 1;
+	min-height: 0;
+	-webkit-overflow-scrolling: touch;
+}
+
+.mapp-sheet-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	border: none;
+	background: none;
+	padding: 14px 20px;
+	font-size: 16px;
+	color: var(--m-menu-text, #1c1c1e);
+	text-align: left;
+	cursor: pointer;
+	transition: background .12s;
+}
+
+.mapp-sheet-item:active,
+.mapp-sheet-item:hover {
+	background: var(--m-menu-hover, #f0f0f0);
+}
+
+.mapp-sheet-item--danger {
+	color: #e53935;
+}
+
+.mapp-sheet-item--hint {
+	cursor: default;
+	opacity: .75;
+	pointer-events: none;
+}
+
+.mapp-sheet-item--hint:active,
+.mapp-sheet-item--hint:hover {
+	background: transparent;
+}
+
+.mapp-sheet-item--active {
+	color: var(--m-accent, var(--mapp-accent, #2688eb));
+	font-weight: 600;
+}
+
+.mapp-sheet-item-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	opacity: .75;
+}
+
+.mapp-sheet-item-icon svg {
+	display: block;
+}
+
+.mapp-sheet-item-label {
+	flex: 1;
+	min-width: 0;
+}
+
+.mapp-sheet-item-check {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	color: var(--m-accent, var(--mapp-accent, #2688eb));
+}
+
+.mapp-sheet-item-check svg {
+	display: block;
+}
+
+.mapp-sheet-item-arrow {
+	margin-left: auto;
+	font-size: 18px;
+	opacity: .45;
+	flex-shrink: 0;
+}
+
+/* ===== FOLDERS BAR ===== */
+.mapp-folders-bar {
+	display: flex;
+	flex-direction: row;
+	overflow-x: auto;
+	overflow-y: hidden;
+	gap: 4px;
+	padding: 4px 10px 6px;
+	background: var(--mapp-sidebar-bg, #f7f7f7);
+	border-bottom: 1px solid var(--mapp-border, #e5e5e5);
+	scrollbar-width: none;
+	overscroll-behavior-x: contain;
+	overscroll-behavior-y: none;
+	-webkit-overflow-scrolling: touch;
+}
+.mapp-folders-bar::-webkit-scrollbar { display: none; }
+
+.mapp-folder-tab {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 5px 12px;
+	border-radius: 20px;
+	background: transparent;
+	border: 1px solid var(--mapp-border, #e0e0e0);
+	font-size: 13px;
+	cursor: pointer;
+	color: var(--mapp-text, #444);
+	white-space: nowrap;
+	transition: background .15s, color .15s, border-color .15s;
+	font-family: inherit;
+	flex-shrink: 0;
+}
+.mapp-folder-tab:hover:not(.mapp-folder-tab--active),
+.mapp-folder-tab:active:not(.mapp-folder-tab--active) {
+	background: transparent;
+	color: var(--mapp-text, #444);
+	border-color: var(--mapp-border, #e0e0e0);
+}
+.mapp-folder-tab--active,
+.mapp-folder-tab--active:hover,
+.mapp-folder-tab--active:active {
+	background: var(--mapp-accent, #2196f3);
+	color: #fff;
+	border-color: var(--mapp-accent, #2196f3);
+}
+.mapp-folder-tab--active .mapp-folder-tab-icon--svg svg {
+	stroke: currentColor;
+}
+.mapp-folder-tab-icon {
+	font-size: 14px;
+}
+
+/* ===== DESKTOP LAYOUT (folders sidebar) ===== */
+@media (min-width: 1200px) {
+	.mapp-root.mapp-desktop .mapp-sidebar {
+		display: flex;
+		flex-direction: row;
+		min-width: 0;
+	}
+
+	.mapp-root.mapp-desktop .mapp-folders-bar {
+		flex-direction: column;
+		width: 68px;
+		min-width: 68px;
+		overflow-x: hidden;
+		overflow-y: auto;
+		padding: 8px 4px;
+		border-bottom: none;
+		border-right: 1px solid var(--mapp-border, #e5e5e5);
+		gap: 2px;
+		align-items: center;
+	}
+
+	.mapp-root.mapp-desktop .mapp-folder-tab {
+		flex-direction: column;
+		padding: 6px 4px;
+		width: 52px;
+		height: 52px;
+		min-width: 52px;
+		min-height: 52px;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+		font-size: 10px;
+		border-radius: 10px;
+		gap: 2px;
+		box-sizing: border-box;
+	}
+
+	.mapp-root.mapp-desktop .mapp-folder-tab-label {
+		display: block;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		line-height: 1.1;
+	}
+
+	.mapp-root.mapp-desktop .mapp-folder-tab-icon {
+		font-size: 16px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.mapp-root.mapp-desktop .mapp-sidebar-main {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+	}
+}
+
+/* ===== SEARCH CLEAR BTN ===== */
+.mapp-search-wrap {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+.mapp-search-input {
+	flex: 1;
+}
+.mapp-search-clear-btn {
+	position: absolute;
+	right: 8px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--mapp-sub-text, #888);
+	padding: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	transition: background .12s;
+}
+
+.mapp-search-clear-btn[hidden] {
+	display: none !important;
+}
+
+.mapp-folders-bar[hidden] {
+	display: none !important;
+}
+.mapp-search-clear-btn:hover {
+	background: var(--mapp-hover, #f0f0f0);
+}
+
+/* ===== DIALOG CHECKBOX ===== */
+.mc-dialog-checkbox-wrap {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	color: var(--m-menu-text, #555);
+	margin: 8px 0 4px;
+	cursor: pointer;
+}
+.mc-dialog-checkbox-wrap input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+/* ===== CONTACT PROFILE MODAL ===== */
+.mapp-contact-profile-modal {
+	max-width: 360px;
+}
+.mapp-contact-profile-body {
+	padding: 20px 16px 8px;
+	text-align: center;
+}
+.mapp-contact-profile-name {
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--mapp-text, #1c1c1e);
+	margin-bottom: 4px;
+}
+.mapp-contact-profile-status {
+	font-size: 13px;
+	color: var(--mapp-sub-text, #888);
+	margin-bottom: 12px;
+}
+
+/* ===== FOLDER ICON ROW ===== */
+.mapp-folder-icon-row {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+/* ===== Folder icon picker ===== */
+.mapp-folder-icon-picker-overlay {
+	z-index: 10070;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+}
+
+.mapp-folder-icon-picker {
+	width: 100%;
+	max-width: 340px;
+	max-height: min(90vh, 520px);
+	display: flex;
+	flex-direction: column;
+	background: var(--m-menu-bg, var(--mapp-sidebar-bg, #fff));
+	color: var(--m-menu-text, var(--mapp-text, #1a1a1a));
+	border-radius: 14px;
+	border: 1px solid var(--mapp-border, #e5e5e5);
+	box-shadow: 0 12px 40px rgba(0, 0, 0, .28);
+	overflow: hidden;
+	animation: mapp-avatar-src-in .18s ease;
+}
+
+.mapp-folder-icon-picker-title {
+	padding: 16px 16px 8px;
+	font-size: 16px;
+	font-weight: 600;
+	text-align: center;
+}
+
+.mapp-folder-icon-picker-tabs {
+	display: flex;
+	padding: 0 12px;
+	gap: 4px;
+	border-bottom: 1px solid var(--mapp-border, #e5e5e5);
+	flex-shrink: 0;
+}
+
+.mapp-folder-icon-picker-tabs .mapp-modal-tab {
+	flex: 1;
+	text-align: center;
+	padding: 8px 10px;
+	font-size: 13px;
+	background: transparent !important;
+	border: none;
+	border-bottom: 2px solid transparent;
+	border-radius: 0;
+	color: var(--mapp-sub-text, #666);
+	cursor: pointer;
+}
+
+.mapp-folder-icon-picker-tabs .mapp-modal-tab--active {
+	color: var(--mapp-text, #1a1a1a);
+	font-weight: 600;
+	border-bottom-color: var(--m-accent, var(--mapp-accent, #4a7fc1));
+}
+
+.mapp-folder-icon-picker-panel {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	padding: 12px 14px;
+	-webkit-overflow-scrolling: touch;
+}
+
+.mapp-folder-icon-picker-emoji-grid,
+.mapp-folder-icon-picker-svg-grid {
+	display: grid;
+	grid-template-columns: repeat(6, 1fr);
+	gap: 6px;
+}
+
+.mapp-folder-icon-picker-cell {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 40px;
+	padding: 4px;
+	border: 1px solid var(--mapp-border, #e5e5e5);
+	border-radius: 8px;
+	background: var(--mapp-sidebar-bg, #fafafa);
+	cursor: pointer;
+	font-size: 22px;
+	line-height: 1;
+	transition: background 120ms, border-color 120ms;
+}
+
+.mapp-folder-icon-picker-cell:hover {
+	background: var(--mapp-hover, #f0f0f0);
+}
+
+.mapp-folder-icon-picker-cell--active {
+	border-color: var(--m-accent, var(--mapp-accent, #4a7fc1));
+	background: var(--mapp-item-active-bg, #e8f0fe);
+}
+
+.mapp-folder-icon-picker-cell--svg svg {
+	display: block;
+	width: 22px;
+	height: 22px;
+}
+
+.mapp-folder-icon-picker-custom {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid var(--mapp-border, #e5e5e5);
+	font-size: 13px;
+	color: var(--mapp-sub-text, #666);
+}
+
+.mapp-folder-icon-picker-custom-input {
+	width: 52px;
+	padding: 8px;
+	font-size: 20px;
+	text-align: center;
+	border: 1px solid var(--mapp-border, #ccc);
+	border-radius: 8px;
+	background: var(--mapp-sidebar-bg, #fff);
+}
+
+.mapp-folder-icon-picker-custom-apply {
+	padding: 8px 12px;
+	border: none;
+	border-radius: 8px;
+	background: var(--m-accent, var(--mapp-accent, #4a7fc1));
+	color: #fff;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.mapp-folder-icon-picker-cancel {
+	margin: 0 14px 14px;
+	padding: 11px;
+	border: none;
+	border-radius: 10px;
+	background: var(--mapp-hover, #eee);
+	color: var(--mapp-text, #1a1a1a);
+	font-size: 14px;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.mapp-folder-icon-choose-row .mapp-section-label {
+	padding: 8px 0 6px;
+	font-size: 13px;
+	color: var(--mapp-sub-text, #666);
+}
+
+.mapp-folder-icon-choose-btn {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid var(--mapp-border, #ccc);
+	border-radius: 8px;
+	background: var(--mapp-sidebar-bg, #fafafa);
+	cursor: pointer;
+	font: inherit;
+	color: inherit;
+	text-align: left;
+}
+
+.mapp-folder-icon-choose-btn:hover {
+	background: var(--mapp-hover, #f0f0f0);
+}
+
+.mapp-folder-icon-choose-preview {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 32px;
+	min-height: 32px;
+	font-size: 22px;
+}
+
+.mapp-folder-icon-choose-preview svg {
+	display: block;
+	width: 22px;
+	height: 22px;
+}
+
+.mapp-folder-settings-icon--pick {
+	cursor: pointer;
+	border-radius: 6px;
+	padding: 2px 4px;
+	transition: background 120ms;
+}
+
+.mapp-folder-settings-icon--pick:hover {
+	background: var(--mapp-hover, #eee);
+}
+
+/* ===== SEARCH INPUT RIGHT PADDING FIX ===== */
+.mapp-search-input {
+	padding-right: 36px;
+}
+
+/* ===== SIDEBAR MAIN COLUMN ===== */
+.mapp-sidebar-main {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+}
+
+/* ===== PRESENCE DOT ===== */
+.mc-avatar-wrap {
+	position: relative;
+	display: inline-flex;
+	flex-shrink: 0;
+}
+.mc-presence-dot {
+	position: absolute;
+	right: -1px;
+	bottom: -1px;
+	width: 11px;
+	height: 11px;
+	border-radius: 50%;
+	border: 2px solid var(--mapp-sidebar-bg, #fff);
+	box-sizing: border-box;
+}
+.mc-presence-dot--online {
+	background: #34c759;
+}
+.mc-presence-dot--idle {
+	background: #ffcc00;
+}
+
+.mapp-network-dot {
+	position: absolute;
+	right: -1px;
+	bottom: -1px;
+	width: 11px;
+	height: 11px;
+	border-radius: 50%;
+	border: 2px solid var(--mapp-sidebar-bg, #fff);
+	box-sizing: border-box;
+	z-index: 1;
+}
+.mapp-network-dot--connected {
+	background: #34c759;
+}
+.mapp-network-dot--offline {
+	background: #9e9e9e;
+	cursor: pointer;
+}
+.mapp-network-dot--connecting {
+	background: transparent;
+	border-color: var(--mapp-sidebar-bg, #fff);
+	border-top-color: #9e9e9e;
+	border-right-color: rgba(158, 158, 158, .35);
+	border-bottom-color: rgba(158, 158, 158, .35);
+	border-left-color: rgba(158, 158, 158, .35);
+	animation: mc-spin .7s linear infinite;
+}
+
+.mapp-network-error-tip {
+	position: absolute;
+	left: 50%;
+	bottom: calc(100% + 8px);
+	transform: translateX(-50%);
+	min-width: 180px;
+	max-width: 240px;
+	padding: 8px 10px;
+	border-radius: 8px;
+	background: rgba(28, 28, 30, .94);
+	color: #fff;
+	font-size: 12px;
+	line-height: 1.35;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+	z-index: 20;
+	pointer-events: none;
+	white-space: normal;
+	text-align: center;
+}
+.mapp-network-error-tip::after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	top: 100%;
+	transform: translateX(-50%);
+	border: 6px solid transparent;
+	border-top-color: rgba(28, 28, 30, .94);
+}
+
+/* ===== AVATAR SOURCE PICKER ===== */
+.mapp-avatar-src-overlay {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.mapp-avatar-src-card {
+	width: 100%;
+	max-width: 320px;
+	background: var(--m-menu-bg, #fff);
+	color: var(--m-menu-text, #1a1a1a);
+	border-radius: 16px;
+	box-shadow: 0 12px 40px rgba(0, 0, 0, .22);
+	padding: 18px 16px 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	animation: mapp-avatar-src-in .18s ease;
+}
+@keyframes mapp-avatar-src-in {
+	from { opacity: 0; transform: translateY(8px) scale(.98); }
+	to { opacity: 1; transform: none; }
+}
+.mapp-avatar-src-title {
+	font-size: 16px;
+	font-weight: 600;
+	text-align: center;
+	margin-bottom: 4px;
+}
+.mapp-avatar-src-opt {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	padding: 12px 14px;
+	border: none;
+	border-radius: 10px;
+	background: var(--m-menu-hover, rgba(0, 0, 0, .04));
+	color: inherit;
+	font-size: 15px;
+	cursor: pointer;
+	text-align: left;
+}
+.mapp-avatar-src-opt:hover { background: var(--m-menu-hover-strong, rgba(0, 0, 0, .08)); }
+.mapp-avatar-src-opt-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	flex: 0 0 24px;
+	opacity: .8;
+}
+.mapp-avatar-src-cancel {
+	margin-top: 4px;
+	padding: 11px;
+	border: none;
+	border-radius: 10px;
+	background: transparent;
+	color: var(--m-accent, #4a7fc1);
+	font-size: 15px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+/* ===== CAMERA CAPTURE ===== */
+.mapp-camera-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 10080;
+	background: rgba(0, 0, 0, .92);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+}
+.mapp-camera-stage {
+	position: relative;
+	width: min(92vw, 70vh);
+	aspect-ratio: 1 / 1;
+	max-width: 520px;
+	border-radius: 16px;
+	overflow: hidden;
+	background: #000;
+	box-shadow: 0 8px 40px rgba(0, 0, 0, .5);
+}
+.mapp-camera-video {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+.mapp-camera-controls {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 36px;
+	margin-top: 28px;
+}
+.mapp-camera-btn {
+	width: 52px;
+	height: 52px;
+	border-radius: 50%;
+	border: none;
+	background: rgba(255, 255, 255, .14);
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	font-size: 30px;
+	line-height: 1;
+}
+.mapp-camera-btn:hover { background: rgba(255, 255, 255, .24); }
+.mapp-camera-shutter {
+	width: 72px;
+	height: 72px;
+	border-radius: 50%;
+	border: 4px solid rgba(255, 255, 255, .85);
+	background: #fff;
+	cursor: pointer;
+	box-shadow: 0 0 0 4px rgba(255, 255, 255, .18);
+	transition: transform .1s ease;
+}
+.mapp-camera-shutter:active { transform: scale(.92); }
+
+/* ===== Avatar crop editor ===== */
+.mapp-avatar-crop-overlay {
+	z-index: 10100;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+}
+
+.mapp-avatar-crop-dialog {
+	position: relative;
+	width: 100%;
+	max-width: 360px;
+	background: var(--m-menu-bg, var(--mapp-sidebar-bg, #fff));
+	color: var(--m-menu-text, var(--mapp-text, #1a1a1a));
+	border-radius: 14px;
+	padding: 18px 18px 16px;
+	box-shadow: 0 12px 40px rgba(0, 0, 0, .28);
+	border: 1px solid var(--mapp-border, #e5e5e5);
+}
+
+.mapp-avatar-crop-title {
+	margin: 0 0 6px;
+	font-size: 16px;
+	font-weight: 600;
+	text-align: center;
+}
+
+.mapp-avatar-crop-hint {
+	margin: 0 0 14px;
+	font-size: 12px;
+	line-height: 1.4;
+	text-align: center;
+	color: var(--mapp-sub-text, #666);
+}
+
+.mapp-avatar-crop-viewport {
+	position: relative;
+	width: 280px;
+	height: 280px;
+	margin: 0 auto;
+	overflow: hidden;
+	border-radius: 10px;
+	background: #1a1a1a;
+	touch-action: none;
+	user-select: none;
+	cursor: grab;
+}
+
+.mapp-avatar-crop-viewport:active {
+	cursor: grabbing;
+}
+
+.mapp-avatar-crop-img {
+	position: absolute;
+	top: 0;
+	left: 0;
+	max-width: none;
+	pointer-events: none;
+}
+
+.mapp-avatar-crop-mask {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background: rgba(0, 0, 0, 0.55);
+	-webkit-mask-image: radial-gradient(circle 140px at 50% 50%, transparent 139px, #000 140px);
+	mask-image: radial-gradient(circle 140px at 50% 50%, transparent 139px, #000 140px);
+}
+
+.mapp-avatar-crop-ring {
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	width: 280px;
+	height: 280px;
+	border-radius: 50%;
+	border: 2px solid rgba(255, 255, 255, 0.82);
+	box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+	pointer-events: none;
+}
+
+.mapp-avatar-crop-zoom-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 14px 0 16px;
+}
+
+.mapp-avatar-crop-zoom-label {
+	font-size: 13px;
+	color: var(--mapp-sub-text, #666);
+	flex-shrink: 0;
+}
+
+.mapp-avatar-crop-zoom {
+	flex: 1;
+	min-width: 0;
+	accent-color: var(--m-accent, var(--brand-accent, #4a7fc1));
+}
+
+.mapp-avatar-crop-actions {
+	display: flex;
+	gap: 10px;
+}
+
+.mapp-avatar-crop-cancel,
+.mapp-avatar-crop-apply {
+	flex: 1;
+	padding: 10px 14px;
+	border-radius: 10px;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	border: none;
+}
+
+.mapp-avatar-crop-cancel {
+	background: var(--mapp-hover, #eee);
+	color: var(--mapp-text, #1a1a1a);
+}
+
+.mapp-avatar-crop-apply {
+	background: var(--m-accent, var(--brand-accent, #4a7fc1));
+	color: #fff;
+}
+
+.mapp-avatar-crop-apply:disabled {
+	opacity: .55;
+	cursor: default;
+}
+
+.mapp-avatar-crop-busy {
+	position: absolute;
+	inset: 0;
+	z-index: 5;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	background: rgba(255, 255, 255, .72);
+	border-radius: inherit;
+}
+
+.mapp-avatar-crop-busy-text {
+	font-size: 14px;
+	color: var(--mapp-sub-text, #666);
+}
+
+/* ===== FOLDER SETTINGS ===== */
+.mapp-settings-content {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 12px 0 16px;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.mapp-settings-content .mapp-ui-card {
+	margin-left: 16px;
+	margin-right: 16px;
+}
+
+.mapp-settings-content .mapp-settings-action-menu {
+	width: 100%;
+}
+.mapp-folder-settings {
+	margin-top: 8px;
+	padding-top: 12px;
+	border-top: 1px solid var(--mapp-border, #e5e5e5);
+}
+.mapp-folder-settings-hint {
+	font-size: 12px;
+	color: var(--mapp-sub-text, #888);
+	margin: 4px 0 10px;
+}
+.mapp-folder-settings-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.mapp-folder-settings-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 10px;
+	border: 1px solid var(--mapp-border, #e5e5e5);
+	border-radius: 8px;
+	background: var(--mapp-sidebar-bg, #fafafa);
+	cursor: grab;
+}
+.mapp-folder-settings-item--dragging {
+	opacity: .55;
+}
+.mapp-folder-settings-item--over {
+	border-color: var(--mapp-accent, #2196f3);
+}
+.mapp-folder-settings-grip {
+	opacity: .45;
+	font-size: 12px;
+	user-select: none;
+}
+.mapp-folder-settings-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+}
+.mapp-folder-settings-name {
+	flex: 1;
+	text-align: left;
+	font: inherit;
+	color: var(--mapp-text, #1a1a1a);
+	cursor: text;
+	padding: 2px 4px;
+	border-radius: 4px;
+	min-width: 0;
+	outline: none;
+}
+.mapp-folder-settings-name--editing {
+	background: var(--mapp-hover, #f0f0f0);
+	box-shadow: 0 0 0 1px var(--mapp-accent, #2196f3);
+	cursor: text;
+	user-select: all;
+}
+.mapp-folder-settings-delete {
+	flex-shrink: 0;
+	width: 28px;
+	height: 28px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	color: var(--mapp-sub-text, #888);
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+}
+.mapp-folder-settings-delete:hover {
+	background: var(--mapp-hover, #f0f0f0);
+	color: #c62828;
+}
+
+/* ===== CONTACT PROFILE ===== */
+.mapp-contact-profile-body {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	padding: 8px 16px 20px;
+}
+.mapp-contact-profile-avatar-wrap {
+	margin-bottom: 12px;
+	cursor: default;
+}
+.mapp-contact-profile-avatar-wrap--photo {
+	cursor: zoom-in;
+}
+.mapp-contact-profile-avatar-wrap .mc-avatar {
+	margin: 0 auto;
+}
+.mapp-contact-profile-name {
+	font-size: 18px;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+.mapp-contact-profile-login {
+	font-size: 14px;
+	color: var(--mapp-sub-text, #888);
+	margin-bottom: 8px;
+}
+.mapp-contact-profile-status {
+	font-size: 13px;
+	color: var(--mapp-sub-text, #666);
+	max-width: 280px;
+	word-break: break-word;
+}
+.mapp-contact-profile-about {
+	font-size: 14px;
+	color: var(--mapp-text, #333);
+	max-width: 320px;
+	line-height: 1.45;
+	word-break: break-word;
+	margin-top: 4px;
+}
+
+/* ===== SCROLL LOCK (modals) ===== */
+body.mapp-scroll-lock {
+	overflow: hidden;
+	position: fixed;
+	width: 100%;
+	height: 100%;
+}
+body.mapp-scroll-lock .mapp-root {
+	overflow: hidden;
+	overscroll-behavior: none;
+	touch-action: none;
+}
+
+/* ===== NO SELECT / NO BROWSER HIGHLIGHTS (кроме сообщений и полей ввода) ===== */
+.mapp-root,
+.mapp-modal,
+.mc-panel-window,
+.mapp-modal-overlay,
+.mapp-sheet-overlay,
+.mapp-avatar-viewer-overlay,
+.mapp-avatar-src-overlay,
+.mc-img-viewer,
+.mapp-root .mc-root {
+	-webkit-tap-highlight-color: transparent;
+	tap-highlight-color: transparent;
+	-webkit-touch-callout: none;
+}
+
+.mapp-root,
+.mapp-modal,
+.mc-panel-window,
+.mapp-modal-overlay,
+.mapp-sheet-overlay,
+.mapp-root .mc-root {
+	user-select: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+}
+
+.mapp-root *:not(.mc-msg-text):not(.mapp-selectable-text)::selection,
+.mapp-modal *:not(.mc-msg-text):not(.mapp-selectable-text)::selection,
+.mc-panel-window *:not(.mc-msg-text):not(.mapp-selectable-text)::selection,
+.mapp-modal-overlay *:not(.mc-msg-text):not(.mapp-selectable-text)::selection,
+.mapp-sheet-overlay *:not(.mc-msg-text):not(.mapp-selectable-text)::selection,
+.mapp-root .mc-root *:not(.mc-msg-text):not(.mapp-selectable-text)::selection {
+	background: transparent;
+	color: inherit;
+}
+
+.mapp-root *:not(.mc-msg-text):not(.mapp-selectable-text)::-moz-selection,
+.mapp-modal *:not(.mc-msg-text):not(.mapp-selectable-text)::-moz-selection,
+.mc-panel-window *:not(.mc-msg-text):not(.mapp-selectable-text)::-moz-selection,
+.mapp-modal-overlay *:not(.mc-msg-text):not(.mapp-selectable-text)::-moz-selection,
+.mapp-sheet-overlay *:not(.mc-msg-text):not(.mapp-selectable-text)::-moz-selection,
+.mapp-root .mc-root *:not(.mc-msg-text):not(.mapp-selectable-text)::-moz-selection {
+	background: transparent;
+	color: inherit;
+}
+
+.mapp-selectable-text,
+.mapp-root input,
+.mapp-root textarea,
+.mapp-root [contenteditable="true"],
+.mapp-modal input,
+.mapp-modal textarea,
+.mapp-modal [contenteditable="true"],
+.mc-root input,
+.mc-root textarea {
+	user-select: text;
+	-webkit-user-select: text;
+	-moz-user-select: text;
+	-webkit-touch-callout: default;
+}
+
+.mc-image-upload-progress {
+	margin-top: 0;
+	border-radius: 0 0 10px 10px;
+}
+
+.mc-file-upload-bubble .mc-msg-footer {
+	padding: 2px 8px 4px;
+}
+
+/* Подсветка сообщения над нижним меню: тёмная маска с прозрачным "окном". */
+.mc-msg-spotlight {
+	position: fixed;
+	z-index: 10048;
+	border-radius: 16px;
+	pointer-events: none;
+	box-shadow: 0 0 0 9999px rgba(0, 0, 0, .58);
+	outline: 1px solid rgba(255, 255, 255, .12);
+	transition: box-shadow .18s ease;
+}
+
+.mapp-sheet-overlay--spotlight {
+	background: transparent;
+}
+
+/* Выделение текста сообщений — только на десктопе (мышь, точный указатель). */
+@media (hover: hover) and (pointer: fine) {
+	.mapp-root .mc-msg-text,
+	.mapp-root .mc-msg-text *,
+	.mapp-chat-panel .mc-msg-text,
+	.mapp-chat-panel .mc-msg-text *,
+	.mc-panel-window .mc-msg-text,
+	.mc-panel-window .mc-msg-text *,
+	.mc-root .mc-msg-text,
+	.mc-root .mc-msg-text * {
+		user-select: text !important;
+		-webkit-user-select: text !important;
+		-moz-user-select: text !important;
+		-webkit-touch-callout: default;
+		cursor: text;
+	}
+
+	.mc-msg-text::selection,
+	.mc-msg-text *::selection {
+		background: rgba(74, 127, 193, 0.35) !important;
+		color: inherit !important;
+	}
+
+	.mc-msg-text::-moz-selection,
+	.mc-msg-text *::-moz-selection {
+		background: rgba(74, 127, 193, 0.35) !important;
+		color: inherit !important;
+	}
+}
+
+@media (pointer: coarse) {
+	.mapp-root .mc-msg-text,
+	.mapp-chat-panel .mc-msg-text,
+	.mc-root .mc-msg-text {
+		user-select: none;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-webkit-touch-callout: none;
+	}
+}
+
+.mapp-settings-hint {
+	font-size: 12px;
+	color: var(--mapp-sub-text, #888);
+	margin: 4px 0 12px;
+	line-height: 1.4;
+}
+
+.mapp-chat-send-on-enter-field {
+	margin-top: 16px;
+}
+
+.mc-msg-text::selection,
+.mapp-selectable-text::selection,
+.mapp-root input::selection,
+.mapp-root textarea::selection,
+.mapp-root [contenteditable="true"]::selection,
+.mapp-modal input::selection,
+.mapp-modal textarea::selection,
+.mapp-modal [contenteditable="true"]::selection,
+.mc-root input::selection,
+.mc-root textarea::selection {
+	background: rgba(74, 127, 193, 0.28);
+	color: inherit;
+}
+
+.mc-msg-text::-moz-selection,
+.mapp-selectable-text::-moz-selection,
+.mapp-root input::-moz-selection,
+.mapp-root textarea::-moz-selection,
+.mapp-modal input::-moz-selection,
+.mapp-modal textarea::-moz-selection,
+.mc-root input::-moz-selection,
+.mc-root textarea::-moz-selection {
+	background: rgba(74, 127, 193, 0.28);
+	color: inherit;
+}
+
+.mapp-root button,
+.mapp-root [role="button"],
+.mapp-root a,
+.mapp-modal button,
+.mapp-modal [role="button"],
+.mapp-modal a,
+.mc-root button,
+.mc-root a,
+.mc-panel-window button,
+.mapp-sheet-item,
+.mapp-settings-nav-item,
+.mapp-settings-header-back,
+.mapp-folder-tab,
+.mapp-modal-tab,
+.mc-action-menu-item,
+.mc-dots-btn,
+.mc-back-btn,
+.mc-panel-window-close,
+.mapp-search-toggle-btn,
+.mapp-bottom-sheet button {
+	outline: none;
+	-webkit-tap-highlight-color: transparent;
+	tap-highlight-color: transparent;
+}
+
+.mapp-root button::-moz-focus-inner,
+.mapp-modal button::-moz-focus-inner,
+.mc-root button::-moz-focus-inner,
+.mc-panel-window button::-moz-focus-inner {
+	border: 0;
+	padding: 0;
+}
+
+.mapp-root button:focus,
+.mapp-root button:focus-visible,
+.mapp-root [role="button"]:focus,
+.mapp-root [role="button"]:focus-visible,
+.mapp-root a:focus,
+.mapp-root a:focus-visible,
+.mapp-modal button:focus,
+.mapp-modal button:focus-visible,
+.mc-root button:focus,
+.mc-root button:focus-visible,
+.mc-root a:focus,
+.mc-root a:focus-visible,
+.mapp-folder-tab:focus,
+.mapp-folder-tab:focus-visible,
+.mapp-settings-nav-item:focus,
+.mapp-settings-nav-item:focus-visible,
+.mapp-sheet-item:focus,
+.mapp-sheet-item:focus-visible {
+	outline: none;
+	box-shadow: none;
+}
+
+.mapp-root input:focus,
+.mapp-root input:focus-visible,
+.mapp-root textarea:focus,
+.mapp-root textarea:focus-visible,
+.mapp-modal input:focus,
+.mapp-modal textarea:focus,
+.mc-root input:focus,
+.mc-root textarea:focus {
+	outline: none;
+	box-shadow: none;
+}
+
+/* ===== SEARCH TOGGLE ===== */
+.mapp-search-row {
+	display: flex;
+	align-items: center;
+	padding: 0 10px 8px;
+	width: 100%;
+	box-sizing: border-box;
+}
+.mapp-search-row--collapsed {
+	display: none;
+}
+.mapp-search-row .mapp-search-wrap {
+	flex: 1;
+	width: 100%;
+	min-width: 0;
+}
+.mapp-search-row .mapp-search-input {
+	width: 100%;
+	box-sizing: border-box;
+	padding-right: 32px;
+}
+.mapp-search-toggle-btn {
+	flex-shrink: 0;
+	width: 34px;
+	height: 34px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	color: var(--mapp-sub-text, #888);
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.mapp-search-toggle-btn:hover {
+	background: var(--mapp-hover, #f0f0f0);
+}
+.mapp-search-wrap {
+	flex: 1;
+	min-width: 0;
+	transition: max-width .2s ease, opacity .2s ease;
+}
+.mapp-search-wrap--collapsed {
+	max-width: 0;
+	opacity: 0;
+	overflow: hidden;
+	pointer-events: none;
+	flex: 0;
+}
+
+/* ===== FOLDER TAB BADGE ===== */
+.mapp-folder-tab-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	margin-left: 4px;
+	border-radius: 9px;
+	font-size: 11px;
+	font-weight: 600;
+	background: var(--mapp-accent, #2196f3);
+	color: #fff;
+	line-height: 1;
+}
+.mapp-folder-tab--active .mapp-folder-tab-badge {
+	background: rgba(255,255,255,.25);
+	color: #fff;
+}
+
+/* ===== FOLDER ICONS: desktop only ===== */
+.mapp-folder-tab-icon {
+	display: none;
+}
+@media (min-width: 1200px) {
+	.mapp-root.mapp-desktop .mapp-folder-tab-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+}
+
+/* ===== PRIVACY PICKER ROW ===== */
+.mapp-privacy-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-left: 20px;
+	padding-right: 20px;
+	padding-bottom: 10px;
+	gap: 12px;
+	border-bottom: 1px solid var(--mapp-border, #eee);
+}
+.mapp-privacy-row-label {
+	flex: 1;
+	font-size: 14px;
+}
+.mapp-privacy-picker {
+	border: none;
+	background: transparent;
+	font: inherit;
+	color: var(--mapp-text, #333);
+	cursor: pointer;
+	padding: 4px 20px 4px 4px;
+	appearance: none;
+	-webkit-appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 2px center;
+	text-align: right;
+}
+.mapp-privacy-picker:focus {
+	outline: none;
+}
+
+/* ===== FOLDER SETTINGS SPACING ===== */
+.mapp-folder-settings {
+	padding: 16px;
+	margin-top: 16px;
+	border-top: 1px solid var(--mapp-border, #e5e5e5);
+}
+.mapp-folder-settings-title {
+	font-size: 14px;
+	font-weight: 600;
+	margin-bottom: 4px;
+	color: var(--mapp-text, #1a1a1a);
+}
+.mapp-folder-settings-hint {
+	font-size: 12px;
+	color: var(--mapp-sub-text, #888);
+	margin: 0 0 10px;
+	line-height: 1.4;
+}
+.mapp-folder-settings-archive-btn {
+	display: block;
+	width: 100%;
+	margin-bottom: 12px;
+	padding: 8px 12px;
+	border: 1px solid var(--mapp-border, #e0e0e0);
+	border-radius: 8px;
+	background: var(--mapp-sidebar-bg, #fafafa);
+	color: var(--mapp-text, #1a1a1a);
+	font: inherit;
+	cursor: pointer;
+	text-align: left;
+}
+.mapp-folder-settings-create-btn {
+	display: block;
+	width: 100%;
+	margin-top: 8px;
+	padding: 8px 12px;
+	border: 1px dashed var(--mapp-border, #e0e0e0);
+	border-radius: 8px;
+	background: transparent;
+	color: var(--mapp-text, #1a1a1a);
+	font: inherit;
+	cursor: pointer;
+	text-align: left;
+}
+.mapp-folder-settings-create-btn:hover {
+	background: var(--mapp-hover, #f0f0f0);
+}
+.mapp-profile-unified-footer {
+	border-top: 1px solid var(--mapp-border, #e5e5e5);
+	padding: 12px 16px;
+	flex-shrink: 0;
+}
+.mapp-profile-window-content {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	flex: 1;
+}
+
+/* ===== PRESENCE DOT FIX ===== */
+.mc-avatar-wrap {
+	position: relative;
+	display: inline-flex;
+	flex-shrink: 0;
+	vertical-align: middle;
+}
+.mc-presence-dot {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	border: 2px solid var(--mapp-sidebar-bg, #fff);
+	box-sizing: border-box;
+	z-index: 5;
+	pointer-events: none;
+}
+
+/* ===== GROUP PROFILE ===== */
+.mapp-group-profile-content {
+	padding: 0 16px 12px;
+}
+.mapp-group-members-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 12px;
+	max-height: 220px;
+	overflow-y: auto;
+}
+.mapp-group-member-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 6px 4px;
+	border-radius: 8px;
+}
+.mapp-group-member-row:hover {
+	background: var(--mapp-hover, #f0f0f0);
+}
+.mapp-group-member-meta {
+	flex: 1;
+	min-width: 0;
+}
+.mapp-group-member-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-top: 2px;
+}
+.mapp-group-member-badge {
+	font-size: 11px;
+	padding: 1px 6px;
+	border-radius: 4px;
+	background: var(--mapp-accent, #2196f3);
+	color: #fff;
+}
+.mapp-group-member-actions {
+	display: flex;
+	flex-direction: row;
+	gap: 4px;
+	flex-shrink: 0;
+	align-items: center;
+}
+.mapp-group-member-icon-btn {
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: 1px solid var(--mapp-border, #e0e0e0);
+	border-radius: 8px;
+	background: transparent;
+	cursor: pointer;
+	color: var(--mapp-sub-text, #666);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+.mapp-group-member-icon-btn:hover {
+	background: var(--mapp-hover, #f0f0f0);
+	color: var(--mapp-text, #333);
+}
+.mapp-group-member-icon-btn--active {
+	color: var(--mapp-accent, #2196f3);
+	border-color: rgba(33, 150, 243, .45);
+	background: rgba(33, 150, 243, .08);
+}
+.mapp-group-member-icon-btn--danger:hover {
+	color: #c62828;
+	border-color: rgba(198, 40, 40, .35);
+}
+.mapp-group-member-action-btn {
+	font-size: 11px;
+	padding: 4px 8px;
+	border: 1px solid var(--mapp-border, #e0e0e0);
+	border-radius: 6px;
+	background: transparent;
+	cursor: pointer;
+	color: var(--mapp-text, #333);
+	white-space: nowrap;
+}
+.mapp-group-member-action-btn--danger {
+	color: #c62828;
+	border-color: rgba(198, 40, 40, .35);
+}
+.mapp-group-add-list {
+	max-height: 160px;
+	overflow-y: auto;
+	margin-bottom: 8px;
+}
+.mapp-group-add-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 4px;
+}
+
+/* ─── Shared utilities (prefer classes over inline styles) ─── */
+
+.mc-avatar-wrap {
+	width: var(--mc-avatar-size, 40px);
+	height: var(--mc-avatar-size, 40px);
+	min-width: var(--mc-avatar-size, 40px);
+}
+
+.mapp-sidebar-avatar-wrap {
+	--mc-avatar-size: 34px;
+}
+
+.mapp-empty[hidden],
+.mapp-placeholder[hidden] {
+	display: none !important;
+}
+
+.mc-reply-bar[hidden],
+.mc-select-bar[hidden],
+.mc-file-progress-wrap[hidden] {
+	display: none !important;
+}
+
+.mc-placeholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	font-family: sans-serif;
+	color: #888;
+}
+
+.mc-messages-status {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	color: var(--mapp-sub-text, #888);
+	font-size: 14px;
+	padding: 24px 16px;
+	min-height: 80px;
+}
+
+.mc-messages-status[hidden] {
+	display: none !important;
+}
+
+.mc-error {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	font-family: sans-serif;
+	color: #c00;
+	gap: 8px;
+}
+
+.mapp-hint-sm {
+	font-size: 12px;
+	color: var(--mapp-sub-text, #666);
+	margin: 0 0 10px;
+	line-height: 1.4;
+}
+
+.mapp-master-password-form {
+	margin-top: 20px;
+}
+
+.mapp-section-label--tight {
+	padding: 0 0 4px;
+}
+
+.mapp-section-label--spaced {
+	margin-top: 8px;
+}
+
+.mapp-profile-status-msg {
+	font-size: 13px;
+}
+
+.mapp-profile-status-msg--ok {
+	color: #2a7;
+}
+
+.mapp-profile-status-msg--err {
+	color: #c44;
+}
+
+.mapp-profile-status-text--ok {
+	color: #2a7;
+}
+
+.mapp-profile-status-text--err {
+	color: #c44;
+}
+
+.mc-cursor-pointer {
+	cursor: pointer;
+}
+
+.mc-camera-preview--mirror {
+	transform: scaleX(-1);
+}
+
+.mc-crop-viewport--no-events {
+	pointer-events: none;
+}
+
+.mc-file-input-hidden {
+	position: fixed;
+	top: -1000px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.mc-boot-error {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 100vh;
+	font-family: system-ui, sans-serif;
+	color: #444;
+	padding: 24px;
+	text-align: center;
+}
+
+.mc-boot-error a {
+	color: var(--brand-accent, #4a7fc1);
+}
+
+.mc-submenu-accordion {
+	overflow: hidden;
+	transition: max-height 260ms ease;
+}
+
+.mc-img-viewer-img--animate {
+	transition: transform 0.25s ease;
+}
+
+.mc-img-viewer-img--animate-fast {
+	transition: transform 0.2s ease;
+}
+
+.mc-img-viewer-overlay--pan {
+	touch-action: none;
+}
+
+.mc-img-viewer-img--pan {
+	touch-action: none;
+}
+
+.mc-keyboard-lock {
+	position: fixed;
+	top: 0;
+	left: 0;
+	overflow: hidden;
+	min-height: 0;
+	height: var(--mc-lock-height, 100%);
+	max-height: var(--mc-lock-height, 100%);
+	width: var(--mc-lock-width, 100%);
+	transform: var(--mc-lock-transform, none);
+}
+
+/* ===== UI KIT: settings, groups, contact search (reference layout) ===== */
+
+.mapp-profile-form-page {
+	padding: 12px 0 24px;
+	box-sizing: border-box;
+}
+
+.mapp-ui-card {
+	margin: 0 16px 12px;
+	background: var(--mapp-sidebar-bg, #fff);
+	border-radius: 18px;
+	border: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+	overflow: hidden;
+	transition: background .22s ease, border-color .22s ease;
+}
+
+.mapp-ui-card-title {
+	padding: 12px 16px 6px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	color: var(--mapp-accent, #4a7fc1);
+}
+
+.mapp-ui-card:empty,
+.mapp-ui-card:not(:has(.mapp-ui-card-title)) {
+	padding-top: 0;
+}
+
+.mapp-settings-nav-card {
+	margin: 20px 16px 8px;
+	align-self: stretch;
+	width: auto;
+}
+
+.mapp-settings-nav-card .mapp-settings-nav-list {
+	margin-top: 0;
+	border-top: none;
+	width: 100%;
+}
+
+.mapp-settings-nav-item {
+	padding: 14px 16px;
+	border-bottom: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+	transition: background .18s ease;
+}
+
+.mapp-settings-nav-item:last-child {
+	border-bottom: none;
+}
+
+.mapp-settings-nav-chevron {
+	font-size: 18px;
+	opacity: .45;
+}
+
+.mapp-ui-form-field {
+	padding: 10px 16px 12px;
+	border-bottom: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+}
+
+.mapp-ui-form-field:last-child {
+	border-bottom: none;
+}
+
+.mapp-ui-field-label {
+	display: block;
+	font-size: 11px;
+	font-weight: 500;
+	color: var(--mapp-sub-text, #888);
+	margin-bottom: 6px;
+}
+
+.mapp-ui-card .mapp-profile-field {
+	gap: 0;
+	padding: 10px 16px 12px;
+	border-bottom: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+}
+
+.mapp-ui-card .mapp-profile-field:last-child {
+	border-bottom: none;
+}
+
+.mapp-ui-card .mapp-section-label--tight,
+.mapp-ui-card .mapp-ui-field-label {
+	padding: 0;
+	margin-bottom: 6px;
+	opacity: 1;
+	letter-spacing: 0;
+	text-transform: none;
+	font-size: 11px;
+	font-weight: 500;
+	color: var(--mapp-sub-text, #888);
+}
+
+input.mapp-field-input,
+textarea.mapp-field-input,
+select.mapp-field-input,
+input.mapp-profile-field-input,
+textarea.mapp-profile-field-input,
+select.mapp-profile-field-input,
+.mapp-modal input.mapp-field-input,
+.mapp-modal input.mapp-profile-field-input,
+.mapp-modal textarea.mapp-profile-field-input,
+.mc-panel-window--profile .mapp-profile-field > input.mapp-profile-field-input,
+.mc-panel-window--group-profile .mapp-profile-field > input.mapp-profile-field-input,
+.mc-panel-window--profile .mapp-profile-field > textarea.mapp-profile-field-input,
+.mc-panel-window--group-profile .mapp-profile-field > textarea.mapp-profile-field-input,
+.mapp-ui-card .mapp-profile-field > input.mapp-profile-field-input,
+.mapp-ui-card .mapp-profile-field > textarea.mapp-profile-field-input,
+.mapp-ui-card > input.mapp-field-input,
+.mapp-ui-card > input.mapp-profile-field-input,
+.mc-dialog .mc-dialog-input {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 11px 14px;
+	font-size: 14px;
+	line-height: 1.4;
+	border: 1.5px solid transparent;
+	border-radius: 12px;
+	background: var(--mapp-input-bg, #f0f2f5);
+	color: var(--mapp-input-text, #1a1a1a);
+	font-family: inherit;
+	resize: vertical;
+	min-height: 44px;
+	transition: border-color .22s ease, box-shadow .22s ease, background .22s ease;
+}
+
+input.mapp-field-input:focus,
+textarea.mapp-field-input:focus,
+input.mapp-profile-field-input:focus,
+textarea.mapp-profile-field-input:focus,
+.mapp-modal input.mapp-field-input:focus,
+.mapp-modal input.mapp-profile-field-input:focus,
+.mc-panel-window--profile .mapp-profile-field > input.mapp-profile-field-input:focus,
+.mc-panel-window--group-profile .mapp-profile-field > input.mapp-profile-field-input:focus,
+.mapp-ui-card .mapp-profile-field > input.mapp-profile-field-input:focus,
+.mapp-ui-card .mapp-profile-field > textarea.mapp-profile-field-input:focus,
+.mc-dialog .mc-dialog-input:focus {
+	outline: none;
+	border-color: var(--mapp-accent, #4a7fc1);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--mapp-accent, #4a7fc1) 22%, transparent);
+}
+
+.mapp-profile-field-input--error,
+.mapp-profile-field-input--error:focus {
+	border-color: #e53935 !important;
+	box-shadow: 0 0 0 3px rgba(229, 57, 53, .15) !important;
+}
+
+.mapp-profile-field-input--success,
+.mapp-profile-field-input--success:focus {
+	border-color: #2e7d5a !important;
+	box-shadow: 0 0 0 3px rgba(46, 125, 90, .15) !important;
+}
+
+.mapp-input-hint {
+	font-size: 11px;
+	line-height: 1.45;
+	margin-top: 5px;
+	color: var(--mapp-sub-text, #888);
+}
+
+.mapp-input-hint--err {
+	color: #e53935;
+}
+
+.mapp-input-hint--ok {
+	color: #2e7d5a;
+}
+
+.mapp-ui-card > .mapp-input-hint,
+.mapp-ui-card > .mapp-group-section-hint {
+	padding: 0 16px 10px;
+	margin-top: 0;
+}
+
+.mapp-profile-password-field {
+	position: relative;
+	width: 100%;
+	margin: 0;
+}
+
+.mapp-profile-password-field .mc-dialog-input,
+.mapp-profile-password-field input.mapp-profile-field-input {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	margin: 0;
+	padding: 11px 44px 11px 14px;
+	font-size: 14px;
+	line-height: 1.4;
+	min-height: 44px;
+	resize: none;
+	border: 1.5px solid transparent;
+	border-radius: 12px;
+	background: var(--mapp-input-bg, #f0f2f5);
+	color: var(--mapp-input-text, #1a1a1a);
+	font-family: inherit;
+	-webkit-appearance: none;
+	appearance: none;
+	transition: border-color .22s ease, box-shadow .22s ease, background .22s ease;
+}
+
+.mapp-profile-password-field .mc-dialog-input:focus,
+.mapp-profile-password-field input.mapp-profile-field-input:focus {
+	outline: none;
+	border-color: var(--mapp-accent, #4a7fc1);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--mapp-accent, #4a7fc1) 22%, transparent);
+}
+
+.mapp-profile-password-field .mc-password-toggle {
+	position: absolute;
+	right: 4px;
+	top: 50%;
+	transform: translateY(-50%);
+	margin: 0;
+	width: 36px;
+	height: 36px;
+	min-width: 36px;
+}
+
+.mapp-ui-card .mapp-toggle-row--flush-next {
+	border-bottom: none;
+}
+
+.mapp-master-password-hint {
+	padding: 0 16px 12px;
+	font-size: 11px;
+	line-height: 1.45;
+	color: var(--mapp-sub-text, #888);
+	border-bottom: none;
+}
+
+.mapp-master-password-hint--with-fields {
+	border-bottom: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+	padding-bottom: 10px;
+	margin-bottom: 0;
+}
+
+.mapp-ui-card .mapp-app-html-content {
+	padding: 4px 16px 16px;
+	font-size: 14px;
+	line-height: 1.55;
+	color: var(--mapp-text, #333);
+}
+
+.mapp-ui-card .mapp-app-html-content--empty {
+	padding: 12px 16px 16px;
+	font-style: italic;
+	color: var(--mapp-sub-text, #888);
+}
+
+.mapp-ui-card .mapp-about-version-line {
+	padding: 4px 16px 8px;
+	margin-bottom: 0;
+}
+
+.mapp-toggle-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 14px 16px;
+	border-bottom: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+}
+
+.mapp-toggle-row:last-child {
+	border-bottom: none;
+}
+
+.mapp-toggle-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.mapp-toggle-label {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--mapp-text, #1a1a1a);
+	line-height: 1.35;
+}
+
+.mapp-toggle-sub {
+	font-size: 11px;
+	color: var(--mapp-sub-text, #888);
+	margin-top: 2px;
+	line-height: 1.4;
+}
+
+.mapp-toggle-switch {
+	position: relative;
+	flex-shrink: 0;
+}
+
+.mapp-toggle-switch input {
+	position: absolute;
+	opacity: 0;
+	width: 0;
+	height: 0;
+	pointer-events: none;
+}
+
+.mapp-toggle-switch label {
+	display: block;
+	width: 48px;
+	height: 26px;
+	background: var(--mapp-input-bg, #e8e9f0);
+	border-radius: 9999px;
+	cursor: pointer;
+	transition: background .22s ease;
+	position: relative;
+}
+
+.mapp-toggle-switch label::after {
+	content: '';
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	background: var(--mapp-sub-text, #9090a8);
+	transition: transform .22s ease, background .22s ease;
+}
+
+.mapp-toggle-switch input:checked + label {
+	background: var(--mapp-accent, #4a7fc1);
+}
+
+.mapp-toggle-switch input:checked + label::after {
+	transform: translateX(22px);
+	background: #fff;
+}
+
+.mapp-toggle-switch input:focus-visible + label {
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--mapp-accent, #4a7fc1) 22%, transparent);
+}
+
+.mapp-ui-card .mapp-privacy-row {
+	padding: 12px 16px;
+	margin: 0;
+	border-bottom: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+}
+
+.mapp-ui-card .mapp-privacy-row:last-child {
+	border-bottom: none;
+}
+
+.mapp-ui-select,
+.mapp-privacy-picker {
+	border: 1.5px solid transparent;
+	border-radius: 12px;
+	background: var(--mapp-input-bg, #f0f2f5);
+	padding: 8px 28px 8px 12px;
+	font-size: 13px;
+	color: var(--mapp-text, #1a1a1a);
+}
+
+.mapp-theme-appearance {
+	width: 100%;
+}
+
+.mapp-theme-group-label {
+	padding: 6px 16px 4px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--mapp-sub-text, #888);
+}
+
+.mapp-theme-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
+	padding: 8px 16px 14px;
+}
+
+.mapp-theme-card {
+	display: flex;
+	flex-direction: column;
+	border: 2.5px solid transparent;
+	border-radius: 12px;
+	overflow: hidden;
+	cursor: pointer;
+	padding: 0;
+	background: none;
+	font: inherit;
+	text-align: left;
+	transition: border-color .22s ease, box-shadow .22s ease;
+	position: relative;
+}
+
+.mapp-theme-card--selected {
+	border-color: var(--mapp-accent, #4a7fc1);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--mapp-accent, #4a7fc1) 22%, transparent);
+}
+
+.mapp-theme-preview {
+	height: 70px;
+	display: flex;
+	flex-direction: column;
+	padding: 8px 10px;
+	gap: 5px;
+	overflow: hidden;
+}
+
+.mapp-theme-preview-bar {
+	height: 10px;
+	border-radius: 5px;
+	opacity: .9;
+	flex-shrink: 0;
+}
+
+.mapp-theme-preview-bar--accent {
+	opacity: .7;
+}
+
+.mapp-theme-preview-bubble-row {
+	display: flex;
+	gap: 5px;
+}
+
+.mapp-theme-preview-bubble-row--out {
+	justify-content: flex-end;
+}
+
+.mapp-theme-preview-bubble {
+	height: 8px;
+	border-radius: 4px;
+	flex-shrink: 0;
+}
+
+.mapp-theme-name {
+	font-size: 11px;
+	font-weight: 600;
+	padding: 5px 10px 7px;
+	line-height: 1.3;
+}
+
+.mapp-theme-check {
+	position: absolute;
+	top: 5px;
+	right: 5px;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: var(--mapp-accent, #4a7fc1);
+	display: none;
+	align-items: center;
+	justify-content: center;
+	z-index: 2;
+}
+
+.mapp-theme-check svg {
+	width: 10px;
+	height: 10px;
+	display: block;
+}
+
+.mapp-theme-card--selected .mapp-theme-check {
+	display: flex;
+}
+
+.mapp-contact-search-wrap,
+.mapp-modal-search-wrap {
+	padding: 10px 16px 8px;
+	min-width: 0;
+	box-sizing: border-box;
+}
+
+.mapp-contact-search-bar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	background: var(--mapp-input-bg, #f0f2f5);
+	border-radius: 9999px;
+	padding: 10px 16px;
+	border: 1.5px solid transparent;
+	transition: border-color .22s ease, box-shadow .22s ease;
+}
+
+.mapp-contact-search-bar:focus-within {
+	border-color: var(--mapp-accent, #4a7fc1);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--mapp-accent, #4a7fc1) 22%, transparent);
+}
+
+.mapp-contact-search-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	color: var(--mapp-sub-text, #888);
+	line-height: 0;
+}
+
+.mapp-contact-search-icon svg {
+	width: 16px;
+	height: 16px;
+	display: block;
+}
+
+.mapp-contact-search-input,
+.mapp-modal-search.mapp-contact-search-input {
+	flex: 1;
+	min-width: 0;
+	width: 100%;
+	background: none;
+	border: none;
+	outline: none;
+	padding: 0;
+	font-size: 14px;
+	color: var(--mapp-input-text, #1a1a1a);
+	font-family: inherit;
+}
+
+.mapp-contact-search-input::placeholder {
+	color: var(--mapp-sub-text, #aaa);
+}
+
+.mapp-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 12px 22px;
+	border-radius: 9999px;
+	font-size: 14px;
+	font-weight: 600;
+	transition: transform .15s ease, background .22s ease, box-shadow .22s ease, border-color .22s ease;
+	cursor: pointer;
+	border: none;
+	font-family: inherit;
+	box-sizing: border-box;
+}
+
+.mapp-btn:active {
+	transform: scale(.97);
+}
+
+.mapp-btn-block {
+	display: flex;
+	box-sizing: border-box;
+}
+
+.mc-panel-window--profile .mapp-btn-settings-wide,
+.mc-panel-window--settings .mapp-btn-settings-wide,
+.mapp-settings-content .mapp-btn-settings-wide {
+	display: flex;
+	width: calc(100% - 32px);
+	max-width: calc(100% - 32px);
+	margin: 10px 16px 14px;
+	box-sizing: border-box;
+	justify-content: center;
+	text-align: center;
+	align-self: center;
+}
+
+.mapp-profile-account-form {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+
+.mapp-profile-account-form > .mapp-btn-settings-wide {
+	margin-top: 4px;
+	margin-bottom: 12px;
+}
+
+.mapp-profile-login-change-wrap {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: 100%;
+}
+
+.mapp-profile-login-display-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.mapp-profile-login-display {
+	font-size: 15px;
+	color: var(--mapp-text-secondary, #667);
+}
+
+.mapp-profile-login-change-btn {
+	flex-shrink: 0;
+	padding: 6px 12px;
+	font-size: 13px;
+}
+
+.mapp-profile-login-cooldown-hint {
+	margin-top: 2px;
+}
+
+.mapp-profile-login-change-btn:disabled {
+	opacity: .5;
+	cursor: default;
+}
+
+.mapp-change-login-modal {
+	max-width: 400px;
+	width: calc(100% - 32px);
+}
+
+.mapp-change-login-modal-body {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 16px 20px;
+}
+
+.mapp-change-login-modal .mapp-modal-footer {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+}
+
+.mapp-btn-primary {
+	background: var(--mapp-accent, #4a7fc1);
+	color: #fff;
+	box-shadow: 0 4px 14px color-mix(in srgb, var(--mapp-accent, #4a7fc1) 28%, transparent);
+}
+
+.mapp-btn-primary:hover {
+	filter: brightness(1.05);
+}
+
+.mapp-btn-primary:disabled {
+	opacity: .55;
+	cursor: default;
+	transform: none;
+}
+
+.mapp-btn-secondary {
+	background: var(--mapp-input-bg, #f0f2f5);
+	color: var(--mapp-text, #1a1a1a);
+	border: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+}
+
+.mapp-btn-secondary:hover {
+	background: var(--mapp-hover, #ebebeb);
+}
+
+.mc-panel-window--profile .mapp-modal-create-btn:not(.mapp-btn),
+.mc-panel-window--settings .mapp-modal-create-btn:not(.mapp-btn) {
+	border-radius: 9999px;
+	font-weight: 600;
+}
+
+.mc-panel-window--profile .mapp-btn-logout,
+.mc-panel-window--group-profile .mapp-btn-logout {
+	padding: 12px 22px;
+	font-size: 14px;
+	font-weight: 600;
+	border-radius: 9999px;
+	border: 1px solid rgba(198, 40, 40, .35);
+	background: rgba(198, 40, 40, .08);
+	color: #c62828;
+	cursor: pointer;
+	font-family: inherit;
+}
+
+.mc-panel-window--profile .mapp-btn-logout:hover,
+.mc-panel-window--group-profile .mapp-btn-logout:hover {
+	background: rgba(198, 40, 40, .14);
+}
+
+.mapp-settings-action-menu.mc-action-menu,
+.mapp-settings-content .mapp-settings-action-menu {
+	border-radius: 0;
+	background: transparent;
+}
+
+.mapp-ui-card .mapp-settings-action-menu .mc-action-menu-item {
+	padding: 14px 16px;
+	border-bottom: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+	gap: 12px;
+}
+
+.mapp-ui-card .mapp-settings-action-menu .mc-action-menu-item:last-child {
+	border-bottom: none;
+}
+
+.mapp-ui-card .mapp-settings-action-menu .mc-action-menu-item:hover,
+.mapp-ui-card .mapp-settings-action-menu .mc-action-menu-item--open {
+	background: var(--mapp-hover, rgba(0, 0, 0, .04));
+}
+
+.mapp-group-profile-content {
+	padding: 0 0 12px;
+}
+
+.mc-panel-window--group-profile .mapp-profile-head {
+	padding: 16px 16px 8px;
+}
+
+.mapp-profile-head .mapp-profile-field,
+.mapp-profile-head .mapp-ui-form-field {
+	padding: 0;
+	border-bottom: none;
+}
+
+.mapp-group-link-section--in-card {
+	padding: 0 16px 12px;
+}
+
+.mapp-group-link-section--in-card .mapp-invite-row {
+	margin: 0;
+	border-radius: 12px;
+}
+
+.mapp-group-members-list {
+	max-height: none;
+	margin: 0;
+	padding: 0 4px 8px;
+}
+
+.mapp-group-member-row {
+	padding: 11px 12px;
+	border-bottom: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+	border-radius: 0;
+	margin: 0;
+}
+
+.mapp-group-member-row:last-child {
+	border-bottom: none;
+}
+
+.mapp-group-member-row:hover {
+	background: var(--mapp-hover, rgba(0, 0, 0, .04));
+}
+
+.mapp-group-member-icon-btn {
+	width: 34px;
+	height: 34px;
+	border-radius: 50%;
+	border: none;
+	background: var(--mapp-input-bg, #f0f2f5);
+}
+
+.mapp-group-member-icon-btn:hover {
+	background: color-mix(in srgb, var(--mapp-accent, #4a7fc1) 12%, var(--mapp-input-bg, #f0f2f5));
+}
+
+.mapp-group-add-list {
+	max-height: 200px;
+	margin: 0;
+	padding: 0 4px 10px;
+}
+
+.mapp-group-add-row {
+	padding: 11px 12px;
+	border-bottom: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+}
+
+.mapp-group-add-row:last-child {
+	border-bottom: none;
+}
+
+.mapp-group-member-action-btn {
+	font-size: 12px;
+	font-weight: 600;
+	padding: 6px 14px;
+	border-radius: 9999px;
+	border: 1px solid var(--mapp-border, rgba(0, 0, 0, .1));
+	background: var(--mapp-accent, #4a7fc1);
+	color: #fff;
+	flex-shrink: 0;
+}
+
+.mapp-group-member-action-btn:hover {
+	filter: brightness(1.06);
+}
+
+.mapp-group-set-pwd-btn {
+	margin-top: 4px;
+}
+
+.mapp-modal .mapp-contact-search-wrap,
+.mapp-modal .mapp-modal-search-wrap {
+	padding: 10px 16px 6px;
+}
+
+.mapp-modal-group-name-wrap {
+	padding: 20px 16px 6px;
+}
+
+.mapp-modal-group-name-wrap .mapp-profile-field {
+	padding: 0;
+	border: none;
+	gap: 6px;
+}
+
+.mapp-modal-extra-pwd .mapp-toggle-row {
+	padding-left: 0;
+	padding-right: 0;
+}
+
+.mapp-modal .mapp-modal-contact-item {
+	padding: 11px 12px;
+	border-bottom: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+	border-radius: 0;
+	margin: 0 8px;
+}
+
+.mapp-modal .mapp-modal-contact-item:last-child {
+	border-bottom: none;
+}
+
+.mapp-modal-contacts-empty,
+.mapp-list-empty {
+	padding: 20px 16px;
+	font-size: 13px;
+}
+
+.mapp-settings-hint--send-enter {
+	padding: 0 16px 12px;
+	margin-top: -4px;
+}
+
+.mapp-profile-status-msg {
+	padding: 8px 16px 0;
+	font-size: 13px;
+}
+
+.mapp-folder-settings {
+	margin: 0 16px 12px;
+	padding: 0;
+	border: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+	border-radius: 18px;
+	background: var(--mapp-sidebar-bg, #fff);
+	overflow: hidden;
+	border-top: none;
+}
+
+.mapp-folder-settings-title {
+	padding: 12px 16px 4px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	color: var(--mapp-accent, #4a7fc1);
+}
+
+.mapp-folder-settings-hint {
+	padding: 0 16px 8px;
+	margin: 0;
+}
+
+.mapp-folder-settings-list {
+	padding: 0 12px 10px;
+}
+
+.mapp-folder-settings .mapp-btn-settings-wide {
+	margin-left: 16px;
+	margin-right: 16px;
+}
+
+.mapp-folder-settings-create-btn {
+	margin-top: 18px !important;
+}
+
+.mapp-invites-count {
+	padding: 4px 16px 8px;
+}
+
+.mapp-invites-list {
+	padding: 0 12px 8px;
+}
+
+.mapp-invites-generate-btn {
+	margin-bottom: 12px !important;
+}
+
+.mapp-ui-card .mapp-invite-action-btn {
+	width: 34px;
+	height: 34px;
+	border-radius: 50%;
+	border: none;
+	background: var(--mapp-input-bg, #f0f2f5);
+}
+
+.mapp-ui-card .mapp-invite-action-btn:hover {
+	background: color-mix(in srgb, var(--mapp-accent, #4a7fc1) 12%, var(--mapp-input-bg, #f0f2f5));
+}
+
+.mapp-ui-card .mapp-invite-row {
+	margin: 0 12px 8px;
+	border-radius: 12px;
+}
+
+@media (max-width: 360px) {
+	.mapp-theme-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.sm-index-shell {
+	margin: 0;
+	font-family: system-ui, sans-serif;
+}
+
+.sm-index-chat {
+	height: 100vh;
+}

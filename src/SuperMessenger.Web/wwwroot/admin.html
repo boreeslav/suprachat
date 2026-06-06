@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-app-title="Админка"></title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 16px 20px 32px;
+      background: var(--brand-content-bg, #f5f5f5);
+      color: var(--brand-text, #1c1c1e);
+    }
+    a { color: var(--brand-accent, #4a7fc1); }
+    h1 { margin: 8px 0 16px; font-size: 1.35rem; }
+    h2 { margin: 0 0 8px; font-size: 1.1rem; }
+    h3 { margin: 20px 0 8px; font-size: 15px; font-weight: 600; }
+    .hint { color: var(--brand-sub-text, #666); font-size: 13px; margin: 0 0 12px; line-height: 1.4; }
+    .admin-top { margin-bottom: 12px; }
+    .admin-tabs-wrap {
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      margin-bottom: 0;
+      border-bottom: 1px solid #ccc;
+      scrollbar-width: thin;
+    }
+    .admin-tabs {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 0;
+      min-width: min-content;
+    }
+    .admin-tabs .tab-btn {
+      flex: 0 0 auto;
+      padding: 10px 16px;
+      margin: 0;
+      border: none;
+      border-bottom: none;
+      border-radius: 0;
+      background: transparent;
+      color: #555;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 400;
+      white-space: nowrap;
+    }
+    .admin-tabs .tab-btn:hover:not(.active) {
+      color: #333;
+      background: transparent;
+    }
+    .admin-tabs .tab-btn.active {
+      color: #111;
+      font-weight: 500;
+      background: #e0e0e0;
+    }
+    .admin-panel {
+      display: none;
+      background: var(--brand-sidebar-bg, #fff);
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-top: none;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .admin-panel.active { display: block; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    input[type="text"], input:not([type]), select, textarea {
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font: inherit;
+    }
+    textarea { width: 100%; min-height: 88px; resize: vertical; }
+    button.primary {
+      padding: 8px 14px;
+      background: var(--brand-accent, #4a7fc1);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 6px;
+      margin-top: 8px;
+    }
+    button.secondary { background: #6b7280; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer; margin-right: 6px; }
+    button.danger { background: #c44; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+    .field-block { margin-bottom: 14px; max-width: 520px; }
+    .field-block label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; }
+    .field-block input[type="text"], .field-block textarea { width: 100%; }
+    .appearance-logo-wrap { margin: 12px 0 16px; }
+    .appearance-logo-wrap > label { display: block; font-size: 13px; color: #666; margin-bottom: 8px; }
+    .appearance-logo-picker {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 120px;
+      min-height: 72px;
+      max-width: 220px;
+      padding: 10px 14px;
+      border: 1px solid #ccc;
+      border-radius: 0;
+      background: #fafafa;
+      color: inherit;
+      cursor: pointer;
+      transition: background 120ms, border-color 120ms;
+    }
+    .appearance-logo-picker:hover {
+      background: #f0f0f0;
+      border-color: #999;
+    }
+    .appearance-logo-picker:focus-visible {
+      outline: 2px solid var(--brand-accent, #4a7fc1);
+      outline-offset: 2px;
+    }
+    .appearance-logo-picker img {
+      display: block;
+      max-height: 64px;
+      max-width: 200px;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+    }
+    .appearance-logo-picker--empty {
+      color: #666;
+      font-size: 13px;
+    }
+    .appearance-logo-picker.is-uploading {
+      opacity: .55;
+      pointer-events: none;
+    }
+    .appearance-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px 16px;
+      margin-top: 12px;
+    }
+    .appearance-field label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+    .color-input-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .color-input-row input[type="text"] { flex: 1; min-width: 0; }
+    .color-input-row input[type="color"] {
+      width: 40px;
+      height: 36px;
+      padding: 2px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .color-input-row input[type="color"]:disabled { opacity: .35; cursor: not-allowed; }
+    .theme-tabs-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 12px 0;
+    }
+    .appearance-tabs {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 0;
+      min-width: min-content;
+      border-bottom: 1px solid #ccc;
+    }
+    .appearance-tabs .tab-btn {
+      flex: 0 0 auto;
+      padding: 8px 14px;
+      margin: 0;
+      background: transparent;
+      color: #555;
+      border: none;
+      border-bottom: none;
+      border-radius: 0;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 400;
+    }
+    .appearance-tabs .tab-btn:hover:not(.active) {
+      color: #333;
+      background: transparent;
+    }
+    .appearance-tabs .tab-btn.active {
+      color: #111;
+      font-weight: 500;
+      background: #e0e0e0;
+    }
+    #appearanceStatus { font-size: 13px; margin-top: 10px; color: #2d6a2d; }
+    #appearanceStatus.err { color: #a33; }
+    .message-sounds-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin: 12px 0 16px;
+    }
+    .message-sound-field label { display: block; font-size: 13px; color: #666; margin-bottom: 8px; }
+    .message-sound-upload {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .message-sound-upload button {
+      align-self: flex-start;
+      padding: 8px 14px;
+      border: 1px solid var(--brand-border, rgba(0,0,0,.12));
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .message-sound-upload button:hover { background: var(--brand-hover, rgba(0,0,0,.04)); }
+    .message-sound-upload button.is-uploading { opacity: .6; pointer-events: none; }
+    .message-sound-upload audio { width: 100%; max-width: 320px; }
+    .message-sound-empty { font-size: 12px; color: #888; }
+    .invite-link { font-size: 12px; word-break: break-all; background: #f0f0f0; padding: 8px; border-radius: 6px; margin-top: 8px; }
+    .actions { white-space: nowrap; }
+    .qr-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1000;
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .qr-dialog {
+      background: #fff; border-radius: 12px; padding: 20px; max-width: 320px; width: 100%;
+      text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    }
+    .qr-dialog h3 { margin: 0 0 12px; font-size: 16px; }
+    .qr-link { font-size: 11px; word-break: break-all; color: #666; margin-top: 12px; }
+    #qrCanvas canvas { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .panel-actions { margin-top: 16px; padding-top: 12px; border-top: 1px solid #eee; }
+    .admin-back-link { margin: 0; }
+    .admin-table-spaced { margin-top: 16px; }
+    .admin-form-spaced { margin-top: 12px; }
+  </style>
+  <script src="/messenger/vendor/qrcode.min.js"></script>
+  <script src="/messenger/supra-qr.js"></script>
+  <script src="/messenger/app-branding.js"></script>
+</head>
+<body>
+  <div class="admin-top">
+    <p class="admin-back-link"><a href="/">← Мессенджер</a></p>
+    <h1>Администрирование — <span data-app-name></span></h1>
+  </div>
+
+  <div class="admin-tabs-wrap">
+    <nav class="admin-tabs" id="adminTabs" role="tablist">
+      <button type="button" class="tab-btn active" data-tab="branding">Брендинг</button>
+      <button type="button" class="tab-btn" data-tab="register">Регистрация</button>
+      <button type="button" class="tab-btn" data-tab="content">Контент</button>
+      <button type="button" class="tab-btn" data-tab="themes">Темы и цвета</button>
+      <button type="button" class="tab-btn" data-tab="invites">Приглашения</button>
+      <button type="button" class="tab-btn" data-tab="users">Пользователи</button>
+    </nav>
+  </div>
+
+  <div id="panel-branding" class="admin-panel active" role="tabpanel">
+    <h2>Брендинг мессенджера</h2>
+    <p class="hint">Название, описание, подпись и логотип. Отображаются на странице регистрации и в интерфейсе входа.</p>
+    <div class="appearance-logo-wrap">
+      <label>Логотип</label>
+      <button type="button" class="appearance-logo-picker appearance-logo-picker--empty" id="logoPicker" title="Выбрать изображение">
+        <span id="logoPlaceholder">Нажмите, чтобы выбрать</span>
+        <img id="logoPreview" data-app-logo hidden alt="Логотип"/>
+      </button>
+      <input type="file" id="logoFile" accept=".png,.jpg,.jpeg,.webp,.gif,.svg,image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden/>
+      <p class="hint">PNG, JPEG, WebP, GIF (до 3 МБ, до 2048×2048) или SVG (до 512 КБ).</p>
+    </div>
+    <div class="field-block">
+      <label for="appName">Название приложения</label>
+      <input type="text" id="appName"/>
+    </div>
+    <div class="field-block">
+      <label for="appTagline">Подпись (краткий слоган под названием)</label>
+      <input type="text" id="appTagline" placeholder="Например: Безопасное общение в одном месте"/>
+    </div>
+    <div class="field-block">
+      <label for="appDescription">Описание мессенджера</label>
+      <textarea id="appDescription" placeholder="Кратко о назначении сервиса — показывается на странице регистрации"></textarea>
+    </div>
+    <h3>Звуки сообщений</h3>
+    <p class="hint">Воспроизводятся при получении чужого сообщения и при отправке своего. MP3, OGG, WAV, WebM или M4A, до 2 МБ.</p>
+    <div class="message-sounds-grid">
+      <div class="message-sound-field">
+        <label>Входящее сообщение</label>
+        <div class="message-sound-upload">
+          <button type="button" id="incomingSoundPick">Загрузить файл</button>
+          <input type="file" id="incomingSoundFile" accept=".mp3,.ogg,.wav,.webm,.m4a,audio/*" hidden/>
+          <audio id="incomingSoundPreview" controls hidden></audio>
+          <span class="message-sound-empty" id="incomingSoundEmpty">Файл не загружен</span>
+        </div>
+      </div>
+      <div class="message-sound-field">
+        <label>Исходящее сообщение</label>
+        <div class="message-sound-upload">
+          <button type="button" id="outgoingSoundPick">Загрузить файл</button>
+          <input type="file" id="outgoingSoundFile" accept=".mp3,.ogg,.wav,.webm,.m4a,audio/*" hidden/>
+          <audio id="outgoingSoundPreview" controls hidden></audio>
+          <span class="message-sound-empty" id="outgoingSoundEmpty">Файл не загружен</span>
+        </div>
+      </div>
+    </div>
+    <div class="panel-actions">
+      <button type="button" class="primary" id="saveBranding">Сохранить брендинг</button>
+      <span id="appearanceStatus" hidden></span>
+    </div>
+  </div>
+
+  <div id="panel-content" class="admin-panel" role="tabpanel">
+    <h2>Контент приложения</h2>
+    <p class="hint">Поддерживается HTML (теги p, strong, a, ul, li, h3 и т.д.). Скрипты при показе удаляются.</p>
+    <div class="field-block">
+      <label for="appVersion">Версия приложения</label>
+      <input type="text" id="appVersion" placeholder="1.1.1"/>
+    </div>
+    <div class="field-block">
+      <label for="splashHtml">Сплэш-экран при загрузке (HTML)</label>
+      <p class="hint">Показывается на главной странице, пока мессенджер полностью не инициализируется. Пустое поле — сплэш отключён.</p>
+      <textarea id="splashHtml" rows="6" class="admin-html-field"></textarea>
+    </div>
+    <div class="field-block">
+      <label for="splashCss">Сплэш-экран — CSS</label>
+      <p class="hint">Стили сплэша. Фон — в <code>.sm-splash-overlay</code>. Логотип — <code>.sm-splash-logo</code>, подпись с названием — <code>.sm-splash-app-name</code> (атрибут <code>data-app-name</code>). Без логотипа показывается крупный <code>.sm-splash-logo-fallback</code>.</p>
+      <textarea id="splashCss" rows="10" class="admin-html-field" spellcheck="false"></textarea>
+    </div>
+    <div class="field-block">
+      <label for="loginWelcomeHtml">Приветствие после входа (перед мастер-паролем)</label>
+      <p class="hint">Можно использовать <code>{{appName}}</code> — подставится «Название приложения» из настроек выше.</p>
+      <textarea id="loginWelcomeHtml" rows="4" class="admin-html-field"></textarea>
+    </div>
+    <div class="field-block">
+      <label for="aboutHtml">О приложении (Настройки → О приложении)</label>
+      <textarea id="aboutHtml" rows="6" class="admin-html-field"></textarea>
+    </div>
+    <div class="field-block">
+      <label for="helpHtml">Помощь (Настройки → Помощь)</label>
+      <textarea id="helpHtml" rows="6" class="admin-html-field"></textarea>
+    </div>
+    <div class="field-block">
+      <label for="changelogHtml">История изменений (открывается по ссылке версии)</label>
+      <textarea id="changelogHtml" rows="8" class="admin-html-field"></textarea>
+    </div>
+    <div class="field-block">
+      <label for="logoClickScript">Пасхалка: клик по логотипу в списке чатов</label>
+      <p class="hint">Тело функции, вызываемой при каждом клике по логотипу. Доступны параметры <code>clickCount</code> (число быстрых нажатий подряд, с паузой не более 1&nbsp;с) и <code>showNotice(текст, подписьКнопки, колбэк?)</code>.</p>
+      <textarea id="logoClickScript" rows="8" class="admin-html-field" spellcheck="false" placeholder="if (clickCount === 5) {&#10;  showNotice('Сообщение', 'OK');&#10;}"></textarea>
+    </div>
+    <div class="panel-actions">
+      <button type="button" class="primary" id="saveContent">Сохранить контент</button>
+    </div>
+  </div>
+
+  <div id="panel-register" class="admin-panel" role="tabpanel">
+    <h2>Страница регистрации</h2>
+    <p class="hint">Приветственный текст над формой. Логотип, название, подпись и описание настраиваются во вкладке «Брендинг».</p>
+    <div class="field-block">
+      <label for="registerWelcome">Приветствие на странице регистрации</label>
+      <textarea id="registerWelcome" placeholder="Добро пожаловать! …"></textarea>
+    </div>
+    <div class="panel-actions">
+      <button type="button" class="primary" id="saveRegister">Сохранить</button>
+    </div>
+  </div>
+
+  <div id="panel-themes" class="admin-panel" role="tabpanel">
+    <h2>Темы и цветовая палитра</h2>
+    <p class="hint">Базовые цвета для страниц входа и админки. Для каждой темы мессенджера — полная палитра. HEX выбирается пикером; для rgba введите значение вручную.</p>
+    <div class="field-block">
+      <label for="defaultTheme">Тема по умолчанию в мессенджере</label>
+      <select id="defaultTheme"></select>
+    </div>
+    <h3>Базовые цвета</h3>
+    <div class="appearance-grid" id="baseColorsGrid"></div>
+    <h3>Цвета темы мессенджера</h3>
+    <div class="theme-tabs-wrap">
+      <div class="appearance-tabs" id="themeTabs"></div>
+    </div>
+    <div class="appearance-grid" id="themeColorsGrid"></div>
+    <div class="panel-actions">
+      <button type="button" class="primary" id="saveThemes">Сохранить темы</button>
+      <button type="button" class="danger" id="resetAppearance">Сбросить темы к заводским</button>
+    </div>
+  </div>
+
+  <div id="panel-invites" class="admin-panel" role="tabpanel">
+    <h2>Приглашения (одноразовые)</h2>
+    <p class="hint">Использованные приглашения удаляются автоматически после регистрации.</p>
+    <button type="button" class="primary" id="createInvite">Создать приглашение</button>
+    <div id="newInvite" hidden class="invite-link"></div>
+    <table id="invTable" class="admin-table-spaced">
+      <thead><tr><th>Ссылка</th><th>Создано</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="panel-users" class="admin-panel" role="tabpanel">
+    <h2>Пользователи</h2>
+    <p class="hint">Список не загружается автоматически.</p>
+    <button type="button" id="loadUsers" class="secondary">Загрузить пользователей</button>
+    <form id="addUser" class="admin-form-spaced">
+      <input name="login" placeholder="Логин" required/>
+      <input name="displayName" placeholder="Имя"/>
+      <input name="password" type="password" placeholder="Пароль" required/>
+      <select name="userType"><option value="User">User</option><option value="Admin">Admin</option></select>
+      <button type="submit" class="primary">Добавить</button>
+    </form>
+    <table id="userTable" class="admin-table-spaced" hidden>
+      <thead><tr><th>Логин</th><th>Имя</th><th>Тип</th><th>Активен</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const api = (url, opts = {}) => fetch(url, { credentials: 'same-origin', ...opts });
+
+    async function ensureAdmin() {
+      const me = await api('/api/auth/me');
+      if (!me.ok) { location.href = '/login.html'; return false; }
+      const u = await me.json();
+      if (u.userType !== 'Admin') { location.href = '/'; return false; }
+      return true;
+    }
+
+    function escapeAttr(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    }
+
+    function setAppearanceStatus(msg, isErr) {
+      const el = document.getElementById('appearanceStatus');
+      el.hidden = !msg;
+      el.textContent = msg || '';
+      el.classList.toggle('err', !!isErr);
+    }
+
+    /* --- Tabs --- */
+    document.getElementById('adminTabs').querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.tab;
+        document.querySelectorAll('#adminTabs button').forEach(b => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('.admin-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + id));
+      });
+    });
+
+    /* --- Appearance / colors --- */
+    const BASE_FIELDS = [
+      ['accent', 'Акцент'], ['sidebarBg', 'Фон панелей'], ['contentBg', 'Фон страницы'],
+      ['text', 'Текст'], ['subText', 'Вторичный текст'], ['border', 'Границы'], ['hover', 'Наведение'],
+    ];
+    const THEME_GROUPS = [
+      { title: 'Общие', keys: [['name', 'Название темы'], ['bodyBg', 'Фон приложения'], ['accent', 'Акцент']] },
+      { title: 'Шапка и список', keys: [['headerBg', 'Фон шапки'], ['headerText', 'Текст шапки'], ['headerSubText', 'Подзаголовок'], ['headerBorder', 'Граница шапки'], ['chatBg', 'Фон чата']] },
+      { title: 'Сообщения', keys: [['myBubbleBg', 'Мои пузыри'], ['myBubbleText', 'Текст моих'], ['otherBubbleBg', 'Чужие пузыри'], ['otherBubbleText', 'Текст чужих'], ['senderName', 'Имя отправителя']] },
+      { title: 'Поле ввода', keys: [['inputBg', 'Фон области ввода'], ['inputFieldBg', 'Фон поля'], ['inputFieldBorder', 'Граница поля'], ['inputText', 'Текст'], ['inputPlaceholder', 'Подсказка'], ['inputAreaBorder', 'Граница области']] },
+      { title: 'Меню', keys: [['menuBg', 'Фон меню'], ['menuText', 'Текст'], ['menuBorder', 'Граница'], ['menuHover', 'Наведение'], ['dotsColor', 'Точки'], ['scrollThumb', 'Скролл']] },
+    ];
+
+    let appearanceData = null;
+    let selectedThemeName = null;
+
+    function isHexColor(v) {
+      return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test((v || '').trim());
+    }
+
+    function hexForPicker(v) {
+      const s = (v || '').trim();
+      if (!isHexColor(s)) return '#808080';
+      if (s.length === 4) {
+        return '#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
+      }
+      return s;
+    }
+
+    function bindColorRow(textInput, picker) {
+      const syncPicker = () => {
+        if (isHexColor(textInput.value)) {
+          picker.disabled = false;
+          picker.value = hexForPicker(textInput.value);
+        } else {
+          picker.disabled = true;
+        }
+      };
+      picker.addEventListener('input', () => {
+        textInput.value = picker.value;
+      });
+      textInput.addEventListener('input', syncPicker);
+      textInput.addEventListener('change', syncPicker);
+      syncPicker();
+    }
+
+    function renderColorGrid(container, obj, fields, prefix) {
+      container.innerHTML = fields.map(([key, label]) => {
+        const id = prefix + '-' + key;
+        const val = obj?.[key] ?? '';
+        const pickerVal = hexForPicker(val);
+        return `<div class="appearance-field">
+          <label for="${id}">${label}</label>
+          <div class="color-input-row">
+            <input type="text" id="${id}" data-key="${key}" value="${escapeAttr(val)}"/>
+            <input type="color" data-picker-for="${id}" value="${escapeAttr(pickerVal)}" title="Выбрать цвет" aria-label="Палитра"/>
+          </div>
+        </div>`;
+      }).join('');
+      container.querySelectorAll('input[type="color"][data-picker-for]').forEach(picker => {
+        const text = document.getElementById(picker.dataset.pickerFor);
+        if (text) bindColorRow(text, picker);
+      });
+    }
+
+    function readColorGrid(container) {
+      const out = {};
+      container.querySelectorAll('input[type="text"][data-key]').forEach(inp => {
+        out[inp.dataset.key] = inp.value.trim();
+      });
+      return out;
+    }
+
+    function persistThemeEditor() {
+      if (!appearanceData || !selectedThemeName) return;
+      const theme = appearanceData.themes.find(t => t.name === selectedThemeName);
+      if (!theme) return;
+      const updated = readColorGrid(document.getElementById('themeColorsGrid'));
+      Object.assign(theme, updated);
+      if (updated.name && updated.name !== selectedThemeName) {
+        selectedThemeName = updated.name;
+      }
+    }
+
+    function fillDefaultThemeSelect() {
+      const sel = document.getElementById('defaultTheme');
+      sel.innerHTML = (appearanceData.themes || []).map(t =>
+        `<option value="${escapeAttr(t.name)}">${escapeAttr(t.name)}</option>`).join('');
+      sel.value = appearanceData.defaultThemeName || appearanceData.themes[0]?.name || '';
+    }
+
+    function renderThemeTabs() {
+      const tabs = document.getElementById('themeTabs');
+      const names = (appearanceData.themes || []).map(t => t.name);
+      if (!selectedThemeName || !names.includes(selectedThemeName)) {
+        selectedThemeName = names[0] || null;
+      }
+      tabs.innerHTML = names.map(name =>
+        `<button type="button" class="tab-btn ${name === selectedThemeName ? 'active' : ''}" data-theme="${escapeAttr(name)}">${escapeAttr(name)}</button>`
+      ).join('');
+      tabs.querySelectorAll('button').forEach(btn => {
+        btn.onclick = () => {
+          persistThemeEditor();
+          selectedThemeName = btn.dataset.theme;
+          renderThemeTabs();
+          renderThemeEditor();
+        };
+      });
+    }
+
+    function renderThemeEditor() {
+      const theme = (appearanceData.themes || []).find(t => t.name === selectedThemeName);
+      const grid = document.getElementById('themeColorsGrid');
+      if (!theme) { grid.innerHTML = ''; return; }
+      renderColorGrid(grid, theme, THEME_GROUPS.flatMap(g => g.keys), 'theme');
+    }
+
+    function renderAppearanceForm() {
+      document.getElementById('appName').value = appearanceData.appName || '';
+      document.getElementById('appTagline').value = appearanceData.appTagline || '';
+      document.getElementById('appDescription').value = appearanceData.appDescription || '';
+      document.getElementById('registerWelcome').value = appearanceData.registerWelcome || '';
+      document.getElementById('appVersion').value = appearanceData.appVersion || '';
+      document.getElementById('splashHtml').value = appearanceData.splashHtml || '';
+      document.getElementById('splashCss').value = appearanceData.splashCss || '';
+      document.getElementById('loginWelcomeHtml').value = appearanceData.loginWelcomeHtml || '';
+      document.getElementById('aboutHtml').value = appearanceData.aboutHtml || '';
+      document.getElementById('helpHtml').value = appearanceData.helpHtml || '';
+      document.getElementById('changelogHtml').value = appearanceData.changelogHtml || '';
+      document.getElementById('logoClickScript').value = appearanceData.logoClickScript || '';
+      updateLogoPreview();
+      updateMessageSoundPreviews();
+      renderColorGrid(document.getElementById('baseColorsGrid'), appearanceData.base || {}, BASE_FIELDS, 'base');
+      fillDefaultThemeSelect();
+      renderThemeTabs();
+      renderThemeEditor();
+    }
+
+    function collectAppearancePayload() {
+      persistThemeEditor();
+      return {
+        appName: document.getElementById('appName').value.trim(),
+        appTagline: document.getElementById('appTagline').value.trim(),
+        appDescription: document.getElementById('appDescription').value.trim(),
+        registerWelcome: document.getElementById('registerWelcome').value.trim(),
+        appVersion: document.getElementById('appVersion').value.trim(),
+        splashHtml: document.getElementById('splashHtml').value,
+        splashCss: document.getElementById('splashCss').value,
+        loginWelcomeHtml: document.getElementById('loginWelcomeHtml').value,
+        aboutHtml: document.getElementById('aboutHtml').value,
+        helpHtml: document.getElementById('helpHtml').value,
+        changelogHtml: document.getElementById('changelogHtml').value,
+        logoClickScript: document.getElementById('logoClickScript').value,
+        defaultThemeName: document.getElementById('defaultTheme').value,
+        base: readColorGrid(document.getElementById('baseColorsGrid')),
+        themes: appearanceData.themes,
+      };
+    }
+
+    async function saveAppearance() {
+      const payload = collectAppearancePayload();
+      if (!payload.appName) {
+        setAppearanceStatus('Укажите название приложения', true);
+        return;
+      }
+      const r = await api('/api/admin/appearance', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { setAppearanceStatus(j.error || 'Ошибка сохранения', true); return; }
+      appearanceData = j;
+      if (window.AppBranding) AppBranding.applyDocumentBranding(j);
+      renderAppearanceForm();
+      setAppearanceStatus('Сохранено');
+    }
+
+    async function loadAppearanceAdmin() {
+      const r = await api('/api/admin/appearance');
+      if (!r.ok) { setAppearanceStatus('Не удалось загрузить настройки', true); return; }
+      appearanceData = await r.json();
+      renderAppearanceForm();
+      if (window.MessengerMessageSounds) MessengerMessageSounds.configure(appearanceData);
+    }
+
+    document.getElementById('saveBranding').onclick = () => saveAppearance();
+    document.getElementById('saveRegister').onclick = () => saveAppearance();
+    document.getElementById('saveContent').onclick = () => saveAppearance();
+    document.getElementById('saveThemes').onclick = () => saveAppearance();
+
+    function updateLogoPreview() {
+      const picker = document.getElementById('logoPicker');
+      const img = document.getElementById('logoPreview');
+      const placeholder = document.getElementById('logoPlaceholder');
+      const url = appearanceData?.logoUrl;
+      if (url) {
+        img.src = url + '?t=' + Date.now();
+        img.hidden = false;
+        placeholder.hidden = true;
+        picker.classList.remove('appearance-logo-picker--empty');
+      } else {
+        img.hidden = true;
+        img.removeAttribute('src');
+        placeholder.hidden = false;
+        picker.classList.add('appearance-logo-picker--empty');
+      }
+    }
+
+    const LOGO_RASTER_TYPES = /^image\/(png|jpe?g|webp|gif)$/i;
+    const LOGO_MAX_RASTER_BYTES = 3_000_000;
+    const LOGO_MAX_SVG_BYTES = 512_000;
+
+    function validateLogoClient(file) {
+      const name = (file.name || '').toLowerCase();
+      const isSvg = file.type === 'image/svg+xml' || name.endsWith('.svg');
+      if (isSvg) {
+        if (file.size > LOGO_MAX_SVG_BYTES)
+          return 'SVG не больше 512 КБ';
+        return null;
+      }
+      if (!LOGO_RASTER_TYPES.test(file.type || '') && !/\.(png|jpe?g|webp|gif)$/i.test(name))
+        return 'Выберите PNG, JPEG, WebP, GIF или SVG';
+      if (file.size > LOGO_MAX_RASTER_BYTES)
+        return 'Изображение не больше 3 МБ';
+      return null;
+    }
+
+    async function uploadLogoFile(file) {
+      if (!file) return;
+      const clientErr = validateLogoClient(file);
+      if (clientErr) {
+        setAppearanceStatus(clientErr, true);
+        document.getElementById('logoFile').value = '';
+        return;
+      }
+      const picker = document.getElementById('logoPicker');
+      picker.classList.add('is-uploading');
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const r = await api('/api/admin/appearance/logo', { method: 'POST', body: fd });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setAppearanceStatus(j.error || 'Ошибка загрузки', true);
+          return;
+        }
+        appearanceData.logoUrl = j.logoUrl;
+        updateLogoPreview();
+        if (window.AppBranding) AppBranding.applyDocumentBranding(appearanceData);
+        setAppearanceStatus('Логотип сохранён');
+      } catch (e) {
+        setAppearanceStatus(e.message || 'Сеть: не удалось загрузить логотип', true);
+      } finally {
+        picker.classList.remove('is-uploading');
+        document.getElementById('logoFile').value = '';
+      }
+    }
+
+    document.getElementById('logoPicker').onclick = () => {
+      document.getElementById('logoFile').click();
+    };
+    document.getElementById('logoFile').addEventListener('change', () => {
+      const file = document.getElementById('logoFile').files[0];
+      if (file) uploadLogoFile(file);
+    });
+
+    const SOUND_MAX_BYTES = 2_000_000;
+    const SOUND_EXT = /\.(mp3|ogg|wav|webm|m4a)$/i;
+
+    function validateMessageSoundClient(file) {
+      const name = (file.name || '').toLowerCase();
+      if (!/^audio\//i.test(file.type || '') && !SOUND_EXT.test(name))
+        return 'Выберите MP3, OGG, WAV, WebM или M4A';
+      if (file.size > SOUND_MAX_BYTES)
+        return 'Файл не больше 2 МБ';
+      return null;
+    }
+
+    function updateMessageSoundPreviews() {
+      [
+        ['incoming', 'incomingMessageSoundUrl', 'incomingSoundPreview', 'incomingSoundEmpty'],
+        ['outgoing', 'outgoingMessageSoundUrl', 'outgoingSoundPreview', 'outgoingSoundEmpty'],
+      ].forEach(([kind, urlKey, audioId, emptyId]) => {
+        const url = appearanceData?.[urlKey];
+        const audio = document.getElementById(audioId);
+        const empty = document.getElementById(emptyId);
+        if (url) {
+          audio.src = url + '?t=' + Date.now();
+          audio.hidden = false;
+          empty.hidden = true;
+        } else {
+          audio.hidden = true;
+          audio.removeAttribute('src');
+          empty.hidden = false;
+        }
+      });
+    }
+
+    async function uploadMessageSound(kind, file) {
+      if (!file) return;
+      const clientErr = validateMessageSoundClient(file);
+      if (clientErr) {
+        setAppearanceStatus(clientErr, true);
+        document.getElementById(kind + 'SoundFile').value = '';
+        return;
+      }
+      const btn = document.getElementById(kind + 'SoundPick');
+      btn.classList.add('is-uploading');
+      const fd = new FormData();
+      fd.append('file', file);
+      const urlKey = kind === 'incoming' ? 'incomingMessageSoundUrl' : 'outgoingMessageSoundUrl';
+      try {
+        const r = await api('/api/admin/appearance/sound/' + kind, { method: 'POST', body: fd });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setAppearanceStatus(j.error || 'Ошибка загрузки', true);
+          return;
+        }
+        appearanceData[urlKey] = j[urlKey];
+        updateMessageSoundPreviews();
+        if (window.MessengerMessageSounds) MessengerMessageSounds.configure(appearanceData);
+        setAppearanceStatus(kind === 'incoming' ? 'Звук входящих сохранён' : 'Звук исходящих сохранён');
+      } catch (e) {
+        setAppearanceStatus(e.message || 'Сеть: не удалось загрузить звук', true);
+      } finally {
+        btn.classList.remove('is-uploading');
+        document.getElementById(kind + 'SoundFile').value = '';
+      }
+    }
+
+    document.getElementById('incomingSoundPick').onclick = () => {
+      document.getElementById('incomingSoundFile').click();
+    };
+    document.getElementById('outgoingSoundPick').onclick = () => {
+      document.getElementById('outgoingSoundFile').click();
+    };
+    document.getElementById('incomingSoundFile').addEventListener('change', () => {
+      const file = document.getElementById('incomingSoundFile').files[0];
+      if (file) uploadMessageSound('incoming', file);
+    });
+    document.getElementById('outgoingSoundFile').addEventListener('change', () => {
+      const file = document.getElementById('outgoingSoundFile').files[0];
+      if (file) uploadMessageSound('outgoing', file);
+    });
+
+    document.getElementById('resetAppearance').onclick = async () => {
+      if (!confirm('Сбросить все темы и базовые цвета к заводским? Брендинг и текст регистрации сохранятся.')) return;
+      const r = await api('/api/admin/appearance/reset', { method: 'POST' });
+      if (!r.ok) { setAppearanceStatus('Ошибка сброса', true); return; }
+      appearanceData = await r.json();
+      renderAppearanceForm();
+      setAppearanceStatus('Темы сброшены к заводским');
+    };
+
+    /* --- Invites --- */
+    async function showQrDialog(link) {
+      const overlay = document.createElement('div');
+      overlay.className = 'qr-overlay';
+      const dialog = document.createElement('div');
+      dialog.className = 'qr-dialog';
+      dialog.innerHTML = '<h3>QR-код приглашения</h3><div id="qrCanvas"></div><div class="qr-link"></div>';
+      dialog.querySelector('.qr-link').textContent = link;
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.textContent = 'Закрыть';
+      closeBtn.className = 'secondary';
+      closeBtn.onclick = () => overlay.remove();
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+      dialog.appendChild(closeBtn);
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+      const wrap = dialog.querySelector('#qrCanvas');
+      if (window.SupraQr?.isAvailable?.()) {
+        try {
+          await SupraQr.render(wrap, { text: link, size: 220 });
+        } catch {
+          wrap.textContent = 'Библиотека QR не загружена';
+        }
+      } else {
+        wrap.textContent = 'Библиотека QR не загружена';
+      }
+    }
+
+    async function loadInvites() {
+      const r = await api('/api/admin/invitations');
+      const list = await r.json();
+      document.querySelector('#invTable tbody').innerHTML = list.map(i => `
+        <tr data-id="${i.id}">
+          <td><a href="${i.link}" target="_blank" rel="noopener">${i.link}</a></td>
+          <td>${new Date(i.createdOn).toLocaleString()}</td>
+          <td class="actions">
+            <button type="button" class="secondary qr-btn" data-link="${encodeURIComponent(i.link)}">QR</button>
+            <button type="button" class="danger del-inv">Удалить</button>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="3">Нет активных приглашений</td></tr>';
+      document.querySelectorAll('.qr-btn').forEach(btn => {
+        btn.onclick = () => showQrDialog(decodeURIComponent(btn.dataset.link));
+      });
+      document.querySelectorAll('.del-inv').forEach(btn => {
+        btn.onclick = async (e) => {
+          const tr = e.target.closest('tr');
+          if (!tr?.dataset.id || !confirm('Удалить приглашение?')) return;
+          await api('/api/admin/invitations/' + tr.dataset.id, { method: 'DELETE' });
+          loadInvites();
+        };
+      });
+    }
+
+    document.getElementById('createInvite').onclick = async () => {
+      const r = await api('/api/admin/invitations', { method: 'POST' });
+      const j = await r.json();
+      const el = document.getElementById('newInvite');
+      el.hidden = false;
+      el.innerHTML = 'Новая ссылка: <a href="' + j.link + '">' + j.link + '</a> ' +
+        '<button type="button" class="secondary" id="newInviteQr">QR</button>';
+      document.getElementById('newInviteQr').onclick = () => showQrDialog(j.link);
+      loadInvites();
+    };
+
+    /* --- Users --- */
+    async function loadUsers() {
+      const r = await api('/api/admin/users');
+      const users = await r.json();
+      const table = document.getElementById('userTable');
+      table.hidden = false;
+      document.querySelector('#userTable tbody').innerHTML = users.map(u => `
+        <tr data-id="${u.id}">
+          <td><input class="login" value="${escapeAttr(u.login)}"/></td>
+          <td><input class="name" value="${escapeAttr(u.displayName || '')}"/></td>
+          <td><select class="type"><option ${u.userType==='User'?'selected':''}>User</option><option ${u.userType==='Admin'?'selected':''}>Admin</option></select></td>
+          <td><input type="checkbox" class="active" ${u.isActive?'checked':''}/></td>
+          <td>
+            <button type="button" class="primary save">Сохранить</button>
+            <button type="button" class="danger del">Удалить</button>
+          </td>
+        </tr>`).join('');
+      table.querySelectorAll('.save').forEach(btn => btn.onclick = async (e) => {
+        const tr = e.target.closest('tr');
+        await api('/api/admin/users/' + tr.dataset.id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            login: tr.querySelector('.login').value,
+            displayName: tr.querySelector('.name').value,
+            userType: tr.querySelector('.type').value,
+            isActive: tr.querySelector('.active').checked,
+          }),
+        });
+        loadUsers();
+      });
+      table.querySelectorAll('.del').forEach(btn => btn.onclick = async (e) => {
+        const tr = e.target.closest('tr');
+        if (!confirm('Удалить пользователя?')) return;
+        await api('/api/admin/users/' + tr.dataset.id, { method: 'DELETE' });
+        loadUsers();
+      });
+    }
+
+    document.getElementById('loadUsers').onclick = () => loadUsers();
+    document.getElementById('addUser').onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      await api('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(fd)),
+      });
+      e.target.reset();
+      loadUsers();
+    };
+
+    (async () => {
+      if (window.AppBranding) await AppBranding.loadAppearance();
+      if (await ensureAdmin()) {
+        loadAppearanceAdmin();
+        loadInvites();
+      }
+    })();
+  </script>
+</body>
+</html>

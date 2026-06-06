@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title data-app-title="Регистрация"></title>
+  <link rel="manifest" href="/manifest.webmanifest"/>
+  <meta name="theme-color" content="#4a7fc1"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="SuperMessenger"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"/>
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png"/>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: var(--brand-content-bg, #f0f2f5);
+      margin: 0;
+      padding: 24px;
+      color: var(--brand-text, #1c1c1e);
+    }
+    .reg-wrap { max-width: 420px; margin: 0 auto; }
+    .reg-brand {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 8px 0;
+    }
+    .reg-brand img {
+      max-height: 64px;
+      max-width: 220px;
+      object-fit: contain;
+      margin-bottom: 12px;
+    }
+    .reg-brand h1 {
+      margin: 0 0 6px;
+      font-size: 1.5rem;
+      color: var(--brand-text, #1c1c1e);
+    }
+    .reg-brand .reg-tagline {
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: var(--brand-sub-text, #666);
+    }
+    .reg-brand .reg-description {
+      margin: 0 0 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--brand-sub-text, #666);
+    }
+    .reg-brand .reg-welcome {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.45;
+      color: var(--brand-text, #333);
+    }
+    form {
+      background: var(--brand-sidebar-bg, #fff);
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    }
+    form h2 {
+      margin: 0 0 8px;
+      font-size: 1.15rem;
+    }
+    p.sub { color: var(--brand-sub-text, #666); font-size: 14px; margin: 0 0 24px; }
+    label { display: block; margin-bottom: 14px; font-size: 14px; }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      margin-top: 4px;
+      border: 1px solid var(--brand-border, #ccc);
+      border-radius: 8px;
+    }
+    button[type="submit"] {
+      width: 100%;
+      padding: 12px;
+      background: var(--brand-accent, #4a7fc1);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .error { color: #c00; margin-bottom: 12px; }
+    .invalid { text-align: center; padding: 48px; color: #666; }
+    .reg-master-hint {
+      margin: 0 0 14px;
+      font-size: 12px;
+      color: #666;
+      line-height: 1.4;
+    }
+  </style>
+  <script src="/messenger/app-branding.js"></script>
+  <script src="/messenger/supra-auth-crypto.js"></script>
+</head>
+<body>
+  <div class="reg-wrap">
+    <div class="reg-brand" id="regBrand" hidden>
+      <img data-app-logo hidden alt=""/>
+      <h1 data-app-name></h1>
+      <p class="reg-tagline" data-app-tagline hidden></p>
+      <p class="reg-description" data-app-description hidden></p>
+      <p class="reg-welcome" data-register-welcome data-default-welcome="Заполните форму для создания учётной записи."></p>
+    </div>
+
+    <div id="invalid" class="invalid" hidden>
+      <h2>Приглашение недействительно</h2>
+      <p id="invalidMsg"></p>
+    </div>
+
+    <form id="regForm" hidden>
+      <h2>Регистрация</h2>
+      <p class="sub">Поля отмеченные * обязательны</p>
+      <div class="error" id="err" hidden></div>
+      <label>Уникальный логин *<input name="login" required minlength="4" pattern="[a-zA-Z0-9_\\.\\-]+" title="Латиница, цифры, _, -, . (минимум 4 символа)"/></label>
+      <label>Отображаемое имя *<input name="displayName" required/></label>
+      <label>Email<input name="email" type="email"/></label>
+      <label>Телефон<input name="phone" type="tel"/></label>
+      <label>Пароль входа * (мин. 6)<input name="password" type="password" required minlength="6" autocomplete="new-password"/></label>
+      <p class="reg-master-hint">Мастер-пароль шифрования задаётся после входа в мессенджере. Не хранится на сервере.</p>
+      <label>Фото профиля<input name="photo" type="file" accept="image/*"/></label>
+      <button type="submit">Зарегистрироваться</button>
+    </form>
+  </div>
+  <script src="/avatar-upload.js"></script>
+  <script>
+    const token = location.pathname.split('/').pop();
+
+    (async () => {
+      if (window.AppBranding) await AppBranding.loadAppearance();
+
+      const v = await fetch('/api/register/' + token);
+      const j = await v.json();
+      if (!j.valid) {
+        document.getElementById('invalid').hidden = false;
+        document.getElementById('invalidMsg').textContent = j.error || '';
+        return;
+      }
+      document.getElementById('regBrand').hidden = false;
+      document.getElementById('regForm').hidden = false;
+      history.replaceState(null, '', '/');
+    })();
+
+    document.getElementById('regForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const fd = new FormData(form);
+      const photo = form.querySelector('[name=photo]').files?.[0];
+      if (photo) {
+        fd.delete('photo');
+        fd.append('photo', await AvatarUpload.compress(photo));
+      }
+      const r = await fetch('/api/register/' + token, { method: 'POST', body: fd, credentials: 'same-origin' });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const err = document.getElementById('err');
+        err.textContent = j.error || 'Ошибка регистрации';
+        err.hidden = false;
+        return;
+      }
+      SupraAuthCrypto.stashPendingLoginPassword(fd.get('password'));
+      location.href = j.redirect || '/';
+    };
+  </script>
+</body>
+</html>

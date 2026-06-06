@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title data-app-title="Вход"></title>
+  <link rel="manifest" href="/manifest.webmanifest"/>
+  <meta name="theme-color" content="#4a7fc1"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="SuperMessenger"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"/>
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png"/>
+  <style>
+    body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--brand-content-bg, #f0f2f5); margin: 0; padding: 16px; box-sizing: border-box; }
+    form { background: var(--brand-sidebar-bg, #fff); padding: 32px; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,.08); width: 100%; max-width: 400px; box-sizing: border-box; }
+    .login-brand { text-align: center; margin-bottom: 20px; }
+    .login-brand img { max-height: 56px; max-width: 200px; object-fit: contain; margin-bottom: 12px; }
+    h1 { margin: 0 0 8px; font-size: 1.4rem; color: var(--brand-text, #1c1c1e); }
+    .sub { margin: 0 0 20px; font-size: 13px; color: #666; line-height: 1.4; }
+    label { display: block; margin-bottom: 14px; font-size: 14px; color: #444; }
+    input { width: 100%; box-sizing: border-box; padding: 10px 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+    label .sm-password-field { margin-top: 6px; }
+    label .sm-password-field input { margin-top: 0; }
+    button[type="submit"] { width: 100%; padding: 12px; background: var(--brand-accent, #4a7fc1); color: #fff; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    button[type="submit"]:disabled { opacity: 0.65; cursor: wait; }
+    .error { color: #c00; font-size: 14px; margin-bottom: 12px; }
+  </style>
+  <link rel="stylesheet" href="/messenger/password-field.css"/>
+</head>
+<body>
+  <form id="loginForm">
+    <div class="login-brand">
+      <img data-app-logo hidden alt=""/>
+      <h1 id="pageTitle">Вход</h1>
+      <p class="sub" id="pageSub">Логин и пароль входа. По умолчанию тот же пароль используется для шифрования переписки.</p>
+    </div>
+    <div class="error" id="err" hidden></div>
+    <label>Логин<input name="login" autocomplete="username" required/></label>
+    <label>Пароль входа<input name="password" type="password" autocomplete="current-password" required minlength="6"/></label>
+    <button type="submit" id="submitBtn">Войти</button>
+  </form>
+
+  <script src="/messenger/app-splash.js"></script>
+  <script src="/messenger/app-branding.js"></script>
+  <script src="/messenger/password-field.js"></script>
+  <script src="/messenger/supra-auth-crypto.js"></script>
+  <script>
+    function safeReturnUrl() {
+      try {
+        const raw = new URLSearchParams(location.search).get('returnUrl');
+        if (!raw) return '/';
+        if (!raw.startsWith('/') || raw.startsWith('//')) return '/';
+        return raw;
+      } catch {
+        return '/';
+      }
+    }
+
+    const form = document.getElementById('loginForm');
+    const err = document.getElementById('err');
+    const submitBtn = document.getElementById('submitBtn');
+
+    SupraPasswordField.enhance(form.querySelector('input[name="password"]'));
+
+    function showErr(text) {
+      err.textContent = text;
+      err.hidden = false;
+    }
+
+    function hideSplashIfIdle() {
+      if (window.AppSplash && !sessionStorage.getItem('supra-splash-navigating')) {
+        AppSplash.hide();
+      }
+    }
+
+    (async () => {
+      if (window.AppBranding) {
+        try { await AppBranding.loadAppearance(); } catch { /* ignore */ }
+      }
+      try {
+        const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
+        if (r.ok) {
+          await AppSplash.prepareNavigation('Вход в приложение…');
+          location.href = safeReturnUrl();
+          return;
+        }
+      } catch { /* not logged in */ }
+      hideSplashIfIdle();
+    })();
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      err.hidden = true;
+      submitBtn.disabled = true;
+
+      await AppSplash.show('Вход…');
+
+      const fd = new FormData(form);
+      try {
+        const r = await fetch('/api/auth/login', { method: 'POST', body: fd, credentials: 'same-origin' });
+        if (!r.ok) {
+          const j = await r.json().catch(() => ({}));
+          AppSplash.clearBusy();
+          hideSplashIfIdle();
+          showErr(j.error || 'Ошибка входа');
+          submitBtn.disabled = false;
+          return;
+        }
+
+        SupraAuthCrypto.stashPendingLoginPassword(fd.get('password'));
+        await AppSplash.prepareNavigation('Загрузка приложения…');
+        location.href = safeReturnUrl();
+      } catch {
+        AppSplash.clearBusy();
+        hideSplashIfIdle();
+        showErr('Ошибка сети');
+        submitBtn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>
