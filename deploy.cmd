@@ -4,16 +4,17 @@ cd /d "%~dp0"
 
 echo SuperMessenger deploy
 echo.
-echo Settings file: deploy\deploy.env
-if not exist "%~dp0deploy\deploy.env" (
-    if exist "%~dp0deploy\deploy.env.example" (
-        echo   Not found. Missing values will be prompted and saved to deploy\deploy.env
+echo Settings file: tmp\deploy\deploy.env
+if not exist "%~dp0tmp\deploy\deploy.env" (
+    if exist "%~dp0tmp\deploy\deploy.env.example" (
+        echo   Not found. Missing values will be prompted and saved to tmp\deploy\deploy.env
     ) else (
-        echo   WARNING: deploy\deploy.env.example is missing
+        echo   WARNING: tmp\deploy\deploy.env.example is missing
     )
 ) else (
     echo   Found. Only missing values will be prompted.
 )
+echo   Build artifacts: tmp\deploy\
 echo.
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0deploy\deploy.ps1" %*

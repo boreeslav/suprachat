@@ -38,7 +38,7 @@ docker compose up -d --build
 
 1. Установите [PuTTY](https://www.putty.org/) (`plink`, `pscp` в PATH).
 2. На сервере: Docker и Docker Compose.
-3. Скопируйте `deploy/deploy.env.example` в `deploy/deploy.env` и заполните параметры (или введите их при первом запуске `deploy.cmd`).
+3. Скопируйте `tmp/deploy/deploy.env.example` в `tmp/deploy/deploy.env` и заполните параметры (или введите их при первом запуске `deploy.cmd`). Папка `tmp/` в git не коммитится.
 4. Запустите (перед упаковкой автоматически собирается `supra-webcrypto.bundle.js` для шифрования по HTTP/IP):
 
 ```powershell
