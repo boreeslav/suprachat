@@ -1,4 +1,4 @@
-# SuperMessenger
+# SupraMessenger
 
 Standalone-мессенджер (API, realtime, сущности).
 
