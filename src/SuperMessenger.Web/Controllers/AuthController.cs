@@ -59,6 +59,7 @@ public sealed class AuthController : ControllerBase
             id = user.Id,
             login = user.Login,
             name = user.DisplayName,
+            statusText = user.StatusText ?? "",
             userType = user.Type.ToString(),
             avatar = AvatarUrlHelper.ForUser(user),
             encryptionConfigured = !string.IsNullOrEmpty(user.EncryptionSalt)

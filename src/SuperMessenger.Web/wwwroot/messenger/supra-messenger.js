@@ -718,7 +718,7 @@ class MessengerIcons {
 		return `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>`;
 	}
 	send() {
-		return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
+		return `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.3938 2.20468C3.70395 1.96828 4.12324 1.93374 4.4679 2.1162L21.4679 11.1162C21.7953 11.2895 22 11.6296 22 12C22 12.3704 21.7953 12.7105 21.4679 12.8838L4.4679 21.8838C4.12324 22.0662 3.70395 22.0317 3.3938 21.7953C3.08365 21.5589 2.93922 21.1637 3.02382 20.7831L4.97561 12L3.02382 3.21692C2.93922 2.83623 3.08365 2.44109 3.3938 2.20468ZM6.80218 13L5.44596 19.103L16.9739 13H6.80218ZM16.9739 11H6.80218L5.44596 4.89699L16.9739 11Z"/></svg>`;
 	}
 	check() {
 		return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
@@ -4295,6 +4295,13 @@ class MessengerUserProfileModal {
 			return;
 		}
 
+		callbacks.onUserUpdated?.({
+			...user,
+			name: profile.displayName || user.name,
+			statusText: profile.statusText != null ? String(profile.statusText).trim() : (user.statusText || ''),
+			avatar: profile.avatar ?? user.avatar ?? null,
+		});
+
 		const wrap = document.createElement('div');
 		wrap.className = 'mapp-profile-window-content';
 
@@ -4828,6 +4835,7 @@ class MessengerUserProfileModal {
 				...user,
 				login: trimmed,
 				name: user.name || profile.displayName,
+				statusText: profile.statusText ?? user.statusText ?? '',
 			});
 		};
 
@@ -8149,8 +8157,8 @@ class MessengerUtils {
 			minute: '2-digit',
 		});
 	}
-	static getDirectChatHeaderSub(chat, presence, i18n, utils) {
-		if (!chat || chat.type !== 'direct') return null;
+	static getDirectChatHeaderSub(chat, presence, i18n, utils, live = true) {
+		if (!chat || chat.type !== 'direct' || !live) return null;
 		const p = presence || 'offline';
 		if (p === 'online' || p === 'idle') {
 			const status = (chat.contactStatusText || '').trim();
@@ -8193,41 +8201,91 @@ class MessengerUtils {
 	static isMobile() {
 		return window.innerWidth <= 680;
 	}
-	static initViewport(rootEl) {
-		if (!window.visualViewport) return;
+	static #messagePinThresholdPx = 120;
+	static shouldPinMessagesToComposer(msgArea, scopeEl) {
+		if (!msgArea) return false;
+		const fromBottom = msgArea.scrollHeight - msgArea.scrollTop - msgArea.clientHeight;
+		if (fromBottom <= MessengerUtils.#messagePinThresholdPx) return true;
+		const active = document.activeElement;
+		if (!active || !scopeEl?.contains(active)) return false;
+		return active.classList?.contains('mc-input-field') ?? false;
+	}
+	static resolveChatPanel(scopeEl) {
+		if (!scopeEl) return null;
+		if (scopeEl.classList?.contains('mapp-chat-panel') || scopeEl.classList?.contains('mc-root')) {
+			return scopeEl;
+		}
+		return scopeEl.querySelector('.mapp-chat-panel, .mc-root');
+	}
+	static pinMessagesToComposer(scopeEl) {
+		const panel = MessengerUtils.resolveChatPanel(scopeEl);
+		if (!panel) return null;
+		const msgArea = panel.querySelector('.mc-messages');
+		if (!MessengerUtils.shouldPinMessagesToComposer(msgArea, panel)) return null;
+		return MessengerUtils.scrollToBottom(msgArea);
+	}
+	static initMobileKeyboardLayout(targetEl, options = {}) {
+		if (!window.visualViewport || !targetEl) return null;
+		const mode = options.mode === 'height' ? 'height' : 'inset';
+		const shouldApply = typeof options.shouldApply === 'function'
+			? options.shouldApply
+			: () => true;
+		const clearStyles = () => {
+			targetEl.style.bottom = '';
+			targetEl.style.height = '';
+			targetEl.style.maxHeight = '';
+			targetEl.style.minHeight = '';
+		};
 		const apply = () => {
+			if (!shouldApply()) {
+				clearStyles();
+				return;
+			}
 			const vv = window.visualViewport;
 			const topOffset = Math.max(0, vv.offsetTop || 0);
-			const leftOffset = Math.max(0, vv.offsetLeft || 0);
-			// Шапка остаётся у верхнего края экрана (top: 0, без translateY).
-			// Высота до нижней границы visualViewport — сжимается лента, поле ввода над клавиатурой.
-			const layoutHeight = topOffset + vv.height;
-			rootEl.style.position = 'fixed';
-			rootEl.style.top = '0';
-			rootEl.style.left = leftOffset + 'px';
-			rootEl.style.width = vv.width + 'px';
-			rootEl.style.height = layoutHeight + 'px';
-			rootEl.style.maxHeight = layoutHeight + 'px';
-			rootEl.style.minHeight = '0';
-			rootEl.style.transform = '';
-			rootEl.style.overflow = 'hidden';
+			const kbInset = Math.max(0, window.innerHeight - vv.height - topOffset);
+			if (mode === 'inset') {
+				targetEl.style.bottom = kbInset + 'px';
+				targetEl.style.height = '';
+				targetEl.style.maxHeight = '';
+				targetEl.style.minHeight = '';
+			} else {
+				const layoutHeight = topOffset + vv.height;
+				targetEl.style.bottom = '';
+				targetEl.style.height = layoutHeight + 'px';
+				targetEl.style.maxHeight = layoutHeight + 'px';
+				targetEl.style.minHeight = '0';
+			}
+			// iOS при фокусе в поле ввода прокручивает страницу — шапка «уезжает» вверх.
+			window.scrollTo(0, 0);
+			MessengerUtils.#schedulePinMessagesToComposer(targetEl);
 		};
+		const resizeObserver = new ResizeObserver(() => {
+			if (!shouldApply()) return;
+			MessengerUtils.pinMessagesToComposer(targetEl);
+		});
+		resizeObserver.observe(targetEl);
+		const panel = MessengerUtils.resolveChatPanel(targetEl);
+		const msgWrap = panel?.querySelector('.mc-messages-wrap');
+		if (msgWrap) resizeObserver.observe(msgWrap);
 		window.visualViewport.addEventListener('resize', apply);
 		window.visualViewport.addEventListener('scroll', apply);
 		apply();
-		return () => {
+		const destroy = () => {
 			window.visualViewport.removeEventListener('resize', apply);
 			window.visualViewport.removeEventListener('scroll', apply);
-			rootEl.style.position = '';
-			rootEl.style.top = '';
-			rootEl.style.left = '';
-			rootEl.style.width = '';
-			rootEl.style.height = '';
-			rootEl.style.maxHeight = '';
-			rootEl.style.minHeight = '';
-			rootEl.style.transform = '';
-			rootEl.style.overflow = '';
+			resizeObserver.disconnect();
+			clearStyles();
 		};
+		destroy.apply = apply;
+		return destroy;
+	}
+	static #schedulePinMessagesToComposer(scopeEl) {
+		const pin = () => MessengerUtils.pinMessagesToComposer(scopeEl);
+		requestAnimationFrame(() => {
+			pin();
+			requestAnimationFrame(pin);
+		});
 	}
 
 	static findPageStart(all, endIdx, pageSize) {
@@ -9442,7 +9500,16 @@ class MessengerSidebar {
 
 	setConnectionStateManager(mgr) {
 		this.#connectionStateMgr = mgr;
-		mgr?.subscribe((state, error) => this.#updateNetworkIndicator(state, error));
+		mgr?.subscribe((state, error) => {
+			this.#updateNetworkIndicator(state, error);
+			if (this.#allChatsRef?.length) {
+				this.renderChatList(this.#allChatsRef, this.#lastActiveChat, this.#lastI18n || this.#i18n);
+			}
+		});
+	}
+
+	#canShowContactPresence() {
+		return this.#connectionStateMgr?.state === MessengerConnectionStateManager.STATE_CONNECTED;
 	}
 
 	setOnNetworkReconnect(fn) { this.#onNetworkReconnect = fn; }
@@ -9481,7 +9548,6 @@ class MessengerSidebar {
 		const userNameEl = this.#utils.mk('span', 'mapp-sidebar-username');
 		userNameEl.textContent = '…';
 		const userStatusEl = this.#utils.mk('span', 'mapp-sidebar-user-status');
-		userStatusEl.hidden = true;
 		userTextWrap.append(userNameEl, userStatusEl);
 		userInfo.append(userAvatarWrap, userTextWrap);
 
@@ -9604,7 +9670,6 @@ class MessengerSidebar {
 		if (!el) return;
 		const status = (this.#currentUser?.statusText || '').trim();
 		el.textContent = status;
-		el.hidden = !status;
 	}
 
 	setUserStatus(statusText) {
@@ -10033,9 +10098,32 @@ class MessengerSidebar {
 		this.#selectFolder(ids[next]);
 	}
 
+	#folderSwipeCommitThreshold() {
+		return Math.max(
+			MessengerSidebar.FOLDER_SWIPE_MIN_PX,
+			this.#folderSlideWidth * MessengerSidebar.FOLDER_SWIPE_COMMIT_RATIO
+		);
+	}
+
+	#folderSwipeShouldCommit(offsetPx) {
+		if (!this.#folderSlideMode) return false;
+		const threshold = this.#folderSwipeCommitThreshold();
+		return this.#folderSlideMode === 'next'
+			? offsetPx <= -threshold
+			: offsetPx >= threshold;
+	}
+
+	#folderSwipeFingerDragActive(track, horizontal) {
+		return horizontal || (
+			!!this.#folderSlideMode &&
+			!!track?.classList.contains('mapp-chat-list-track--dragging')
+		);
+	}
+
 	#bindFolderSwipe() {
 		const viewport = this.el.chatList;
-		if (!viewport || !this.el.chatListTrack || viewport.dataset.folderSwipeBound) return;
+		const track = this.el.chatListTrack;
+		if (!viewport || !track || viewport.dataset.folderSwipeBound) return;
 		viewport.dataset.folderSwipeBound = '1';
 
 		let startX = 0;       // raw gesture start
@@ -10044,6 +10132,7 @@ class MessengerSidebar {
 		let lastDx = 0;
 		let tracking = false; // a touch is being followed (not yet decided)
 		let horizontal = false; // a horizontal slide is active
+		let activeTouchId = null;
 
 		const canStartSwipe = () => {
 			if (!this.#isFolderSwipeLayout()) return false;
@@ -10054,11 +10143,39 @@ class MessengerSidebar {
 			return this.#folderNavIds().length > 1;
 		};
 
+		const fingerDragActive = () => this.#folderSwipeFingerDragActive(track, horizontal);
+
+		const activeTouch = (e) => {
+			if (activeTouchId == null) return e.touches[0] ?? null;
+			for (let i = 0; i < e.touches.length; i++) {
+				if (e.touches[i].identifier === activeTouchId) return e.touches[i];
+			}
+			return null;
+		};
+
+		const activeTouchEnded = (e) => {
+			if (activeTouchId == null) return true;
+			for (let i = 0; i < e.changedTouches.length; i++) {
+				if (e.changedTouches[i].identifier === activeTouchId) return true;
+			}
+			return false;
+		};
+
+		const settleFingerDrag = () => {
+			horizontal = false;
+			tracking = false;
+			activeTouchId = null;
+			if (!this.#folderSlideMode) return;
+			this.#settleFolderSlide(this.#folderSwipeShouldCommit(this.#folderSlideX));
+		};
+
 		viewport.addEventListener('touchstart', (e) => {
 			if (e.touches.length !== 1 || !canStartSwipe()) {
-				tracking = false;
+				// A second finger or a scroll while dragging must not drop the in-progress slide.
+				if (!fingerDragActive()) tracking = false;
 				return;
 			}
+			activeTouchId = e.touches[0].identifier;
 			startX = e.touches[0].clientX;
 			startY = e.touches[0].clientY;
 			tracking = true;
@@ -10067,10 +10184,14 @@ class MessengerSidebar {
 		}, { passive: true });
 
 		viewport.addEventListener('touchmove', (e) => {
-			if (!tracking || e.touches.length !== 1) return;
-			const x = e.touches[0].clientX;
+			if (!tracking && !fingerDragActive()) return;
+			const touch = activeTouch(e);
+			if (!touch) return;
+			if (!tracking && fingerDragActive()) tracking = true;
+
+			const x = touch.clientX;
 			const dx = x - startX;
-			const dy = e.touches[0].clientY - startY;
+			const dy = touch.clientY - startY;
 
 			if (!horizontal) {
 				// Wait until the gesture has a clear direction.
@@ -10095,27 +10216,27 @@ class MessengerSidebar {
 			this.#dragFolderSlide(lastDx);
 		}, { passive: false });
 
-		viewport.addEventListener('touchcancel', () => {
-			if (horizontal) this.#settleFolderSlide(false);
-			tracking = false;
-			horizontal = false;
+		viewport.addEventListener('touchcancel', (e) => {
+			if (fingerDragActive() && (activeTouchEnded(e) || e.touches.length === 0)) {
+				settleFingerDrag();
+				return;
+			}
+			if (!fingerDragActive()) {
+				tracking = false;
+				horizontal = false;
+				activeTouchId = null;
+			}
 		}, { passive: true });
 
-		viewport.addEventListener('touchend', () => {
-			if (!tracking) return;
-			tracking = false;
-			if (!horizontal || !this.#folderSlideMode) return;
-			horizontal = false;
-
-			const commitThreshold = Math.max(
-				MessengerSidebar.FOLDER_SWIPE_MIN_PX,
-				this.#folderSlideWidth * MessengerSidebar.FOLDER_SWIPE_COMMIT_RATIO
-			);
-			const shouldCommit = this.#folderSlideMode === 'next'
-				? lastDx <= -commitThreshold
-				: lastDx >= commitThreshold;
-
-			this.#settleFolderSlide(shouldCommit);
+		viewport.addEventListener('touchend', (e) => {
+			if (fingerDragActive() && (activeTouchEnded(e) || e.touches.length === 0)) {
+				settleFingerDrag();
+				return;
+			}
+			if (!fingerDragActive()) {
+				tracking = false;
+				activeTouchId = null;
+			}
 		}, { passive: true });
 	}
 
@@ -10293,10 +10414,12 @@ class MessengerSidebar {
 		if (activeChat?.id === chat.id) item.classList.add('mapp-chat-item--active');
 		item.dataset.chatId = chat.id;
 		const displayName = chat.name || this.#i18n.t('unnamed');
-		const presence = chat.type === 'direct' && chat.contactUserId
+		const presence = this.#canShowContactPresence()
+			&& chat.type === 'direct'
+			&& chat.contactUserId
 			? this.#presence?.get(chat.contactUserId)
 			: null;
-		const avatar = presence
+		const avatar = presence === 'online' || presence === 'idle'
 			? this.#avatarBuilder.buildWithPresence(chat.id, displayName, chat.avatar || null, 48, presence)
 			: this.#avatarBuilder.build(chat.id, displayName, chat.avatar || null, 48);
 		const info = this.#utils.mk('div', 'mapp-chat-item-info');
@@ -10558,6 +10681,7 @@ class MessengerAppView {
 	#groupProfileModal;
 	#avatarBuilder;
 	#presence = null;
+	#connectionStateMgr = null;
 	#onClearChatCache = null;
 	#currentUser = null;
 	/** @type {Map<string, string>} */
@@ -10572,6 +10696,7 @@ class MessengerAppView {
 	#msgService = null;
 	static PANEL_POOL_MAX = 5;
 	#mobilePopstateHandler = null;
+	#keyboardLayoutDestroy = null;
 	static NAV_SESSION_PREFIX = 'mapp.nav.';
 	el = {};
 	constructor(utils, icons, themeManager, i18n, sidebar, panelFactory, modal, api, fileTransferTypes = [], settingsModal = null, profileModal = null, groupProfileModal = null, avatarBuilder = null, readGate = null) {
@@ -10700,7 +10825,30 @@ class MessengerAppView {
 	}
 
 	setConnectionStateManager(mgr) {
+		this.#connectionStateMgr = mgr;
 		this.#sidebar.setConnectionStateManager(mgr);
+		mgr?.subscribe((state) => {
+			if (state === MessengerConnectionStateManager.STATE_CONNECTED) {
+				this.#prefetchAllDirectContactPresence();
+			}
+			this.#refreshActiveChatHeader();
+			if (this.#activeChat?.type === 'direct') {
+				this.#refreshDirectChatHeaderSub(this.#activeChat);
+			}
+		});
+	}
+
+	#canShowContactPresence() {
+		return this.#connectionStateMgr?.state === MessengerConnectionStateManager.STATE_CONNECTED;
+	}
+
+	#prefetchAllDirectContactPresence() {
+		const seen = new Set();
+		for (const chat of this.#chats) {
+			if (chat.type !== 'direct' || !chat.contactUserId || seen.has(chat.contactUserId)) continue;
+			seen.add(chat.contactUserId);
+			this.#prefetchDirectContactPresence(chat);
+		}
 	}
 
 	setOnNetworkReconnect(fn) { this.#sidebar.setOnNetworkReconnect(fn); }
@@ -10711,16 +10859,19 @@ class MessengerAppView {
 		if (!this.#activeChat || !this.#activeState?.el) return;
 		const chat = this.#activeChat;
 		if (chat.type !== 'direct' || !chat.contactUserId) return;
-		const presence = this.#presence?.get(chat.contactUserId);
+		const canShow = this.#canShowContactPresence();
+		const presence = canShow ? this.#presence?.get(chat.contactUserId) : null;
 		const info = this.#activeState.el.querySelector('.mc-header-info');
 		if (!info) return;
 		const profileHit = info.querySelector('.mc-header-profile-hit');
 		const scope = profileHit || info;
 		const old = scope.querySelector('.mc-avatar-wrap') || scope.querySelector('.mc-avatar');
 		if (!old) return;
-		const next = this.#avatarBuilder.buildWithPresence(
-			chat.id, chat.name || '', chat.avatar || null, 32, presence
-		);
+		const next = presence === 'online' || presence === 'idle'
+			? this.#avatarBuilder.buildWithPresence(
+				chat.id, chat.name || '', chat.avatar || null, 32, presence
+			)
+			: this.#avatarBuilder.build(chat.id, chat.name || '', chat.avatar || null, 32);
 		old.replaceWith(next);
 		this.#refreshDirectChatHeaderSub(chat);
 	}
@@ -10788,7 +10939,21 @@ class MessengerAppView {
 			});
 		}
 		this.#bindMobilePopstate();
+		this.#bindMobileKeyboardLayout();
 		this.#bindDesktopLayout(root);
+	}
+
+	#bindMobileKeyboardLayout() {
+		this.#keyboardLayoutDestroy?.();
+		this.#keyboardLayoutDestroy = null;
+		if (!MessengerUtils.isMobile() || !this.el.chatArea) return;
+		this.#keyboardLayoutDestroy = MessengerUtils.initMobileKeyboardLayout(
+			this.el.chatArea,
+			{
+				mode: 'inset',
+				shouldApply: () => this.el.root?.classList.contains('mapp-show-chat'),
+			},
+		);
 	}
 
 	#bindDesktopLayout(root) {
@@ -10873,6 +11038,7 @@ class MessengerAppView {
 	#showChatListMobile() {
 		this.#parkActivePanel();
 		this.el.root.classList.remove('mapp-show-chat');
+		this.#keyboardLayoutDestroy?.apply?.();
 		this.el.empty.hidden = false;
 		this.#activeChat = null;
 		this.#sidebar.setActiveItem(null);
@@ -10974,12 +11140,21 @@ class MessengerAppView {
 		this.#chatsBootLoading = false;
 		this.#chats = chats;
 		this.#renderChatList();
+		if (this.#canShowContactPresence()) {
+			this.#prefetchAllDirectContactPresence();
+		}
 	}
 	setCurrentUser(user) {
 		if (!user) return;
-		this.#currentUser = user;
+		const prev = this.#currentUser;
+		this.#currentUser = {
+			...user,
+			statusText: user.statusText !== undefined
+				? (user.statusText || '')
+				: (prev?.statusText || ''),
+		};
 		if (user.id && user.login) this.#contactLogins.set(user.id, user.login);
-		this.#sidebar.updateUser(user);
+		this.#sidebar.updateUser(this.#currentUser);
 	}
 
 	handleLoginChanged({ userId, oldLogin, newLogin, displayName } = {}) {
@@ -11373,6 +11548,7 @@ class MessengerAppView {
 				history.pushState({ mappChatOpen: true }, '');
 			}
 			this.el.root.classList.add('mapp-show-chat');
+			this.#keyboardLayoutDestroy?.apply?.();
 			if (this.#isPhonePortrait()) {
 				this.#hideBottomNavigationBar();
 			}
@@ -11514,6 +11690,7 @@ class MessengerAppView {
 		if (!ok) return;
 		crypto.clearSessionCustomPassword(chat.id);
 		crypto.clearSessionSendBasicOnly(chat.id);
+		crypto.setExtraEncryptionEnabled(chat.id, false);
 		if (this.#activeState?.chatId === chat.id) {
 			await this.#panelFactory.relockProtectedMessages(this.#activeState, chat.id);
 		}
@@ -11573,10 +11750,11 @@ class MessengerAppView {
 		const oldAv = scope?.querySelector('.mc-avatar-wrap, .mc-avatar');
 		if (!oldAv || !this.#avatarBuilder) return;
 		const displayName = chat.name || '';
-		const presence = chat.type === 'direct' && chat.contactUserId
+		const canShow = this.#canShowContactPresence();
+		const presence = canShow && chat.type === 'direct' && chat.contactUserId
 			? this.#presence?.get(chat.contactUserId)
 			: null;
-		const next = presence
+		const next = presence === 'online' || presence === 'idle'
 			? this.#avatarBuilder.buildWithPresence(chat.id, displayName, avatarUrl || null, 32, presence)
 			: this.#avatarBuilder.build(chat.id, displayName, avatarUrl || null, 32);
 		oldAv.replaceWith(next);
@@ -11612,8 +11790,11 @@ class MessengerAppView {
 		if (!chat || chat.type !== 'direct' || this.#activeState?.chatId !== chat.id) return;
 		const subEl = this.#activeState.el?.querySelector('.mc-header-sub');
 		if (!subEl) return;
-		const presence = chat.contactUserId ? this.#presence?.get(chat.contactUserId) : null;
-		const text = MessengerUtils.getDirectChatHeaderSub(chat, presence, this.#i18n, this.#utils);
+		const canShow = this.#canShowContactPresence();
+		const presence = canShow && chat.contactUserId ? this.#presence?.get(chat.contactUserId) : null;
+		const text = MessengerUtils.getDirectChatHeaderSub(
+			chat, presence, this.#i18n, this.#utils, canShow
+		);
 		subEl.textContent = text ?? (this.#i18n.t('typeLabels')?.direct || '');
 	}
 
@@ -11653,10 +11834,11 @@ class MessengerAppView {
 				if (oldAv && this.#activeChat) {
 					const chat = this.#activeChat;
 					const displayName = chat.name || '';
-					const presence = chat.type === 'direct' && chat.contactUserId
+					const canShow = this.#canShowContactPresence();
+					const presence = canShow && chat.type === 'direct' && chat.contactUserId
 						? this.#presence?.get(chat.contactUserId)
 						: null;
-					const next = presence
+					const next = presence === 'online' || presence === 'idle'
 						? this.#avatarBuilder.buildWithPresence(chat.id, displayName, avatar, 32, presence)
 						: this.#avatarBuilder.build(chat.id, displayName, avatar, 32);
 					oldAv.replaceWith(next);
@@ -12476,6 +12658,7 @@ class MessengerApiClient {
 		}
 		if (choice === 'secondary') {
 			crypto.setSessionSendBasicOnly(chatId, true);
+			crypto.setExtraEncryptionEnabled(chatId, false);
 			return { tier: 'basic' };
 		}
 		return { tier: 'basic', cancelled: true };
@@ -14733,6 +14916,12 @@ class MessengerMessageRenderer {
 		field.addEventListener('input', () => {
 			field.style.height = 'auto';
 			if (field.scrollHeight > 40) field.style.height = Math.min(field.scrollHeight, 120) + 'px';
+			if (MessengerUtils.isMobile()) {
+				const panel = msgArea.closest('.mapp-chat-panel, .mc-root');
+				if (MessengerUtils.shouldPinMessagesToComposer(msgArea, panel)) {
+					msgArea.scrollTop = msgArea.scrollHeight;
+				}
+			}
 			if (onActivity) {
 				const now = Date.now();
 				if (now - lastActivitySentAt >= THROTTLE_MS) {
@@ -14749,6 +14938,14 @@ class MessengerMessageRenderer {
 				doSend();
 			}
 		});
+		if (MessengerUtils.isMobile()) {
+			field.addEventListener('focus', () => {
+				requestAnimationFrame(() => {
+					window.scrollTo(0, 0);
+					MessengerUtils.scrollToBottom(msgArea);
+				});
+			});
+		}
 		const btn = this.#utils.mk('button', 'mc-send-btn');
 		btn.type = 'button';
 		btn.innerHTML = this.#icons.send();
@@ -14779,6 +14976,7 @@ class MessengerChatPanel {
 	#pageSize;
 	#fileHandler;
 	#presence = null;
+	#connectionStateMgr = null;
 	#forwardModal = null;
 	#readGate = null;
 	#chatVisibleFn = null;
@@ -14797,6 +14995,11 @@ class MessengerChatPanel {
 		this.#fileHandler = new MessengerFileHandler(utils, icons, i18n, api, cache);
 	}
 	setPresenceManager(presence) { this.#presence = presence; }
+	setConnectionStateManager(mgr) { this.#connectionStateMgr = mgr; }
+
+	#canShowContactPresence() {
+		return this.#connectionStateMgr?.state === MessengerConnectionStateManager.STATE_CONNECTED;
+	}
 
 	setReadEngagement(readGate, chatVisibleFn) {
 		this.#readGate = readGate;
@@ -14990,10 +15193,11 @@ class MessengerChatPanel {
 				appEl.empty.hidden = false;
 			}
 		});
-		const avatarPresence = chat.type === 'direct' && chat.contactUserId
+		const canShow = this.#canShowContactPresence();
+		const avatarPresence = canShow && chat.type === 'direct' && chat.contactUserId
 			? this.#presence?.get(chat.contactUserId)
 			: null;
-		const avatar = avatarPresence
+		const avatar = avatarPresence === 'online' || avatarPresence === 'idle'
 			? this.#avatarBuilder.buildWithPresence(chat.id, displayName, chat.avatar || null, 32, avatarPresence)
 			: this.#avatarBuilder.build(chat.id, displayName, chat.avatar || null, 32);
 		const nameEl = this.#utils.mk('div', 'mc-header-name');
@@ -15001,7 +15205,7 @@ class MessengerChatPanel {
 		const subEl = this.#utils.mk('div', 'mc-header-sub');
 		if (chat.type === 'direct') {
 			const subText = MessengerUtils.getDirectChatHeaderSub(
-				chat, avatarPresence, this.#i18n, this.#utils
+				chat, avatarPresence, this.#i18n, this.#utils, canShow
 			);
 			subEl.textContent = subText ?? (this.#i18n.t('typeLabels')[chat.type] || '');
 		} else {
@@ -16698,7 +16902,9 @@ class MessengerChatView {
 			}
 		};
 		window.addEventListener('popstate', this.#popstateHandler);
-		if (MessengerUtils.isMobile()) this.#viewportDestroy = MessengerUtils.initViewport(root);
+		if (MessengerUtils.isMobile()) {
+			this.#viewportDestroy = MessengerUtils.initMobileKeyboardLayout(root, { mode: 'height' });
+		}
 	}
 	#recalcSeparatorsInDOM() {
 		const messages = this.el.messages;
@@ -17695,6 +17901,7 @@ class Messenger {
 			appViewInst.setOnNetworkReconnect(() => transportInst.resumeConnection('user'));
 			appViewInst.setOnClearChatCache(chatId => this.clearChatCache(chatId));
 			panelFactoryInst.setPresenceManager(presenceInst);
+			panelFactoryInst.setConnectionStateManager(connectionStateInst);
 		}
 		presenceInst.bindActivityReporting(() => transportInst.reportActivity(), this.#container);
 		themeManagerInst.apply(themeManagerInst.current);
@@ -17775,7 +17982,14 @@ class Messenger {
 		this.#appView.render(this.#container);
 		if (bootMark) bootMark('init-app-rendered');
 		const bootUser = this.#resolveBootUser();
-		const user = bootUser ?? await this.#api.getCurrentUser();
+		let user = bootUser;
+		try {
+			const apiUser = await this.#api.getCurrentUser();
+			if (apiUser?.id) user = { ...bootUser, ...apiUser };
+		} catch (e) {
+			console.warn('[Messenger] getCurrentUser', e);
+		}
+		if (!user?.id) user = await this.#api.getCurrentUser();
 		this.#appView.setCurrentUser(user);
 		if (user?.id) this.#api.setCurrentUserId(user.id);
 		this.#appView.setChatsBootLoading(true);

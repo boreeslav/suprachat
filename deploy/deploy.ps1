@@ -1,6 +1,7 @@
 # SuperMessenger - deploy to remote Linux (Docker) with live PuTTY output
 # Usage: .\deploy\deploy.ps1  or  deploy.cmd
-# Settings: deploy\deploy.env (see deploy\deploy.env.example)
+# Settings: tmp\deploy\deploy.env (see tmp\deploy\deploy.env.example)
+# Build artifacts: tmp\deploy\ (archive, staging tree, remote script)
 
 param(
     [string]$ServerHost = '',
@@ -113,8 +114,8 @@ function Build-ClientAssets([string]$MessengerDir) {
     Write-Host "  supra-messenger.min.js: $kb KB" -ForegroundColor DarkGray
 }
 
-function Build-WebCryptoBundle {
-    $cryptoDir = Join-Path $Root "src\SuperMessenger.Web\wwwroot\messenger"
+function Build-WebCryptoBundle([string]$MessengerDir) {
+    $cryptoDir = $MessengerDir
     $buildScript = Join-Path $cryptoDir "build-webcrypto.ps1"
     if (-not (Test-Path $buildScript)) {
         throw "Web Crypto build script not found: $buildScript"
@@ -140,9 +141,17 @@ function Copy-ProjectSources([string]$DestRoot) {
     Write-Host "  Copying src/ (skip bin, obj, .vs)..."
     $null = robocopy $srcFrom $srcTo /E /XD bin obj .vs /NFL /NDL /NJH /NJS /NP
     if ($LASTEXITCODE -ge 8) { throw "robocopy failed: $LASTEXITCODE" }
-    Update-AssetUrls $DestRoot
-    $messengerDir = Join-Path $DestRoot "src\SuperMessenger.Web\wwwroot\messenger"
-    Build-ClientAssets $messengerDir
+}
+
+function Build-DeployTree([string]$BuildDir) {
+    # node_modules только в src — собираем бандлы там, в tmp копируем готовое дерево для архива.
+    $sourceMessenger = Join-Path $Root "src\SuperMessenger.Web\wwwroot\messenger"
+    Build-WebCryptoBundle $sourceMessenger
+    Build-ClientAssets $sourceMessenger
+    Copy-ProjectSources $BuildDir
+    $webProjectDir = Join-Path $BuildDir "src\SuperMessenger.Web"
+    Update-DeployRelease -Root $Root -WebProjectDir $webProjectDir
+    Update-AssetUrls $BuildDir
 }
 
 function Update-AssetUrls([string]$DestRoot) {
@@ -237,27 +246,27 @@ function Build-RemoteScript([string]$OutPath) {
 
 $RemoteDir = "/opt/supermessenger"
 $ArchiveName = "supermessenger-deploy.tar.gz"
-$ArchivePath = Join-Path $env:TEMP $ArchiveName
-$tarSource = Join-Path $env:TEMP "supermessenger-src"
+$TmpDeployDir = Join-Path $Root "tmp\deploy"
+$BuildDir = Join-Path $TmpDeployDir "supermessenger-src"
+$ArchivePath = Join-Path $TmpDeployDir $ArchiveName
+$shPath = Join-Path $TmpDeployDir "sm-deploy.sh"
 
-Write-Step "Prepare release (version + changelog)"
+if (-not (Test-Path $TmpDeployDir)) {
+    New-Item -ItemType Directory -Path $TmpDeployDir -Force | Out-Null
+}
+
+Write-Step "Build deploy tree (tmp/deploy)"
 . (Join-Path $DeployDir 'apply-release.ps1')
-$releaseInfo = Update-DeployRelease -Root $Root
+if (Test-Path $BuildDir) { Remove-Item $BuildDir -Recurse -Force }
+New-Item -ItemType Directory -Path $BuildDir -Force | Out-Null
+Build-DeployTree $BuildDir
 
-Write-Step "Build Web Crypto bundle"
-Build-WebCryptoBundle
-
-Write-Step "Build deploy archive"
-if (Test-Path $tarSource) { Remove-Item $tarSource -Recurse -Force }
-New-Item -ItemType Directory -Path $tarSource -Force | Out-Null
-Copy-ProjectSources $tarSource
-Push-Location $tarSource
+Write-Step "Pack deploy archive"
+Push-Location $BuildDir
 tar -czf $ArchivePath *
 Pop-Location
 $archiveMb = [math]::Round((Get-Item $ArchivePath).Length / 1MB, 2)
-Write-Host "  Archive size: $archiveMb (path: $ArchivePath)" -ForegroundColor DarkGray
-
-$shPath = Join-Path $env:TEMP "sm-deploy.sh"
+Write-Host "  Archive size: $archiveMb MB (path: $ArchivePath)" -ForegroundColor DarkGray
 Build-RemoteScript $shPath
 $remote = "${ServerUser}@${ServerHost}"
 

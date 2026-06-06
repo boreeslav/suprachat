@@ -178,8 +178,7 @@
 		text.className = 'sm-update-banner-text';
 		const verHint = serverVersion ? ' (версия ' + serverVersion + ')' : '';
 		text.textContent =
-			'Доступна новая версия приложения' + verHint
-			+ '. Обновите страницу, чтобы получить последние изменения.';
+			'Доступна новая версия приложения' + verHint;
 
 		const actions = document.createElement('div');
 		actions.className = 'sm-update-banner-actions';

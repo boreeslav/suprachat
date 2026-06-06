@@ -16,13 +16,19 @@ function Get-ReleaseVersionString {
 function Update-DeployRelease {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$Root
+        [string]$Root,
+        [string]$WebProjectDir = ''
     )
 
     $releasePath = Join-Path $Root 'deploy\release.json'
     $pendingPath = Join-Path $Root 'deploy\pending-changelog.txt'
     $brandingPath = Join-Path $Root 'deploy\branding.json'
-    $outPath = Join-Path $Root 'src\SuperMessenger.Web\deploy-branding.json'
+    $webRoot = if ([string]::IsNullOrWhiteSpace($WebProjectDir)) {
+        Join-Path $Root 'src\SuperMessenger.Web'
+    } else {
+        $WebProjectDir
+    }
+    $outPath = Join-Path $webRoot 'deploy-branding.json'
 
     if (-not (Test-Path $releasePath)) { throw "Missing $releasePath" }
     if (-not (Test-Path $brandingPath)) { throw "Missing $brandingPath" }
