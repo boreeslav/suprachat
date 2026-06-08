@@ -20,9 +20,9 @@
 	background: var(--m-chat-bg);
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 	font-size: 14px;
-	color: #1c1c1e;
+	color: var(--m-header-text, #1c1c1e);
 	overflow: hidden;
-	transition: background .3s;
+	transition: background .3s, color .3s;
 }
 
 .mc-header {
@@ -594,19 +594,20 @@
 }
 
 .mc-input-field {
-	flex: 1;
-	border: 0px;
-	border-radius: 20px;
-	padding: 8px 4px;
-	font-size: 14px;
-	resize: none;
-	overflow: hidden;
-	outline: none;
-	line-height: 1.4;
-	max-height: 120px;
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-	color: var(--m-input-text);
-	transition: border-color .2s, background .3s, color .3s;
+    flex: 1;
+    border: 0px;
+    border-radius: 20px;
+    padding: 8px 4px;
+    font-size: 14px;
+    resize: none;
+    overflow: hidden;
+    outline: none;
+    line-height: 1.4;
+    max-height: 120px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--m-input-bg);
+    color: var(--m-input-text);
+    transition: border-color .2s, background .3s, color .3s;
 }
 
 .mc-input-field::placeholder {
@@ -637,6 +638,17 @@
 	flex-shrink: 0;
 	width: 28px;
 	height: 28px;
+}
+
+.mc-input-area--offline {
+	opacity: 0.72;
+}
+
+.mc-input-area--offline .mc-input-field:disabled,
+.mc-input-area--offline .mc-send-btn:disabled,
+.mc-input-area--offline .mc-attach-btn:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
 }
 
 .mc-send-btn:hover {
@@ -1084,9 +1096,10 @@
 	display: flex;
 	flex-direction: column;
 	background: var(--mapp-sidebar-bg);
+	color: var(--mapp-text);
 	border-right: 1px solid var(--mapp-border);
 	overflow: hidden;
-	transition: background .3s;
+	transition: background .3s, color .3s;
 }
 
 .mapp-sidebar-topbar {
@@ -1500,6 +1513,82 @@
 	text-align: left;
 }
 
+.mapp-msg-info {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	font-size: 13px;
+	line-height: 1.45;
+}
+.mapp-msg-info-row {
+	display: grid;
+	grid-template-columns: minmax(110px, 38%) 1fr;
+	gap: 8px 12px;
+	align-items: start;
+}
+.mapp-msg-info-label {
+	color: var(--mapp-sub-text, #888);
+}
+.mapp-msg-info-value code {
+	font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	word-break: break-all;
+}
+.mapp-msg-info-muted {
+	color: var(--mapp-sub-text, #888);
+}
+.mapp-msg-info-warn {
+	color: var(--mapp-danger, #c0392b);
+}
+.mapp-msg-info-section {
+	margin-top: 10px;
+	padding-top: 10px;
+	border-top: 1px solid var(--mapp-border, rgba(127,127,127,.25));
+	font-weight: 600;
+}
+.mapp-msg-info-list,
+.mapp-msg-info-events {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.mapp-msg-info-list li,
+.mapp-msg-info-events li {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 10px;
+	align-items: baseline;
+}
+.mapp-msg-info-list-name {
+	font-weight: 500;
+	min-width: 5em;
+}
+.mapp-msg-info-list-meta {
+	color: var(--mapp-sub-text, #888);
+}
+.mapp-msg-info-event-time {
+	font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	color: var(--mapp-sub-text, #888);
+	min-width: 9.5em;
+}
+.mapp-msg-info-event-kind {
+	font-weight: 500;
+}
+.mapp-msg-info-event-who {
+	color: var(--mapp-text, inherit);
+}
+.mapp-msg-info-event-detail {
+	flex: 1 1 100%;
+	color: var(--mapp-sub-text, #888);
+	font-size: 12px;
+	word-break: break-word;
+}
+.mc-dialog.mc-dialog--html.mapp-msg-info-dialog {
+	max-width: min(560px, 92vw);
+}
+
 .mapp-settings-nav-chevron {
 	color: var(--mapp-sub-text, #aaa);
 	font-size: 20px;
@@ -1830,6 +1919,7 @@
 	height: 100%;
 	overflow-y: auto;
 	padding-bottom: 8px;
+	background: var(--mapp-sidebar-bg);
 	-webkit-overflow-scrolling: touch;
 }
 
@@ -3098,6 +3188,7 @@
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
+	isolation: isolate;
 }
 
 .mc-header,

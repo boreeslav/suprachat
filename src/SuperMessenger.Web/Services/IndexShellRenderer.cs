@@ -48,7 +48,7 @@ public sealed class IndexShellRenderer
         var appName = string.IsNullOrWhiteSpace(settings.AppName) ? "SuperMessenger" : settings.AppName.Trim();
         var splashHtml = EnrichSplashHtml(settings.SplashHtml ?? "", appName, settings.LogoFileName);
         var splashCss = settings.SplashCss ?? "";
-        var themeColor = NormalizeColor(settings.Base?.ContentBg, "#ffffff");
+        var themeColor = AppAppearanceService.ResolvePwaStatusBarColor(settings, "#e8eaed");
         var logoPreload = string.IsNullOrEmpty(settings.LogoFileName)
             ? ""
             : "<link rel=\"preload\" href=\"/api/app/logo\" as=\"image\"/>";

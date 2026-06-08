@@ -12,9 +12,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
   <meta name="apple-mobile-web-app-title" content="<!--SM_APP_TITLE-->"/>
-  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"/>
-  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png"/>
-  <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="/api/app/icons/icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="/api/app/icons/icon-512.png"/>
+  <link rel="apple-touch-icon" href="/api/app/icons/apple-touch-icon-180.png"/>
   <!--SM_LOGO_PRELOAD-->
   <style id="app-splash-css"><!--SM_SPLASH_CSS--></style>
   <style id="app-splash-critical-css">
@@ -30,9 +30,9 @@
     html[data-splash-ssr="1"] #app-splash-root:not(.sm-splash-animate) .sm-splash-app-name{
       opacity:1!important;transform:none!important;animation:none!important
     }
-    #chat.sm-index-chat{min-height:100dvh;background:#f0f2f5}
-    body.sm-messenger-active .mapp-root{display:flex;min-height:100dvh;width:100%;background:#f0f2f5}
-    body.sm-messenger-active .mapp-sidebar{background:#fff;min-height:100dvh}
+    #chat.sm-index-chat{min-height:100dvh;background:var(--mapp-content-bg,#f0f2f5)}
+    body.sm-messenger-active .mapp-root{display:flex;min-height:100dvh;width:100%;background:var(--mapp-content-bg,#f0f2f5)}
+    body.sm-messenger-active .mapp-sidebar{background:var(--mapp-sidebar-bg,#fff);min-height:100dvh;color:var(--mapp-text,#1c1c1e)}
   </style>
   <link rel="preload" href="/messenger/app-script-cache.js?v=auto" as="script"/>
   <link rel="preload" href="/messenger/supra-messenger.css?v=auto" as="style"/>
@@ -54,7 +54,26 @@
           if (!ct.includes('application/json')) throw new Error('Unexpected response type');
           return r.json();
         })
-        .catch(function (e) { g.__authMeError = e; return undefined; });
+        .then(function (user) {
+          if (user && user.id) {
+            try { localStorage.setItem('sm-offline-user-v1', JSON.stringify(user)); } catch (_) {}
+          }
+          return user;
+        })
+        .catch(function (e) {
+          g.__authMeError = e;
+          try {
+            var raw = localStorage.getItem('sm-offline-user-v1');
+            if (raw) {
+              var cached = JSON.parse(raw);
+              if (cached && cached.id) {
+                g.__authMeOffline = true;
+                return cached;
+              }
+            }
+          } catch (_) {}
+          return undefined;
+        });
       if (g.__bootMark) g.__bootMark('appearance-prefetch-start');
       g.__appAppearancePromise = fetch('/api/app/appearance', { credentials: 'same-origin' })
         .then(function (r) {

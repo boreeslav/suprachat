@@ -50,6 +50,11 @@
 			return lines.join('\n');
 		}
 		for (const m of marks) {
+			if (m.label === 'push-debug' && m.extra && typeof m.extra === 'object') {
+				lines.push('---');
+				lines.push(formatPushDebugText(m.extra));
+				continue;
+			}
 			let line = m.ms + 'ms\t' + m.label;
 			if (m.extra != null) {
 				try { line += '\t' + JSON.stringify(m.extra); } catch (_) { /* ignore */ }
@@ -57,6 +62,45 @@
 			lines.push(line);
 		}
 		return lines.join('\n');
+	}
+
+	function formatPushDebugText(trace) {
+		const lines = ['Push debug', 'at: ' + new Date().toISOString()];
+		if (!trace || typeof trace !== 'object') {
+			lines.push('(no data)');
+			return lines.join('\n');
+		}
+		if (trace.chatId) lines.push('chatId: ' + trace.chatId);
+		if (trace.messageId) lines.push('messageId: ' + trace.messageId);
+		lines.push('---');
+		const recipients = Array.isArray(trace.recipients) ? trace.recipients : [];
+		if (!recipients.length) {
+			lines.push('(no recipients)');
+			return lines.join('\n');
+		}
+		for (const r of recipients) {
+			const name = r.displayName || r.userId || '?';
+			lines.push('[' + name + '] presence=' + (r.presenceStatus || '?') +
+				' connected=' + !!r.isConnected + ' action=' + (r.action || '?'));
+			if (r.skipReason) lines.push('  skip: ' + r.skipReason);
+			if (r.globalMuted) lines.push('  globalMuted: true');
+			if (r.chatMuted) lines.push('  chatMuted: true');
+			if (r.subscriptionCount != null) lines.push('  subscriptions: ' + r.subscriptionCount);
+			if (r.anyDelivered != null) lines.push('  delivered: ' + r.anyDelivered);
+			const attempts = Array.isArray(r.attempts) ? r.attempts : [];
+			for (const a of attempts) {
+				let al = '  endpoint …' + (a.endpointSuffix || '?') + ' → ' + (a.outcome || '?');
+				if (a.httpStatus != null) al += ' HTTP ' + a.httpStatus;
+				if (a.error) al += ' (' + a.error + ')';
+				lines.push(al);
+			}
+		}
+		return lines.join('\n');
+	}
+
+	function logPushDebug(trace, label) {
+		const entry = bootMark(label || 'push-debug', trace);
+		return entry;
 	}
 
 	function copyText(text) {
@@ -175,6 +219,12 @@
 		});
 	}
 
+	function openPushDebugModal(opts = {}) {
+		const { themeManager, i18n, trace } = opts;
+		logPushDebug(trace, 'push-debug');
+		openModal({ themeManager, i18n });
+	}
+
 	function bootReport(eventName) {
 		bootMark(eventName || 'boot-complete');
 		return Promise.resolve(null);
@@ -185,7 +235,10 @@
 		dump: bootDump,
 		clear: bootClear,
 		format: formatBootText,
+		formatPushDebug: formatPushDebugText,
+		logPushDebug,
 		openModal,
+		openPushDebugModal,
 	};
 
 	global.__bootMark = bootMark;

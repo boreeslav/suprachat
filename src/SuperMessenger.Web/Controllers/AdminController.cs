@@ -17,17 +17,20 @@ public sealed class AdminController : ControllerBase
     private readonly IConfiguration _config;
     private readonly AppAppearanceService _appearance;
     private readonly UserLoginChangeService _loginChanges;
+    private readonly PushDiagnosticLogStore _pushLog;
 
     public AdminController(
         IDataStore store,
         IConfiguration config,
         AppAppearanceService appearance,
-        UserLoginChangeService loginChanges)
+        UserLoginChangeService loginChanges,
+        PushDiagnosticLogStore pushLog)
     {
         _store = store;
         _config = config;
         _appearance = appearance;
         _loginChanges = loginChanges;
+        _pushLog = pushLog;
     }
 
     [HttpGet("users")]
@@ -151,6 +154,14 @@ public sealed class AdminController : ControllerBase
         return Ok(new { token, link = InviteLinkBuilder.Build(_config, Request, token) });
     }
 
+    /// <summary>Последние трассировки Web Push (отправка сообщений администратором и др.).</summary>
+    [HttpGet("push-diagnostics")]
+    public IActionResult GetPushDiagnostics([FromQuery] int limit = 50)
+    {
+        var entries = _pushLog.GetRecent(limit);
+        return Ok(new { entries });
+    }
+
     private string BuildInviteLink(string token) => InviteLinkBuilder.Build(_config, Request, token);
 
     [HttpGet("appearance")]
@@ -172,14 +183,25 @@ public sealed class AdminController : ControllerBase
         var themes = new List<AppThemeSettings>();
         if (req.Themes is { Count: > 0 })
         {
-            foreach (var dto in req.Themes)
+            for (var i = 0; i < req.Themes.Count; i++)
             {
+                var dto = req.Themes[i];
                 if (string.IsNullOrWhiteSpace(dto.Name)) continue;
-                var def = defaults.Themes.FirstOrDefault(t =>
-                    string.Equals(t.Name, dto.Name.Trim(), StringComparison.Ordinal))
-                    ?? current.Themes.FirstOrDefault(t =>
-                        string.Equals(t.Name, dto.Name.Trim(), StringComparison.Ordinal));
-                themes.Add(MergeThemeDto(dto, def ?? new AppThemeSettings { Name = dto.Name.Trim() }));
+                var themeName = dto.Name.Trim();
+                // Current settings first — defaults would drop uploaded chat backgrounds.
+                var def = current.Themes.FirstOrDefault(t =>
+                    string.Equals(t.Name, themeName, StringComparison.Ordinal))
+                    ?? defaults.Themes.FirstOrDefault(t =>
+                        string.Equals(t.Name, themeName, StringComparison.Ordinal));
+                var merged = MergeThemeDto(dto, def ?? new AppThemeSettings { Name = themeName });
+                // Renamed in admin: same list index, new name — keep uploaded wallpaper.
+                if (string.IsNullOrEmpty(merged.ChatBgImageFileName)
+                    && i < current.Themes.Count
+                    && !string.IsNullOrEmpty(current.Themes[i].ChatBgImageFileName))
+                {
+                    merged.ChatBgImageFileName = current.Themes[i].ChatBgImageFileName;
+                }
+                themes.Add(merged);
             }
         }
         else
@@ -204,6 +226,17 @@ public sealed class AdminController : ControllerBase
             SplashCss = req.SplashCss ?? current.SplashCss,
             LogoClickScript = req.LogoClickScript ?? current.LogoClickScript,
             LogoFileName = current.LogoFileName,
+            PwaIconLogoFileName = current.PwaIconLogoFileName,
+            PwaIconBgImageFileName = current.PwaIconBgImageFileName,
+            PwaIconBgColor = string.IsNullOrWhiteSpace(req.PwaIconBgColor)
+                ? current.PwaIconBgColor
+                : PwaIconGenerator.NormalizeBgColor(req.PwaIconBgColor, current.Base.Accent),
+            LogoSvgColor = req.LogoSvgColor != null
+                ? AppAppearanceService.NormalizeOptionalColor(req.LogoSvgColor)
+                : current.LogoSvgColor,
+            PwaIconSvgColor = req.PwaIconSvgColor != null
+                ? AppAppearanceService.NormalizeOptionalColor(req.PwaIconSvgColor)
+                : current.PwaIconSvgColor,
             IncomingMessageSoundFileName = current.IncomingMessageSoundFileName,
             OutgoingMessageSoundFileName = current.OutgoingMessageSoundFileName,
             DefaultThemeName = string.IsNullOrWhiteSpace(req.DefaultThemeName)
@@ -214,13 +247,14 @@ public sealed class AdminController : ControllerBase
         };
 
         await _appearance.SaveAsync(settings, ct);
+
         var effective = await _appearance.GetEffectiveAsync(ct);
         return Ok(_appearance.ToPublicDto(effective));
     }
 
     [HttpPost("appearance/logo")]
-    [RequestSizeLimit(3_000_000)]
-    public async Task<IActionResult> UploadLogo(IFormFile? file, CancellationToken ct)
+    [RequestSizeLimit(2_500_000)]
+    public async Task<IActionResult> UploadLogo(IFormFile? file, [FromForm] string? iconBgColor, CancellationToken ct)
     {
         if (file == null || file.Length == 0)
             return BadRequest(new { error = "Выберите файл" });
@@ -230,8 +264,175 @@ public sealed class AdminController : ControllerBase
             return BadRequest(new { error });
 
         await using var stream = file.OpenReadStream();
-        await _appearance.SaveLogoAsync(stream, ext, ct);
-        return Ok(new { logoUrl = "/api/app/logo", logoSvg = AppAppearanceService.IsSvgLogoFile(ext) });
+        try
+        {
+            await _appearance.SaveLogoAsync(stream, ext, iconBgColor, ct);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+
+        var iconParts = Request.Form.Files
+            .Where(f => !string.Equals(f.Name, "file", StringComparison.OrdinalIgnoreCase)
+                && ResolvePwaIconUploadName(f) != null)
+            .ToList();
+
+        if (iconParts.Count > 0)
+        {
+            var (ok, iconsErr) = await _appearance.SavePwaIconsAsync(
+                iconParts,
+                iconBgColor,
+                Request.Form["iconSvgColor"],
+                ct);
+            if (!ok)
+                return BadRequest(new { error = iconsErr ?? "Не удалось сохранить иконки PWA" });
+        }
+
+        var settings = await _appearance.GetEffectiveAsync(ct);
+        return Ok(_appearance.ToPublicDto(settings));
+    }
+
+    [HttpPost("appearance/pwa-icon-logo")]
+    [RequestSizeLimit(2_500_000)]
+    public async Task<IActionResult> UploadPwaIconLogo(
+        IFormFile? file,
+        [FromForm] string? iconBgColor,
+        [FromForm] string? iconSvgColor,
+        CancellationToken ct)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { error = "Выберите файл" });
+
+        var (valid, error, ext) = await LogoUploadValidator.ValidateUploadAsync(file, ct);
+        if (!valid)
+            return BadRequest(new { error });
+
+        await using var stream = file.OpenReadStream();
+        await _appearance.SavePwaIconLogoAsync(stream, ct);
+
+        var iconParts = Request.Form.Files
+            .Where(f => !string.Equals(f.Name, "file", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (iconParts.Count == 0)
+            return BadRequest(new { error = "Не удалось сохранить иконки PWA. Обновите страницу и попробуйте снова." });
+
+        var (ok, iconsErr) = await _appearance.SavePwaIconsAsync(iconParts, iconBgColor, iconSvgColor, ct);
+        if (!ok)
+            return BadRequest(new { error = iconsErr ?? "Не удалось сохранить иконки PWA" });
+
+        var settings = await _appearance.GetEffectiveAsync(ct);
+        return Ok(_appearance.ToPublicDto(settings));
+    }
+
+    [HttpDelete("appearance/pwa-icon-logo")]
+    public async Task<IActionResult> ClearPwaIconLogo(CancellationToken ct)
+    {
+        await _appearance.ClearPwaIconLogoAsync(ct);
+        var settings = await _appearance.GetEffectiveAsync(ct);
+        return Ok(_appearance.ToPublicDto(settings));
+    }
+
+    [HttpPost("appearance/pwa-icon-bg-image")]
+    [RequestSizeLimit(2_100_000)]
+    public async Task<IActionResult> UploadPwaIconBgImage(IFormFile? file, CancellationToken ct)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { error = "Выберите файл" });
+
+        var (valid, error, ext) = await PwaIconBgImageUploadValidator.ValidateUploadAsync(file, ct);
+        if (!valid)
+            return BadRequest(new { error });
+
+        await using var stream = file.OpenReadStream();
+        await _appearance.SavePwaIconBgImageAsync(stream, ext, ct);
+        var settings = await _appearance.GetEffectiveAsync(ct);
+        return Ok(_appearance.ToPublicDto(settings));
+    }
+
+    [HttpDelete("appearance/pwa-icon-bg-image")]
+    public async Task<IActionResult> ClearPwaIconBgImage(CancellationToken ct)
+    {
+        await _appearance.ClearPwaIconBgImageAsync(ct);
+        var settings = await _appearance.GetEffectiveAsync(ct);
+        return Ok(_appearance.ToPublicDto(settings));
+    }
+
+    [HttpPost("appearance/theme-chat-bg-image")]
+    [RequestSizeLimit(3_100_000)]
+    public async Task<IActionResult> UploadThemeChatBgImage(
+        IFormFile? file,
+        [FromForm] string? themeName,
+        CancellationToken ct)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { error = "Выберите файл" });
+        if (string.IsNullOrWhiteSpace(themeName))
+            return BadRequest(new { error = "Укажите тему" });
+
+        var (valid, error, ext) = await ThemeChatBgImageUploadValidator.ValidateUploadAsync(file, ct);
+        if (!valid)
+            return BadRequest(new { error });
+
+        await using var stream = file.OpenReadStream();
+        var (ok, saveErr) = await _appearance.SaveThemeChatBgImageAsync(themeName.Trim(), stream, ext, ct);
+        if (!ok)
+            return BadRequest(new { error = saveErr ?? "Не удалось сохранить фон чата" });
+
+        var settings = await _appearance.GetEffectiveAsync(ct);
+        return Ok(_appearance.ToPublicDto(settings));
+    }
+
+    [HttpDelete("appearance/theme-chat-bg-image")]
+    public async Task<IActionResult> ClearThemeChatBgImage([FromQuery] string? themeName, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(themeName))
+            return BadRequest(new { error = "Укажите тему" });
+
+        var (ok, error) = await _appearance.ClearThemeChatBgImageAsync(themeName.Trim(), ct);
+        if (!ok)
+            return BadRequest(new { error });
+
+        var settings = await _appearance.GetEffectiveAsync(ct);
+        return Ok(_appearance.ToPublicDto(settings));
+    }
+
+    static string? ResolvePwaIconUploadName(IFormFile file)
+    {
+        var fromField = (file.Name ?? "").Trim();
+        if (PwaIconFiles.All.Contains(fromField, StringComparer.OrdinalIgnoreCase))
+            return PwaIconFiles.All.First(n => string.Equals(n, fromField, StringComparison.OrdinalIgnoreCase));
+
+        var fromFileName = Path.GetFileName(file.FileName);
+        if (!string.IsNullOrEmpty(fromFileName)
+            && PwaIconFiles.All.Contains(fromFileName, StringComparer.OrdinalIgnoreCase))
+        {
+            return PwaIconFiles.All.First(n => string.Equals(n, fromFileName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return null;
+    }
+
+    [HttpPost("appearance/icons")]
+    [RequestSizeLimit(2_500_000)]
+    public async Task<IActionResult> UploadPwaIcons(
+        [FromForm] string? iconBgColor,
+        [FromForm] string? iconSvgColor,
+        CancellationToken ct)
+    {
+        if (Request.Form.Files.Count == 0)
+            return BadRequest(new { error = "Иконки PWA не получены" });
+
+        var (ok, error) = await _appearance.SavePwaIconsAsync(
+            Request.Form.Files,
+            iconBgColor,
+            iconSvgColor,
+            ct);
+        if (!ok)
+            return BadRequest(new { error });
+
+        var settings = await _appearance.GetEffectiveAsync(ct);
+        return Ok(_appearance.ToPublicDto(settings));
     }
 
     [HttpPost("appearance/sound/incoming")]
@@ -293,6 +494,7 @@ public sealed class AdminController : ControllerBase
             BodyBg = dto.BodyBg ?? def.BodyBg,
             HeaderBg = dto.HeaderBg ?? def.HeaderBg,
             ChatBg = dto.ChatBg ?? def.ChatBg,
+            ChatBgImageFileName = def.ChatBgImageFileName,
             MyBubbleBg = dto.MyBubbleBg ?? def.MyBubbleBg,
             MyBubbleText = dto.MyBubbleText ?? def.MyBubbleText,
             OtherBubbleBg = dto.OtherBubbleBg ?? def.OtherBubbleBg,

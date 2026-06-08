@@ -131,6 +131,36 @@
       opacity: .55;
       pointer-events: none;
     }
+    .pwa-icons-wrap { margin: 16px 0 20px; max-width: 520px; }
+    .pwa-icons-wrap.is-empty .pwa-icons-preview { opacity: .45; }
+    .pwa-icons-preview {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .pwa-icon-cell { text-align: center; }
+    .pwa-icon-cell canvas {
+      width: 72px;
+      height: 72px;
+      border-radius: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.12);
+      background: #eee;
+    }
+    .pwa-icon-cell span {
+      display: block;
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .pwa-icon-logo-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .hint-inline { font-weight: normal; color: #888; font-size: 12px; }
     .appearance-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -264,8 +294,61 @@
         <span id="logoPlaceholder">Нажмите, чтобы выбрать</span>
         <img id="logoPreview" data-app-logo hidden alt="Логотип"/>
       </button>
-      <input type="file" id="logoFile" accept=".png,.jpg,.jpeg,.webp,.gif,.svg,image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden/>
-      <p class="hint">PNG, JPEG, WebP, GIF (до 3 МБ, до 2048×2048) или SVG (до 512 КБ).</p>
+      <input type="file" id="logoFile" accept=".svg,image/svg+xml" hidden/>
+      <p class="hint">Только SVG, до 512 КБ. Основной логотип приложения.</p>
+    </div>
+    <div class="appearance-field">
+      <label for="logoSvgColor">Цвет SVG логотипа</label>
+      <div class="color-input-row">
+        <input type="text" id="logoSvgColor" placeholder="как в файле"/>
+        <input type="color" id="logoSvgColorPicker" value="#ffffff" title="Выбрать цвет" aria-label="Цвет SVG логотипа"/>
+      </div>
+      <p class="hint">Пусто — оригинальные цвета файла. Для одноцветных SVG задаёт заливку в интерфейсе.</p>
+    </div>
+    <div class="pwa-icons-wrap is-empty" id="pwaIconsWrap">
+      <h3>Иконки PWA</h3>
+      <p class="hint">Превью обновляется сразу. Иконки генерируются в браузере и сохраняются на сервер.</p>
+      <div class="appearance-logo-wrap">
+        <label>SVG для иконок <span class="hint-inline">(необязательно)</span></label>
+        <button type="button" class="appearance-logo-picker appearance-logo-picker--empty" id="pwaIconLogoPicker" title="Выбрать SVG для иконок">
+          <span id="pwaIconLogoPlaceholder">Как основной логотип</span>
+          <img id="pwaIconLogoPreview" hidden alt="SVG для иконок"/>
+        </button>
+        <input type="file" id="pwaIconLogoFile" accept=".svg,image/svg+xml" hidden/>
+        <div class="pwa-icon-logo-actions">
+          <button type="button" class="secondary" id="clearPwaIconLogo" hidden>Очистить</button>
+        </div>
+        <p class="hint">Отдельный SVG только для иконок PWA. Если не загружен или очищен — используется основной логотип.</p>
+      </div>
+      <div class="appearance-field">
+        <label for="pwaIconBg">Цвет фона иконок</label>
+        <div class="color-input-row">
+          <input type="text" id="pwaIconBg" value="#4a7fc1"/>
+          <input type="color" id="pwaIconBgPicker" value="#4a7fc1" title="Выбрать цвет" aria-label="Фон иконок"/>
+        </div>
+        <p class="hint">Подложка под SVG и под фон-картинку (если у PNG есть прозрачность). Без картинки — сплошной фон.</p>
+      </div>
+      <div class="appearance-logo-wrap">
+        <label>Фон иконок — изображение <span class="hint-inline">(необязательно)</span></label>
+        <button type="button" class="appearance-logo-picker appearance-logo-picker--empty" id="pwaIconBgImagePicker" title="Выбрать PNG или JPEG">
+          <span id="pwaIconBgImagePlaceholder">Цветной фон</span>
+          <img id="pwaIconBgImagePreview" hidden alt="Фон иконок"/>
+        </button>
+        <input type="file" id="pwaIconBgImageFile" accept=".png,.jpg,.jpeg,image/png,image/jpeg" hidden/>
+        <div class="pwa-icon-logo-actions">
+          <button type="button" class="secondary" id="clearPwaIconBgImage" hidden>Очистить</button>
+        </div>
+        <p class="hint">PNG или JPEG до 2 МБ, до 1024×1024. Масштабируется с обрезкой по краям (cover).</p>
+      </div>
+      <div class="appearance-field">
+        <label for="pwaIconSvgColor">Цвет SVG на иконках</label>
+        <div class="color-input-row">
+          <input type="text" id="pwaIconSvgColor" placeholder="как в файле"/>
+          <input type="color" id="pwaIconSvgColorPicker" value="#ffffff" title="Выбрать цвет" aria-label="Цвет SVG на иконках"/>
+        </div>
+        <p class="hint">Пусто — оригинальные цвета SVG. Применяется к SVG для иконок (отдельному или основному).</p>
+      </div>
+      <div class="pwa-icons-preview" id="pwaIconsPreview"></div>
     </div>
     <div class="field-block">
       <label for="appName">Название приложения</label>
@@ -377,6 +460,18 @@
       <div class="appearance-tabs" id="themeTabs"></div>
     </div>
     <div class="appearance-grid" id="themeColorsGrid"></div>
+    <div class="appearance-logo-wrap" id="themeChatBgWrap">
+      <label>Фон чата — изображение <span class="hint-inline">(необязательно)</span></label>
+      <button type="button" class="appearance-logo-picker appearance-logo-picker--empty" id="themeChatBgPicker" title="Выбрать PNG или JPEG">
+        <span id="themeChatBgPlaceholder">Цветной фон</span>
+        <img id="themeChatBgPreview" hidden alt="Фон чата"/>
+      </button>
+      <input type="file" id="themeChatBgFile" accept=".png,.jpg,.jpeg,image/png,image/jpeg" hidden/>
+      <div class="pwa-icon-logo-actions">
+        <button type="button" class="secondary" id="clearThemeChatBg" hidden>Очистить</button>
+      </div>
+      <p class="hint">PNG или JPEG до 3 МБ, до 2048×2048. Показывается в области сообщений; цвет «Фон чата» — подложка под картинкой.</p>
+    </div>
     <div class="panel-actions">
       <button type="button" class="primary" id="saveThemes">Сохранить темы</button>
       <button type="button" class="danger" id="resetAppearance">Сбросить темы к заводским</button>
@@ -457,6 +552,266 @@
 
     let appearanceData = null;
     let selectedThemeName = null;
+
+    const PWA_ICON_SPECS = [
+      { id: '192', fileName: 'icon-192.png', size: 192, logoScale: 0.62, label: '192×192' },
+      { id: '512', fileName: 'icon-512.png', size: 512, logoScale: 0.62, label: '512' },
+      { id: 'maskable', fileName: 'icon-maskable-512.png', size: 512, logoScale: 0.50, label: 'Maskable' },
+      { id: 'apple', fileName: 'apple-touch-icon-180.png', size: 180, logoScale: 0.62, label: 'Apple' },
+      { id: 'badge', fileName: 'badge-72.png', size: 72, logoScale: 0.55, label: 'Badge' },
+    ];
+
+    function initPwaIconsPreviewGrid() {
+      document.getElementById('pwaIconsPreview').innerHTML = PWA_ICON_SPECS.map(spec =>
+        `<div class="pwa-icon-cell"><canvas id="pwaIconCanvas-${spec.id}" width="${spec.size}" height="${spec.size}"></canvas><span>${spec.label}</span></div>`
+      ).join('');
+    }
+
+    function getPwaIconBgColor() {
+      const v = document.getElementById('pwaIconBg').value.trim();
+      return isHexColor(v) ? hexForPicker(v) : hexForPicker(appearanceData?.base?.accent || '#4a7fc1');
+    }
+
+    function getOptionalHexColor(inputId) {
+      const v = document.getElementById(inputId).value.trim();
+      return isHexColor(v) ? hexForPicker(v) : '';
+    }
+
+    function getLogoSvgColor() {
+      return getOptionalHexColor('logoSvgColor');
+    }
+
+    function getPwaIconSvgColor() {
+      return getOptionalHexColor('pwaIconSvgColor');
+    }
+
+    function applySvgFillColor(svgText, color) {
+      if (!color || !isHexColor(color)) return svgText;
+      let s = svgText;
+      s = s.replace(/currentColor/gi, color);
+      s = s.replace(/fill="(?!none|transparent|url\(#)[^"]*"/gi, `fill="${color}"`);
+      s = s.replace(/fill='(?!none|transparent|url\(#)[^']*'/gi, `fill='${color}'`);
+      s = s.replace(/stroke="(?!none|transparent|url\(#)[^"]*"/gi, `stroke="${color}"`);
+      s = s.replace(/stroke='(?!none|transparent|url\(#)[^']*'/gi, `stroke='${color}'`);
+      return s;
+    }
+
+    async function readSvgSourceText(source) {
+      if (source instanceof File) return source.text();
+      const url = String(source);
+      const r = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { credentials: 'same-origin' });
+      if (!r.ok) throw new Error('svg fetch');
+      return r.text();
+    }
+
+    async function loadSvgImage(source, svgColor) {
+      const svgText = applySvgFillColor(await readSvgSourceText(source), svgColor);
+      const url = URL.createObjectURL(new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' }));
+      try {
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error('SVG'));
+          img.src = url;
+        });
+        return img;
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }
+
+    function usesSeparatePwaIconLogo() {
+      if (document.getElementById('pwaIconLogoFile')?.files?.[0]) return true;
+      return !!appearanceData?.pwaIconLogoUrl;
+    }
+
+    function getEffectivePwaIconSvgSource() {
+      const pendingIcon = document.getElementById('pwaIconLogoFile')?.files?.[0];
+      if (pendingIcon) return pendingIcon;
+      if (appearanceData?.pwaIconLogoUrl) return appearanceData.pwaIconLogoUrl;
+      const pendingMain = document.getElementById('logoFile')?.files?.[0];
+      if (pendingMain) return pendingMain;
+      if (appearanceData?.logoUrl) return appearanceData.logoUrl;
+      return null;
+    }
+
+    function hasPwaIconSvgSource() {
+      return getEffectivePwaIconSvgSource() != null;
+    }
+
+    function hasPwaIconBgImage() {
+      if (document.getElementById('pwaIconBgImageFile')?.files?.[0]) return true;
+      return !!appearanceData?.pwaIconBgImageUrl;
+    }
+
+    function getEffectivePwaIconBgImageSource() {
+      const pending = document.getElementById('pwaIconBgImageFile')?.files?.[0];
+      if (pending) return pending;
+      if (appearanceData?.pwaIconBgImageUrl) return appearanceData.pwaIconBgImageUrl;
+      return null;
+    }
+
+    async function loadRasterImage(source) {
+      let url;
+      let revoke = false;
+      if (source instanceof File) {
+        url = URL.createObjectURL(source);
+        revoke = true;
+      } else {
+        url = String(source);
+        if (!url.includes('?')) url += '?t=' + Date.now();
+      }
+      try {
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error('image'));
+          img.src = url;
+        });
+        return img;
+      } finally {
+        if (revoke) URL.revokeObjectURL(url);
+      }
+    }
+
+    function drawPwaIconBackground(ctx, size, bgColor, bgImage) {
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, size, size);
+      if (!bgImage || bgImage.naturalWidth <= 0) return;
+      const scale = Math.max(size / bgImage.naturalWidth, size / bgImage.naturalHeight);
+      const w = bgImage.naturalWidth * scale;
+      const h = bgImage.naturalHeight * scale;
+      ctx.drawImage(bgImage, (size - w) / 2, (size - h) / 2, w, h);
+    }
+
+    async function drawPwaIcons(svgImage, bgColor, bgImage) {
+      for (const spec of PWA_ICON_SPECS) {
+        const canvas = document.getElementById('pwaIconCanvas-' + spec.id);
+        if (!canvas) continue;
+        const ctx = canvas.getContext('2d');
+        drawPwaIconBackground(ctx, spec.size, bgColor, bgImage);
+        if (svgImage && svgImage.naturalWidth > 0) {
+          const logoBox = spec.size * spec.logoScale;
+          const scale = Math.min(logoBox / svgImage.naturalWidth, logoBox / svgImage.naturalHeight);
+          const w = svgImage.naturalWidth * scale;
+          const h = svgImage.naturalHeight * scale;
+          ctx.drawImage(svgImage, (spec.size - w) / 2, (spec.size - h) / 2, w, h);
+        }
+      }
+      document.getElementById('pwaIconsWrap').classList.toggle('is-empty', !svgImage);
+    }
+
+    async function clearPwaIconPreviews() {
+      const bg = getPwaIconBgColor();
+      let bgImage = null;
+      const bgSrc = getEffectivePwaIconBgImageSource();
+      if (bgSrc) {
+        try { bgImage = await loadRasterImage(bgSrc); } catch { bgImage = null; }
+      }
+      for (const spec of PWA_ICON_SPECS) {
+        const canvas = document.getElementById('pwaIconCanvas-' + spec.id);
+        if (!canvas) continue;
+        const ctx = canvas.getContext('2d');
+        drawPwaIconBackground(ctx, spec.size, bg, bgImage);
+      }
+      document.getElementById('pwaIconsWrap').classList.add('is-empty');
+    }
+
+    async function renderPwaIconPreviewsEffective() {
+      const bg = getPwaIconBgColor();
+      const svgColor = getPwaIconSvgColor();
+      const source = getEffectivePwaIconSvgSource();
+      if (!source) {
+        await clearPwaIconPreviews();
+        return;
+      }
+      let bgImage = null;
+      const bgImageSource = getEffectivePwaIconBgImageSource();
+      if (bgImageSource) {
+        try { bgImage = await loadRasterImage(bgImageSource); } catch { bgImage = null; }
+      }
+      const img = await loadSvgImage(source, svgColor);
+      await drawPwaIcons(img, bg, bgImage);
+    }
+
+    function updateSvgColorField(inputId, pickerId, value) {
+      const text = document.getElementById(inputId);
+      const picker = document.getElementById(pickerId);
+      text.value = value || '';
+      if (value && isHexColor(value)) {
+        picker.disabled = false;
+        picker.value = hexForPicker(value);
+      } else {
+        picker.disabled = true;
+        picker.value = '#ffffff';
+      }
+    }
+
+    function updatePwaIconBgFields() {
+      const bg = appearanceData?.pwaIconBgColor || appearanceData?.base?.accent || '#4a7fc1';
+      document.getElementById('pwaIconBg').value = bg;
+      document.getElementById('pwaIconBgPicker').value = hexForPicker(bg);
+      updateSvgColorField('logoSvgColor', 'logoSvgColorPicker', appearanceData?.logoSvgColor || '');
+      updateSvgColorField('pwaIconSvgColor', 'pwaIconSvgColorPicker', appearanceData?.pwaIconSvgColor || '');
+    }
+
+    function bindOptionalSvgColorControls(inputId, pickerId, onChange) {
+      const text = document.getElementById(inputId);
+      const picker = document.getElementById(pickerId);
+      const syncPicker = () => {
+        if (isHexColor(text.value)) {
+          picker.disabled = false;
+          picker.value = hexForPicker(text.value);
+        } else {
+          picker.disabled = true;
+        }
+      };
+      picker.addEventListener('input', () => {
+        text.value = picker.value;
+        onChange();
+      });
+      text.addEventListener('input', () => { syncPicker(); onChange(); });
+      text.addEventListener('change', () => { syncPicker(); onChange(); });
+      syncPicker();
+    }
+
+    function bindPwaIconBgControls() {
+      bindColorRow(document.getElementById('pwaIconBg'), document.getElementById('pwaIconBgPicker'));
+      const rerender = () => { renderPwaIconPreviewsEffective().catch(() => clearPwaIconPreviews()); };
+      document.getElementById('pwaIconBg').addEventListener('input', rerender);
+      document.getElementById('pwaIconBgPicker').addEventListener('input', rerender);
+      bindOptionalSvgColorControls('logoSvgColor', 'logoSvgColorPicker', () => {
+        updateLogoPreview();
+      });
+      bindOptionalSvgColorControls('pwaIconSvgColor', 'pwaIconSvgColorPicker', rerender);
+    }
+
+    function canvasToPngBlob(canvas) {
+      return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    }
+
+    async function appendPwaIconsToFormData(fd) {
+      for (const spec of PWA_ICON_SPECS) {
+        const canvas = document.getElementById('pwaIconCanvas-' + spec.id);
+        if (!canvas) throw new Error('missing canvas');
+        const blob = await canvasToPngBlob(canvas);
+        if (!blob) throw new Error('canvas empty');
+        fd.append(spec.fileName, blob, spec.fileName);
+      }
+    }
+
+    async function uploadPwaIconsFromCanvas() {
+      const fd = new FormData();
+      fd.append('iconBgColor', getPwaIconBgColor());
+      const svgColor = getPwaIconSvgColor();
+      if (svgColor) fd.append('iconSvgColor', svgColor);
+      await appendPwaIconsToFormData(fd);
+      const r = await api('/api/admin/appearance/icons', { method: 'POST', body: fd });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return j.error || 'Не удалось сохранить иконки PWA';
+      appearanceData = j;
+      return null;
+    }
 
     function isHexColor(v) {
       return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test((v || '').trim());
@@ -546,6 +901,8 @@
         btn.onclick = () => {
           persistThemeEditor();
           selectedThemeName = btn.dataset.theme;
+          const chatBgFile = document.getElementById('themeChatBgFile');
+          if (chatBgFile) chatBgFile.value = '';
           renderThemeTabs();
           renderThemeEditor();
         };
@@ -555,8 +912,113 @@
     function renderThemeEditor() {
       const theme = (appearanceData.themes || []).find(t => t.name === selectedThemeName);
       const grid = document.getElementById('themeColorsGrid');
-      if (!theme) { grid.innerHTML = ''; return; }
+      if (!theme) {
+        grid.innerHTML = '';
+        updateThemeChatBgPreview();
+        return;
+      }
       renderColorGrid(grid, theme, THEME_GROUPS.flatMap(g => g.keys), 'theme');
+      updateThemeChatBgPreview();
+    }
+
+    function getSelectedTheme() {
+      return (appearanceData?.themes || []).find(t => t.name === selectedThemeName) || null;
+    }
+
+    function updateThemeChatBgPreview() {
+      const picker = document.getElementById('themeChatBgPicker');
+      const img = document.getElementById('themeChatBgPreview');
+      const placeholder = document.getElementById('themeChatBgPlaceholder');
+      const clearBtn = document.getElementById('clearThemeChatBg');
+      const wrap = document.getElementById('themeChatBgWrap');
+      const theme = getSelectedTheme();
+      if (!picker || !wrap) return;
+      wrap.hidden = !theme;
+      if (!theme) return;
+      const pending = document.getElementById('themeChatBgFile')?.files?.[0];
+      const url = theme.chatBgImageUrl;
+      if (pending || url) {
+        if (pending) {
+          const blobUrl = URL.createObjectURL(pending);
+          if (img._blobUrl) URL.revokeObjectURL(img._blobUrl);
+          img._blobUrl = blobUrl;
+          img.src = blobUrl;
+        } else {
+          if (img._blobUrl) { URL.revokeObjectURL(img._blobUrl); img._blobUrl = null; }
+          img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+        }
+        img.hidden = false;
+        placeholder.hidden = true;
+        picker.classList.remove('appearance-logo-picker--empty');
+        clearBtn.hidden = false;
+      } else {
+        img.hidden = true;
+        img.removeAttribute('src');
+        placeholder.hidden = false;
+        placeholder.textContent = 'Цветной фон';
+        picker.classList.add('appearance-logo-picker--empty');
+        clearBtn.hidden = true;
+      }
+    }
+
+    const THEME_CHAT_BG_MAX_BYTES = 3_000_000;
+
+    function validateThemeChatBgClient(file) {
+      const name = (file.name || '').toLowerCase();
+      const okType = /^image\/(png|jpe?g)$/i.test(file.type || '')
+        || /\.(png|jpe?g)$/i.test(name);
+      if (!okType) return 'Фон чата: только PNG или JPEG';
+      if (file.size > THEME_CHAT_BG_MAX_BYTES) return 'Изображение не больше 3 МБ';
+      return null;
+    }
+
+    async function uploadThemeChatBgFile(file) {
+      if (!file || !selectedThemeName) return;
+      const clientErr = validateThemeChatBgClient(file);
+      if (clientErr) {
+        setAppearanceStatus(clientErr, true);
+        document.getElementById('themeChatBgFile').value = '';
+        return;
+      }
+      const picker = document.getElementById('themeChatBgPicker');
+      picker.classList.add('is-uploading');
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('themeName', selectedThemeName);
+      try {
+        const r = await api('/api/admin/appearance/theme-chat-bg-image', { method: 'POST', body: fd });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setAppearanceStatus(j.error || 'Ошибка загрузки', true);
+          return;
+        }
+        appearanceData = j;
+        renderThemeTabs();
+        renderThemeEditor();
+        setAppearanceStatus('Фон чата сохранён для темы «' + selectedThemeName + '»');
+      } catch (e) {
+        setAppearanceStatus(e.message || 'Сеть: не удалось загрузить изображение', true);
+      } finally {
+        picker.classList.remove('is-uploading');
+        document.getElementById('themeChatBgFile').value = '';
+      }
+    }
+
+    async function clearThemeChatBg() {
+      const theme = getSelectedTheme();
+      if (!theme?.chatBgImageUrl || !selectedThemeName) return;
+      if (!confirm('Удалить фон-картинку для темы «' + selectedThemeName + '»?')) return;
+      const r = await api('/api/admin/appearance/theme-chat-bg-image?themeName=' + encodeURIComponent(selectedThemeName), { method: 'DELETE' });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setAppearanceStatus(j.error || 'Не удалось очистить', true);
+        return;
+      }
+      appearanceData = j;
+      document.getElementById('themeChatBgFile').value = '';
+      renderThemeTabs();
+      renderThemeEditor();
+      setAppearanceStatus('Фон чата удалён');
     }
 
     function renderAppearanceForm() {
@@ -573,6 +1035,10 @@
       document.getElementById('changelogHtml').value = appearanceData.changelogHtml || '';
       document.getElementById('logoClickScript').value = appearanceData.logoClickScript || '';
       updateLogoPreview();
+      updatePwaIconLogoPreview();
+      updatePwaIconBgImagePreview();
+      updatePwaIconBgFields();
+      renderPwaIconPreviewsEffective().catch(() => clearPwaIconPreviews());
       updateMessageSoundPreviews();
       renderColorGrid(document.getElementById('baseColorsGrid'), appearanceData.base || {}, BASE_FIELDS, 'base');
       fillDefaultThemeSelect();
@@ -595,6 +1061,9 @@
         helpHtml: document.getElementById('helpHtml').value,
         changelogHtml: document.getElementById('changelogHtml').value,
         logoClickScript: document.getElementById('logoClickScript').value,
+        logoSvgColor: getLogoSvgColor(),
+        pwaIconBgColor: getPwaIconBgColor(),
+        pwaIconSvgColor: getPwaIconSvgColor(),
         defaultThemeName: document.getElementById('defaultTheme').value,
         base: readColorGrid(document.getElementById('baseColorsGrid')),
         themes: appearanceData.themes,
@@ -607,6 +1076,15 @@
         setAppearanceStatus('Укажите название приложения', true);
         return;
       }
+      const hasIconSource = hasPwaIconSvgSource();
+      if (hasIconSource) {
+        try {
+          await renderPwaIconPreviewsEffective();
+        } catch (_) {
+          setAppearanceStatus('Не удалось обновить превью иконок', true);
+          return;
+        }
+      }
       const r = await api('/api/admin/appearance', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -615,7 +1093,15 @@
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { setAppearanceStatus(j.error || 'Ошибка сохранения', true); return; }
       appearanceData = j;
-      if (window.AppBranding) AppBranding.applyDocumentBranding(j);
+      if (hasIconSource) {
+        const iconErr = await uploadPwaIconsFromCanvas();
+        if (iconErr) {
+          setAppearanceStatus(iconErr, true);
+          renderAppearanceForm();
+          return;
+        }
+      }
+      if (window.AppBranding) AppBranding.applyDocumentBranding(appearanceData);
       renderAppearanceForm();
       setAppearanceStatus('Сохранено');
     }
@@ -633,13 +1119,44 @@
     document.getElementById('saveContent').onclick = () => saveAppearance();
     document.getElementById('saveThemes').onclick = () => saveAppearance();
 
+    async function setLogoPreviewSrc(img, source) {
+      const svgColor = getLogoSvgColor();
+      try {
+        if (svgColor) {
+          const svgText = applySvgFillColor(await readSvgSourceText(source), svgColor);
+          const url = URL.createObjectURL(new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' }));
+          if (img._blobUrl) URL.revokeObjectURL(img._blobUrl);
+          img._blobUrl = url;
+          img.src = url;
+          return;
+        }
+      } catch (_) { /* fallback below */ }
+      if (source instanceof File) {
+        const url = URL.createObjectURL(source);
+        if (img._blobUrl) URL.revokeObjectURL(img._blobUrl);
+        img._blobUrl = url;
+        img.src = url;
+      } else {
+        if (img._blobUrl) { URL.revokeObjectURL(img._blobUrl); img._blobUrl = null; }
+        img.src = String(source) + (String(source).includes('?') ? '&' : '?') + 't=' + Date.now();
+      }
+    }
+
     function updateLogoPreview() {
       const picker = document.getElementById('logoPicker');
       const img = document.getElementById('logoPreview');
       const placeholder = document.getElementById('logoPlaceholder');
+      const pending = document.getElementById('logoFile')?.files?.[0];
       const url = appearanceData?.logoUrl;
+      if (pending) {
+        setLogoPreviewSrc(img, pending);
+        img.hidden = false;
+        placeholder.hidden = true;
+        picker.classList.remove('appearance-logo-picker--empty');
+        return;
+      }
       if (url) {
-        img.src = url + '?t=' + Date.now();
+        setLogoPreviewSrc(img, url);
         img.hidden = false;
         placeholder.hidden = true;
         picker.classList.remove('appearance-logo-picker--empty');
@@ -651,23 +1168,163 @@
       }
     }
 
-    const LOGO_RASTER_TYPES = /^image\/(png|jpe?g|webp|gif)$/i;
-    const LOGO_MAX_RASTER_BYTES = 3_000_000;
+    function updatePwaIconBgImagePreview() {
+      const picker = document.getElementById('pwaIconBgImagePicker');
+      const img = document.getElementById('pwaIconBgImagePreview');
+      const placeholder = document.getElementById('pwaIconBgImagePlaceholder');
+      const clearBtn = document.getElementById('clearPwaIconBgImage');
+      const pending = document.getElementById('pwaIconBgImageFile')?.files?.[0];
+      const url = appearanceData?.pwaIconBgImageUrl;
+      if (pending || url) {
+        if (pending) {
+          const blobUrl = URL.createObjectURL(pending);
+          if (img._blobUrl) URL.revokeObjectURL(img._blobUrl);
+          img._blobUrl = blobUrl;
+          img.src = blobUrl;
+        } else {
+          if (img._blobUrl) { URL.revokeObjectURL(img._blobUrl); img._blobUrl = null; }
+          img.src = url + '?t=' + Date.now();
+        }
+        img.hidden = false;
+        placeholder.hidden = true;
+        picker.classList.remove('appearance-logo-picker--empty');
+        clearBtn.hidden = false;
+      } else {
+        img.hidden = true;
+        img.removeAttribute('src');
+        placeholder.hidden = false;
+        placeholder.textContent = 'Цветной фон';
+        picker.classList.add('appearance-logo-picker--empty');
+        clearBtn.hidden = true;
+      }
+    }
+
+    const PWA_BG_IMAGE_MAX_BYTES = 2_000_000;
+
+    function validatePwaIconBgImageClient(file) {
+      const name = (file.name || '').toLowerCase();
+      const okType = /^image\/(png|jpe?g)$/i.test(file.type || '')
+        || /\.(png|jpe?g)$/i.test(name);
+      if (!okType) return 'Фон иконок: только PNG или JPEG';
+      if (file.size > PWA_BG_IMAGE_MAX_BYTES) return 'Изображение не больше 2 МБ';
+      return null;
+    }
+
+    async function regenerateAndUploadPwaIcons(statusOk) {
+      if (!hasPwaIconSvgSource()) return null;
+      try {
+        await renderPwaIconPreviewsEffective();
+      } catch (_) {
+        return 'Не удалось обновить превью иконок';
+      }
+      const iconErr = await uploadPwaIconsFromCanvas();
+      if (iconErr) return iconErr;
+      if (statusOk) setAppearanceStatus(statusOk);
+      return null;
+    }
+
+    async function uploadPwaIconBgImageFile(file) {
+      if (!file) return;
+      const clientErr = validatePwaIconBgImageClient(file);
+      if (clientErr) {
+        setAppearanceStatus(clientErr, true);
+        document.getElementById('pwaIconBgImageFile').value = '';
+        return;
+      }
+      const picker = document.getElementById('pwaIconBgImagePicker');
+      picker.classList.add('is-uploading');
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const r = await api('/api/admin/appearance/pwa-icon-bg-image', { method: 'POST', body: fd });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setAppearanceStatus(j.error || 'Ошибка загрузки', true);
+          return;
+        }
+        appearanceData = j;
+        updatePwaIconBgImagePreview();
+        const err = await regenerateAndUploadPwaIcons('Фон-картинка и иконки PWA сохранены');
+        if (err) setAppearanceStatus(err, true);
+      } catch (e) {
+        setAppearanceStatus(e.message || 'Сеть: не удалось загрузить изображение', true);
+      } finally {
+        picker.classList.remove('is-uploading');
+        document.getElementById('pwaIconBgImageFile').value = '';
+      }
+    }
+
+    async function clearPwaIconBgImage() {
+      if (!appearanceData?.pwaIconBgImageUrl) return;
+      if (!confirm('Удалить фон-картинку? Будет использован только цветной фон.')) return;
+      const r = await api('/api/admin/appearance/pwa-icon-bg-image', { method: 'DELETE' });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setAppearanceStatus(j.error || 'Не удалось очистить', true);
+        return;
+      }
+      appearanceData = j;
+      document.getElementById('pwaIconBgImageFile').value = '';
+      updatePwaIconBgImagePreview();
+      const err = await regenerateAndUploadPwaIcons('Фон-картинка удалена');
+      if (err) setAppearanceStatus(err, true);
+    }
+
+    function updatePwaIconLogoPreview() {
+      const picker = document.getElementById('pwaIconLogoPicker');
+      const img = document.getElementById('pwaIconLogoPreview');
+      const placeholder = document.getElementById('pwaIconLogoPlaceholder');
+      const clearBtn = document.getElementById('clearPwaIconLogo');
+      const pending = document.getElementById('pwaIconLogoFile')?.files?.[0];
+      const url = appearanceData?.pwaIconLogoUrl;
+      if (pending || url) {
+        const src = pending || url;
+        if (pending) {
+          const blobUrl = URL.createObjectURL(pending);
+          if (img._blobUrl) URL.revokeObjectURL(img._blobUrl);
+          img._blobUrl = blobUrl;
+          img.src = blobUrl;
+        } else {
+          if (img._blobUrl) { URL.revokeObjectURL(img._blobUrl); img._blobUrl = null; }
+          img.src = url + '?t=' + Date.now();
+        }
+        img.hidden = false;
+        placeholder.hidden = true;
+        picker.classList.remove('appearance-logo-picker--empty');
+        clearBtn.hidden = false;
+      } else {
+        img.hidden = true;
+        img.removeAttribute('src');
+        placeholder.hidden = false;
+        placeholder.textContent = appearanceData?.logoUrl ? 'Как основной логотип' : 'Сначала загрузите логотип';
+        picker.classList.toggle('appearance-logo-picker--empty', !appearanceData?.logoUrl);
+        clearBtn.hidden = true;
+      }
+    }
+
     const LOGO_MAX_SVG_BYTES = 512_000;
 
     function validateLogoClient(file) {
       const name = (file.name || '').toLowerCase();
       const isSvg = file.type === 'image/svg+xml' || name.endsWith('.svg');
-      if (isSvg) {
-        if (file.size > LOGO_MAX_SVG_BYTES)
-          return 'SVG не больше 512 КБ';
-        return null;
-      }
-      if (!LOGO_RASTER_TYPES.test(file.type || '') && !/\.(png|jpe?g|webp|gif)$/i.test(name))
-        return 'Выберите PNG, JPEG, WebP, GIF или SVG';
-      if (file.size > LOGO_MAX_RASTER_BYTES)
-        return 'Изображение не больше 3 МБ';
+      if (!isSvg)
+        return 'Логотип должен быть в формате SVG';
+      if (file.size > LOGO_MAX_SVG_BYTES)
+        return 'SVG не больше 512 КБ';
       return null;
+    }
+
+    function showLogoPreviewFromBlob(file) {
+      const picker = document.getElementById('logoPicker');
+      const img = document.getElementById('logoPreview');
+      const placeholder = document.getElementById('logoPlaceholder');
+      const url = URL.createObjectURL(file);
+      if (img._blobUrl) URL.revokeObjectURL(img._blobUrl);
+      img._blobUrl = url;
+      img.src = url;
+      img.hidden = false;
+      placeholder.hidden = true;
+      picker.classList.remove('appearance-logo-picker--empty');
     }
 
     async function uploadLogoFile(file) {
@@ -682,6 +1339,21 @@
       picker.classList.add('is-uploading');
       const fd = new FormData();
       fd.append('file', file);
+      fd.append('iconBgColor', getPwaIconBgColor());
+      const svgColor = getPwaIconSvgColor();
+      if (svgColor) fd.append('iconSvgColor', svgColor);
+      const regenIcons = !usesSeparatePwaIconLogo();
+      if (regenIcons) {
+        try {
+          await renderPwaIconPreviewsEffective();
+          await appendPwaIconsToFormData(fd);
+        } catch (_) {
+          setAppearanceStatus('Не удалось подготовить иконки PWA', true);
+          picker.classList.remove('is-uploading');
+          document.getElementById('logoFile').value = '';
+          return;
+        }
+      }
       try {
         const r = await api('/api/admin/appearance/logo', { method: 'POST', body: fd });
         const j = await r.json().catch(() => ({}));
@@ -689,10 +1361,13 @@
           setAppearanceStatus(j.error || 'Ошибка загрузки', true);
           return;
         }
-        appearanceData.logoUrl = j.logoUrl;
+        appearanceData = j;
         updateLogoPreview();
+        updatePwaIconLogoPreview();
+        updatePwaIconBgFields();
+        await renderPwaIconPreviewsEffective();
         if (window.AppBranding) AppBranding.applyDocumentBranding(appearanceData);
-        setAppearanceStatus('Логотип сохранён');
+        setAppearanceStatus(regenIcons ? 'Логотип и иконки PWA сохранены' : 'Логотип сохранён');
       } catch (e) {
         setAppearanceStatus(e.message || 'Сеть: не удалось загрузить логотип', true);
       } finally {
@@ -701,13 +1376,158 @@
       }
     }
 
+    async function uploadPwaIconLogoFile(file) {
+      if (!file) return;
+      const clientErr = validateLogoClient(file);
+      if (clientErr) {
+        setAppearanceStatus(clientErr, true);
+        document.getElementById('pwaIconLogoFile').value = '';
+        return;
+      }
+      const picker = document.getElementById('pwaIconLogoPicker');
+      picker.classList.add('is-uploading');
+      try {
+        await renderPwaIconPreviewsEffective();
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('iconBgColor', getPwaIconBgColor());
+        const svgColor = getPwaIconSvgColor();
+        if (svgColor) fd.append('iconSvgColor', svgColor);
+        await appendPwaIconsToFormData(fd);
+        const r = await api('/api/admin/appearance/pwa-icon-logo', { method: 'POST', body: fd });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setAppearanceStatus(j.error || 'Ошибка загрузки', true);
+          return;
+        }
+        appearanceData = j;
+        updatePwaIconLogoPreview();
+        updatePwaIconBgFields();
+        setAppearanceStatus('SVG для иконок и иконки PWA сохранены');
+      } catch (e) {
+        setAppearanceStatus(e.message || 'Сеть: не удалось загрузить SVG', true);
+      } finally {
+        picker.classList.remove('is-uploading');
+        document.getElementById('pwaIconLogoFile').value = '';
+      }
+    }
+
+    async function clearPwaIconLogo() {
+      if (!appearanceData?.pwaIconLogoUrl) return;
+      if (!confirm('Удалить отдельный SVG для иконок? Будет использован основной логотип.')) return;
+      const r = await api('/api/admin/appearance/pwa-icon-logo', { method: 'DELETE' });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setAppearanceStatus(j.error || 'Не удалось очистить', true);
+        return;
+      }
+      appearanceData = j;
+      document.getElementById('pwaIconLogoFile').value = '';
+      updatePwaIconLogoPreview();
+      try {
+        await renderPwaIconPreviewsEffective();
+        const iconErr = await uploadPwaIconsFromCanvas();
+        if (iconErr) {
+          setAppearanceStatus(iconErr, true);
+          return;
+        }
+      } catch (_) {
+        setAppearanceStatus('Не удалось перегенерировать иконки', true);
+        return;
+      }
+      setAppearanceStatus('SVG для иконок удалён, используется основной логотип');
+    }
+
     document.getElementById('logoPicker').onclick = () => {
       document.getElementById('logoFile').click();
     };
-    document.getElementById('logoFile').addEventListener('change', () => {
+    document.getElementById('logoFile').addEventListener('change', async () => {
       const file = document.getElementById('logoFile').files[0];
-      if (file) uploadLogoFile(file);
+      if (!file) return;
+      const clientErr = validateLogoClient(file);
+      if (clientErr) {
+        setAppearanceStatus(clientErr, true);
+        document.getElementById('logoFile').value = '';
+        return;
+      }
+      showLogoPreviewFromBlob(file);
+      if (!usesSeparatePwaIconLogo()) {
+        try {
+          await renderPwaIconPreviewsEffective();
+        } catch (_) {
+          setAppearanceStatus('Не удалось показать превью SVG', true);
+        }
+      }
+      uploadLogoFile(file);
     });
+
+    document.getElementById('pwaIconLogoPicker').onclick = () => {
+      if (!appearanceData?.logoUrl && !document.getElementById('logoFile')?.files?.[0]) {
+        setAppearanceStatus('Сначала загрузите основной логотип', true);
+        return;
+      }
+      document.getElementById('pwaIconLogoFile').click();
+    };
+    document.getElementById('pwaIconLogoFile').addEventListener('change', async () => {
+      const file = document.getElementById('pwaIconLogoFile').files[0];
+      if (!file) return;
+      const blobUrl = URL.createObjectURL(file);
+      const img = document.getElementById('pwaIconLogoPreview');
+      if (img._blobUrl) URL.revokeObjectURL(img._blobUrl);
+      img._blobUrl = blobUrl;
+      img.src = blobUrl;
+      img.hidden = false;
+      document.getElementById('pwaIconLogoPlaceholder').hidden = true;
+      document.getElementById('pwaIconLogoPicker').classList.remove('appearance-logo-picker--empty');
+      try {
+        await renderPwaIconPreviewsEffective();
+      } catch (_) {
+        setAppearanceStatus('Не удалось показать превью SVG', true);
+      }
+      uploadPwaIconLogoFile(file);
+    });
+    document.getElementById('clearPwaIconLogo').onclick = () => clearPwaIconLogo();
+
+    document.getElementById('pwaIconBgImagePicker').onclick = () => {
+      document.getElementById('pwaIconBgImageFile').click();
+    };
+    document.getElementById('pwaIconBgImageFile').addEventListener('change', async () => {
+      const file = document.getElementById('pwaIconBgImageFile').files[0];
+      if (!file) return;
+      const blobUrl = URL.createObjectURL(file);
+      const img = document.getElementById('pwaIconBgImagePreview');
+      if (img._blobUrl) URL.revokeObjectURL(img._blobUrl);
+      img._blobUrl = blobUrl;
+      img.src = blobUrl;
+      img.hidden = false;
+      document.getElementById('pwaIconBgImagePlaceholder').hidden = true;
+      document.getElementById('pwaIconBgImagePicker').classList.remove('appearance-logo-picker--empty');
+      document.getElementById('clearPwaIconBgImage').hidden = false;
+      try {
+        await renderPwaIconPreviewsEffective();
+      } catch (_) { /* preview after upload */ }
+      uploadPwaIconBgImageFile(file);
+    });
+    document.getElementById('clearPwaIconBgImage').onclick = () => clearPwaIconBgImage();
+
+    document.getElementById('themeChatBgPicker').onclick = () => {
+      document.getElementById('themeChatBgFile').click();
+    };
+    document.getElementById('themeChatBgFile').addEventListener('change', () => {
+      const file = document.getElementById('themeChatBgFile').files[0];
+      if (!file) return;
+      const blobUrl = URL.createObjectURL(file);
+      const img = document.getElementById('themeChatBgPreview');
+      if (img._blobUrl) URL.revokeObjectURL(img._blobUrl);
+      img._blobUrl = blobUrl;
+      img.src = blobUrl;
+      img.hidden = false;
+      document.getElementById('themeChatBgPlaceholder').hidden = true;
+      document.getElementById('themeChatBgPicker').classList.remove('appearance-logo-picker--empty');
+      document.getElementById('clearThemeChatBg').hidden = false;
+      uploadThemeChatBgFile(file);
+    });
+    document.getElementById('clearThemeChatBg').onclick = () => clearThemeChatBg();
 
     const SOUND_MAX_BYTES = 2_000_000;
     const SOUND_EXT = /\.(mp3|ogg|wav|webm|m4a)$/i;
@@ -915,6 +1735,8 @@
     };
 
     (async () => {
+      initPwaIconsPreviewGrid();
+      bindPwaIconBgControls();
       if (window.AppBranding) await AppBranding.loadAppearance();
       if (await ensureAdmin()) {
         loadAppearanceAdmin();

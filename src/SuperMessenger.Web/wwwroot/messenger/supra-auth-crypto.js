@@ -187,6 +187,10 @@ window.SupraAuthCrypto = {
 	},
 
 	clearSession() {
+		const sess = SupraAuthCrypto.getSession();
+		if (sess?.userId && globalThis.SupraCrypto?.clearMasterKeyCache) {
+			SupraCrypto.clearMasterKeyCache(sess.userId);
+		}
 		SupraAuthCrypto.clearSessionMemory();
 		if (window.SupraSecureStore?.remove) {
 			window.SupraSecureStore

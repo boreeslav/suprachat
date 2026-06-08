@@ -49,8 +49,8 @@ const PRECACHE_PATHS = [
 	'/messenger/vendor/signalr.min.js',
 	'/messenger/vendor/qrcode.min.js',
 	'/messenger/vendor/supra-webcrypto.bundle.js',
-	'/icons/icon-192.png',
-	'/icons/icon-512.png',
+	'/api/app/icons/icon-192.png',
+	'/api/app/icons/icon-512.png',
 ];
 
 const STATIC_EXT = /\.(?:js|mjs|css|woff2?|ttf|otf|eot|png|jpg|jpeg|gif|svg|webp|ico|map|wasm)$/i;
@@ -160,8 +160,8 @@ self.addEventListener('push', (event) => {
 	const chatId = (data && data.chatId) ? String(data.chatId) : '';
 	const options = {
 		body: data.body || 'Откройте приложение, чтобы прочитать.',
-		icon: '/icons/icon-192.png',
-		badge: '/icons/badge-72.png',
+		icon: '/api/app/icons/icon-192.png',
+		badge: '/api/app/icons/badge-72.png',
 		tag: chatId ? ('sm-chat-' + chatId) : 'sm-new-message',
 		renotify: true,
 		data: { url: (data && data.url) || '/', chatId: chatId || null },

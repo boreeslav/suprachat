@@ -113,6 +113,8 @@ public sealed class SupraSendMessageResponse
     public string? messageId { get; set; }
     public string? status { get; set; }
     public string? error { get; set; }
+    /// <summary>Диагностика Web Push — только для отправителя с ролью Admin.</summary>
+    public object? pushDebug { get; set; }
 }
 
 public sealed class SupraMarkReadResponse
@@ -372,4 +374,50 @@ public sealed class SupraWsChatRemovedPayload
 {
     public string type { get; set; } = "SupraChatRemoved";
     public string chatId { get; set; } = "";
+}
+
+public sealed class SupraGetMessageInfoResponse
+{
+    public bool success { get; set; }
+    public SupraMessageInfoDto? info { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraMessageInfoDto
+{
+    public string messageId { get; set; } = "";
+    public string chatId { get; set; } = "";
+    public string chatName { get; set; } = "";
+    public string chatType { get; set; } = "";
+    public string senderId { get; set; } = "";
+    public string senderName { get; set; } = "";
+    public DateTime sentAt { get; set; }
+    public DateTime? editedAt { get; set; }
+    public string status { get; set; } = "";
+    public bool deletedForEveryone { get; set; }
+    public string encryptionTier { get; set; } = "basic";
+    public string? replyToMessageId { get; set; }
+    public string? replyToSenderName { get; set; }
+    public string? forwardedFromSenderName { get; set; }
+    public List<SupraMessageReadReceiptDto> readBy { get; set; } = [];
+    public List<SupraMessageDeliveryEventDto> events { get; set; } = [];
+    public object? pushDebug { get; set; }
+}
+
+public sealed class SupraMessageReadReceiptDto
+{
+    public string userId { get; set; } = "";
+    public string displayName { get; set; } = "";
+    public DateTime? readAt { get; set; }
+    public bool read { get; set; }
+    public bool legacy { get; set; }
+}
+
+public sealed class SupraMessageDeliveryEventDto
+{
+    public string kind { get; set; } = "";
+    public DateTime? at { get; set; }
+    public string? userId { get; set; }
+    public string? userName { get; set; }
+    public string? detail { get; set; }
 }

@@ -5,6 +5,7 @@ using SuperMessenger.Core.Abstractions;
 using SuperMessenger.Infrastructure.Services;
 using SuperMessenger.Infrastructure.Storage;
 using SuperMessenger.Web.Hubs;
+using SuperMessenger.Web.Middleware;
 using SuperMessenger.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +30,8 @@ builder.Services.AddSingleton(_ => new PushVapidKeyStore(dataRoot, builder.Confi
 builder.Services.AddSingleton(_ => new PushSubscriptionStore(dataRoot));
 builder.Services.AddSingleton(_ => new NotificationPreferencesStore(dataRoot));
 builder.Services.AddSingleton<PushNotificationService>();
+builder.Services.AddSingleton<PushDiagnosticLogStore>();
+builder.Services.AddSingleton<MessageInfoService>();
 builder.Services.AddSingleton<UserPresenceService>();
 builder.Services.AddSingleton<UserPresenceNotifier>();
 builder.Services.AddHostedService<PresenceMonitorService>();
@@ -106,6 +109,11 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseMiddleware<ProtectedStaticPageMiddleware>();
+
 app.Use(async (context, next) =>
 {
     if (HttpMethods.IsGet(context.Request.Method) &&
@@ -141,10 +149,6 @@ app.UseStaticFiles(new StaticFileOptions
         ctx.Context.Response.Headers.Expires = "0";
     }
 });
-app.UseRouting();
-app.UseAuthentication();
-app.UseAuthorization();
-
 app.MapControllers();
 app.MapHub<MessengerHub>("/hubs/messenger");
 

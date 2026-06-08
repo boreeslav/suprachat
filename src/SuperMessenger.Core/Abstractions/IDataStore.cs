@@ -36,6 +36,9 @@ public interface IDataStore
     Task SaveMessageUserDeletionAsync(SupraMessageUserDeletionRecord deletion, CancellationToken ct = default);
     Task<bool> IsMessageDeletedForUserAsync(Guid messageId, Guid userId, CancellationToken ct = default);
 
+    Task<IReadOnlyList<SupraMessageReadReceiptRecord>> GetReadReceiptsByMessageAsync(Guid messageId, CancellationToken ct = default);
+    Task UpsertMessageReadReceiptAsync(SupraMessageReadReceiptRecord receipt, CancellationToken ct = default);
+
     Task DeleteParticipantAsync(Guid chatId, Guid userId, CancellationToken ct = default);
     Task DeleteChatAsync(Guid chatId, CancellationToken ct = default);
 
