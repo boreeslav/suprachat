@@ -90,6 +90,19 @@
     .field-block { margin-bottom: 14px; max-width: 520px; }
     .field-block label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; }
     .field-block input[type="text"], .field-block textarea { width: 100%; }
+    .admin-switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      max-width: 520px;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: inherit;
+      cursor: pointer;
+      user-select: none;
+    }
+    .admin-switch-row input { width: auto; margin: 0; cursor: pointer; }
     .appearance-logo-wrap { margin: 12px 0 16px; }
     .appearance-logo-wrap > label { display: block; font-size: 13px; color: #666; margin-bottom: 8px; }
     .appearance-logo-picker {
@@ -460,6 +473,13 @@
       <div class="appearance-tabs" id="themeTabs"></div>
     </div>
     <div class="appearance-grid" id="themeColorsGrid"></div>
+    <div class="field-block">
+      <label class="admin-switch-row" for="useThemeChatBg">
+        <span>Использовать фон темы</span>
+        <input type="checkbox" id="useThemeChatBg" checked/>
+      </label>
+      <p class="hint">Цвет и изображение «Фон чата» в области переписки. При отключении фон в чате не показывается.</p>
+    </div>
     <div class="appearance-logo-wrap" id="themeChatBgWrap">
       <label>Фон чата — изображение <span class="hint-inline">(необязательно)</span></label>
       <button type="button" class="appearance-logo-picker appearance-logo-picker--empty" id="themeChatBgPicker" title="Выбрать PNG или JPEG">
@@ -932,33 +952,34 @@
       const clearBtn = document.getElementById('clearThemeChatBg');
       const wrap = document.getElementById('themeChatBgWrap');
       const theme = getSelectedTheme();
-      if (!picker || !wrap) return;
-      wrap.hidden = !theme;
+      if (!picker || !wrap || !img) return;
+
+      const useThemeChatBg = document.getElementById('useThemeChatBg')?.checked !== false;
+      wrap.hidden = !theme || !useThemeChatBg;
+      if (img._blobUrl) { URL.revokeObjectURL(img._blobUrl); img._blobUrl = null; }
+      img.hidden = true;
+      img.removeAttribute('src');
+      placeholder.hidden = false;
+      placeholder.textContent = 'Цветной фон';
+      picker.classList.add('appearance-logo-picker--empty');
+      if (clearBtn) clearBtn.hidden = true;
       if (!theme) return;
+
       const pending = document.getElementById('themeChatBgFile')?.files?.[0];
-      const url = theme.chatBgImageUrl;
-      if (pending || url) {
-        if (pending) {
-          const blobUrl = URL.createObjectURL(pending);
-          if (img._blobUrl) URL.revokeObjectURL(img._blobUrl);
-          img._blobUrl = blobUrl;
-          img.src = blobUrl;
-        } else {
-          if (img._blobUrl) { URL.revokeObjectURL(img._blobUrl); img._blobUrl = null; }
-          img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
-        }
-        img.hidden = false;
-        placeholder.hidden = true;
-        picker.classList.remove('appearance-logo-picker--empty');
-        clearBtn.hidden = false;
+      const url = (theme.chatBgImageFileName || theme.chatBgImageUrl) ? theme.chatBgImageUrl : null;
+      if (!pending && !url) return;
+
+      if (pending) {
+        const blobUrl = URL.createObjectURL(pending);
+        img._blobUrl = blobUrl;
+        img.src = blobUrl;
       } else {
-        img.hidden = true;
-        img.removeAttribute('src');
-        placeholder.hidden = false;
-        placeholder.textContent = 'Цветной фон';
-        picker.classList.add('appearance-logo-picker--empty');
-        clearBtn.hidden = true;
+        img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
       }
+      img.hidden = false;
+      placeholder.hidden = true;
+      picker.classList.remove('appearance-logo-picker--empty');
+      if (clearBtn) clearBtn.hidden = !url;
     }
 
     const THEME_CHAT_BG_MAX_BYTES = 3_000_000;
@@ -1006,7 +1027,7 @@
 
     async function clearThemeChatBg() {
       const theme = getSelectedTheme();
-      if (!theme?.chatBgImageUrl || !selectedThemeName) return;
+      if (!(theme?.chatBgImageFileName || theme?.chatBgImageUrl) || !selectedThemeName) return;
       if (!confirm('Удалить фон-картинку для темы «' + selectedThemeName + '»?')) return;
       const r = await api('/api/admin/appearance/theme-chat-bg-image?themeName=' + encodeURIComponent(selectedThemeName), { method: 'DELETE' });
       const j = await r.json().catch(() => ({}));
@@ -1044,6 +1065,15 @@
       fillDefaultThemeSelect();
       renderThemeTabs();
       renderThemeEditor();
+      const useThemeChatBg = document.getElementById('useThemeChatBg');
+      if (useThemeChatBg) useThemeChatBg.checked = appearanceData.useThemeChatBg !== false;
+      updateThemeChatBgControls();
+    }
+
+    function updateThemeChatBgControls() {
+      const enabled = document.getElementById('useThemeChatBg')?.checked !== false;
+      const wrap = document.getElementById('themeChatBgWrap');
+      if (wrap) wrap.hidden = !enabled || !getSelectedTheme();
     }
 
     function collectAppearancePayload() {
@@ -1065,6 +1095,7 @@
         pwaIconBgColor: getPwaIconBgColor(),
         pwaIconSvgColor: getPwaIconSvgColor(),
         defaultThemeName: document.getElementById('defaultTheme').value,
+        useThemeChatBg: document.getElementById('useThemeChatBg').checked,
         base: readColorGrid(document.getElementById('baseColorsGrid')),
         themes: appearanceData.themes,
       };
@@ -1118,6 +1149,7 @@
     document.getElementById('saveRegister').onclick = () => saveAppearance();
     document.getElementById('saveContent').onclick = () => saveAppearance();
     document.getElementById('saveThemes').onclick = () => saveAppearance();
+    document.getElementById('useThemeChatBg').addEventListener('change', () => updateThemeChatBgControls());
 
     async function setLogoPreviewSrc(img, source) {
       const svgColor = getLogoSvgColor();

@@ -264,6 +264,13 @@ public sealed class SupraWsProfileUpdatedPayload
     public string? avatar { get; set; }
 }
 
+public sealed class SupraWsAppearanceUpdatedPayload
+{
+    public string type { get; set; } = "SupraAppearanceUpdated";
+    /// <summary>e.g. themeChatBg, themes</summary>
+    public string reason { get; set; } = "";
+}
+
 public sealed class SupraWsLoginChangedPayload
 {
     public string type { get; set; } = "SupraLoginChanged";

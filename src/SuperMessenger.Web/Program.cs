@@ -29,6 +29,7 @@ builder.Services.AddSingleton<RealtimeNotifier>();
 builder.Services.AddSingleton(_ => new PushVapidKeyStore(dataRoot, builder.Configuration["App:PublicUrl"]));
 builder.Services.AddSingleton(_ => new PushSubscriptionStore(dataRoot));
 builder.Services.AddSingleton(_ => new NotificationPreferencesStore(dataRoot));
+builder.Services.AddSingleton(_ => new MessengerUserPreferencesStore(dataRoot));
 builder.Services.AddSingleton<PushNotificationService>();
 builder.Services.AddSingleton<PushDiagnosticLogStore>();
 builder.Services.AddSingleton<MessageInfoService>();

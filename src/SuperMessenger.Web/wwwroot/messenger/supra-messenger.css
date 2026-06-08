@@ -1936,18 +1936,22 @@
 }
 
 @media (max-width: 1199px) {
+	/* Блокируем pull-to-refresh и rubber-band при overscroll внутри чата/списка
+	   (на телефоне это дублирует правило в @media max-width 680px). */
 	.mapp-root,
 	.mapp-sidebar,
-	.mapp-chat-list-viewport {
-		overscroll-behavior-x: none;
+	.mapp-chat-area,
+	.mapp-chat-panel,
+	.mapp-chat-panel .mc-root,
+	.mapp-chat-list-viewport,
+	.mapp-chat-list-panel,
+	.mc-messages,
+	body.sm-messenger-active {
+		overscroll-behavior: none;
 	}
 
 	.mapp-chat-list-viewport {
 		touch-action: pan-y pinch-zoom;
-	}
-
-	.mapp-chat-list-panel {
-		overscroll-behavior-x: none;
 	}
 }
 
@@ -3189,6 +3193,18 @@
 	flex-direction: column;
 	overflow: hidden;
 	isolation: isolate;
+}
+
+.mc-theme-bg-layer {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	background-color: var(--m-chat-bg);
+	background-image: var(--m-chat-bg-image, none);
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
 }
 
 .mc-header,

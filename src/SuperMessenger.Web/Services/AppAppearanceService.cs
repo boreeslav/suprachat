@@ -73,6 +73,7 @@ public sealed class AppAppearanceService
             DefaultThemeName = string.IsNullOrWhiteSpace(saved.DefaultThemeName)
                 ? defaults.DefaultThemeName
                 : saved.DefaultThemeName.Trim(),
+            UseThemeChatBg = saved.UseThemeChatBg ?? true,
             Base = MergeBase(saved.Base, defaults.Base),
             Themes = MergeThemes(saved.Themes, defaults.Themes),
         };
@@ -346,7 +347,34 @@ public sealed class AppAppearanceService
         var settings = await ReadRawAsync(ct);
         var theme = FindTheme(settings?.Themes, themeName);
         if (theme?.ChatBgImageFileName == null) return null;
-        var path = Path.Combine(_brandingDir, theme.ChatBgImageFileName);
+        return ResolveThemeChatBgImagePhysicalPath(theme.ChatBgImageFileName, settings);
+    }
+
+    public async Task<string?> GetThemeChatBgImagePhysicalPathByFileNameAsync(
+        string fileName,
+        CancellationToken ct = default)
+    {
+        var settings = await ReadRawAsync(ct);
+        return ResolveThemeChatBgImagePhysicalPath(fileName, settings);
+    }
+
+    string? ResolveThemeChatBgImagePhysicalPath(string? fileName, AppAppearanceSettings? settings)
+    {
+        if (string.IsNullOrWhiteSpace(fileName)
+            || fileName.Contains('/') || fileName.Contains('\\')
+            || !fileName.StartsWith("chat-bg-", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        if (settings?.Themes == null
+            || !settings.Themes.Any(t =>
+                string.Equals(t.ChatBgImageFileName, fileName, StringComparison.OrdinalIgnoreCase)))
+        {
+            return null;
+        }
+
+        var path = Path.Combine(_brandingDir, fileName);
         return File.Exists(path) ? path : null;
     }
 
@@ -573,6 +601,7 @@ public sealed class AppAppearanceService
             ? null
             : "/api/app/sound/outgoing",
         defaultThemeName = s.DefaultThemeName,
+        useThemeChatBg = s.UseThemeChatBg ?? true,
         @base = new
         {
             accent = s.Base.Accent,
@@ -583,19 +612,27 @@ public sealed class AppAppearanceService
             border = s.Base.Border,
             hover = s.Base.Hover,
         },
-        themes = s.Themes.Select(ToThemeDto).ToList(),
+        themes = s.Themes.Select(t => ToThemeDto(t)).ToList(),
     };
     }
 
-    public static object ToThemeDto(AppThemeSettings t) => new
+    public object ToThemeDto(AppThemeSettings t)
+    {
+        string? chatBgImageUrl = null;
+        if (!string.IsNullOrEmpty(t.ChatBgImageFileName))
+        {
+            var path = Path.Combine(_brandingDir, t.ChatBgImageFileName);
+            chatBgImageUrl = BuildThemeChatBgImageUrl(t.ChatBgImageFileName, path);
+        }
+
+        return new
     {
         name = t.Name,
         bodyBg = t.BodyBg,
         headerBg = t.HeaderBg,
         chatBg = t.ChatBg,
-        chatBgImageUrl = string.IsNullOrEmpty(t.ChatBgImageFileName)
-            ? null
-            : $"/api/app/theme-chat-bg-image?theme={Uri.EscapeDataString(t.Name)}",
+        chatBgImageFileName = t.ChatBgImageFileName,
+        chatBgImageUrl,
         myBubbleBg = t.MyBubbleBg,
         myBubbleText = t.MyBubbleText,
         otherBubbleBg = t.OtherBubbleBg,
@@ -618,6 +655,15 @@ public sealed class AppAppearanceService
         menuHover = t.MenuHover,
         dotsColor = t.DotsColor,
     };
+    }
+
+    public static string BuildThemeChatBgImageUrl(string fileName, string? physicalPath = null)
+    {
+        var url = $"/api/app/theme-chat-bg-image?f={Uri.EscapeDataString(fileName)}";
+        if (!string.IsNullOrEmpty(physicalPath) && File.Exists(physicalPath))
+            url += $"&r={File.GetLastWriteTimeUtc(physicalPath).Ticks}";
+        return url;
+    }
 
     public static bool IsSvgLogoFile(string? logoFileName) =>
         !string.IsNullOrEmpty(logoFileName)
@@ -816,6 +862,7 @@ public sealed class AppAppearanceSaveRequest
     public string? LogoSvgColor { get; set; }
     public string? PwaIconSvgColor { get; set; }
     public string? DefaultThemeName { get; set; }
+    public bool? UseThemeChatBg { get; set; }
     public AppBaseColorsDto? Base { get; set; }
     public List<AppThemeSettingsDto>? Themes { get; set; }
 }

@@ -241,12 +241,22 @@ public sealed class AppController : ControllerBase
 
     [HttpGet("theme-chat-bg-image")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetThemeChatBgImage([FromQuery] string? theme, CancellationToken ct)
+    public async Task<IActionResult> GetThemeChatBgImage(
+        [FromQuery] string? f,
+        [FromQuery] string? theme,
+        CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(theme)) return NotFound();
-        var path = await _appearance.GetThemeChatBgImagePhysicalPathAsync(theme.Trim(), ct);
+        string? path = null;
+        if (!string.IsNullOrWhiteSpace(f))
+            path = await _appearance.GetThemeChatBgImagePhysicalPathByFileNameAsync(f.Trim(), ct);
+        else if (!string.IsNullOrWhiteSpace(theme))
+            path = await _appearance.GetThemeChatBgImagePhysicalPathAsync(theme.Trim(), ct);
+
         if (path == null) return NotFound();
-        Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+        if (Request.Query.ContainsKey("r"))
+            Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        else
+            Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
         return PhysicalFile(path, ThemeChatBgImageUploadValidator.GetContentType(Path.GetExtension(path)));
     }
 
