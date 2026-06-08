@@ -1,2 +1,2 @@
 # Changelog items before deploy (one per line). Lines starting with # are ignored.
-Запуск UI не блокируется сетевыми запросами: приложение открывается из кэша при офлайне и медленном интернете, синхронизация идёт в фоне
+
