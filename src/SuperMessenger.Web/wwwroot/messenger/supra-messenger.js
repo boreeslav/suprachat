@@ -382,7 +382,7 @@ class MessengerI18n {
 			textCopied: 'Текст скопирован',
 			selectMode: 'Выбрано',
 			selectCancel: 'Отмена',
-			selectDelete: 'Удалить',
+			selectAction: 'Действия',
 		},
 		en: {
 			loading: 'Loading…',
@@ -756,7 +756,7 @@ class MessengerI18n {
 			textCopied: 'Text copied',
 			selectMode: 'Selected',
 			selectCancel: 'Cancel',
-			selectDelete: 'Delete',
+			selectAction: 'Actions',
 		},
 	};
 
@@ -2298,6 +2298,7 @@ function messengerHistoryHasStackedOverlay() {
 	return !!(
 		s.mcImgViewer ||
 		s.mappMsgMenu ||
+		s.mappMsgSelect ||
 		s.mappSettings ||
 		s.mappOverlay ||
 		s.mappAvatarView
@@ -7951,6 +7952,27 @@ class MessengerCustomMessage {
 		const parsed = MessengerCustomMessage.parse(msg?.text);
 		return parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.SYSTEM_EVENT;
 	}
+	static isEditableMessage(msg) {
+		if (!msg || msg.deletedForEveryone || !msg.isOwn) return false;
+		if (msg._locked) return false;
+		const text = msg.text || '';
+		if (!text) return false;
+		if (typeof SupraCrypto !== 'undefined') {
+			if (SupraCrypto.isEncrypted(text)) return false;
+			if (text === SupraCrypto.LOCKED_PREVIEW || text === SupraCrypto.LOCKED_OTHER) return false;
+		}
+		return !MessengerCustomMessage.isCustom(text);
+	}
+	static hasCopyableText(msg) {
+		if (!msg?.text) return false;
+		if (msg._locked) return false;
+		const text = msg.text;
+		if (typeof SupraCrypto !== 'undefined') {
+			if (SupraCrypto.isEncrypted(text)) return false;
+			if (text === SupraCrypto.LOCKED_PREVIEW || text === SupraCrypto.LOCKED_OTHER) return false;
+		}
+		return !MessengerCustomMessage.isCustom(text);
+	}
 }
 
 function buildQuotePreviewContent({ utils, cache, previewText, locked, lockedLabel }) {
@@ -11210,6 +11232,7 @@ class MessengerAppView {
 	static PANEL_POOL_MAX = 5;
 	#mobilePopstateHandler = null;
 	#keyboardLayoutDestroy = null;
+	#historyLeaveSync = false;
 	static NAV_SESSION_PREFIX = 'mapp.nav.';
 	el = {};
 	constructor(utils, icons, themeManager, i18n, sidebar, panelFactory, modal, api, fileTransferTypes = [], settingsModal = null, profileModal = null, groupProfileModal = null, avatarBuilder = null, readGate = null) {
@@ -11534,6 +11557,25 @@ class MessengerAppView {
 			// Здесь только проверяем, не было ли событие им обработано.
 			if (messengerPopstateWasConsumed()) return;
 			if (!MessengerUtils.isMobile()) return;
+			if (this.#historyLeaveSync) {
+				this.#historyLeaveSync = false;
+				messengerConsumePopstate();
+				return;
+			}
+			if (this.#panelFactory.syncSelectionHistoryPop(this.#activeState)) {
+				messengerConsumePopstate();
+				return;
+			}
+			if (this.#activeState?.selectionMode) {
+				this.#panelFactory.exitSelectionForNavigation(this.#activeState);
+				this.#leaveChatUi();
+				if (history.state?.mappChatOpen) {
+					this.#historyLeaveSync = true;
+					try { history.back(); } catch (_) { this.#historyLeaveSync = false; }
+				}
+				messengerConsumePopstate();
+				return;
+			}
 			if (!this.el.root?.classList.contains('mapp-show-chat')) return;
 			if (messengerHistoryHasStackedOverlay()) return;
 			this.#showChatListMobile();
@@ -11586,7 +11628,7 @@ class MessengerAppView {
 		this.setChats(chats);
 	}
 
-	#showChatListMobile() {
+	#leaveChatUi() {
 		this.#parkActivePanel();
 		this.el.root.classList.remove('mapp-show-chat');
 		this.#keyboardLayoutDestroy?.apply?.();
@@ -11596,9 +11638,20 @@ class MessengerAppView {
 		this.#renderChatList();
 		this.#showBottomNavigationBar();
 		this.#persistNavState();
-		if (history.state?.mappChatOpen) {
-			history.replaceState(null, '', window.location.pathname + window.location.search);
+	}
+
+	#syncHistoryAfterLeaveChat() {
+		if (!MessengerUtils.isMobile()) return;
+		const steps = history.state?.mappMsgSelect ? 2 : (history.state?.mappChatOpen ? 1 : 0);
+		if (steps > 0) {
+			this.#historyLeaveSync = true;
+			try { history.go(-steps); } catch (_) { this.#historyLeaveSync = false; }
 		}
+	}
+
+	#showChatListMobile() {
+		this.#leaveChatUi();
+		this.#syncHistoryAfterLeaveChat();
 	}
 	#isChatVisible(chatId) {
 		if (!this.#activeState || this.#activeState.chatId !== chatId) return false;
@@ -12183,15 +12236,32 @@ class MessengerAppView {
 			onChatEncryptionHasPassword: (c) => !!this.#api.getCrypto()?.getCustomPassword(c?.id),
 			onChatEncryptionStatusText: (c) => this.#chatEncryptionStatusText(c),
 			onEnterExtraPassword: (c) => this.#enterChatExtraPassword(c),
-			onClearHistory: (c) => this.#clearChatHistory(c),
-			onDeleteChat: (c) => this.#deleteOrLeaveChat(c, false),
-			onLeaveGroup: (c) => this.#deleteOrLeaveChat(c, true),
-			onBlockUser: (c) => this.#blockUser(c),
-			onBlockGroup: (c) => this.#blockGroup(c),
+			onClearHistory: (c) => {
+				this.#panelFactory.exitSelectionForNavigation(this.#activeState);
+				return this.#clearChatHistory(c);
+			},
+			onDeleteChat: (c) => {
+				this.#panelFactory.exitSelectionForNavigation(this.#activeState);
+				return this.#deleteOrLeaveChat(c, false);
+			},
+			onLeaveGroup: (c) => {
+				this.#panelFactory.exitSelectionForNavigation(this.#activeState);
+				return this.#deleteOrLeaveChat(c, true);
+			},
+			onBlockUser: (c) => {
+				this.#panelFactory.exitSelectionForNavigation(this.#activeState);
+				return this.#blockUser(c);
+			},
+			onBlockGroup: (c) => {
+				this.#panelFactory.exitSelectionForNavigation(this.#activeState);
+				return this.#blockGroup(c);
+			},
 			onMarkReadIfEngaged: () => this.markReadIfEngaged(chat.id),
 			onChatPreviewRefresh: () => {
 				this.refreshChatListPreview(chat.id).catch(() => {});
 			},
+			onForwardNavigate: (chatId) => this.#openChatById(chatId),
+			onNavigateBack: () => this.#navigateBackFromChat(),
 		};
 		const state = this.#panelFactory.create(
 			chat,
@@ -12220,6 +12290,36 @@ class MessengerAppView {
 				lastSeenAt: profile.lastSeenAt ?? null,
 			});
 		}).catch(() => {});
+	}
+
+	#navigateBackFromChat() {
+		if (this.#activeState?.selectionMode) {
+			this.#panelFactory.exitSelectionForNavigation(this.#activeState);
+		}
+		if (MessengerUtils.isMobile()) {
+			this.#showChatListMobile();
+			return;
+		}
+		this.#parkActivePanel();
+		this.el.root?.classList.remove('mapp-show-chat');
+		if (this.el.empty) this.el.empty.hidden = false;
+		this.#activeChat = null;
+		this.#sidebar.setActiveItem(null);
+		this.#renderChatList();
+		this.#persistNavState();
+	}
+
+	#openChatById(chatId) {
+		if (!chatId) return;
+		let chat = this.#chats.find(c => c.id === chatId);
+		if (!chat) {
+			const meta = this.#api.chatMeta(chatId);
+			if (!meta) return;
+			chat = { ...meta };
+			this.#chats.unshift(chat);
+			this.#renderChatList();
+		}
+		this.#openChat(chat);
 	}
 
 	async #openChat(chat) {
@@ -14326,6 +14426,58 @@ class MessengerApiClient {
 		return { success: true, sentChatIds };
 	}
 
+	async forwardMessages(sourceChatId, messageIds, contactIds, sourceMsgs = null, options = {}) {
+		if (!contactIds?.length) throw new Error('Не выбраны контакты');
+		if (contactIds.length > 10) throw new Error('Можно выбрать не более 10 контактов');
+		const byId = new Map();
+		for (const msg of sourceMsgs || []) {
+			if (msg?.id) byId.set(msg.id, msg);
+		}
+		const ordered = [];
+		for (const messageId of messageIds || []) {
+			const sourceMsg = byId.get(messageId);
+			if (!sourceMsg) continue;
+			const display = await this.decryptMessageForDisplay(sourceMsg, sourceChatId);
+			if (!this.canForwardMessage(display)) continue;
+			ordered.push({ sourceMsg, plainText: display.text });
+		}
+		if (!ordered.length) {
+			throw new Error(options.i18n?.t('forwardNotAllowed') || 'Нельзя переслать выбранные сообщения');
+		}
+
+		const sentChatIds = [];
+		for (const targetId of [...new Set(contactIds)]) {
+			let targetChatId;
+			try {
+				targetChatId = await this.#resolveForwardTargetChatId(targetId);
+			} catch (e) {
+				console.warn('[MessengerApiClient] forward resolve target', targetId, e);
+				continue;
+			}
+			let sentAny = false;
+			for (const { sourceMsg, plainText } of ordered) {
+				const forwardFrom = sourceMsg.senderName || '';
+				try {
+					await this.sendMessage(targetChatId, plainText, {
+						forwardedFromSenderName: forwardFrom,
+						i18n: options.i18n,
+						themeManager: options.themeManager,
+					});
+					sentAny = true;
+				} catch (e) {
+					if (e?.code === 'send-cancelled') throw e;
+					console.warn('[MessengerApiClient] forward send', targetChatId, e);
+				}
+			}
+			if (sentAny) sentChatIds.push(targetChatId);
+		}
+
+		if (!sentChatIds.length) {
+			throw new Error(options.i18n?.t('forwardChatsNotFound') || 'Не удалось переслать ни одному контакту');
+		}
+		return { success: true, sentChatIds };
+	}
+
 	async markRead(chatId) {
 		try {
 			await this.call('MarkMessagesRead', {
@@ -16202,6 +16354,7 @@ class MessengerChatPanel {
 	}
 
 	create(chat, appEl, onThemeApply, onSend, fileTransferTypes = [], chatCallbacks = {}) {
+		let panelState = null;
 		const displayName = chat.name || this.#i18n.t('unnamed');
 		const el = this.#utils.mk('div', 'mapp-chat-panel');
 		this.#themeManager.applyChatVars(el);
@@ -16209,6 +16362,13 @@ class MessengerChatPanel {
 		const backBtn = this.#utils.mk('button', 'mc-back-btn');
 		backBtn.innerHTML = this.#icons.back();
 		backBtn.addEventListener('click', () => {
+			if (typeof chatCallbacks.onNavigateBack === 'function') {
+				chatCallbacks.onNavigateBack();
+				return;
+			}
+			if (panelState?.selectionMode) {
+				this.#exitSelectionMode(panelState);
+			}
 			if (MessengerUtils.isMobile()) {
 				if (appEl.root.classList.contains('mapp-show-chat')) {
 					history.back();
@@ -16304,7 +16464,6 @@ class MessengerChatPanel {
 		const onActivity = (type, active) => this.#api.sendActivity(chat.id, type, active).catch(() => {});
 		const replyBar = this.#buildReplyBar();
 		const selectBar = this.#buildSelectionBar();
-		let panelState = null;
 		const fileOptions = fileTransferTypes.length > 0 ? {
 			types: fileTransferTypes,
 			chatId: chat.id,
@@ -16377,6 +16536,12 @@ class MessengerChatPanel {
 				: null,
 			onChatPreviewRefresh: typeof chatCallbacks.onChatPreviewRefresh === 'function'
 				? chatCallbacks.onChatPreviewRefresh
+				: null,
+			onForwardNavigate: typeof chatCallbacks.onForwardNavigate === 'function'
+				? chatCallbacks.onForwardNavigate
+				: null,
+			onNavigateBack: typeof chatCallbacks.onNavigateBack === 'function'
+				? chatCallbacks.onNavigateBack
 				: null,
 		};
 		panelState = state;
@@ -16643,14 +16808,14 @@ class MessengerChatPanel {
 		const bar = this.#utils.mk('div', 'mc-select-bar');
 		bar.hidden = true;
 		const countEl = this.#utils.mk('span', 'mc-select-bar-count');
-		const cancelBtn = this.#utils.mk('button', 'mc-select-bar-btn');
+		const cancelBtn = this.#utils.mk('button', 'mc-select-bar-btn mc-select-bar-btn--secondary');
 		cancelBtn.type = 'button';
-		const deleteBtn = this.#utils.mk('button', 'mc-select-bar-btn mc-select-bar-btn--danger');
-		deleteBtn.type = 'button';
-		bar.append(countEl, cancelBtn, deleteBtn);
+		const actionBtn = this.#utils.mk('button', 'mc-select-bar-btn');
+		actionBtn.type = 'button';
+		bar.append(countEl, cancelBtn, actionBtn);
 		bar._countEl = countEl;
 		bar._cancelBtn = cancelBtn;
-		bar._deleteBtn = deleteBtn;
+		bar._actionBtn = actionBtn;
 		return bar;
 	}
 
@@ -16660,9 +16825,12 @@ class MessengerChatPanel {
 		closeReply?.addEventListener('click', () => this.clearReplyDraft(state));
 
 		state.selectBar._cancelBtn.textContent = this.#i18n.t('selectCancel');
-		state.selectBar._deleteBtn.textContent = this.#i18n.t('selectDelete');
-		state.selectBar._cancelBtn.addEventListener('click', () => this.#exitSelectionMode(state));
-		state.selectBar._deleteBtn.addEventListener('click', () => this.#deleteSelectedMessages(state));
+		state.selectBar._actionBtn.textContent = this.#i18n.t('selectAction');
+		state.selectBar._cancelBtn.addEventListener('click', () => this.#cancelSelectionMode(state));
+		state.selectBar._actionBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			this.#showSelectionActionsMenu(e, state);
+		});
 	}
 
 	clearReplyDraft(state) {
@@ -16932,8 +17100,30 @@ class MessengerChatPanel {
 	}
 
 	#showMessageMenu(e, state, msg, row = null) {
-		const isOwn = !!msg.isOwn;
-		const isDeleted = !!msg.deletedForEveryone;
+		const currentMsg = this.#resolveRowMessage(state, row, msg);
+		const sheetItems = this.#buildMessageActionItems(state, [{ msg: currentMsg, row }], { multiSelect: false });
+		if (!sheetItems.length) return;
+		this.#presentMessageActionMenu(e, state, sheetItems, {
+			title: currentMsg.senderName || '',
+			row,
+			highlight: true,
+		});
+	}
+
+	#getSelectedMessageEntries(state) {
+		const ids = state.selectedIds;
+		const entries = [];
+		state.msgArea.querySelectorAll('.mc-msg-row').forEach(row => {
+			const id = row.dataset.msgId;
+			if (!id || !ids.has(id)) return;
+			const msg = this.#resolveRowMessage(state, row, row._msgData);
+			if (!msg || msg.deletedForEveryone || MessengerCustomMessage.isSystemEvent(msg)) return;
+			entries.push({ msg, row });
+		});
+		return entries;
+	}
+
+	#buildMessageActionItems(state, entries, { multiSelect = false } = {}) {
 		const sheetItems = [];
 		const push = (icon, labelKey, danger, action) => {
 			sheetItems.push({
@@ -16944,16 +17134,40 @@ class MessengerChatPanel {
 			});
 		};
 
+		if (!entries.length) return sheetItems;
+
+		if (multiSelect) {
+			const msgs = entries.map(entry => entry.msg);
+			const forwardable = msgs.filter(m => this.#api.canForwardMessage(m));
+			if (forwardable.length) {
+				push(this.#icons.forward(), 'msgActionForward', false, () => this.#forwardSelectedMessages(state, forwardable));
+			}
+			const copyable = msgs.filter(m => MessengerCustomMessage.hasCopyableText(m));
+			if (copyable.length) {
+				push(this.#icons.copy(), 'msgActionCopy', false, () => this.#copySelectedMessagesText(copyable));
+			}
+			push(this.#icons.trash(), 'msgActionDelete', true, () => this.#deleteSelectedMessages(state));
+			return sheetItems;
+		}
+
+		const { msg, row } = entries[0];
+		const isOwn = !!msg.isOwn;
+		const isDeleted = !!msg.deletedForEveryone;
+
 		if (!isDeleted) {
 			if (this.#shouldOfferEnterPassword(state, msg, row)) {
 				push(this.#icons.lock(), 'msgActionEnterPassword', false, () => state.onEnterExtraPassword());
 			}
-			if (isOwn) push(this.#icons.pencil(), 'msgActionEdit', false, () => this.#editMessage(state, msg));
+			if (isOwn && MessengerCustomMessage.isEditableMessage(msg)) {
+				push(this.#icons.pencil(), 'msgActionEdit', false, () => this.#editMessage(state, msg));
+			}
 			push(this.#icons.reply(), 'msgActionReply', false, () => this.setReplyDraft(state, msg));
 			if (this.#api.canForwardMessage(msg)) {
 				push(this.#icons.forward(), 'msgActionForward', false, () => this.#forwardMessage(state, msg));
 			}
-			if (msg.text) push(this.#icons.copy(), 'msgActionCopy', false, () => this.#copyMessageText(msg));
+			if (MessengerCustomMessage.hasCopyableText(msg)) {
+				push(this.#icons.copy(), 'msgActionCopy', false, () => this.#copyMessageText(msg));
+			}
 			push(this.#icons.select(), 'msgActionSelect', false, () => this.#enterSelectionMode(state, msg.id));
 		}
 
@@ -16962,22 +17176,23 @@ class MessengerChatPanel {
 		}
 
 		push(this.#icons.info(), 'msgActionInfo', false, () => this.#showMessageInfo(state, msg));
+		return sheetItems;
+	}
 
-		if (!sheetItems.length) return;
-
+	#presentMessageActionMenu(e, state, sheetItems, { title = '', row = null, highlight = false } = {}) {
 		const dismissMenuHighlight = () => MessengerMessageHighlight.clear(state.msgArea);
 
 		if (isMobileSheetMenu()) {
 			MobileBottomSheetMenu.open({
-				title: msg.senderName || '',
+				title,
 				items: sheetItems,
 				themeManager: this.#themeManager,
 				i18n: this.#i18n,
 				icons: this.#icons,
 				onClose: dismissMenuHighlight,
-				onSheetReady: (sheetEl) => {
-					if (row) MessengerMessageHighlight.showAboveSheetMenu(row, sheetEl, state.msgArea);
-				},
+				onSheetReady: highlight && row
+					? (sheetEl) => MessengerMessageHighlight.showAboveSheetMenu(row, sheetEl, state.msgArea)
+					: undefined,
 			});
 			return;
 		}
@@ -17034,13 +17249,35 @@ class MessengerChatPanel {
 		document.body.appendChild(menu);
 		let x = e.clientX;
 		let y = e.clientY;
+		if (e.currentTarget instanceof HTMLElement) {
+			const rect = e.currentTarget.getBoundingClientRect();
+			x = rect.left;
+			y = rect.top;
+		}
 		const mw = menu.offsetWidth;
 		const mh = menu.offsetHeight;
 		if (x + mw > window.innerWidth) x = window.innerWidth - mw - 4;
 		if (y + mh > window.innerHeight) y = window.innerHeight - mh - 4;
+		if (x < 4) x = 4;
+		if (y < 4) y = 4;
 		menu.style.left = x + 'px';
 		menu.style.top = y + 'px';
 		attachMenuDismiss(menu, closeMenu);
+	}
+
+	#showSelectionActionsMenu(e, state) {
+		const entries = this.#getSelectedMessageEntries(state);
+		if (!entries.length) return;
+		const multiSelect = entries.length > 1;
+		const sheetItems = this.#buildMessageActionItems(state, entries, { multiSelect });
+		if (!sheetItems.length) return;
+		this.#presentMessageActionMenu(e, state, sheetItems, {
+			title: multiSelect
+				? `${this.#i18n.t('selectMode')}: ${entries.length}`
+				: (entries[0].msg.senderName || ''),
+			row: multiSelect ? null : entries[0].row,
+			highlight: !multiSelect,
+		});
 	}
 
 	async #showMessageInfo(state, msg) {
@@ -17077,12 +17314,26 @@ class MessengerChatPanel {
 	}
 
 	async #copyMessageText(msg) {
+		if (!MessengerCustomMessage.hasCopyableText(msg)) return;
 		const text = msg.text || '';
-		if (!text) return;
 		try {
 			await navigator.clipboard.writeText(text);
 		} catch (e) {
 			console.warn('[MessengerChatPanel] copy', e);
+		}
+	}
+
+	async #copySelectedMessagesText(msgs) {
+		const parts = [];
+		for (const msg of msgs || []) {
+			if (!MessengerCustomMessage.hasCopyableText(msg)) continue;
+			parts.push(msg.text);
+		}
+		if (!parts.length) return;
+		try {
+			await navigator.clipboard.writeText(parts.join('\n\n'));
+		} catch (e) {
+			console.warn('[MessengerChatPanel] copy selected', e);
 		}
 	}
 
@@ -17140,6 +17391,15 @@ class MessengerChatPanel {
 		});
 	}
 
+	#finishForward(state, targetChatId) {
+		if (state?.selectionMode) {
+			this.#exitSelectionMode(state);
+		}
+		if (targetChatId && typeof state?.onForwardNavigate === 'function') {
+			state.onForwardNavigate(targetChatId);
+		}
+	}
+
 	#forwardMessage(state, msg) {
 		if (!this.#api.canForwardMessage(msg)) {
 			MessengerDialog.alert({
@@ -17155,10 +17415,50 @@ class MessengerChatPanel {
 		}
 		this.#forwardModal.open(async (contactIds) => {
 			try {
-				await this.#api.forwardMessage(state.chatId, msg.id, contactIds, msg, {
+				const result = await this.#api.forwardMessage(state.chatId, msg.id, contactIds, msg, {
 					i18n: this.#i18n,
 					themeManager: this.#themeManager,
 				});
+				this.#finishForward(state, result?.sentChatIds?.[0]);
+			} catch (e) {
+				if (e?.code !== 'send-cancelled') {
+					await MessengerDialog.alert({
+						message: e?.message || this.#i18n.t('forwardNotAllowed'),
+						themeManager: this.#themeManager,
+					});
+				}
+				throw e;
+			}
+		});
+	}
+
+	#forwardSelectedMessages(state, msgs) {
+		const forwardable = (msgs || []).filter(m => this.#api.canForwardMessage(m));
+		if (!forwardable.length) {
+			MessengerDialog.alert({
+				message: this.#i18n.t('forwardNotAllowed'),
+				themeManager: this.#themeManager,
+			});
+			return;
+		}
+		if (!this.#forwardModal) {
+			this.#forwardModal = new MessengerForwardModal(
+				this.#utils, this.#icons, this.#avatarBuilder, this.#api, this.#i18n, this.#themeManager
+			);
+		}
+		this.#forwardModal.open(async (contactIds) => {
+			try {
+				const result = await this.#api.forwardMessages(
+					state.chatId,
+					forwardable.map(m => m.id),
+					contactIds,
+					forwardable,
+					{
+						i18n: this.#i18n,
+						themeManager: this.#themeManager,
+					}
+				);
+				this.#finishForward(state, result?.sentChatIds?.[0]);
 			} catch (e) {
 				if (e?.code !== 'send-cancelled') {
 					await MessengerDialog.alert({
@@ -17251,15 +17551,55 @@ class MessengerChatPanel {
 			this.#enableRowSelectionUi(row, state.selectedIds.has(id));
 		});
 		this.#updateSelectionBar(state);
+		if (MessengerUtils.isMobile() && !history.state?.mappMsgSelect) {
+			try {
+				history.pushState({ mappMsgSelect: true }, '');
+				state.selectionHistoryPushed = true;
+			} catch (_) {
+				state.selectionHistoryPushed = false;
+			}
+		}
 	}
 
 	#exitSelectionMode(state) {
 		state.selectionMode = false;
 		state.selectedIds.clear();
 		state.selectBar.hidden = true;
+		state.selectionHistoryPushed = false;
 		state.msgArea.querySelectorAll('.mc-msg-row').forEach(row => {
 			this.#disableRowSelectionUi(row);
 		});
+	}
+
+	#syncSelectionHistoryPop(state) {
+		if (!state?.selectionHistorySync) return false;
+		state.selectionHistorySync = false;
+		return true;
+	}
+
+	syncSelectionHistoryPop(state) {
+		return this.#syncSelectionHistoryPop(state);
+	}
+
+	exitSelectionForNavigation(state) {
+		if (!state?.selectionMode) return false;
+		this.#exitSelectionMode(state);
+		return true;
+	}
+
+	cancelSelectionMode(state) {
+		return this.#cancelSelectionMode(state);
+	}
+
+	#cancelSelectionMode(state) {
+		if (!state?.selectionMode) return false;
+		const syncHistory = !!state.selectionHistoryPushed && history.state?.mappMsgSelect;
+		this.#exitSelectionMode(state);
+		if (syncHistory && MessengerUtils.isMobile()) {
+			state.selectionHistorySync = true;
+			try { history.back(); } catch (_) { state.selectionHistorySync = false; }
+		}
+		return true;
 	}
 
 	#toggleMessageSelection(state, msgId, row) {
@@ -17272,7 +17612,7 @@ class MessengerChatPanel {
 	#updateSelectionBar(state) {
 		const n = state.selectedIds.size;
 		state.selectBar._countEl.textContent = `${this.#i18n.t('selectMode')}: ${n}`;
-		state.selectBar._deleteBtn.disabled = n === 0;
+		state.selectBar._actionBtn.disabled = n === 0;
 	}
 
 	async #deleteSelectedMessages(state) {

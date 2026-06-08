@@ -523,6 +523,12 @@
 	font-size: 13px;
 }
 
+.mc-select-bar-btn--secondary {
+	background: transparent;
+	color: var(--m-text, #333);
+	border: 1px solid var(--m-border, rgba(0, 0, 0, .15));
+}
+
 .mc-select-bar-btn--danger {
 	background: #e53935;
 }
