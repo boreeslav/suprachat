@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using SuperMessenger.Core.Entities;
 
@@ -7,6 +9,7 @@ public sealed class AppAppearanceService
 {
     private readonly string _settingsPath;
     private readonly string _brandingDir;
+    private readonly string _iconsDir;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -17,7 +20,9 @@ public sealed class AppAppearanceService
     public AppAppearanceService(string dataRoot)
     {
         _brandingDir = Path.Combine(dataRoot, "branding");
+        _iconsDir = Path.Combine(_brandingDir, "icons");
         Directory.CreateDirectory(_brandingDir);
+        Directory.CreateDirectory(_iconsDir);
         _settingsPath = Path.Combine(_brandingDir, "app-appearance.json");
     }
 
@@ -56,6 +61,13 @@ public sealed class AppAppearanceService
             SplashCss = Or(saved.SplashCss, defaults.SplashCss),
             LogoClickScript = Or(saved.LogoClickScript, defaults.LogoClickScript),
             LogoFileName = saved.LogoFileName,
+            PwaIconLogoFileName = saved.PwaIconLogoFileName,
+            PwaIconBgColor = string.IsNullOrWhiteSpace(saved.PwaIconBgColor)
+                ? defaults.Base.Accent
+                : saved.PwaIconBgColor.Trim(),
+            PwaIconBgImageFileName = saved.PwaIconBgImageFileName,
+            LogoSvgColor = NormalizeOptionalColor(saved.LogoSvgColor),
+            PwaIconSvgColor = NormalizeOptionalColor(saved.PwaIconSvgColor),
             IncomingMessageSoundFileName = saved.IncomingMessageSoundFileName,
             OutgoingMessageSoundFileName = saved.OutgoingMessageSoundFileName,
             DefaultThemeName = string.IsNullOrWhiteSpace(saved.DefaultThemeName)
@@ -83,9 +95,12 @@ public sealed class AppAppearanceService
         }
     }
 
-    public async Task SaveLogoAsync(Stream stream, string extension, CancellationToken ct = default)
+    public async Task SaveLogoAsync(Stream stream, string extension, string? pwaIconBgColor, CancellationToken ct = default)
     {
         extension = NormalizeLogoExtension(extension);
+        if (extension != ".svg")
+            throw new InvalidOperationException("Логотип должен быть SVG");
+
         var fileName = "logo" + extension;
         var path = Path.Combine(_brandingDir, fileName);
         await _lock.WaitAsync(ct);
@@ -100,6 +115,8 @@ public sealed class AppAppearanceService
             await stream.CopyToAsync(fs, ct);
             var settings = await ReadRawUnlockedAsync(ct) ?? AppAppearanceDefaults.Create();
             settings.LogoFileName = fileName;
+            if (!string.IsNullOrWhiteSpace(pwaIconBgColor))
+                settings.PwaIconBgColor = PwaIconGenerator.NormalizeBgColor(pwaIconBgColor, settings.Base.Accent);
             var json = JsonSerializer.Serialize(settings, JsonOptions);
             await File.WriteAllTextAsync(_settingsPath, json, ct);
         }
@@ -108,6 +125,331 @@ public sealed class AppAppearanceService
             _lock.Release();
         }
     }
+
+    public async Task<(bool ok, string? error)> SavePwaIconsAsync(
+        IEnumerable<IFormFile> files,
+        string? pwaIconBgColor,
+        string? pwaIconSvgColor = null,
+        CancellationToken ct = default)
+    {
+        var fileList = files.Where(f => f.Length > 0).ToList();
+        if (fileList.Count == 0)
+            return (false, "Иконки PWA не получены");
+
+        Directory.CreateDirectory(_iconsDir);
+        var byName = new Dictionary<string, IFormFile>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in fileList)
+        {
+            if (file.Length == 0) continue;
+            var name = ResolvePwaIconUploadName(file);
+            if (name == null) continue;
+            byName[name] = file;
+        }
+
+        foreach (var iconName in PwaIconFiles.All)
+        {
+            if (!byName.TryGetValue(iconName, out var file))
+                return (false, $"Не хватает иконки {iconName}");
+
+            var (valid, error) = await ValidatePwaIconUploadAsync(file, iconName, ct);
+            if (!valid)
+                return (false, error);
+        }
+
+        await _lock.WaitAsync(ct);
+        try
+        {
+            foreach (var iconName in PwaIconFiles.All)
+            {
+                var file = byName[iconName];
+                var dest = Path.Combine(_iconsDir, iconName);
+                await using var input = file.OpenReadStream();
+                await using var output = File.Create(dest);
+                await input.CopyToAsync(output, ct);
+            }
+
+            var settings = await ReadRawUnlockedAsync(ct) ?? AppAppearanceDefaults.Create();
+            if (!string.IsNullOrWhiteSpace(pwaIconBgColor))
+            {
+                settings.PwaIconBgColor = PwaIconGenerator.NormalizeBgColor(
+                    pwaIconBgColor,
+                    settings.Base.Accent);
+            }
+            settings.PwaIconSvgColor = NormalizeOptionalColor(pwaIconSvgColor);
+            var json = JsonSerializer.Serialize(settings, JsonOptions);
+            await File.WriteAllTextAsync(_settingsPath, json, ct);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+
+        return (true, null);
+    }
+
+    static async Task<(bool ok, string? error)> ValidatePwaIconUploadAsync(
+        IFormFile file,
+        string expectedName,
+        CancellationToken ct)
+    {
+        if (file.Length > 800_000)
+            return (false, $"{expectedName}: файл слишком большой");
+
+        await using var stream = file.OpenReadStream();
+        await using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms, ct);
+        ms.Position = 0;
+        try
+        {
+            var info = await SixLabors.ImageSharp.Image.IdentifyAsync(ms, ct);
+            if (info == null)
+                return (false, $"{expectedName}: не PNG");
+            if (!string.Equals(info.Metadata.DecodedImageFormat?.Name, "PNG", StringComparison.OrdinalIgnoreCase))
+                return (false, $"{expectedName}: нужен PNG");
+        }
+        catch
+        {
+            return (false, $"{expectedName}: некорректный PNG");
+        }
+
+        return (true, null);
+    }
+
+    static string? ResolvePwaIconUploadName(IFormFile file)
+    {
+        var fromField = (file.Name ?? "").Trim();
+        if (PwaIconFiles.All.Contains(fromField, StringComparer.OrdinalIgnoreCase))
+        {
+            return PwaIconFiles.All.First(n => string.Equals(n, fromField, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var fromFileName = Path.GetFileName(file.FileName);
+        if (!string.IsNullOrEmpty(fromFileName)
+            && PwaIconFiles.All.Contains(fromFileName, StringComparer.OrdinalIgnoreCase))
+        {
+            return PwaIconFiles.All.First(n => string.Equals(n, fromFileName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return null;
+    }
+
+    public async Task SavePwaIconLogoAsync(Stream stream, CancellationToken ct = default)
+    {
+        const string fileName = "icon-logo.svg";
+        var path = Path.Combine(_brandingDir, fileName);
+        await _lock.WaitAsync(ct);
+        try
+        {
+            foreach (var old in Directory.EnumerateFiles(_brandingDir, "icon-logo.*"))
+            {
+                if (!string.Equals(old, path, StringComparison.OrdinalIgnoreCase))
+                    File.Delete(old);
+            }
+            await using var fs = File.Create(path);
+            await stream.CopyToAsync(fs, ct);
+            var settings = await ReadRawUnlockedAsync(ct) ?? AppAppearanceDefaults.Create();
+            settings.PwaIconLogoFileName = fileName;
+            var json = JsonSerializer.Serialize(settings, JsonOptions);
+            await File.WriteAllTextAsync(_settingsPath, json, ct);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    public async Task ClearPwaIconLogoAsync(CancellationToken ct = default)
+    {
+        await _lock.WaitAsync(ct);
+        try
+        {
+            foreach (var old in Directory.EnumerateFiles(_brandingDir, "icon-logo.*"))
+                File.Delete(old);
+
+            var settings = await ReadRawUnlockedAsync(ct);
+            if (settings != null)
+            {
+                settings.PwaIconLogoFileName = null;
+                var json = JsonSerializer.Serialize(settings, JsonOptions);
+                await File.WriteAllTextAsync(_settingsPath, json, ct);
+            }
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    public async Task<string?> GetPwaIconBgImagePhysicalPathAsync(CancellationToken ct = default)
+    {
+        var settings = await ReadRawAsync(ct);
+        if (settings?.PwaIconBgImageFileName == null) return null;
+        var path = Path.Combine(_brandingDir, settings.PwaIconBgImageFileName);
+        return File.Exists(path) ? path : null;
+    }
+
+    public async Task SavePwaIconBgImageAsync(Stream stream, string extension, CancellationToken ct = default)
+    {
+        extension = extension.ToLowerInvariant() switch
+        {
+            ".jpeg" => ".jpg",
+            ".png" or ".jpg" => extension,
+            _ => ".png",
+        };
+        var fileName = "pwa-icon-bg" + extension;
+        var path = Path.Combine(_brandingDir, fileName);
+        await _lock.WaitAsync(ct);
+        try
+        {
+            foreach (var old in Directory.EnumerateFiles(_brandingDir, "pwa-icon-bg.*"))
+            {
+                if (!string.Equals(old, path, StringComparison.OrdinalIgnoreCase))
+                    File.Delete(old);
+            }
+            await using var fs = File.Create(path);
+            await stream.CopyToAsync(fs, ct);
+            var settings = await ReadRawUnlockedAsync(ct) ?? AppAppearanceDefaults.Create();
+            settings.PwaIconBgImageFileName = fileName;
+            var json = JsonSerializer.Serialize(settings, JsonOptions);
+            await File.WriteAllTextAsync(_settingsPath, json, ct);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    public async Task ClearPwaIconBgImageAsync(CancellationToken ct = default)
+    {
+        await _lock.WaitAsync(ct);
+        try
+        {
+            foreach (var old in Directory.EnumerateFiles(_brandingDir, "pwa-icon-bg.*"))
+                File.Delete(old);
+
+            var settings = await ReadRawUnlockedAsync(ct);
+            if (settings != null)
+            {
+                settings.PwaIconBgImageFileName = null;
+                var json = JsonSerializer.Serialize(settings, JsonOptions);
+                await File.WriteAllTextAsync(_settingsPath, json, ct);
+            }
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    public async Task<string?> GetThemeChatBgImagePhysicalPathAsync(string themeName, CancellationToken ct = default)
+    {
+        var settings = await ReadRawAsync(ct);
+        var theme = FindTheme(settings?.Themes, themeName);
+        if (theme?.ChatBgImageFileName == null) return null;
+        var path = Path.Combine(_brandingDir, theme.ChatBgImageFileName);
+        return File.Exists(path) ? path : null;
+    }
+
+    public async Task<(bool ok, string? error)> SaveThemeChatBgImageAsync(
+        string themeName,
+        Stream stream,
+        string extension,
+        CancellationToken ct = default)
+    {
+        themeName = (themeName ?? "").Trim();
+        if (string.IsNullOrEmpty(themeName))
+            return (false, "Укажите тему");
+
+        extension = extension.ToLowerInvariant() switch
+        {
+            ".jpeg" => ".jpg",
+            ".png" or ".jpg" => extension,
+            _ => ".png",
+        };
+
+        await _lock.WaitAsync(ct);
+        try
+        {
+            var settings = await ReadRawUnlockedAsync(ct) ?? AppAppearanceDefaults.Create();
+            var theme = FindTheme(settings.Themes, themeName);
+            if (theme == null)
+                return (false, "Тема не найдена");
+
+            var fileName = $"chat-bg-{ThemeChatBgSlug(themeName)}{extension}";
+            var path = Path.Combine(_brandingDir, fileName);
+
+            if (!string.IsNullOrEmpty(theme.ChatBgImageFileName))
+                DeleteBrandingFileIfExists(theme.ChatBgImageFileName);
+
+            foreach (var old in Directory.EnumerateFiles(_brandingDir, $"chat-bg-{ThemeChatBgSlug(themeName)}.*"))
+            {
+                if (!string.Equals(old, path, StringComparison.OrdinalIgnoreCase))
+                    File.Delete(old);
+            }
+
+            await using var fs = File.Create(path);
+            await stream.CopyToAsync(fs, ct);
+            theme.ChatBgImageFileName = fileName;
+            var json = JsonSerializer.Serialize(settings, JsonOptions);
+            await File.WriteAllTextAsync(_settingsPath, json, ct);
+            return (true, null);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    public async Task<(bool ok, string? error)> ClearThemeChatBgImageAsync(string themeName, CancellationToken ct = default)
+    {
+        themeName = (themeName ?? "").Trim();
+        if (string.IsNullOrEmpty(themeName))
+            return (false, "Укажите тему");
+
+        await _lock.WaitAsync(ct);
+        try
+        {
+            var settings = await ReadRawUnlockedAsync(ct);
+            if (settings == null) return (true, null);
+
+            var theme = FindTheme(settings.Themes, themeName);
+            if (theme == null)
+                return (false, "Тема не найдена");
+
+            if (!string.IsNullOrEmpty(theme.ChatBgImageFileName))
+            {
+                DeleteBrandingFileIfExists(theme.ChatBgImageFileName);
+                theme.ChatBgImageFileName = null;
+                var json = JsonSerializer.Serialize(settings, JsonOptions);
+                await File.WriteAllTextAsync(_settingsPath, json, ct);
+            }
+
+            return (true, null);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    public async Task<string?> GetPwaIconLogoPhysicalPathAsync(CancellationToken ct = default)
+    {
+        var settings = await ReadRawAsync(ct);
+        if (settings?.PwaIconLogoFileName == null) return null;
+        var path = Path.Combine(_brandingDir, settings.PwaIconLogoFileName);
+        return File.Exists(path) ? path : null;
+    }
+
+    public string? GetCustomPwaIconPhysicalPath(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName) || fileName.Contains('/') || fileName.Contains('\\'))
+            return null;
+        var path = Path.Combine(_iconsDir, fileName);
+        return File.Exists(path) ? path : null;
+    }
+
+    public bool HasCustomPwaIcons() =>
+        PwaIconFiles.All.All(f => File.Exists(Path.Combine(_iconsDir, f)));
 
     public async Task<string?> GetLogoPhysicalPathAsync(CancellationToken ct = default)
     {
@@ -169,6 +511,7 @@ public sealed class AppAppearanceService
         var current = await ReadRawAsync(ct);
         var defaults = AppAppearanceDefaults.Create();
         defaults.LogoFileName = current?.LogoFileName;
+        defaults.PwaIconLogoFileName = current?.PwaIconLogoFileName;
         defaults.IncomingMessageSoundFileName = current?.IncomingMessageSoundFileName;
         defaults.OutgoingMessageSoundFileName = current?.OutgoingMessageSoundFileName;
         if (!string.IsNullOrWhiteSpace(current?.AppName))
@@ -187,6 +530,11 @@ public sealed class AppAppearanceService
         defaults.SplashHtml = current?.SplashHtml ?? defaults.SplashHtml;
         defaults.SplashCss = current?.SplashCss ?? defaults.SplashCss;
         defaults.LogoClickScript = current?.LogoClickScript ?? defaults.LogoClickScript;
+        defaults.PwaIconBgColor = current?.PwaIconBgColor;
+        defaults.PwaIconBgImageFileName = current?.PwaIconBgImageFileName;
+        defaults.LogoSvgColor = current?.LogoSvgColor;
+        defaults.PwaIconSvgColor = current?.PwaIconSvgColor;
+        ClearAllThemeChatBgImages(current);
         await SaveAsync(defaults, ct);
     }
 
@@ -210,6 +558,14 @@ public sealed class AppAppearanceService
         logoClickScript = s.LogoClickScript,
         logoUrl = string.IsNullOrEmpty(s.LogoFileName) ? null : "/api/app/logo",
         logoSvg = IsSvgLogoFile(s.LogoFileName),
+        logoSvgColor = NormalizeOptionalColor(s.LogoSvgColor),
+        pwaIconLogoUrl = string.IsNullOrEmpty(s.PwaIconLogoFileName) ? null : "/api/app/pwa-icon-logo",
+        pwaIconBgColor = PwaIconGenerator.NormalizeBgColor(s.PwaIconBgColor, s.Base.Accent),
+        pwaIconBgImageUrl = string.IsNullOrEmpty(s.PwaIconBgImageFileName)
+            ? null
+            : "/api/app/pwa-icon-bg-image",
+        pwaIconSvgColor = NormalizeOptionalColor(s.PwaIconSvgColor),
+        pwaIcons = BuildPwaIconsDto(s),
         incomingMessageSoundUrl = string.IsNullOrEmpty(s.IncomingMessageSoundFileName)
             ? null
             : "/api/app/sound/incoming",
@@ -237,6 +593,9 @@ public sealed class AppAppearanceService
         bodyBg = t.BodyBg,
         headerBg = t.HeaderBg,
         chatBg = t.ChatBg,
+        chatBgImageUrl = string.IsNullOrEmpty(t.ChatBgImageFileName)
+            ? null
+            : $"/api/app/theme-chat-bg-image?theme={Uri.EscapeDataString(t.Name)}",
         myBubbleBg = t.MyBubbleBg,
         myBubbleText = t.MyBubbleText,
         otherBubbleBg = t.OtherBubbleBg,
@@ -263,6 +622,19 @@ public sealed class AppAppearanceService
     public static bool IsSvgLogoFile(string? logoFileName) =>
         !string.IsNullOrEmpty(logoFileName)
         && logoFileName.EndsWith(".svg", StringComparison.OrdinalIgnoreCase);
+
+    object? BuildPwaIconsDto(AppAppearanceSettings s)
+    {
+        if (!HasCustomPwaIcons()) return null;
+        return new
+        {
+            icon192 = PwaIconFiles.ApiUrl(PwaIconFiles.Icon192),
+            icon512 = PwaIconFiles.ApiUrl(PwaIconFiles.Icon512),
+            iconMaskable512 = PwaIconFiles.ApiUrl(PwaIconFiles.IconMaskable512),
+            appleTouch180 = PwaIconFiles.ApiUrl(PwaIconFiles.AppleTouch180),
+            badge72 = PwaIconFiles.ApiUrl(PwaIconFiles.Badge72),
+        };
+    }
 
     public static AppThemeSettings ThemeFromDto(AppThemeSettingsDto dto)
     {
@@ -324,15 +696,35 @@ public sealed class AppAppearanceService
     static string Or(string? value, string fallback) =>
         string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
 
+    public static string? NormalizeOptionalColor(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var normalized = PwaIconGenerator.NormalizeBgColor(value, "#000000");
+        return System.Text.RegularExpressions.Regex.IsMatch(normalized, "^#[0-9a-f]{6}$")
+            ? normalized
+            : null;
+    }
+
+    /// <summary>Фон активной темы для PWA status bar (meta theme-color / manifest).</summary>
+    public static string ResolvePwaStatusBarColor(AppAppearanceSettings s, string fallback = "#e8eaed")
+    {
+        var defaultName = (s.DefaultThemeName ?? "").Trim();
+        var theme = s.Themes?.FirstOrDefault(t =>
+            string.Equals(t.Name, defaultName, StringComparison.Ordinal))
+            ?? s.Themes?.FirstOrDefault();
+        var color = theme?.BodyBg;
+        if (string.IsNullOrWhiteSpace(color))
+            color = theme?.HeaderBg;
+        if (string.IsNullOrWhiteSpace(color))
+            color = s.Base.ContentBg;
+        var v = (color ?? "").Trim();
+        return string.IsNullOrEmpty(v) ? fallback : v;
+    }
+
     static string NormalizeLogoExtension(string ext)
     {
         ext = (ext ?? "").Trim().ToLowerInvariant();
-        return ext switch
-        {
-            ".jpeg" => ".jpg",
-            ".png" or ".jpg" or ".webp" or ".gif" or ".svg" => ext,
-            _ => ".png",
-        };
+        return ext == ".svg" ? ext : ".svg";
     }
 
     static string NormalizeMessageSoundKind(string kind)
@@ -371,6 +763,39 @@ public sealed class AppAppearanceService
         var json = await File.ReadAllTextAsync(_settingsPath, ct);
         return JsonSerializer.Deserialize<AppAppearanceSettings>(json, JsonOptions);
     }
+
+    static AppThemeSettings? FindTheme(List<AppThemeSettings>? themes, string themeName)
+    {
+        if (themes == null || string.IsNullOrWhiteSpace(themeName)) return null;
+        return themes.FirstOrDefault(t =>
+            string.Equals(t.Name, themeName.Trim(), StringComparison.Ordinal));
+    }
+
+    static string ThemeChatBgSlug(string themeName)
+    {
+        var bytes = Encoding.UTF8.GetBytes(themeName.Trim());
+        return Convert.ToHexString(SHA256.HashData(bytes))[..16].ToLowerInvariant();
+    }
+
+    void DeleteBrandingFileIfExists(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName)
+            || fileName.Contains('/') || fileName.Contains('\\'))
+            return;
+        var path = Path.Combine(_brandingDir, fileName);
+        if (File.Exists(path))
+            File.Delete(path);
+    }
+
+    void ClearAllThemeChatBgImages(AppAppearanceSettings? settings)
+    {
+        if (settings?.Themes == null) return;
+        foreach (var theme in settings.Themes)
+        {
+            if (!string.IsNullOrEmpty(theme.ChatBgImageFileName))
+                DeleteBrandingFileIfExists(theme.ChatBgImageFileName);
+        }
+    }
 }
 
 public sealed class AppAppearanceSaveRequest
@@ -387,6 +812,9 @@ public sealed class AppAppearanceSaveRequest
     public string? SplashHtml { get; set; }
     public string? SplashCss { get; set; }
     public string? LogoClickScript { get; set; }
+    public string? PwaIconBgColor { get; set; }
+    public string? LogoSvgColor { get; set; }
+    public string? PwaIconSvgColor { get; set; }
     public string? DefaultThemeName { get; set; }
     public AppBaseColorsDto? Base { get; set; }
     public List<AppThemeSettingsDto>? Themes { get; set; }

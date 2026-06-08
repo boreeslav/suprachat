@@ -27,10 +27,22 @@ public sealed class PushNotificationService
         _logger = logger;
     }
 
-    public async Task SendNewMessageToUserAsync(Guid userId, string? title, string? body, string? chatId = null, CancellationToken ct = default)
+    public Task<PushUserSendResult> SendNewMessageToUserAsync(
+        Guid userId, string? title, string? body, string? chatId = null, CancellationToken ct = default)
+        => SendNewMessageToUserDetailedAsync(userId, title, body, chatId, ct);
+
+    public async Task<PushUserSendResult> SendNewMessageToUserDetailedAsync(
+        Guid userId, string? title, string? body, string? chatId = null, CancellationToken ct = default)
     {
+        var result = new PushUserSendResult();
         var subs = await _subscriptions.GetByUserAsync(userId, ct);
-        if (subs.Count == 0) return;
+        result.SubscriptionCount = subs.Count;
+
+        if (subs.Count == 0)
+        {
+            _logger.LogInformation("Push skipped for user {UserId}: no subscriptions registered", userId);
+            return result;
+        }
 
         var payload = JsonSerializer.Serialize(new
         {
@@ -45,28 +57,61 @@ public sealed class PushNotificationService
         foreach (var sub in subs)
         {
             ct.ThrowIfCancellationRequested();
+            var attempt = new PushSubscriptionAttempt
+            {
+                endpointSuffix = PushDiagnosticsHelper.MaskEndpoint(sub.Endpoint),
+            };
+
             try
             {
                 var pushSub = new WebPushSubscription(sub.Endpoint, sub.P256dh, sub.Auth);
                 await _client.SendNotificationAsync(pushSub, payload, vapidDetails, ct);
+                attempt.outcome = "sent";
+                result.SuccessCount++;
+                _logger.LogInformation(
+                    "Web push sent to user {UserId} endpoint …{EndpointSuffix}",
+                    userId, attempt.endpointSuffix);
             }
             catch (WebPushException ex)
             {
-                // 404/410 => подписка протухла, удаляем; остальное логируем и продолжаем.
+                attempt.httpStatus = (int)ex.StatusCode;
+                attempt.error = ex.Message;
+
                 if (ex.StatusCode == HttpStatusCode.NotFound || ex.StatusCode == HttpStatusCode.Gone)
                 {
                     await _subscriptions.RemoveByEndpointAsync(sub.Endpoint, ct);
-                    _logger.LogInformation("Removed stale push subscription for user {UserId}", userId);
+                    attempt.outcome = "stale-removed";
+                    _logger.LogInformation(
+                        "Removed stale push subscription for user {UserId} ({StatusCode}) endpoint …{EndpointSuffix}",
+                        userId, ex.StatusCode, attempt.endpointSuffix);
                 }
                 else
                 {
-                    _logger.LogWarning(ex, "Web push send failed ({StatusCode}) for user {UserId}", ex.StatusCode, userId);
+                    attempt.outcome = "failed";
+                    _logger.LogWarning(ex,
+                        "Web push send failed ({StatusCode}) for user {UserId} endpoint …{EndpointSuffix}",
+                        ex.StatusCode, userId, attempt.endpointSuffix);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Unexpected error sending web push to user {UserId}", userId);
+                attempt.outcome = "error";
+                attempt.error = ex.Message;
+                _logger.LogWarning(ex,
+                    "Unexpected error sending web push to user {UserId} endpoint …{EndpointSuffix}",
+                    userId, attempt.endpointSuffix);
             }
+
+            result.Attempts.Add(attempt);
         }
+
+        if (result.SuccessCount == 0)
+        {
+            _logger.LogWarning(
+                "Push delivery failed for user {UserId}: {AttemptCount} subscription(s), none succeeded",
+                userId, subs.Count);
+        }
+
+        return result;
     }
 }

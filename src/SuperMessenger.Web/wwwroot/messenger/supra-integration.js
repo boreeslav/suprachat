@@ -111,6 +111,10 @@
 
 		}
 
+		if (crypto?.ensurePrivateKeyBackupOnServer) {
+			void crypto.ensurePrivateKeyBackupOnServer().catch(() => {});
+		}
+
 	}
 
 
@@ -661,10 +665,32 @@
 
 
 
+	function loadOfflineUser() {
+		try {
+			const raw = localStorage.getItem('sm-offline-user-v1');
+			if (!raw) return null;
+			const cached = JSON.parse(raw);
+			if (cached?.id) {
+				globalThis.__authMeOffline = true;
+				return cached;
+			}
+		} catch (_) { /* ignore */ }
+		return null;
+	}
+
+	function isNetworkFetchError(err) {
+		const msg = String(err?.message || err || '');
+		return err instanceof TypeError && /failed to fetch|networkerror|network error|load failed|connection/i.test(msg);
+	}
+
 	function authMePromise() {
 		if (window.__authMePromise) {
 			return window.__authMePromise.then((user) => {
-				if (user === undefined && window.__authMeError) throw window.__authMeError;
+				if (user === null) return null;
+				if (user?.id) return user;
+				const cached = loadOfflineUser();
+				if (cached) return cached;
+				if (window.__authMeError) throw window.__authMeError;
 				return user;
 			});
 		}
@@ -675,7 +701,152 @@
 				const ct = r.headers.get('content-type') || '';
 				if (!ct.includes('application/json')) throw new Error('Unexpected response type');
 				return r.json();
+			})
+			.then((user) => {
+				if (user?.id) {
+					try { localStorage.setItem('sm-offline-user-v1', JSON.stringify(user)); } catch (_) {}
+				}
+				return user;
+			})
+			.catch((e) => {
+				const cached = loadOfflineUser();
+				if (cached) return cached;
+				throw e;
 			});
+	}
+
+
+
+	async function startAuthenticatedApp(user) {
+		if (!user?.id) return;
+
+		let needsMasterUnlock = false;
+
+		try {
+
+			if (window.AppBranding) {
+				AppBranding.loadAppearance().catch(() => {});
+			}
+
+			if (window.SupraSecureStore?.ensurePersistence) {
+				SupraSecureStore.ensurePersistence().catch(() => {});
+			}
+
+			await SupraAuthCrypto.restoreSession(user.id);
+
+			let pendingLoginPassword = SupraAuthCrypto.peekPendingLoginPassword();
+
+			const cryptoPromise = (async () => {
+				if (window.__bootMark) __bootMark('crypto-unlock-start');
+				let crypto = await tryRestoreCryptoSession(user);
+				if (!crypto && pendingLoginPassword) {
+					const attempt = await SupraAuthCrypto.tryUnlockWithLoginPassword(
+						user,
+						pendingLoginPassword
+					);
+					crypto = attempt.crypto;
+					if (crypto) {
+						SupraAuthCrypto.consumePendingLoginPassword();
+						pendingLoginPassword = null;
+					} else if (attempt.mismatch) {
+						user.masterPasswordMatchesLogin = false;
+					}
+				}
+				return crypto;
+			})();
+
+			globalThis.__smBootUser = user;
+
+			if (window.__bootMark) __bootMark('chats-load-start');
+
+			const messenger = boot();
+
+			if (window.__bootMark) __bootMark('messenger-constructed');
+
+			const cryptoReady = cryptoPromise.then((crypto) => {
+				if (crypto) attachCrypto(crypto);
+				if (window.__bootMark) __bootMark('crypto-ready');
+				return crypto;
+			});
+
+			if (messenger) {
+				await Promise.all([
+					messenger.whenRendered?.(),
+					messenger.whenChatsLoaded?.(),
+					waitForMessengerCss(4000),
+				]);
+			} else {
+				await cryptoReady;
+			}
+
+			if (window.AppSplash?.yieldToMain) {
+				await AppSplash.yieldToMain();
+			}
+
+			if (window.__bootMark) __bootMark('splash-ui-ready');
+
+			if (window.AppSplash) {
+				AppSplash.hide();
+			}
+
+			if (window.__bootReport) __bootReport('app-ready');
+
+			void messenger?.whenReady?.().then(() => {
+				if (window.__bootMark) __bootMark('app-data-ready');
+			}).catch(() => {});
+
+			const crypto = await cryptoReady;
+
+			if (window.AppScriptCache?.loadDeferredScripts) {
+				AppScriptCache.loadDeferredScripts().then(() => {
+					if (window.SupraPush?.syncOnLoad) SupraPush.syncOnLoad();
+				}).catch(() => {});
+			}
+
+			if (crypto) return;
+
+			needsMasterUnlock = true;
+
+			if (window.AppScriptCache?.ensureDeferredScripts) {
+				await AppScriptCache.ensureDeferredScripts();
+			}
+
+			const appRoot = typeof globalThis !== 'undefined' ? globalThis : window;
+
+			const branding = appRoot.__appBranding
+
+				|| (appRoot.AppBranding?.loadAppearance ? await appRoot.AppBranding.loadAppearance() : null)
+
+				|| {};
+
+			const welcomeHtml = appRoot.AppBranding?.formatLoginWelcomeHtml
+				? appRoot.AppBranding.formatLoginWelcomeHtml(
+					branding.loginWelcomeHtml,
+					branding.appName
+				)
+				: branding.loginWelcomeHtml;
+
+			SupraMasterUnlock.show(user, (unlocked) => {
+
+				SupraAuthCrypto.consumePendingLoginPassword();
+
+				attachCrypto(unlocked);
+
+				if (window.AppSplash) AppSplash.hide();
+
+			}, {
+				loginWelcomeHtml: welcomeHtml,
+				masterPasswordMatchesLogin: user.masterPasswordMatchesLogin !== false,
+				forceSeparateMaster: SupraAuthCrypto.hasMasterMismatchFlag(),
+				pendingLoginPassword:
+					pendingLoginPassword || SupraAuthCrypto.peekPendingLoginPassword(),
+			});
+
+		} finally {
+
+			if (!needsMasterUnlock && window.AppSplash) AppSplash.hide();
+
+		}
 	}
 
 
@@ -692,150 +863,33 @@
 
 			}
 
+			if (!user?.id) {
+				const cached = loadOfflineUser();
+				if (cached) return cached;
+			}
+
 			return user;
 
 		})
 
-		.then(async (user) => {
+		.then((user) => startAuthenticatedApp(user))
 
-			if (!user) return;
+		.catch(async (e) => {
 
-			let needsMasterUnlock = false;
-
-			try {
-
-				if (window.AppBranding) {
-					AppBranding.loadAppearance().catch(() => {});
-				}
-
-				if (window.SupraSecureStore?.ensurePersistence) {
-					SupraSecureStore.ensurePersistence().catch(() => {});
-				}
-
-				await SupraAuthCrypto.restoreSession(user.id);
-
-				let pendingLoginPassword = SupraAuthCrypto.peekPendingLoginPassword();
-
-				const cryptoPromise = (async () => {
-					if (window.__bootMark) __bootMark('crypto-unlock-start');
-					let crypto = await tryRestoreCryptoSession(user);
-					if (!crypto && pendingLoginPassword) {
-						const attempt = await SupraAuthCrypto.tryUnlockWithLoginPassword(
-							user,
-							pendingLoginPassword
-						);
-						crypto = attempt.crypto;
-						if (crypto) {
-							SupraAuthCrypto.consumePendingLoginPassword();
-							pendingLoginPassword = null;
-						} else if (attempt.mismatch) {
-							user.masterPasswordMatchesLogin = false;
-						}
-					}
-					return crypto;
-				})();
-
-				globalThis.__smBootUser = user;
-
-				if (window.__bootMark) __bootMark('chats-load-start');
-
-				const messenger = boot();
-
-				if (window.__bootMark) __bootMark('messenger-constructed');
-
-				const cryptoReady = cryptoPromise.then((crypto) => {
-					if (crypto) attachCrypto(crypto);
-					if (window.__bootMark) __bootMark('crypto-ready');
-					return crypto;
-				});
-
-				if (messenger) {
-					await Promise.all([
-						messenger.whenRendered?.(),
-						messenger.whenChatsLoaded?.(),
-						waitForMessengerCss(4000),
-						cryptoReady,
-					]);
-				} else {
-					await cryptoReady;
-				}
-
-				if (window.AppSplash?.yieldToMain) {
-					await AppSplash.yieldToMain();
-				}
-
-				if (window.__bootMark) __bootMark('splash-ui-ready');
-
-				if (window.AppSplash) {
-					AppSplash.hide();
-				}
-
-				if (window.__bootReport) __bootReport('app-ready');
-
-				void messenger?.whenReady?.().then(() => {
-					if (window.__bootMark) __bootMark('app-data-ready');
-				}).catch(() => {});
-
-				const crypto = await cryptoReady;
-
-				if (window.AppScriptCache?.loadDeferredScripts) {
-					AppScriptCache.loadDeferredScripts().then(() => {
-						if (window.SupraPush?.syncOnLoad) SupraPush.syncOnLoad();
-					}).catch(() => {});
-				}
-
-				if (crypto) return;
-
-				needsMasterUnlock = true;
-
-				if (window.AppScriptCache?.ensureDeferredScripts) {
-					await AppScriptCache.ensureDeferredScripts();
-				}
-
-				const appRoot = typeof globalThis !== 'undefined' ? globalThis : window;
-
-				const branding = appRoot.__appBranding
-
-					|| (appRoot.AppBranding?.loadAppearance ? await appRoot.AppBranding.loadAppearance() : null)
-
-					|| {};
-
-				const welcomeHtml = appRoot.AppBranding?.formatLoginWelcomeHtml
-					? appRoot.AppBranding.formatLoginWelcomeHtml(
-						branding.loginWelcomeHtml,
-						branding.appName
-					)
-					: branding.loginWelcomeHtml;
-
-				SupraMasterUnlock.show(user, (unlocked) => {
-
-					SupraAuthCrypto.consumePendingLoginPassword();
-
-					attachCrypto(unlocked);
-
-					if (window.AppSplash) AppSplash.hide();
-
-				}, {
-					loginWelcomeHtml: welcomeHtml,
-					masterPasswordMatchesLogin: user.masterPasswordMatchesLogin !== false,
-					forceSeparateMaster: SupraAuthCrypto.hasMasterMismatchFlag(),
-					pendingLoginPassword:
-						pendingLoginPassword || SupraAuthCrypto.peekPendingLoginPassword(),
-				});
-
-			} finally {
-
-				if (!needsMasterUnlock && window.AppSplash) AppSplash.hide();
-
+			const cached = loadOfflineUser();
+			if (cached && isNetworkFetchError(e)) {
+				console.warn('[SuperMessenger] offline boot from cache', e);
+				await startAuthenticatedApp(cached);
+				return;
 			}
-
-		})
-
-		.catch((e) => {
 
 			console.error('[SuperMessenger] auth check failed', e);
 
-			showError('Ошибка загрузки. Проверьте вход в систему.');
+			showError(
+				cached
+					? 'Ошибка загрузки. Проверьте вход в систему.'
+					: 'Нет соединения с сервером. Откройте приложение онлайн хотя бы один раз, чтобы сохранить данные для офлайн-режима.'
+			);
 
 		});
 

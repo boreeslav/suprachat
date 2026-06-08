@@ -10,6 +10,7 @@ class SupraCrypto {
 	static VERIFY_PLAIN = 'SUPRA-MASTER-VERIFY-v1';
 	static RSA_KEYPAIR_SEED = 'supra-rsa-keypair-v1';
 	static PBKDF2_ITERATIONS = 310000;
+	static MASTER_KEY_CACHE_PREFIX = 'supra-mk-cache:';
 	static LOCKED_PREVIEW = '🔒 Сообщение';
 	static LOCKED_OTHER = '🔒 Не удалось расшифровать. Укажите доп. пароль в меню «Шифрование».';
 	static SUBTLE_UNAVAILABLE_MSG =
@@ -280,10 +281,10 @@ class SupraCrypto {
 
 	/** Смена мастер-пароля: тот же RSA-ключ, новый salt/verifier и обёртка в localStorage. */
 	static async changeMasterPassword(oldPassword, newPassword, userId, saltB64, verifierB64) {
-		const ok = await SupraCrypto.verifyMasterPassword(oldPassword, userId, saltB64, verifierB64);
-		if (!ok) throw new Error('Неверный текущий мастер-пароль');
 		const salt = SupraCrypto.#ub64(saltB64);
 		const oldMasterKey = await SupraCrypto.#deriveMasterKey(oldPassword, salt, userId);
+		const expected = await SupraCrypto.#makeVerifier(oldMasterKey);
+		if (expected !== verifierB64) throw new Error('Неверный текущий мастер-пароль');
 		const privateKey = await SupraCrypto.#unlockPrivateKey(
 			userId,
 			oldMasterKey,
@@ -295,6 +296,7 @@ class SupraCrypto {
 		const newMasterKey = await SupraCrypto.#deriveMasterKey(newPassword, newSalt, userId);
 		const verifier = await SupraCrypto.#makeVerifier(newMasterKey);
 		const privateKeyBlob = await SupraCrypto.#savePrivateKey(userId, pkcs8, newMasterKey);
+		SupraCrypto.clearMasterKeyCache(userId);
 		return {
 			salt: SupraCrypto.#b64(newSalt),
 			verifier,
@@ -302,11 +304,67 @@ class SupraCrypto {
 		};
 	}
 
+	static #masterKeyCacheStorageKey(userId, verifierB64) {
+		const v = String(verifierB64 || '').slice(0, 32);
+		return `${SupraCrypto.MASTER_KEY_CACHE_PREFIX}${SupraCrypto.normalizeUserId(userId)}:${v}`;
+	}
+
+	static async #loadCachedMasterKey(userId, verifierB64) {
+		try {
+			const b64 = sessionStorage.getItem(
+				SupraCrypto.#masterKeyCacheStorageKey(userId, verifierB64)
+			);
+			if (!b64) return null;
+			const bits = SupraCrypto.#ub64(b64);
+			return SupraCrypto.#subtle().importKey(
+				'raw',
+				bits,
+				{ name: 'AES-GCM' },
+				false,
+				['encrypt', 'decrypt']
+			);
+		} catch (_) {
+			return null;
+		}
+	}
+
+	static async #saveCachedMasterKey(userId, verifierB64, masterKey) {
+		try {
+			const raw = await SupraCrypto.#subtle().exportKey('raw', masterKey);
+			sessionStorage.setItem(
+				SupraCrypto.#masterKeyCacheStorageKey(userId, verifierB64),
+				SupraCrypto.#b64(new Uint8Array(raw))
+			);
+		} catch (_) { /* ignore */ }
+	}
+
+	static clearMasterKeyCache(userId) {
+		try {
+			const prefix = userId
+				? `${SupraCrypto.MASTER_KEY_CACHE_PREFIX}${SupraCrypto.normalizeUserId(userId)}:`
+				: SupraCrypto.MASTER_KEY_CACHE_PREFIX;
+			const toRemove = [];
+			for (let i = 0; i < sessionStorage.length; i++) {
+				const k = sessionStorage.key(i);
+				if (k?.startsWith(prefix)) toRemove.push(k);
+			}
+			toRemove.forEach((k) => sessionStorage.removeItem(k));
+		} catch (_) { /* ignore */ }
+	}
+
 	async initSession(masterPassword, userId, saltB64, verifierB64) {
-		const ok = await SupraCrypto.verifyMasterPassword(masterPassword, userId, saltB64, verifierB64);
-		if (!ok) throw new Error('Неверный мастер-пароль');
-		const salt = SupraCrypto.#ub64(saltB64);
-		const masterKey = await SupraCrypto.#deriveMasterKey(masterPassword, salt, userId);
+		let masterKey = await SupraCrypto.#loadCachedMasterKey(userId, verifierB64);
+		if (masterKey) {
+			if (typeof globalThis !== 'undefined' && globalThis.__bootMark) {
+				globalThis.__bootMark('master-key-cache-hit');
+			}
+		} else {
+			const salt = SupraCrypto.#ub64(saltB64);
+			masterKey = await SupraCrypto.#deriveMasterKey(masterPassword, salt, userId);
+			const expected = await SupraCrypto.#makeVerifier(masterKey);
+			if (expected !== verifierB64) throw new Error('Неверный мастер-пароль');
+			await SupraCrypto.#saveCachedMasterKey(userId, verifierB64, masterKey);
+		}
 		const privateKey = await SupraCrypto.#unlockPrivateKey(
 			userId,
 			masterKey,
@@ -320,7 +378,6 @@ class SupraCrypto {
 		this.#encryptionSaltB64 = saltB64;
 		this.#localDataKey = null;
 		await this.loadCustomPasswordsFromStorage();
-		await this.ensurePrivateKeyBackupOnServer();
 	}
 
 	/** Дозагружает RSA public key на сервер, если есть salt/verifier, но ключ не сохранён. */
@@ -892,9 +949,13 @@ class SupraCrypto {
 	}
 
 	/**
-	 * Приватный ключ: из мастер-пароля (детерминированно) или из legacy-бэкапа (старые аккаунты).
+	 * Приватный ключ: локальный blob → детерминированный RSA → blob с сервера.
 	 */
 	static async #unlockPrivateKey(userId, masterKey, masterPassword, saltB64) {
+		if (SupraCrypto.#findPrivKeyBlob(userId)) {
+			const fromLocalBlob = await SupraCrypto.#unlockPrivateKeyFromBlob(userId, masterKey);
+			if (fromLocalBlob) return fromLocalBlob;
+		}
 		if (masterPassword && saltB64 && globalThis.SupraForgeKeygen) {
 			try {
 				const salt = SupraCrypto.#ub64(saltB64);

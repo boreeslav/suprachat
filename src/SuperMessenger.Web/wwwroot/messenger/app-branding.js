@@ -3,7 +3,7 @@
 	const LOGO_SELECTORS = '[data-app-logo]';
 
 	const THEME_KEYS = [
-		'name', 'bodyBg', 'headerBg', 'chatBg', 'myBubbleBg', 'myBubbleText',
+		'name', 'bodyBg', 'headerBg', 'chatBg', 'chatBgImageUrl', 'myBubbleBg', 'myBubbleText',
 		'otherBubbleBg', 'otherBubbleText', 'accent', 'inputBg', 'inputFieldBg',
 		'inputFieldBorder', 'inputText', 'inputPlaceholder', 'headerText', 'headerSubText',
 		'headerBorder', 'inputAreaBorder', 'scrollThumb', 'senderName', 'menuBg',
@@ -155,17 +155,50 @@
 		}
 	}
 
-	function applyLogo(logoUrl, appName) {
+	function applySvgFillColor(svgText, color) {
+		if (!color) return svgText;
+		let s = svgText;
+		s = s.replace(/currentColor/gi, color);
+		s = s.replace(/fill="(?!none|transparent|url\(#)[^"]*"/gi, `fill="${color}"`);
+		s = s.replace(/fill='(?!none|transparent|url\(#)[^']*'/gi, `fill='${color}'`);
+		s = s.replace(/stroke="(?!none|transparent|url\(#)[^"]*"/gi, `stroke="${color}"`);
+		s = s.replace(/stroke='(?!none|transparent|url\(#)[^']*'/gi, `stroke='${color}'`);
+		return s;
+	}
+
+	async function logoUrlWithColor(logoUrl, logoSvgColor) {
+		if (!logoUrl || !logoSvgColor) return logoUrl;
+		try {
+			const bust = logoUrl + (logoUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+			const r = await fetch(bust, { credentials: 'same-origin' });
+			if (!r.ok) return logoUrl;
+			const svgText = applySvgFillColor(await r.text(), logoSvgColor);
+			return URL.createObjectURL(new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' }));
+		} catch {
+			return logoUrl;
+		}
+	}
+
+	function applyLogo(logoUrl, appName, logoSvgColor) {
 		document.querySelectorAll(LOGO_SELECTORS).forEach((img) => {
 			if (img.closest('#app-splash-root')) return;
 			resetBrandLogo(img);
 			if (appName) img.alt = appName;
 			if (!logoUrl) return;
-			const bust = logoUrl + (logoUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
-			img.onload = () => revealBrandLogo(img);
-			img.onerror = () => resetBrandLogo(img);
-			img.src = bust;
-			if (img.complete) revealBrandLogo(img);
+			(async () => {
+				const colored = await logoUrlWithColor(logoUrl, logoSvgColor);
+				const revoke = colored !== logoUrl;
+				img.onload = () => {
+					revealBrandLogo(img);
+					if (revoke) URL.revokeObjectURL(colored);
+				};
+				img.onerror = () => {
+					resetBrandLogo(img);
+					if (revoke) URL.revokeObjectURL(colored);
+				};
+				img.src = colored;
+				if (img.complete) revealBrandLogo(img);
+			})();
 		});
 	}
 
@@ -191,7 +224,7 @@
 		applyAppDescription(data.appDescription);
 		applyRegisterWelcome(data.registerWelcome);
 		applyBaseColors(data.base);
-		applyLogo(data.logoUrl, name);
+		applyLogo(data.logoUrl, name, (data.logoSvgColor || '').trim() || null);
 		configureMessengerThemes(data);
 		if (global.MessengerMessageSounds?.configure) {
 			global.MessengerMessageSounds.configure(data);

@@ -1,8 +1,9 @@
 # Local scratch, deploy secrets, build artifacts (not for repo)
 tmp/
 
-# IDE / editor local state
+# Cursor agent config (local only — не коммитить, логика работает из локальных файлов)
 .cursor/
+AGENTS.md
 
 # Generated at deploy time (written into tmp build tree; ignore if created locally)
 src/SuperMessenger.Web/deploy-branding.json

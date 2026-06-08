@@ -1,7 +1,9 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SuperMessenger.Core.Abstractions;
 using SuperMessenger.Core.Dtos;
+using SuperMessenger.Core.Entities;
 using SuperMessenger.Infrastructure.Services;
 using SuperMessenger.Web.Services;
 
@@ -18,6 +20,9 @@ public sealed class SupraMessengerController : ControllerBase
     private readonly UserPresenceService _presence;
     private readonly PushNotificationService _push;
     private readonly NotificationPreferencesStore _notifPrefs;
+    private readonly IDataStore _store;
+    private readonly PushDiagnosticLogStore _pushLog;
+    private readonly MessageInfoService _messageInfo;
 
     public SupraMessengerController(
         SupraMessengerService messenger,
@@ -25,7 +30,10 @@ public sealed class SupraMessengerController : ControllerBase
         RealtimeNotifier realtime,
         UserPresenceService presence,
         PushNotificationService push,
-        NotificationPreferencesStore notifPrefs)
+        NotificationPreferencesStore notifPrefs,
+        IDataStore store,
+        PushDiagnosticLogStore pushLog,
+        MessageInfoService messageInfo)
     {
         _messenger = messenger;
         _current = current;
@@ -33,6 +41,9 @@ public sealed class SupraMessengerController : ControllerBase
         _presence = presence;
         _push = push;
         _notifPrefs = notifPrefs;
+        _store = store;
+        _pushLog = pushLog;
+        _messageInfo = messageInfo;
     }
 
     [HttpPost("{methodName}")]
@@ -77,6 +88,11 @@ public sealed class SupraMessengerController : ControllerBase
                 GetString(data, "messageId") ?? "",
                 GetInt(data, "before", 25),
                 GetInt(data, "after", 25),
+                ct),
+            "GetMessageInfo" => await _messageInfo.GetAsync(
+                user,
+                GetString(data, "chatId") ?? "",
+                GetString(data, "messageId") ?? "",
                 ct),
             "SendMessage" => await HandleSendMessage(user, data, ct),
             "EditMessage" => await HandleEditMessage(user, data, ct),
@@ -140,7 +156,7 @@ public sealed class SupraMessengerController : ControllerBase
         return Ok(Wrap(methodName, result));
     }
 
-    private async Task<object> HandleSendMessage(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    private async Task<object> HandleSendMessage(UserRecord user, JsonElement data, CancellationToken ct)
     {
         var (response, broadcast) = await _messenger.SendMessageAsync(
             user,
@@ -152,7 +168,16 @@ public sealed class SupraMessengerController : ControllerBase
             GetString(data, "encryptionTier"),
             ct);
         if (broadcast != null && Guid.TryParse(broadcast.chatId, out var chatId))
-            await BroadcastToAllChatParticipantsAsync(chatId, broadcast, ct);
+        {
+            var pushTrace = await BroadcastToAllChatParticipantsAsync(chatId, broadcast, ct);
+            if (user.Type == UserType.Admin && pushTrace != null)
+            {
+                pushTrace.messageId = response.messageId;
+                pushTrace.senderUserId = user.Id.ToString();
+                _pushLog.Add(pushTrace);
+                response.pushDebug = pushTrace;
+            }
+        }
         if (response.success)
             await TouchPresenceAsync(user.Id, ct);
         return response;
@@ -226,12 +251,14 @@ public sealed class SupraMessengerController : ControllerBase
         return response;
     }
 
-    private async Task BroadcastToAllChatParticipantsAsync(Guid chatId, object payload, CancellationToken ct)
+    private async Task<PushDeliveryTrace?> BroadcastToAllChatParticipantsAsync(
+        Guid chatId, object payload, CancellationToken ct)
     {
         var participants = await _messenger.GetAllParticipantUserIdsAsync(chatId, ct);
         await _realtime.BroadcastToChatParticipantsAsync(participants, payload, ct);
         if (payload is SupraWsNewMessagePayload message)
-            await PushToOfflineParticipantsAsync(chatId, message, participants, ct);
+            return await PushToOfflineParticipantsAsync(chatId, message, participants, ct);
+        return null;
     }
 
     /// <summary>
@@ -240,9 +267,10 @@ public sealed class SupraMessengerController : ControllerBase
     /// или уведомления целиком, пропускаются. Заголовок — от кого (имя группы или
     /// отправителя); текст сообщения не передаётся из-за E2E.
     /// </summary>
-    private async Task PushToOfflineParticipantsAsync(
+    private async Task<PushDeliveryTrace> PushToOfflineParticipantsAsync(
         Guid chatId, SupraWsNewMessagePayload message, IEnumerable<Guid> participants, CancellationToken ct)
     {
+        var trace = new PushDeliveryTrace { chatId = chatId.ToString() };
         var senderId = _current.GetUserId();
         var info = await _messenger.GetChatNotificationInfoAsync(chatId, ct);
         var sender = string.IsNullOrWhiteSpace(message.senderName) ? "Новое сообщение" : message.senderName.Trim();
@@ -262,11 +290,77 @@ public sealed class SupraMessengerController : ControllerBase
         var chatIdStr = chatId.ToString();
         foreach (var uid in participants.Distinct())
         {
-            if (uid == senderId) continue;
-            if (_presence.IsConnected(uid)) continue;
-            if (!await _notifPrefs.ShouldNotifyAsync(uid, chatIdStr, ct)) continue;
-            await _push.SendNewMessageToUserAsync(uid, title, body, chatIdStr, ct);
+            var entry = new PushRecipientTrace
+            {
+                userId = uid.ToString(),
+                presenceStatus = _presence.GetStatus(uid),
+                isConnected = _presence.IsConnected(uid),
+            };
+
+            var recipient = await _store.GetUserByIdAsync(uid, ct);
+            entry.displayName = recipient?.DisplayName;
+
+            if (uid == senderId)
+            {
+                entry.action = "skipped";
+                entry.skipReason = "sender";
+                trace.recipients.Add(entry);
+                continue;
+            }
+
+            if (_presence.IsConnected(uid))
+            {
+                entry.action = "skipped";
+                entry.skipReason = "online";
+                trace.recipients.Add(entry);
+                continue;
+            }
+
+            var prefs = await _notifPrefs.GetAsync(uid, ct);
+            entry.globalMuted = prefs.GlobalMuted;
+            entry.chatMuted = prefs.MutedChatIds != null &&
+                prefs.MutedChatIds.Any(c => string.Equals(c, chatIdStr, StringComparison.OrdinalIgnoreCase));
+
+            if (prefs.GlobalMuted)
+            {
+                entry.action = "skipped";
+                entry.skipReason = "muted-global";
+                trace.recipients.Add(entry);
+                continue;
+            }
+
+            if (entry.chatMuted)
+            {
+                entry.action = "skipped";
+                entry.skipReason = "muted-chat";
+                trace.recipients.Add(entry);
+                continue;
+            }
+
+            var sendResult = await _push.SendNewMessageToUserDetailedAsync(uid, title, body, chatIdStr, ct);
+            entry.subscriptionCount = sendResult.SubscriptionCount;
+            entry.attempts = sendResult.Attempts;
+            entry.anyDelivered = sendResult.SuccessCount > 0;
+
+            if (sendResult.SubscriptionCount == 0)
+            {
+                entry.action = "no-subscriptions";
+                entry.skipReason = "no-subscriptions";
+            }
+            else if (sendResult.SuccessCount > 0)
+            {
+                entry.action = "sent";
+            }
+            else
+            {
+                entry.action = "failed";
+                entry.skipReason = "all-subscriptions-failed";
+            }
+
+            trace.recipients.Add(entry);
         }
+
+        return trace;
     }
 
     private async Task<object> HandleCreateDirect(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)

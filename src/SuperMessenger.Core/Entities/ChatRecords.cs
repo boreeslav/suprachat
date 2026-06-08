@@ -46,6 +46,14 @@ public sealed class SupraMessageUserDeletionRecord
     public Guid UserId { get; set; }
 }
 
+/// <summary>Фиксация прочтения сообщения конкретным пользователем (для групп и детальной статистики).</summary>
+public sealed class SupraMessageReadReceiptRecord
+{
+    public Guid MessageId { get; set; }
+    public Guid UserId { get; set; }
+    public DateTime ReadAt { get; set; } = DateTime.UtcNow;
+}
+
 public sealed class SupraChatFolderRecord
 {
     public Guid Id { get; set; }

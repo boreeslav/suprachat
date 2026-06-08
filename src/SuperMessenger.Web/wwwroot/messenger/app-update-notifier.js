@@ -15,8 +15,10 @@
 	let localBuild = 0;
 	let localAppVersion = '';
 	let started = false;
+	let bootCheckDone = false;
 	let checkTimer = null;
 	let snoozeTimer = null;
+	let checkInFlight = null;
 
 	function isValidAppVersion(version) {
 		const v = (version || '').trim();
@@ -81,7 +83,7 @@
 		if (!v) return;
 		localAppVersion = v;
 		persistClientState();
-		if (started) checkForUpdate();
+		if (started && bootCheckDone) checkForUpdate();
 	}
 
 	function isSnoozed() {
@@ -210,10 +212,14 @@
 	}
 
 	async function fetchServerVersion() {
-		const res = await fetch(BUILD_URL + '?_=' + Date.now(), {
+		const opts = {
 			credentials: 'same-origin',
-			cache: 'no-store',
-		});
+			cache: 'default',
+		};
+		if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+			opts.signal = AbortSignal.timeout(8000);
+		}
+		const res = await fetch(BUILD_URL + '?_=' + Date.now(), opts);
 		if (!res.ok) throw new Error('HTTP ' + res.status);
 		const data = await res.json();
 		const build = Number(data && data.build);
@@ -258,22 +264,38 @@
 		if (metaBuild > localBuild) localBuild = metaBuild;
 		persistClientState();
 		hideBanner();
-		checkForUpdate();
+		bootCheckDone = true;
+		scheduleDeferredCheck();
+	}
+
+	function scheduleDeferredCheck() {
+		const run = () => { void checkForUpdate(); };
+		if (typeof global.requestIdleCallback === 'function') {
+			global.requestIdleCallback(run, { timeout: 15000 });
+		} else {
+			global.setTimeout(run, 3000);
+		}
 	}
 
 	async function checkForUpdate() {
 		if (!started || localBuild <= 0 || isSnoozed()) return;
-		try {
-			const server = await fetchServerVersion();
-			if (isUpdateAvailable(server)) {
-				showBanner(server.appVersion || null);
-			} else {
-				hideBanner();
-				syncClientState(server);
+		if (checkInFlight) return checkInFlight;
+		checkInFlight = (async () => {
+			try {
+				const server = await fetchServerVersion();
+				if (isUpdateAvailable(server)) {
+					showBanner(server.appVersion || null);
+				} else {
+					hideBanner();
+					syncClientState(server);
+				}
+			} catch (err) {
+				console.warn('[AppUpdateNotifier] check failed', err);
+			} finally {
+				checkInFlight = null;
 			}
-		} catch (err) {
-			console.warn('[AppUpdateNotifier] check failed', err);
-		}
+		})();
+		return checkInFlight;
 	}
 
 	async function applyUpdate() {
@@ -344,7 +366,6 @@
 				return;
 			}
 			localAppVersion = resolveLocalAppVersion();
-			if (started) checkForUpdate();
 		};
 		const p = global.AppSplash?.whenAppearanceReady?.();
 		if (p && typeof p.then === 'function') {
@@ -368,13 +389,14 @@
 
 		if (isSnoozed()) scheduleSnoozeRecheck();
 		else {
-			checkForUpdate();
 			checkTimer = setInterval(checkForUpdate, CHECK_INTERVAL_MS);
 		}
 	}
 
 	function stop() {
 		started = false;
+		bootCheckDone = false;
+		checkInFlight = null;
 		if (checkTimer != null) {
 			clearInterval(checkTimer);
 			checkTimer = null;

@@ -132,12 +132,13 @@ class MessengerI18n {
 			foldersTab: 'Папки',
 			aboutAppTab: 'О приложении',
 			debugLogButton: 'Отладка',
-			debugLogTitle: 'Журнал загрузки',
+			debugLogTitle: 'Журнал отладки',
 			debugLogCopy: 'Скопировать',
 			debugLogClear: 'Очистить',
 			debugLogClose: 'Закрыть',
 			debugLogEmpty: 'Записей пока нет',
 			debugLogCopied: 'Скопировано',
+			pushDebugAutoOpened: 'Push не доставлен — см. журнал отладки',
 			helpTab: 'Помощь',
 			changelogTitle: 'История изменений',
 			contentEmpty: 'Текст не задан',
@@ -202,7 +203,9 @@ class MessengerI18n {
 			cacheCleared: 'Кеш очищен',
 			tokenChanged: 'Сессия обновлена. Перезагрузка сообщений…',
 			networkOffline: 'Нет соединения',
-			networkOfflineMsg: 'Не удалось подключиться к серверу. Проверьте интернет и обновите страницу.',
+			networkOfflineMsg: 'Нет связи с сервером. История доступна офлайн; отправка сообщений возобновится после подключения.',
+			offlineSendPlaceholder: 'Ожидание подключения к серверу…',
+			offlineSendBlocked: 'Отправка недоступна без соединения с сервером.',
 			confirm: 'Подтвердить',
 			cancel: 'Отмена',
 			back: 'Назад',
@@ -321,6 +324,41 @@ class MessengerI18n {
 			msgActionCopy: 'Скопировать текст',
 			msgActionSelect: 'Выбрать',
 			msgActionDelete: 'Удалить',
+			msgActionInfo: 'Информация',
+			msgInfoTitle: 'Информация о сообщении',
+			msgInfoNotSent: 'Сообщение ещё не отправлено на сервер',
+			msgInfoLoadError: 'Не удалось загрузить информацию',
+			msgInfoMessageId: 'ID сообщения',
+			msgInfoChat: 'Чат',
+			msgInfoSender: 'Отправитель',
+			msgInfoSentAt: 'Отправлено',
+			msgInfoEditedAt: 'Изменено',
+			msgInfoStatus: 'Статус',
+			msgInfoEncryption: 'Шифрование',
+			msgInfoReplyTo: 'Ответ на',
+			msgInfoForwardedFrom: 'Переслано от',
+			msgInfoDeletedFlag: 'Удалено для всех',
+			msgInfoReadSection: 'Прочитано',
+			msgInfoReadYes: 'Прочитано',
+			msgInfoReadNo: 'Не прочитано',
+			msgInfoReadLegacy: 'Прочитано (время неизвестно)',
+			msgInfoEventsSection: 'События',
+			msgInfoEventSent: 'Отправлено',
+			msgInfoEventEdited: 'Изменено',
+			msgInfoEventDeleted: 'Удалено',
+			msgInfoEventRead: 'Прочитано',
+			msgInfoEventRealtime: 'Доставлено онлайн',
+			msgInfoEventPushSent: 'Push отправлен',
+			msgInfoEventPushSkipped: 'Push пропущен',
+			msgInfoEventPushFailed: 'Push не доставлен',
+			msgInfoEventPushStale: 'Подписка push устарела',
+			msgInfoEventPushUnknown: 'Push (нет данных отправки)',
+			msgInfoEncBasic: 'Базовое',
+			msgInfoEncProtected: 'Защищённое',
+			msgInfoStatusSent: 'Отправлено',
+			msgInfoStatusRead: 'Прочитано',
+			msgInfoChatDirect: 'Личный чат',
+			msgInfoChatGroup: 'Группа',
 			deleteForMe: 'Удалить у меня',
 			deleteForEveryone: 'Удалить у всех',
 			deleteMessageTitle: 'Удалить сообщение?',
@@ -468,12 +506,13 @@ class MessengerI18n {
 			foldersTab: 'Folders',
 			aboutAppTab: 'About',
 			debugLogButton: 'Debug',
-			debugLogTitle: 'Load log',
+			debugLogTitle: 'Debug log',
 			debugLogCopy: 'Copy',
 			debugLogClear: 'Clear',
 			debugLogClose: 'Close',
 			debugLogEmpty: 'No entries yet',
 			debugLogCopied: 'Copied',
+			pushDebugAutoOpened: 'Push not delivered — see debug log',
 			helpTab: 'Help',
 			changelogTitle: 'Changelog',
 			contentEmpty: 'No content configured',
@@ -538,7 +577,9 @@ class MessengerI18n {
 			cacheCleared: 'Cache cleared',
 			tokenChanged: 'Session updated. Reloading messages…',
 			networkOffline: 'No connection',
-			networkOfflineMsg: 'Could not connect to the server. Check your internet and refresh the page.',
+			networkOfflineMsg: 'No server connection. History is available offline; sending resumes when connected.',
+			offlineSendPlaceholder: 'Waiting for server connection…',
+			offlineSendBlocked: 'Sending is unavailable without a server connection.',
 			confirm: 'Confirm',
 			cancel: 'Cancel',
 			back: 'Back',
@@ -651,6 +692,41 @@ class MessengerI18n {
 			msgActionCopy: 'Copy text',
 			msgActionSelect: 'Select',
 			msgActionDelete: 'Delete',
+			msgActionInfo: 'Info',
+			msgInfoTitle: 'Message info',
+			msgInfoNotSent: 'Message has not been sent to the server yet',
+			msgInfoLoadError: 'Could not load message info',
+			msgInfoMessageId: 'Message ID',
+			msgInfoChat: 'Chat',
+			msgInfoSender: 'Sender',
+			msgInfoSentAt: 'Sent',
+			msgInfoEditedAt: 'Edited',
+			msgInfoStatus: 'Status',
+			msgInfoEncryption: 'Encryption',
+			msgInfoReplyTo: 'Reply to',
+			msgInfoForwardedFrom: 'Forwarded from',
+			msgInfoDeletedFlag: 'Deleted for everyone',
+			msgInfoReadSection: 'Read by',
+			msgInfoReadYes: 'Read',
+			msgInfoReadNo: 'Not read',
+			msgInfoReadLegacy: 'Read (time unknown)',
+			msgInfoEventsSection: 'Events',
+			msgInfoEventSent: 'Sent',
+			msgInfoEventEdited: 'Edited',
+			msgInfoEventDeleted: 'Deleted',
+			msgInfoEventRead: 'Read',
+			msgInfoEventRealtime: 'Delivered online',
+			msgInfoEventPushSent: 'Push sent',
+			msgInfoEventPushSkipped: 'Push skipped',
+			msgInfoEventPushFailed: 'Push failed',
+			msgInfoEventPushStale: 'Push subscription stale',
+			msgInfoEventPushUnknown: 'Push (no send data)',
+			msgInfoEncBasic: 'Basic',
+			msgInfoEncProtected: 'Protected',
+			msgInfoStatusSent: 'Sent',
+			msgInfoStatusRead: 'Read',
+			msgInfoChatDirect: 'Direct chat',
+			msgInfoChatGroup: 'Group',
 			deleteForMe: 'Delete for me',
 			deleteForEveryone: 'Delete for everyone',
 			deleteMessageTitle: 'Delete message?',
@@ -840,6 +916,14 @@ class MessengerIcons {
 	circleDot() {
 		return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 			<circle cx="12" cy="12" r="9"/>
+		</svg>`;
+	}
+
+	info() {
+		return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<circle cx="12" cy="12" r="10"/>
+			<line x1="12" y1="16" x2="12" y2="12"/>
+			<line x1="12" y1="8" x2="12.01" y2="8"/>
 		</svg>`;
 	}
 
@@ -6979,7 +7063,11 @@ class MessengerThemeManager {
 	static #configuredThemes = null;
 	static #defaultThemeName = null;
 	static THEME_VAR_SELECTORS = [
+		'body.sm-messenger-active',
 		'.mapp-root',
+		'.mapp-sidebar',
+		'.mapp-chat-list-panel',
+		'.mapp-chat-area',
 		'.mapp-chat-panel',
 		'.mc-root',
 		'.mc-panel-window',
@@ -7040,6 +7128,39 @@ class MessengerThemeManager {
 		}
 		const lum = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
 		return lum < 0.45;
+	}
+
+	static #themeColorMetaEl = null;
+
+	/** Цвет фона темы для Android status bar (meta theme-color). */
+	static resolveStatusBarColor(theme) {
+		if (!theme) return null;
+		for (const key of ['bodyBg', 'headerBg']) {
+			const rgb = MessengerThemeManager.parseHexColor(theme[key]);
+			if (!rgb) continue;
+			let hex = String(theme[key] || '').trim().replace(/^#/, '');
+			if (hex.length === 3) hex = [...hex].map((c) => c + c).join('');
+			return `#${hex.toLowerCase()}`;
+		}
+		return null;
+	}
+
+	static applySystemStatusBarColor(theme) {
+		const color = MessengerThemeManager.resolveStatusBarColor(theme);
+		if (!color) return;
+		let meta = MessengerThemeManager.#themeColorMetaEl;
+		if (!meta) {
+			meta = document.querySelector('meta[name="theme-color"]');
+			if (!meta) {
+				meta = document.createElement('meta');
+				meta.name = 'theme-color';
+				document.head.appendChild(meta);
+			}
+			MessengerThemeManager.#themeColorMetaEl = meta;
+		}
+		if (meta.content !== color) meta.content = color;
+		document.documentElement.style.colorScheme =
+			MessengerThemeManager.isThemeDark(theme) ? 'dark' : 'light';
 	}
 
 	static DEFAULT_THEMES = [{
@@ -7348,10 +7469,39 @@ class MessengerThemeManager {
 		if (bodyBg) {
 			css += `\nbody.sm-messenger-active { background: ${bodyBg}; }\n`;
 		}
+		const chatBgImage = (this.#current?.chatBgImageUrl || '').trim();
+		const chatBgImageRule = chatBgImage
+			? [
+				'body.sm-messenger-active .mc-messages-wrap::before {',
+				'  content: "";',
+				'  position: absolute;',
+				'  inset: 0;',
+				'  background-color: var(--m-chat-bg);',
+				`  background-image: url("${chatBgImage.replace(/"/g, '\\"')}");`,
+				'  background-size: cover;',
+				'  background-position: center;',
+				'  background-repeat: no-repeat;',
+				'  pointer-events: none;',
+				'  z-index: 0;',
+				'}',
+				'body.sm-messenger-active .mc-messages {',
+				'  position: relative;',
+				'  z-index: 1;',
+				'  background: transparent;',
+				'}',
+			].join('\n')
+			: '';
+		css += [
+			'body.sm-messenger-active .mapp-root { background: var(--mapp-content-bg); }',
+			'body.sm-messenger-active .mapp-sidebar { background: var(--mapp-sidebar-bg); color: var(--mapp-text); }',
+			'#chat.sm-index-chat { background: var(--mapp-content-bg); }',
+			chatBgImageRule,
+		].filter(Boolean).join('\n') + '\n';
 		if (css === this.#lastThemeCss) return;
 		this.#lastThemeCss = css;
 		this.#ensureThemeStyleEl().textContent = css;
 		this.#stripInlineThemeVars();
+		MessengerThemeManager.applySystemStatusBarColor(this.#current);
 	}
 
 	#syncRootThemeClass() {
@@ -7628,14 +7778,26 @@ function bindImageLongPressMenu(img, openMenu) {
 	}, true);
 }
 
-/** Превью в списке чатов: без «удалено», шифротекст — только замок (без расшифровки). */
+/** Превью в списке чатов: без «удалено»; plaintext — если есть, иначе шифротекст (замок). */
 class MessengerChatListPreview {
 	static storageText(msg) {
 		if (!msg || msg.deletedForEveryone) return null;
-		if (msg._encText) return msg._encText;
 		const t = msg.text;
+		if (typeof t === 'string' && t.length > 0) {
+			const lockedToken = t === SupraCrypto.LOCKED_PREVIEW || t === SupraCrypto.LOCKED_OTHER;
+			if (!lockedToken && !(typeof SupraCrypto !== 'undefined' && SupraCrypto.isEncrypted(t))) {
+				return t;
+			}
+		}
+		if (msg._encText) return msg._encText;
 		if (typeof SupraCrypto !== 'undefined' && SupraCrypto.isEncrypted(t)) return t;
 		return typeof t === 'string' ? t : '';
+	}
+
+	static preferPreviewSource(msg, fallback = null) {
+		const stored = MessengerChatListPreview.storageText(msg);
+		if (stored !== null && !MessengerChatListPreview.isLockedStorage(stored)) return msg;
+		return fallback ?? msg;
 	}
 
 	static isLockedStorage(text) {
@@ -8115,6 +8277,19 @@ class MessengerUtils {
 			minute: '2-digit',
 		});
 	}
+	formatDateTime(ts) {
+		const d = ts instanceof Date ? ts : new Date(ts);
+		if (Number.isNaN(d.getTime())) return '—';
+		const loc = this.#i18n.locale + '-' + this.#i18n.locale.toUpperCase();
+		return d.toLocaleString(loc, {
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+		});
+	}
 	formatListTime(ts) {
 		const d = ts instanceof Date ? ts : new Date(ts);
 		const now = new Date();
@@ -8420,6 +8595,51 @@ class MessengerUtils {
 			insertBefore = el.nextSibling;
 		}
 		return { reordered: true, missingIds, mismatchIdx };
+	}
+}
+
+class MessengerOfflineStore {
+	static USER_KEY = 'sm-offline-user-v1';
+	static CHATS_PREFIX = 'sm-offline-chats:';
+
+	static saveUser(user) {
+		if (!user?.id) return;
+		try {
+			localStorage.setItem(MessengerOfflineStore.USER_KEY, JSON.stringify(user));
+		} catch (_) { /* ignore quota */ }
+	}
+
+	static loadUser() {
+		try {
+			const raw = localStorage.getItem(MessengerOfflineStore.USER_KEY);
+			if (!raw) return null;
+			const user = JSON.parse(raw);
+			return user?.id ? user : null;
+		} catch {
+			return null;
+		}
+	}
+
+	static saveChats(userId, chats) {
+		if (!userId || !Array.isArray(chats)) return;
+		try {
+			localStorage.setItem(
+				MessengerOfflineStore.CHATS_PREFIX + userId,
+				JSON.stringify({ chats, savedAt: Date.now() })
+			);
+		} catch (_) { /* ignore quota */ }
+	}
+
+	static loadChats(userId) {
+		if (!userId) return null;
+		try {
+			const raw = localStorage.getItem(MessengerOfflineStore.CHATS_PREFIX + userId);
+			if (!raw) return null;
+			const parsed = JSON.parse(raw);
+			return Array.isArray(parsed?.chats) ? parsed.chats : null;
+		} catch {
+			return null;
+		}
 	}
 }
 
@@ -9087,6 +9307,31 @@ class MessengerMessageService {
 
 	getCachedMessages(chatId) {
 		return this.#cache.getMessages(chatId);
+	}
+
+	/** Последняя страница из кэша: расшифровывает только видимый срез, не весь чат. */
+	async prepareInitialVisiblePage(chatId, api, pageSize) {
+		const raw = await this.#cache.getMessages(chatId);
+		if (!raw.length) return null;
+		const startIdx = MessengerUtils.findPageStart(raw, raw.length, pageSize);
+		const visibleRaw = raw.slice(startIdx);
+		const visible = api?.mapCachedMessages
+			? await api.mapCachedMessages(chatId, visibleRaw)
+			: visibleRaw;
+		return { raw, visible, startIdx };
+	}
+
+	/** Страница старых сообщений из кэша без полной расшифровки чата. */
+	async prepareOlderVisiblePage(chatId, api, endIdx, pageSize) {
+		const raw = await this.#cache.getMessages(chatId);
+		if (!raw.length || endIdx <= 0) return null;
+		const startIdx = MessengerUtils.findPageStart(raw, endIdx, pageSize);
+		const visibleRaw = raw.slice(startIdx, endIdx);
+		if (!visibleRaw.length) return null;
+		const visible = api?.mapCachedMessages
+			? await api.mapCachedMessages(chatId, visibleRaw)
+			: visibleRaw;
+		return { raw, visible, startIdx };
 	}
 
 	#dayString(date) {
@@ -10690,6 +10935,8 @@ class MessengerAppView {
 	#activeChat = null;
 	#chats = [];
 	#chatsBootLoading = false;
+	#previewDecryptScheduled = false;
+	#previewDecryptPending = false;
 	/** @type {Map<string, { state: object, chat: object, stale: boolean }>} */
 	#panelPool = new Map();
 	#panelPoolOrder = [];
@@ -10732,6 +10979,25 @@ class MessengerAppView {
 		this.#api.markRead(chatId).catch(() => {});
 	}
 
+	#pushTraceHasDeliveryIssue(trace) {
+		const list = trace?.recipients;
+		if (!Array.isArray(list)) return false;
+		return list.some((r) =>
+			r.action === 'failed' ||
+			r.action === 'no-subscriptions' ||
+			(r.action === 'sent' && r.anyDelivered === false));
+	}
+
+	#handleAdminPushDebug(trace) {
+		if (this.#currentUser?.userType !== 'Admin' || !trace) return;
+		const bootLog = window.AppBootLog;
+		if (!bootLog?.logPushDebug) return;
+		bootLog.logPushDebug(trace, 'push-debug');
+		if (this.#pushTraceHasDeliveryIssue(trace) && bootLog.openModal) {
+			bootLog.openModal({ themeManager: this.#themeManager, i18n: this.#i18n });
+		}
+	}
+
 	clearUnread(chatId) {
 		const chat = this.#chats.find(c => c.id === chatId);
 		if (!chat || !chat.unreadCount) return;
@@ -10753,7 +11019,11 @@ class MessengerAppView {
 			if (this.#isMessageAlreadyInPanel(this.#activeState, msg.id)) {
 				const chat = this.#chats.find(c => c.id === chatId);
 				if (chat) {
-					await this.#setChatListPreview(chat, chatId, listPreviewSource || msg, msg.timestamp);
+					await this.#setChatListPreview(
+						chat, chatId,
+						MessengerChatListPreview.preferPreviewSource(msg, listPreviewSource),
+						msg.timestamp
+					);
 					this.#renderChatList();
 				}
 				return;
@@ -10771,7 +11041,11 @@ class MessengerAppView {
 				);
 				const chat = this.#chats.find(c => c.id === chatId);
 				if (chat) {
-					await this.#setChatListPreview(chat, chatId, listPreviewSource || msg, msg.timestamp);
+					await this.#setChatListPreview(
+						chat, chatId,
+						MessengerChatListPreview.preferPreviewSource(msg, listPreviewSource),
+						msg.timestamp
+					);
 					this.#renderChatList();
 				}
 				return;
@@ -10791,7 +11065,11 @@ class MessengerAppView {
 				await this.#panelFactory.confirmServerMessage(this.#activeState, pending.data.id, msg);
 				const chat = this.#chats.find(c => c.id === chatId);
 				if (chat) {
-					await this.#setChatListPreview(chat, chatId, listPreviewSource || msg, msg.timestamp);
+					await this.#setChatListPreview(
+						chat, chatId,
+						MessengerChatListPreview.preferPreviewSource(msg, listPreviewSource),
+						msg.timestamp
+					);
 					this.#renderChatList();
 				}
 				return;
@@ -11035,6 +11313,11 @@ class MessengerAppView {
 		this.#renderChatList();
 	}
 
+	applyCachedChatsIfEmpty(chats) {
+		if (this.#chats?.length || !chats?.length) return;
+		this.setChats(chats);
+	}
+
 	#showChatListMobile() {
 		this.#parkActivePanel();
 		this.el.root.classList.remove('mapp-show-chat');
@@ -11065,26 +11348,84 @@ class MessengerAppView {
 		this.#msgService = msgService;
 	}
 
-	async refreshLastMessagePreviews() {
-		if (!this.#chats?.length) {
-			this.#renderChatList();
+	scheduleRefreshLastMessagePreviews() {
+		if (this.#previewDecryptScheduled) {
+			this.#previewDecryptPending = true;
 			return;
 		}
+		this.#previewDecryptScheduled = true;
+		const run = () => {
+			this.#previewDecryptScheduled = false;
+			void this.#runRefreshLastMessagePreviews().finally(() => {
+				if (this.#previewDecryptPending) {
+					this.#previewDecryptPending = false;
+					this.scheduleRefreshLastMessagePreviews();
+				}
+			});
+		};
+		if (typeof requestIdleCallback === 'function') {
+			requestIdleCallback(run, { timeout: 1500 });
+		} else {
+			setTimeout(run, 50);
+		}
+	}
+
+	async #cachedMessagesForPreview(chatId) {
+		if (!this.#msgService) return [];
+		const messages = await this.#msgService.getCachedMessages(chatId);
+		if (!messages?.length) return [];
+		if (this.#api?.mapCachedMessages && this.#api.getCrypto?.()) {
+			try {
+				return await this.#api.mapCachedMessages(chatId, messages);
+			} catch (e) {
+				console.warn('[MessengerAppView] cachedMessagesForPreview', chatId, e);
+			}
+		}
+		return messages;
+	}
+
+	#applyCachedPreviewIfBetter(chat, last) {
+		const stored = MessengerChatListPreview.storageText(last);
+		if (!stored || MessengerChatListPreview.isLockedStorage(stored)) return false;
+		const lastTs = MessengerUtils.messageTimestampMs(last);
+		const currentTs = chat.lastMessageTime
+			? new Date(chat.lastMessageTime).getTime()
+			: 0;
+		const currentPreview = chat.lastMessage || '';
+		const serverPreviewLocked = MessengerChatListPreview.isLockedStorage(currentPreview)
+			|| currentPreview === SupraCrypto.LOCKED_PREVIEW
+			|| currentPreview === SupraCrypto.LOCKED_OTHER;
+		if (lastTs < currentTs) return false;
+		if (lastTs === currentTs && !serverPreviewLocked) return false;
+		chat.lastMessage = stored;
+		chat.lastMessageTime = last.timestamp instanceof Date
+			? last.timestamp
+			: new Date(last.timestamp);
+		return true;
+	}
+
+	async #runRefreshLastMessagePreviews() {
+		if (!this.#chats?.length) return;
 		if (this.#msgService) {
 			await Promise.all(this.#chats.map(async (c) => {
 				try {
-					const messages = await this.#msgService.getCachedMessages(c.id);
+					const messages = await this.#cachedMessagesForPreview(c.id);
 					const last = MessengerChatListPreview.pickLastVisibleMessage(messages);
 					if (!last) return;
-					const stored = MessengerChatListPreview.storageText(last);
-					if (!stored || MessengerChatListPreview.isLockedStorage(stored)) return;
-					c.lastMessage = stored;
+					this.#applyCachedPreviewIfBetter(c, last);
 				} catch (e) {
 					console.warn('[MessengerAppView] refreshLastMessagePreviews', c.id, e);
 				}
 			}));
 		}
+		if (this.#api?.decryptChatListPreviews) {
+			await this.#api.decryptChatListPreviews(this.#chats);
+		}
 		this.#renderChatList();
+	}
+
+	async refreshLastMessagePreviews() {
+		await this.#runRefreshLastMessagePreviews();
 	}
 
 	async #setChatListPreview(chat, chatId, previewSrc, timestamp) {
@@ -11101,13 +11442,12 @@ class MessengerAppView {
 		if (!chat) return;
 		if (this.#msgService) {
 			try {
-				const messages = await this.#msgService.getCachedMessages(chatId);
+				const messages = await this.#cachedMessagesForPreview(chatId);
 				const last = MessengerChatListPreview.pickLastVisibleMessage(messages);
-				if (last) {
-					const ts = last.timestamp instanceof Date
-						? last.timestamp
-						: new Date(last.timestamp);
-					await this.#setChatListPreview(chat, chatId, last, ts);
+				if (last && this.#applyCachedPreviewIfBetter(chat, last)) {
+					if (this.#api?.decryptChatListPreviews) {
+						await this.#api.decryptChatListPreviews([chat]);
+					}
 					this.#renderChatList();
 					return;
 				}
@@ -11130,6 +11470,9 @@ class MessengerAppView {
 					chat.lastMessage = '';
 					chat.lastMessageTime = fresh.lastMessageTime;
 				}
+				if (this.#api?.decryptChatListPreviews) {
+					await this.#api.decryptChatListPreviews([chat]);
+				}
 				this.#renderChatList();
 			}
 		} catch (e) {
@@ -11139,9 +11482,16 @@ class MessengerAppView {
 	setChats(chats) {
 		this.#chatsBootLoading = false;
 		this.#chats = chats;
+		this.#api?.syncChatsMeta?.(chats);
+		if (this.#currentUser?.id && chats?.length) {
+			MessengerOfflineStore.saveChats(this.#currentUser.id, chats);
+		}
 		this.#renderChatList();
 		if (this.#canShowContactPresence()) {
 			this.#prefetchAllDirectContactPresence();
+		}
+		if (chats?.length) {
+			this.scheduleRefreshLastMessagePreviews();
 		}
 	}
 	setCurrentUser(user) {
@@ -11154,6 +11504,7 @@ class MessengerAppView {
 				: (prev?.statusText || ''),
 		};
 		if (user.id && user.login) this.#contactLogins.set(user.id, user.login);
+		if (user.id) MessengerOfflineStore.saveUser(this.#currentUser);
 		this.#sidebar.updateUser(this.#currentUser);
 	}
 
@@ -11318,6 +11669,9 @@ class MessengerAppView {
 		const state = this.#activeState;
 		const chat = this.#activeChat;
 		const chatId = state.chatId;
+		if (chatId) {
+			this.refreshChatListPreview(chatId).catch(() => {});
+		}
 		const crypto = this.#api.getCrypto();
 		const relock = (crypto && chatId)
 			? (async () => {
@@ -11363,6 +11717,15 @@ class MessengerAppView {
 		const onSend = async (chatId, field, msgArea) => {
 			const text = field.value;
 			if (!text?.trim()) return;
+			if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) {
+				MessengerDialog.showNotice(
+					this.#i18n.t('offlineSendBlocked'),
+					this.#i18n.t('confirm'),
+					null,
+					this.#themeManager
+				);
+				return;
+			}
 			field.value = '';
 			const state = this.#activeState;
 			if (!state) return;
@@ -11446,6 +11809,9 @@ class MessengerAppView {
 					await this.#panelFactory.confirmServerMessage(state, localMsg.id, confirmed);
 					await this.#bumpChatPreview(chat.id, confirmed, confirmed.timestamp);
 				}
+				if (serverMsg?.pushDebug) {
+					this.#handleAdminPushDebug(serverMsg.pushDebug);
+				}
 			} catch (e) {
 				console.warn('[MessengerAppView] sendMessage error:', e);
 				this.#panelFactory.updateMsgStatus(state, localMsg.id, 'error');
@@ -11467,6 +11833,9 @@ class MessengerAppView {
 			onBlockUser: (c) => this.#blockUser(c),
 			onBlockGroup: (c) => this.#blockGroup(c),
 			onMarkReadIfEngaged: () => this.markReadIfEngaged(chat.id),
+			onChatPreviewRefresh: () => {
+				this.refreshChatListPreview(chat.id).catch(() => {});
+			},
 		};
 		const state = this.#panelFactory.create(
 			chat,
@@ -11499,36 +11868,7 @@ class MessengerAppView {
 	async #openChat(chat) {
 		this.#readGate.recordEngagement(chat.id);
 		const chatData = this.#chats.find(c => c.id === chat.id) || chat;
-		if (chatData.type === 'direct') {
-			try {
-				const keysCreated = await this.#api.ensureChatEncryptionKeys(chatData);
-				if (keysCreated) {
-					const cached = this.#panelPool.get(chat.id);
-					if (cached) cached.stale = true;
-				}
-			} catch (e) {
-				console.warn('[MessengerAppView] ensureChatEncryptionKeys', e);
-			}
-		}
-		if (this.#isGroupChat(chatData)) {
-			try {
-				const keysCreated = await this.#api.ensureChatEncryptionKeys(chatData);
-				if (keysCreated) {
-					const cached = this.#panelPool.get(chat.id);
-					if (cached) cached.stale = true;
-				}
-			} catch (e) {
-				console.warn('[MessengerAppView] ensureChatEncryptionKeys (group)', e);
-			}
-		}
-		if (this.#isGroupChat(chatData) && !chatData.hasGroupAutoKey) {
-			await MessengerDialog.alert({
-				title: this.#i18n.t('masterPasswordLock'),
-				message: 'Ключ группы ещё не выдан. Попросите администратора открыть группу или добавить вас снова.',
-				themeManager: this.#themeManager,
-			});
-			return;
-		}
+		void this.#ensureChatKeysInBackground(chatData);
 		const pendingUnreadCount = chatData?.unreadCount || 0;
 		if (chatData?.unreadCount > 0) {
 			chatData.unreadCount = 0;
@@ -11559,7 +11899,7 @@ class MessengerAppView {
 		const cached = this.#panelPool.get(chat.id);
 		if (cached && !cached.stale) {
 			if (this.#activeState?.chatId !== chat.id) {
-				await this.#parkActivePanel();
+				this.#parkActivePanel();
 			}
 			this.#activateParkedPanel(chat, cached, pendingUnreadCount);
 			return;
@@ -11570,9 +11910,41 @@ class MessengerAppView {
 		}
 
 		if (this.#activeState?.chatId !== chat.id) {
-			await this.#parkActivePanel();
+			this.#parkActivePanel();
 		}
 		this.#createAndOpenPanel(chat, pendingUnreadCount);
+	}
+
+	#ensureChatKeysInBackground(chatData) {
+		if (!chatData?.id) return;
+		const chatId = chatData.id;
+		void (async () => {
+			try {
+				if (chatData.type === 'direct' || this.#isGroupChat(chatData)) {
+					const keysCreated = await this.#api.ensureChatEncryptionKeys(chatData);
+					if (keysCreated) {
+						const pooled = this.#panelPool.get(chatId);
+						if (pooled) pooled.stale = true;
+						if (this.#activeState?.chatId === chatId) {
+							await this.#panelFactory.refreshEncryptedMessagesDisplay(
+								this.#activeState,
+								chatId
+							);
+						}
+					}
+				}
+				if (this.#isGroupChat(chatData) && !chatData.hasGroupAutoKey
+					&& this.#activeState?.chatId === chatId) {
+					await MessengerDialog.alert({
+						title: this.#i18n.t('masterPasswordLock'),
+						message: 'Ключ группы ещё не выдан. Попросите администратора открыть группу или добавить вас снова.',
+						themeManager: this.#themeManager,
+					});
+				}
+			} catch (e) {
+				console.warn('[MessengerAppView] ensureChatKeysInBackground', e);
+			}
+		})();
 	}
 	#onChatCreated(chat) {
 		normalizeAppUrl();
@@ -12349,7 +12721,8 @@ class MessengerAppView {
 		return false;
 	}
 
-	receiveMessage(chatId, msg, listPreviewSource = null) {
+	receiveMessage(chatId, msg, listPreviewSource = null, opts = {}) {
+		const bumpUnread = opts.bumpUnread !== false;
 		const meId = this.#currentUser?.id;
 		if (meId && msg.senderId === meId) msg.isOwn = true;
 		this.#markPanelStale(chatId);
@@ -12360,16 +12733,26 @@ class MessengerAppView {
 		const chat = this.#chats.find(c => c.id === chatId);
 		if (chat) {
 			if (!isChatVisible) {
-				if (!msg.isOwn) {
+				if (!msg.isOwn && bumpUnread) {
 					chat.unreadCount = (chat.unreadCount || 0) + 1;
 					this.#sidebar.updateUnreadBadge(chatId, chat.unreadCount, this.#chats);
 				}
 			} else {
 				this.markReadIfEngaged(chatId);
 			}
-			this.#setChatListPreview(chat, chatId, listPreviewSource || msg, msg.timestamp)
-				.then(() => this.#renderChatList())
-				.catch(e => console.warn('[MessengerAppView] receiveMessage preview', e));
+			const msgTs = MessengerUtils.messageTimestampMs(msg);
+			const currentTs = chat.lastMessageTime
+				? new Date(chat.lastMessageTime).getTime()
+				: 0;
+			if (msgTs >= currentTs) {
+				this.#setChatListPreview(
+					chat, chatId,
+					MessengerChatListPreview.preferPreviewSource(msg, listPreviewSource),
+					msg.timestamp
+				)
+					.then(() => this.#renderChatList())
+					.catch(e => console.warn('[MessengerAppView] receiveMessage preview', e));
+			}
 		}
 	}
 	#forEachPanelState(chatId, fn) {
@@ -12422,7 +12805,7 @@ class MessengerAppView {
 			try {
 				const { messages, reconcile } = await msgService.syncChatAfterOffline(chat.id, api);
 				for (const msg of messages) {
-					this.receiveMessage(chat.id, msg);
+					this.receiveMessage(chat.id, msg, null, { bumpUnread: false });
 				}
 				if (reconcile?.historyCleared) {
 					this.handleHistoryCleared(chat.id);
@@ -12443,6 +12826,12 @@ class MessengerAppView {
 				this.#activeState.chatId,
 				this.#activeState
 			);
+			if (this.#api.getCrypto()?.isUnlocked) {
+				await this.#panelFactory.refreshEncryptedMessagesDisplay(
+					this.#activeState,
+					this.#activeState.chatId
+				);
+			}
 			this.markReadIfEngaged(this.#activeState.chatId);
 		}
 	}
@@ -12471,6 +12860,9 @@ class MessengerAppView {
 			this.setChats(chats);
 		} catch (e) {
 			console.warn('[MessengerAppView] reloadAllChats error:', e);
+			const userId = this.#currentUser?.id;
+			const cached = userId ? MessengerOfflineStore.loadChats(userId) : null;
+			if (cached?.length) this.setChats(cached);
 		}
 		this.#persistNavState();
 	}
@@ -12523,6 +12915,11 @@ class MessengerApiClient {
 		for (const c of chats) this.#chatsMeta.set(c.id, c);
 	}
 
+	syncChatsMeta(chats) {
+		if (!Array.isArray(chats) || !chats.length) return;
+		this.#updateChatsMeta(chats);
+	}
+
 	chatMeta(chatId) {
 		return this.#chatsMeta.get(chatId) || null;
 	}
@@ -12555,26 +12952,36 @@ class MessengerApiClient {
 		return out;
 	}
 
-	mapCachedMessages(chatId, messages) {
+	async mapCachedMessages(chatId, messages) {
 		if (!messages?.length) return messages || [];
-		return messages.map(m => this.mapCachedMessage(chatId, m));
+		const out = [];
+		for (const m of messages) {
+			out.push(await this.mapCachedMessage(chatId, m));
+		}
+		return out;
 	}
 
-	mapCachedMessage(chatId, m) {
+	async mapCachedMessage(chatId, m) {
 		if (!m || m.isVirtual) return m;
 		const tier = (m.encryptionTier || 'basic').toLowerCase();
-		if (tier !== 'protected') return m;
-		const encText = SupraCrypto.isEncrypted(m.text) ? m.text : m._encText;
-		if (!encText) return m;
-		const encReply = m.replyToTextPreview && SupraCrypto.isEncrypted(m.replyToTextPreview)
-			? m.replyToTextPreview
-			: m._encReplyPreview;
-		return this.#attachEncFields({
-			...m,
-			text: SupraCrypto.LOCKED_PREVIEW,
-			replyToTextPreview: encReply ? SupraCrypto.LOCKED_PREVIEW : null,
-			_locked: true,
-		}, encText, encReply ?? null);
+		const { encText, encReply } = this.#captureEncFields(m);
+		if (tier === 'protected') {
+			if (!encText) return m;
+			return this.#attachEncFields({
+				...m,
+				text: SupraCrypto.LOCKED_PREVIEW,
+				replyToTextPreview: encReply ? SupraCrypto.LOCKED_PREVIEW : null,
+				_locked: true,
+			}, encText, encReply);
+		}
+		if (encText || encReply) {
+			return this.#decryptMessageFields({
+				...m,
+				text: encText || m.text,
+				replyToTextPreview: encReply ?? m.replyToTextPreview,
+			}, chatId);
+		}
+		return m;
 	}
 
 	async prepareMessagesForCache(chatId, messages) {
@@ -13169,6 +13576,40 @@ class MessengerApiClient {
 		return chats;
 	}
 
+	async decryptChatListPreviews(chats) {
+		if (!this.#crypto || !chats?.length) return chats;
+		await Promise.all(chats.map(async (chat) => {
+			try {
+				const raw = chat?.lastMessage;
+				if (!raw || !SupraCrypto.isEncrypted(raw)) return;
+				await this.ensureChatEncryptionKeys(chat, { distribute: false });
+				chat.lastMessage = await this.#decryptChatPreviewLastMessage(chat);
+			} catch (e) {
+				console.warn('[MessengerApiClient] decryptChatListPreviews', chat.id, e);
+			}
+		}));
+		return chats;
+	}
+
+	async #decryptChatPreviewLastMessage(chat) {
+		const raw = chat?.lastMessage;
+		if (!raw || !SupraCrypto.isEncrypted(raw) || !this.#crypto) return raw || '';
+		const opts = { fetchWrapped: true };
+		let key = await this.#crypto.getAutoChatKey(chat, opts);
+		if (key) {
+			const text = await this.#crypto.decryptText(raw, key);
+			if (text && text !== SupraCrypto.LOCKED_PREVIEW) return text;
+		}
+		if (this.#crypto.getCustomPassword(chat.id)) {
+			key = await this.#crypto.getProtectedChatKey(chat, opts);
+			if (key) {
+				const text = await this.#crypto.decryptText(raw, key);
+				if (text && text !== SupraCrypto.LOCKED_PREVIEW) return text;
+			}
+		}
+		return SupraCrypto.LOCKED_PREVIEW;
+	}
+
 	async getContacts(page = 1, rowCount = 20, searchQuery = '') {
 		const r = await this.call('GetContacts', {
 			page,
@@ -13396,6 +13837,7 @@ class MessengerApiClient {
 			replyToSenderName: plainOpts?.replyToSenderName || null,
 			replyToTextPreview: plainOpts?.replyToTextPreview || null,
 			forwardedFromSenderName: plainOpts?.forwardedFromSenderName || null,
+			pushDebug: r.pushDebug || null,
 		};
 	}
 
@@ -13421,6 +13863,10 @@ class MessengerApiClient {
 		const r = await this.call('DeleteMessage', { chatId, messageId, deleteForEveryone });
 		if (!r?.success) throw new Error(r?.error || 'DeleteMessage failed');
 		return r;
+	}
+
+	async getMessageInfo(chatId, messageId) {
+		return this.call('GetMessageInfo', { chatId, messageId });
 	}
 
 	canForwardMessage(msg) {
@@ -13647,32 +14093,23 @@ class MessengerApiClient {
 
 	async messageForDisplay(msg, chatId) {
 		if (!msg) return msg;
-		if ((msg.encryptionTier || 'basic').toLowerCase() !== 'protected') return msg;
-		if (this.#crypto?.getCustomPassword(chatId)) {
-			const encText = msg._encText || (SupraCrypto.isEncrypted(msg.text) ? msg.text : null);
-			if (encText && !SupraCrypto.isEncrypted(msg.text)) {
-				return this.#decryptMessageFields({
-					...msg,
-					text: encText,
-					replyToTextPreview: msg._encReplyPreview ?? msg.replyToTextPreview,
-				}, chatId);
-			}
-			return msg;
-		}
-		const encText = msg._encText || (SupraCrypto.isEncrypted(msg.text) ? msg.text : null);
-		if (encText) {
-			return this.#decryptMessageFields({
+		const tier = (msg.encryptionTier || 'basic').toLowerCase();
+		const { encText, encReply } = this.#captureEncFields(msg);
+		const hasCipher = !!encText || !!encReply;
+		if (!hasCipher && tier !== 'protected') return msg;
+		if (tier === 'protected' && !hasCipher) {
+			return {
 				...msg,
-				text: encText,
-				replyToTextPreview: msg._encReplyPreview ?? msg.replyToTextPreview,
-			}, chatId);
+				text: SupraCrypto.LOCKED_PREVIEW,
+				replyToTextPreview: msg.replyToTextPreview ? SupraCrypto.LOCKED_PREVIEW : null,
+				_locked: true,
+			};
 		}
-		return {
+		return this.#decryptMessageFields({
 			...msg,
-			text: SupraCrypto.LOCKED_PREVIEW,
-			replyToTextPreview: msg.replyToTextPreview ? SupraCrypto.LOCKED_PREVIEW : null,
-			_locked: true,
-		};
+			text: encText || msg.text,
+			replyToTextPreview: encReply ?? msg.replyToTextPreview,
+		}, chatId);
 	}
 
 	async promptGroupCustomPassword(chat, i18n) {
@@ -14588,11 +15025,18 @@ class MessengerMessageRenderer {
 	#isLockedMsg(msg) {
 		return !!msg?._locked
 			|| msg?.text === SupraCrypto.LOCKED_OTHER
-			|| msg?.text === SupraCrypto.LOCKED_PREVIEW;
+			|| msg?.text === SupraCrypto.LOCKED_PREVIEW
+			|| (typeof SupraCrypto !== 'undefined' && SupraCrypto.isEncrypted(msg?.text));
 	}
 
 	#lockedDisplayText(msg) {
 		const tier = (msg?.encryptionTier || 'basic').toLowerCase();
+		if (typeof SupraCrypto !== 'undefined' && SupraCrypto.isEncrypted(msg?.text)) {
+			if (tier === 'protected') {
+				return this.#i18n.t('msgHiddenProtected') || SupraCrypto.LOCKED_PREVIEW;
+			}
+			return this.#i18n.t('msgLocked') || SupraCrypto.LOCKED_OTHER;
+		}
 		if (tier === 'protected' && this.#isLockedMsg(msg)) {
 			return this.#i18n.t('msgHiddenProtected') || SupraCrypto.LOCKED_PREVIEW;
 		}
@@ -14723,7 +15167,8 @@ class MessengerMessageRenderer {
 		const author = this.#utils.mk('div', 'mc-msg-quote-author');
 		author.textContent = msg.replyToSenderName || '';
 		const prev = msg.replyToTextPreview || '';
-		const locked = prev === SupraCrypto.LOCKED_OTHER || prev === SupraCrypto.LOCKED_PREVIEW;
+		const locked = prev === SupraCrypto.LOCKED_OTHER || prev === SupraCrypto.LOCKED_PREVIEW
+			|| (typeof SupraCrypto !== 'undefined' && SupraCrypto.isEncrypted(prev));
 		const preview = buildQuotePreviewContent({
 			utils: this.#utils,
 			cache: this.#cache,
@@ -14891,7 +15336,7 @@ class MessengerMessageRenderer {
 			textEl.textContent = i18n.tActivityMany(unique.length);
 		}
 	}
-	buildInputArea(chatId, msgArea, onSend, onActivity = null, fileOptions = null) {
+	buildInputArea(chatId, msgArea, onSend, onActivity = null, fileOptions = null, connectionStateMgr = null) {
 		const area = this.#utils.mk('div', 'mc-input-area');
 		const field = this.#utils.mk('textarea', 'mc-input-field');
 		field.placeholder = this.#i18n.t('writeMessage');
@@ -14908,12 +15353,17 @@ class MessengerMessageRenderer {
 			lastActivitySentAt = 0;
 			if (onActivity) onActivity('typing', false);
 		};
+		const isSendAllowed = () =>
+			!connectionStateMgr
+			|| connectionStateMgr.state === MessengerConnectionStateManager.STATE_CONNECTED;
 		const doSend = () => {
+			if (!isSendAllowed()) return;
 			sendStop();
 			onSend(chatId, field, msgArea);
 			resetFieldHeight();
 		};
 		field.addEventListener('input', () => {
+			if (!isSendAllowed()) return;
 			field.style.height = 'auto';
 			if (field.scrollHeight > 40) field.style.height = Math.min(field.scrollHeight, 120) + 'px';
 			if (MessengerUtils.isMobile()) {
@@ -14950,6 +15400,17 @@ class MessengerMessageRenderer {
 		btn.type = 'button';
 		btn.innerHTML = this.#icons.send();
 		btn.addEventListener('click', doSend);
+		const applyConnectionState = (state) => {
+			const connected = state === MessengerConnectionStateManager.STATE_CONNECTED;
+			field.disabled = !connected;
+			btn.disabled = !connected;
+			area.classList.toggle('mc-input-area--offline', !connected);
+			field.placeholder = connected
+				? this.#i18n.t('writeMessage')
+				: this.#i18n.t('offlineSendPlaceholder');
+			const attachBtn = area.querySelector('.mc-attach-btn');
+			if (attachBtn) attachBtn.disabled = !connected;
+		};
 		if (fileOptions && Array.isArray(fileOptions.types) && fileOptions.types.length > 0) {
 			const attachMenu = new MessengerAttachMenu(
 				this.#utils, this.#icons, this.#i18n, fileOptions.types,
@@ -14959,8 +15420,103 @@ class MessengerMessageRenderer {
 		} else {
 			area.append(field, btn);
 		}
+		if (connectionStateMgr) {
+			connectionStateMgr.subscribe(applyConnectionState);
+		} else {
+			applyConnectionState(MessengerConnectionStateManager.STATE_CONNECTED);
+		}
 		return area;
 	}
+}
+
+function escapeMsgInfoText(value) {
+	return String(value ?? '')
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;');
+}
+
+function buildMessageInfoHtml(info, i18n, utils) {
+	const t = (key) => i18n.t(key);
+	const row = (label, value) =>
+		`<div class="mapp-msg-info-row"><div class="mapp-msg-info-label">${escapeMsgInfoText(label)}</div>` +
+		`<div class="mapp-msg-info-value">${value}</div></div>`;
+
+	const fmt = (ts) => escapeMsgInfoText(utils.formatDateTime(ts));
+	const encLabel = info.encryptionTier === 'protected' ? t('msgInfoEncProtected') : t('msgInfoEncBasic');
+	const statusLabel = info.status === 'read' ? t('msgInfoStatusRead') : t('msgInfoStatusSent');
+	const chatTypeLabel = info.chatType === 'group' ? t('msgInfoChatGroup') : t('msgInfoChatDirect');
+
+	const eventKindLabel = (kind) => {
+		const map = {
+			sent: 'msgInfoEventSent',
+			edited: 'msgInfoEventEdited',
+			deleted: 'msgInfoEventDeleted',
+			read: 'msgInfoEventRead',
+			realtime: 'msgInfoEventRealtime',
+			'push-sent': 'msgInfoEventPushSent',
+			'push-skipped': 'msgInfoEventPushSkipped',
+			'push-failed': 'msgInfoEventPushFailed',
+			'push-stale': 'msgInfoEventPushStale',
+			'push-unknown': 'msgInfoEventPushUnknown',
+		};
+		return t(map[kind] || kind);
+	};
+
+	let html = '<div class="mapp-msg-info">';
+	html += row(t('msgInfoMessageId'), `<code>${escapeMsgInfoText(info.messageId)}</code>`);
+	html += row(t('msgInfoChat'), `${escapeMsgInfoText(info.chatName || info.chatId)} <span class="mapp-msg-info-muted">(${escapeMsgInfoText(chatTypeLabel)})</span>`);
+	html += row(t('msgInfoSender'), escapeMsgInfoText(info.senderName || info.senderId));
+	html += row(t('msgInfoSentAt'), fmt(info.sentAt));
+	if (info.editedAt) html += row(t('msgInfoEditedAt'), fmt(info.editedAt));
+	html += row(t('msgInfoStatus'), escapeMsgInfoText(statusLabel));
+	html += row(t('msgInfoEncryption'), escapeMsgInfoText(encLabel));
+	if (info.replyToMessageId) {
+		const reply = info.replyToSenderName
+			? `${escapeMsgInfoText(info.replyToSenderName)} · <code>${escapeMsgInfoText(info.replyToMessageId)}</code>`
+			: `<code>${escapeMsgInfoText(info.replyToMessageId)}</code>`;
+		html += row(t('msgInfoReplyTo'), reply);
+	}
+	if (info.forwardedFromSenderName) {
+		html += row(t('msgInfoForwardedFrom'), escapeMsgInfoText(info.forwardedFromSenderName));
+	}
+	if (info.deletedForEveryone) {
+		html += row(t('msgInfoDeletedFlag'), '<span class="mapp-msg-info-warn">✓</span>');
+	}
+
+	if (Array.isArray(info.readBy) && info.readBy.length) {
+		html += `<div class="mapp-msg-info-section">${escapeMsgInfoText(t('msgInfoReadSection'))}</div>`;
+		html += '<ul class="mapp-msg-info-list">';
+		for (const r of info.readBy) {
+			let state;
+			if (r.read && r.readAt) state = fmt(r.readAt);
+			else if (r.read && r.legacy) state = escapeMsgInfoText(t('msgInfoReadLegacy'));
+			else if (r.read) state = escapeMsgInfoText(t('msgInfoReadYes'));
+			else state = `<span class="mapp-msg-info-muted">${escapeMsgInfoText(t('msgInfoReadNo'))}</span>`;
+			html += `<li><span class="mapp-msg-info-list-name">${escapeMsgInfoText(r.displayName || r.userId)}</span>` +
+				`<span class="mapp-msg-info-list-meta">${state}</span></li>`;
+		}
+		html += '</ul>';
+	}
+
+	if (Array.isArray(info.events) && info.events.length) {
+		html += `<div class="mapp-msg-info-section">${escapeMsgInfoText(t('msgInfoEventsSection'))}</div>`;
+		html += '<ul class="mapp-msg-info-events">';
+		for (const ev of info.events) {
+			const when = ev.at ? fmt(ev.at) : '—';
+			const who = ev.userName ? escapeMsgInfoText(ev.userName) : '';
+			const detail = ev.detail ? `<span class="mapp-msg-info-event-detail">${escapeMsgInfoText(ev.detail)}</span>` : '';
+			html += `<li><span class="mapp-msg-info-event-time">${when}</span>` +
+				`<span class="mapp-msg-info-event-kind">${escapeMsgInfoText(eventKindLabel(ev.kind))}</span>` +
+				(who ? `<span class="mapp-msg-info-event-who">${who}</span>` : '') +
+				detail + '</li>';
+		}
+		html += '</ul>';
+	}
+
+	html += '</div>';
+	return html;
 }
 
 class MessengerChatPanel {
@@ -15075,6 +15631,44 @@ class MessengerChatPanel {
 					id => this.#scrollToQuotedMessage(state, id)
 				);
 				entry.el._msgData = relocked;
+			}
+		}
+	}
+
+	async refreshEncryptedMessagesDisplay(state, chatId) {
+		if (!state?.messages?.size || !chatId || !this.#api.getCrypto()?.isUnlocked) return;
+		for (const entry of state.messages.values()) {
+			const m = entry.data;
+			if (!m || m.isVirtual || m.deletedForEveryone) continue;
+			const encText = m._encText || (SupraCrypto.isEncrypted(m.text) ? m.text : null);
+			const encReply = m._encReplyPreview
+				|| (m.replyToTextPreview && SupraCrypto.isEncrypted(m.replyToTextPreview)
+					? m.replyToTextPreview
+					: null);
+			if (!encText && !encReply && !SupraCrypto.isEncrypted(m.text)) continue;
+			const display = await this.#api.messageForDisplay({
+				...m,
+				text: encText || m.text,
+				replyToTextPreview: encReply ?? m.replyToTextPreview,
+			}, chatId);
+			const next = {
+				...display,
+				_encText: encText || m._encText || null,
+				_encReplyPreview: encReply || m._encReplyPreview || null,
+			};
+			const changed = next.text !== m.text
+				|| next.replyToTextPreview !== m.replyToTextPreview
+				|| !!next._locked !== !!m._locked
+				|| SupraCrypto.isEncrypted(m.text);
+			if (!changed) continue;
+			entry.data = next;
+			if (entry.el) {
+				this.#msgRenderer.updateMsgContent(
+					entry,
+					next,
+					id => this.#scrollToQuotedMessage(state, id)
+				);
+				entry.el._msgData = next;
 			}
 		}
 	}
@@ -15281,6 +15875,7 @@ class MessengerChatPanel {
 			types: fileTransferTypes,
 			chatId: chat.id,
 			onFileUpload: (type, cId, mArea) => {
+				if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) return;
 				this.#fileHandler.upload(type, cId, mArea, (bubbleEl) => {
 					mArea.appendChild(bubbleEl);
 					mArea.scrollTop = mArea.scrollHeight;
@@ -15291,7 +15886,9 @@ class MessengerChatPanel {
 				});
 			},
 		} : null;
-		const inputArea = this.#msgRenderer.buildInputArea(chat.id, msgArea, onSend, onActivity, fileOptions);
+		const inputArea = this.#msgRenderer.buildInputArea(
+			chat.id, msgArea, onSend, onActivity, fileOptions, this.#connectionStateMgr
+		);
 		el.append(header, msgWrap, replyBar, selectBar, inputArea);
 		const state = {
 			chatId: chat.id,
@@ -15340,6 +15937,9 @@ class MessengerChatPanel {
 				: null,
 			onMarkReadIfEngaged: typeof chatCallbacks.onMarkReadIfEngaged === 'function'
 				? chatCallbacks.onMarkReadIfEngaged
+				: null,
+			onChatPreviewRefresh: typeof chatCallbacks.onChatPreviewRefresh === 'function'
+				? chatCallbacks.onChatPreviewRefresh
 				: null,
 		};
 		panelState = state;
@@ -15918,6 +16518,8 @@ class MessengerChatPanel {
 			push(this.#icons.trash(), 'msgActionDelete', true, () => this.#deleteMessage(state, msg));
 		}
 
+		push(this.#icons.info(), 'msgActionInfo', false, () => this.#showMessageInfo(state, msg));
+
 		if (!sheetItems.length) return;
 
 		const dismissMenuHighlight = () => MessengerMessageHighlight.clear(state.msgArea);
@@ -15996,6 +16598,39 @@ class MessengerChatPanel {
 		menu.style.left = x + 'px';
 		menu.style.top = y + 'px';
 		attachMenuDismiss(menu, closeMenu);
+	}
+
+	async #showMessageInfo(state, msg) {
+		const messageId = msg.serverId || msg.id;
+		if (!messageId || String(messageId).startsWith('local_')) {
+			await MessengerDialog.alert({
+				title: this.#i18n.t('msgInfoTitle'),
+				message: this.#i18n.t('msgInfoNotSent'),
+				type: MessengerDialog.TYPE_INFO,
+				confirmLabel: this.#i18n.t('confirm'),
+				themeManager: this.#themeManager,
+			});
+			return;
+		}
+		try {
+			const r = await this.#api.getMessageInfo(state.chatId, String(messageId));
+			if (!r?.success || !r.info) throw new Error(r?.error || this.#i18n.t('msgInfoLoadError'));
+			await MessengerDialog.openHtmlModal({
+				title: this.#i18n.t('msgInfoTitle'),
+				html: buildMessageInfoHtml(r.info, this.#i18n, this.#utils),
+				confirmLabel: this.#i18n.t('confirm'),
+				themeManager: this.#themeManager,
+			});
+		} catch (e) {
+			console.warn('[MessengerChatPanel] message info', e);
+			await MessengerDialog.alert({
+				title: this.#i18n.t('msgInfoTitle'),
+				message: e?.message || this.#i18n.t('msgInfoLoadError'),
+				type: MessengerDialog.TYPE_WARNING,
+				confirmLabel: this.#i18n.t('confirm'),
+				themeManager: this.#themeManager,
+			});
+		}
 	}
 
 	async #copyMessageText(msg) {
@@ -16195,20 +16830,31 @@ class MessengerChatPanel {
 	}
 
 	applyMessageUpdated(state, payload) {
+		void this.#applyMessageUpdatedAsync(state, payload);
+	}
+
+	async #applyMessageUpdatedAsync(state, payload) {
 		const found = this.#findEntry(state, payload.messageId);
 		if (!found) return;
-		const data = found.entry.data;
+		let data = found.entry.data;
 		if (payload.deletedForEveryone) {
 			data.deletedForEveryone = true;
 			data.text = '';
 		} else {
-			data.text = payload.text ?? data.text;
-			data.editedOn = payload.editedOn ? new Date(payload.editedOn) : data.editedOn;
-			data.replyToMessageId = payload.replyToMessageId || data.replyToMessageId;
-			data.replyToSenderName = payload.replyToSenderName || data.replyToSenderName;
-			data.replyToTextPreview = payload.replyToTextPreview || data.replyToTextPreview;
-			data.forwardedFromSenderName = payload.forwardedFromSenderName || data.forwardedFromSenderName;
+			const patched = {
+				...data,
+				text: payload.text ?? data.text,
+				editedOn: payload.editedOn ? new Date(payload.editedOn) : data.editedOn,
+				replyToMessageId: payload.replyToMessageId || data.replyToMessageId,
+				replyToSenderName: payload.replyToSenderName || data.replyToSenderName,
+				replyToTextPreview: payload.replyToTextPreview || data.replyToTextPreview,
+				forwardedFromSenderName: payload.forwardedFromSenderName || data.forwardedFromSenderName,
+				encryptionTier: payload.encryptionTier || data.encryptionTier,
+			};
+			data = await this.#api.messageForDisplay(patched, state.chatId);
+			if (payload.editedOn) data.editedOn = new Date(payload.editedOn);
 		}
+		found.entry.data = data;
 		this.#msgRenderer.updateMsgContent(
 			found.entry,
 			data,
@@ -16295,7 +16941,7 @@ class MessengerChatPanel {
 			state.isLoading = false;
 		}
 	}
-	#applyInitialMessages(state, chatId, all) {
+	#applyInitialMessages(state, chatId, all, opts = null) {
 		if (!all.length) {
 			state.hasMore = false;
 			state.firstLoadDone = true;
@@ -16305,8 +16951,8 @@ class MessengerChatPanel {
 		}
 		this.#hideMessagesStatus(state);
 		const totalReal = all.filter(m => !m.isVirtual).length;
-		const startIdx = MessengerUtils.findPageStart(all, all.length, this.#pageSize);
-		const visible = all.slice(startIdx);
+		const startIdx = opts?.startIdx ?? MessengerUtils.findPageStart(all, all.length, this.#pageSize);
+		const visible = opts?.visible ?? all.slice(startIdx);
 		state.cacheTopIdx = startIdx;
 		state.serverOffset = totalReal;
 		state.hasMore = startIdx > 0 || totalReal >= this.#pageSize;
@@ -16358,8 +17004,21 @@ class MessengerChatPanel {
 			onUpdateData: (id, fresh, el) => {
 				const entry = state.messages.get(id);
 				if (entry) {
+					const prev = entry.data;
 					entry.data = fresh;
 					if (entry.el) entry.el._msgData = fresh;
+					if (entry.el && prev && (
+						prev.text !== fresh.text
+						|| prev.replyToTextPreview !== fresh.replyToTextPreview
+						|| !!prev._locked !== !!fresh._locked
+						|| SupraCrypto.isEncrypted(prev.text)
+					)) {
+						this.#msgRenderer.updateMsgContent(
+							entry,
+							fresh,
+							id => this.#scrollToQuotedMessage(state, id)
+						);
+					}
 				} else if (el) {
 					el._msgData = fresh;
 				}
@@ -16433,6 +17092,9 @@ class MessengerChatPanel {
 			}
 			this.#reconcileVisibleOrderAfterSync(state, chatId, result.all);
 			state.onMarkReadIfEngaged?.();
+			if (this.#api.getCrypto()?.isUnlocked) {
+				await this.refreshEncryptedMessagesDisplay(state, chatId);
+			}
 			if (this.#api.getCrypto()?.getCustomPassword(chatId)) {
 				await this.refreshProtectedMessagesDisplay(state, chatId);
 			}
@@ -16440,50 +17102,90 @@ class MessengerChatPanel {
 			console.warn('[MessengerChatPanel] background sync error', e);
 		} finally {
 			state._syncInFlight = false;
+			state.onChatPreviewRefresh?.();
 		}
 	}
 	async #panelInitialLoad(chatId, state) {
-		let all = await this.#getDisplayMessages(chatId);
-		if (all.length) {
+		const cachedPage = await this.#msgService.prepareInitialVisiblePage(
+			chatId,
+			this.#api,
+			this.#pageSize
+		);
+		if (cachedPage) {
 			state.topLoader.hidden = true;
-			this.#applyInitialMessages(state, chatId, all);
-			this.#backgroundSyncPanelMessages(chatId, state);
+			this.#applyInitialMessages(state, chatId, cachedPage.raw, {
+				startIdx: cachedPage.startIdx,
+				visible: cachedPage.visible,
+			});
+			void this.#backgroundSyncPanelMessages(chatId, state);
 			return;
 		}
 		this.#refreshMessagesStatusForLoad(state, chatId);
+		state.isLoading = false;
+		void this.#fetchInitialFromServer(chatId, state);
+	}
+
+	async #fetchInitialFromServer(chatId, state) {
+		if (state._initialFetchInFlight) return;
+		state._initialFetchInFlight = true;
 		try {
 			const batch = await this.#api.getMessages(chatId, 0, this.#pageSize);
 			if (batch.length) await this.#msgService.ingest(chatId, batch, this.#api);
-			all = await this.#getDisplayMessages(chatId);
+			const cachedPage = await this.#msgService.prepareInitialVisiblePage(
+				chatId,
+				this.#api,
+				this.#pageSize
+			);
+			state.topLoader.hidden = true;
+			if (!cachedPage) {
+				if (!state.firstLoadDone) {
+					state.hasMore = false;
+					state.firstLoadDone = true;
+					state.isLoading = false;
+					this.#showMessagesStatus(state, this.#i18n.t('messagesEmpty'));
+				}
+				return;
+			}
+			this.#hideMessagesStatus(state);
+			if (state.firstLoadDone && state.renderedIds.size > 0) {
+				const all = await this.#getDisplayMessages(chatId);
+				this.#reconcileVisibleOrderAfterSync(state, chatId, all);
+			} else {
+				this.#applyInitialMessages(state, chatId, cachedPage.raw, {
+					startIdx: cachedPage.startIdx,
+					visible: cachedPage.visible,
+				});
+			}
+			void this.#backgroundSyncPanelMessages(chatId, state);
 		} catch (e) {
 			console.warn('[MessengerChatPanel] initial server load error', e);
+			if (!state.firstLoadDone) {
+				state.firstLoadDone = true;
+				state.isLoading = false;
+				state.topLoader.hidden = true;
+			}
+		} finally {
+			state._initialFetchInFlight = false;
 		}
-		state.topLoader.hidden = true;
-		if (!all.length) {
-			state.hasMore = false;
-			state.firstLoadDone = true;
-			state.isLoading = false;
-			this.#showMessagesStatus(state, this.#i18n.t('messagesEmpty'));
-			return;
-		}
-		this.#applyInitialMessages(state, chatId, all);
-		this.#backgroundSyncPanelMessages(chatId, state);
 	}
 	async #panelLoadOlderPage(chatId, state) {
 		if (state.cacheTopIdx > 0) {
-			const all = await this.#getDisplayMessages(chatId);
-			const endIdx = state.cacheTopIdx;
-			const startIdx = MessengerUtils.findPageStart(all, endIdx, this.#pageSize);
-			const page = all.slice(startIdx, endIdx);
-			if (!page.length) {
+			const olderPage = await this.#msgService.prepareOlderVisiblePage(
+				chatId,
+				this.#api,
+				state.cacheTopIdx,
+				this.#pageSize
+			);
+			if (!olderPage) {
 				state.hasMore = false;
 				state.topLoader.hidden = true;
 				state.isLoading = false;
 				return;
 			}
+			const { raw, visible: page, startIdx } = olderPage;
 			state.cacheTopIdx = startIdx;
 			if (startIdx === 0) {
-				const totalReal = all.filter(m => !m.isVirtual).length;
+				const totalReal = raw.filter(m => !m.isVirtual).length;
 				state.hasMore = state.serverOffset < totalReal || state.serverOffset >= this.#pageSize;
 			}
 			state.topLoader.hidden = true;
@@ -16791,6 +17493,7 @@ class MessengerChatView {
 	#scrollCleanup = null;
 	#stickyDateSep = null;
 	#readGate;
+	#connectionStateMgr = null;
 	el = {};
 	constructor(utils, icons, avatarBuilder, msgRenderer, themeManager, api, i18n, options, pageSize = 20, cache = null, readGate = null) {
 		this.#readGate = readGate || new MessengerChatReadGate();
@@ -16810,6 +17513,10 @@ class MessengerChatView {
 	setCurrentUser(user) { this.#currentUser = user; }
 	getCurrentUser() { return this.#currentUser; }
 	get chatMeta() { return this.#chatMeta; }
+	hasRenderedMessages() {
+		return this.#firstLoadDone || this.#renderedIds.size > 0;
+	}
+	setConnectionStateManager(mgr) { this.#connectionStateMgr = mgr; }
 
 	markReadIfEngaged() {
 		const chatId = this.#chatMeta?.id;
@@ -16862,6 +17569,7 @@ class MessengerChatView {
 			types: fileTransferTypes,
 			chatId: chatMeta.id,
 			onFileUpload: (type, cId, mArea) => {
+				if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) return;
 				this.#fileHandler.upload(type, cId, mArea, (bubbleEl) => {
 					mArea.appendChild(bubbleEl);
 					mArea.scrollTop = mArea.scrollHeight;
@@ -16875,7 +17583,7 @@ class MessengerChatView {
 		const inputArea = this.#msgRenderer.buildInputArea(
 			chatMeta.id, messages,
 			(chatId, field, msgArea) => this.#handleSend(chatId, field, msgArea),
-			null, fileOptions
+			null, fileOptions, this.#connectionStateMgr
 		);
 		root.append(header, msgWrap, inputArea);
 		container.appendChild(root);
@@ -16977,7 +17685,7 @@ class MessengerChatView {
 			this.#isLoadingHist = false;
 		}
 	}
-	#applyInitialMessages(all) {
+	#applyInitialMessages(all, opts = null) {
 		if (!all.length) {
 			this.#hasMoreHist = false;
 			this.#firstLoadDone = true;
@@ -16985,8 +17693,8 @@ class MessengerChatView {
 			return;
 		}
 		const totalReal = all.filter(m => !m.isVirtual).length;
-		const startIdx = MessengerUtils.findPageStart(all, all.length, this.#pageSize);
-		const visible = all.slice(startIdx);
+		const startIdx = opts?.startIdx ?? MessengerUtils.findPageStart(all, all.length, this.#pageSize);
+		const visible = opts?.visible ?? all.slice(startIdx);
 		this.#cacheTopIdx = startIdx;
 		this.#serverOffset = totalReal;
 		this.#hasMoreHist = startIdx > 0 || totalReal >= this.#pageSize;
@@ -17107,46 +17815,85 @@ class MessengerChatView {
 	}
 	async #initialLoad() {
 		const chatId = this.#chatMeta.id;
-		let all = await this.#msgService.getDisplayMessages(chatId, this.#api);
-		if (all.length) {
+		const cachedPage = await this.#msgService.prepareInitialVisiblePage(
+			chatId,
+			this.#api,
+			this.#pageSize
+		);
+		if (cachedPage) {
 			this.#el('topLoader').hidden = true;
-			this.#applyInitialMessages(all);
-			this.#backgroundSyncChatMessages();
+			this.#applyInitialMessages(cachedPage.raw, {
+				startIdx: cachedPage.startIdx,
+				visible: cachedPage.visible,
+			});
+			void this.#backgroundSyncChatMessages();
 			return;
 		}
+		this.#isLoadingHist = false;
+		void this.#fetchInitialFromServer();
+	}
+
+	async #fetchInitialFromServer() {
+		if (this._initialFetchInFlight) return;
+		this._initialFetchInFlight = true;
+		const chatId = this.#chatMeta.id;
 		try {
 			const batch = await this.#api.getMessages(chatId, 0, this.#pageSize);
 			if (batch.length) await this.#msgService.ingest(chatId, batch, this.#api);
-			all = await this.#msgService.getDisplayMessages(chatId, this.#api);
+			const cachedPage = await this.#msgService.prepareInitialVisiblePage(
+				chatId,
+				this.#api,
+				this.#pageSize
+			);
+			this.#el('topLoader').hidden = true;
+			if (!cachedPage) {
+				if (!this.#firstLoadDone) {
+					this.#hasMoreHist = false;
+					this.#firstLoadDone = true;
+					this.#isLoadingHist = false;
+				}
+				return;
+			}
+			if (this.#firstLoadDone && this.#renderedIds.size > 0) {
+				const all = await this.#msgService.getDisplayMessages(chatId, this.#api);
+				this.#reconcileVisibleOrderAfterSync(all);
+			} else {
+				this.#applyInitialMessages(cachedPage.raw, {
+					startIdx: cachedPage.startIdx,
+					visible: cachedPage.visible,
+				});
+			}
+			void this.#backgroundSyncChatMessages();
 		} catch (e) {
 			console.warn('[MessengerChatView] initial server load error', e);
+			if (!this.#firstLoadDone) {
+				this.#firstLoadDone = true;
+				this.#isLoadingHist = false;
+				this.#el('topLoader').hidden = true;
+			}
+		} finally {
+			this._initialFetchInFlight = false;
 		}
-		this.#el('topLoader').hidden = true;
-		if (!all.length) {
-			this.#hasMoreHist = false;
-			this.#firstLoadDone = true;
-			this.#isLoadingHist = false;
-			return;
-		}
-		this.#applyInitialMessages(all);
-		this.#backgroundSyncChatMessages();
 	}
 	async #loadOlderPage() {
 		const chatId = this.#chatMeta.id;
 		if (this.#cacheTopIdx > 0) {
-			const all = await this.#msgService.getDisplayMessages(chatId, this.#api);
-			const endIdx = this.#cacheTopIdx;
-			const startIdx = MessengerUtils.findPageStart(all, endIdx, this.#pageSize);
-			const page = all.slice(startIdx, endIdx);
-			if (!page.length) {
+			const olderPage = await this.#msgService.prepareOlderVisiblePage(
+				chatId,
+				this.#api,
+				this.#cacheTopIdx,
+				this.#pageSize
+			);
+			if (!olderPage) {
 				this.#hasMoreHist = false;
 				this.#el('topLoader').hidden = true;
 				this.#isLoadingHist = false;
 				return;
 			}
+			const { raw, visible: page, startIdx } = olderPage;
 			this.#cacheTopIdx = startIdx;
 			if (startIdx === 0) {
-				const totalReal = all.filter(m => !m.isVirtual).length;
+				const totalReal = raw.filter(m => !m.isVirtual).length;
 				this.#hasMoreHist = this.#serverOffset < totalReal || this.#serverOffset >= this.#pageSize;
 			}
 			this.#el('topLoader').hidden = true;
@@ -17223,20 +17970,31 @@ class MessengerChatView {
 	}
 
 	applyMessageUpdated(payload) {
+		void this.#applyMessageUpdatedAsync(payload);
+	}
+
+	async #applyMessageUpdatedAsync(payload) {
 		const found = this.#resolveMessageEntry(payload?.messageId);
 		if (!found) return;
-		const data = found.entry.data;
+		let data = found.entry.data;
 		if (payload.deletedForEveryone) {
 			data.deletedForEveryone = true;
 			data.text = '';
 		} else {
-			data.text = payload.text ?? data.text;
-			data.editedOn = payload.editedOn ? new Date(payload.editedOn) : data.editedOn;
-			data.replyToMessageId = payload.replyToMessageId || data.replyToMessageId;
-			data.replyToSenderName = payload.replyToSenderName || data.replyToSenderName;
-			data.replyToTextPreview = payload.replyToTextPreview || data.replyToTextPreview;
-			data.forwardedFromSenderName = payload.forwardedFromSenderName || data.forwardedFromSenderName;
+			const patched = {
+				...data,
+				text: payload.text ?? data.text,
+				editedOn: payload.editedOn ? new Date(payload.editedOn) : data.editedOn,
+				replyToMessageId: payload.replyToMessageId || data.replyToMessageId,
+				replyToSenderName: payload.replyToSenderName || data.replyToSenderName,
+				replyToTextPreview: payload.replyToTextPreview || data.replyToTextPreview,
+				forwardedFromSenderName: payload.forwardedFromSenderName || data.forwardedFromSenderName,
+				encryptionTier: payload.encryptionTier || data.encryptionTier,
+			};
+			data = await this.#api.messageForDisplay(patched, this.#chatMeta.id);
+			if (payload.editedOn) data.editedOn = new Date(payload.editedOn);
 		}
+		found.entry.data = data;
 		this.#msgRenderer.updateMsgContent(found.entry, data, null);
 	}
 
@@ -17384,6 +18142,15 @@ class MessengerChatView {
 	async #handleSend(chatId, field, msgArea) {
 		const text = field.value.trim();
 		if (!text) return;
+		if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) {
+			MessengerDialog.showNotice(
+				this.#i18n.t('offlineSendBlocked'),
+				this.#i18n.t('confirm'),
+				null,
+				this.#themeManager
+			);
+			return;
+		}
 		field.value = '';
 		field.style.height = '';
 		field.rows = 1;
@@ -17902,6 +18669,8 @@ class Messenger {
 			appViewInst.setOnClearChatCache(chatId => this.clearChatCache(chatId));
 			panelFactoryInst.setPresenceManager(presenceInst);
 			panelFactoryInst.setConnectionStateManager(connectionStateInst);
+		} else {
+			chatViewInst.setConnectionStateManager(connectionStateInst);
 		}
 		presenceInst.bindActivityReporting(() => transportInst.reportActivity(), this.#container);
 		themeManagerInst.apply(themeManagerInst.current);
@@ -17963,16 +18732,43 @@ class Messenger {
 	}
 
 	async #loadBootChats(bootMark) {
+		const userId = this.#appView.getCurrentUser()?.id;
+		if (userId) {
+			const cached = MessengerOfflineStore.loadChats(userId);
+			this.#appView.applyCachedChatsIfEmpty(cached);
+		}
 		try {
 			const chats = await this.#api.getChats();
+			if (userId) MessengerOfflineStore.saveChats(userId, chats);
 			if (bootMark) bootMark('init-chats-loaded', { count: chats?.length ?? 0 });
 			this.#appView.setChats(chats);
 			if (bootMark) bootMark('init-data-ready');
+			void this.#syncAfterReconnect().catch(e =>
+				console.warn('[Messenger] boot syncAfterReconnect', e));
 		} catch (e) {
 			console.warn('[Messenger] getChats', e);
-			this.#appView.setChatsBootLoading(false);
+			const cached = userId ? MessengerOfflineStore.loadChats(userId) : null;
+			if (cached?.length) {
+				this.#appView.setChats(cached);
+			} else {
+				this.#appView.setChatsBootLoading(false);
+			}
 		} finally {
 			this.#markChatsLoaded();
+		}
+	}
+
+	async #refreshBootUser(bootUser) {
+		try {
+			const apiUser = await this.#api.getCurrentUser();
+			if (apiUser?.id) {
+				const user = { ...bootUser, ...apiUser };
+				this.#appView.setCurrentUser(user);
+				this.#api.setCurrentUserId(user.id);
+				MessengerOfflineStore.saveUser(user);
+			}
+		} catch (e) {
+			console.warn('[Messenger] getCurrentUser', e);
 		}
 	}
 
@@ -17982,22 +18778,24 @@ class Messenger {
 		this.#appView.render(this.#container);
 		if (bootMark) bootMark('init-app-rendered');
 		const bootUser = this.#resolveBootUser();
-		let user = bootUser;
-		try {
-			const apiUser = await this.#api.getCurrentUser();
-			if (apiUser?.id) user = { ...bootUser, ...apiUser };
-		} catch (e) {
-			console.warn('[Messenger] getCurrentUser', e);
+		let user = bootUser || MessengerOfflineStore.loadUser();
+		if (user?.id) {
+			this.#appView.setCurrentUser(user);
+			this.#api.setCurrentUserId(user.id);
+			const cachedChats = MessengerOfflineStore.loadChats(user.id);
+			if (cachedChats?.length) {
+				this.#appView.setChats(cachedChats);
+			} else {
+				this.#appView.setChatsBootLoading(true);
+			}
+		} else {
+			this.#appView.setChatsBootLoading(true);
 		}
-		if (!user?.id) user = await this.#api.getCurrentUser();
-		this.#appView.setCurrentUser(user);
-		if (user?.id) this.#api.setCurrentUserId(user.id);
-		this.#appView.setChatsBootLoading(true);
 		void this.#appView.loadFolders().catch(() => {});
 		await this.#appView.restoreNavState();
 		this.#markRendered();
 		if (bootMark) bootMark('init-shell-ready');
-		void this.#loadBootChats(bootMark);
+		void this.#refreshBootUser(bootUser).then(() => this.#loadBootChats(bootMark));
 		this.#msgService.reconcileOnStartup(
 			this.#api,
 			(result) => this.#onReconcileResult(result),
@@ -18015,25 +18813,24 @@ class Messenger {
 		}
 	}
 	async #initChat() {
-		const [user] = await Promise.all([
-			this.#api.getCurrentUser(),
-			this.#api.getChats().catch(() => []),
-		]);
-		this.#chatView.setCurrentUser(user);
 		const { chatId, chatName, chatType, chatAvatar } = this.#options;
-		this.#chatView.renderPlaceholder(this.#container, chatName);
+		const offlineUser = MessengerOfflineStore.loadUser();
+		if (offlineUser) this.#chatView.setCurrentUser(offlineUser);
+		const chatMeta = {
+			id: chatId,
+			name: chatName,
+			type: chatType || 'public_group',
+			avatar: chatAvatar || null,
+		};
+		this.#chatView.render(this.#container, chatMeta);
 		this.#markRendered();
+		this.#chatView.loadHistoryChunk();
+		void this.#api.getCurrentUser()
+			.then(user => { if (user?.id) this.#chatView.setCurrentUser(user); })
+			.catch(e => console.warn('[Messenger] getCurrentUser', e));
+		void this.#api.getChats().catch(() => {});
 		try {
-			const result = await this.#api.getOrCreateChatById(chatId, chatName);
-			const chatMeta = {
-				id: result.chatId,
-				name: result.chatName,
-				type: chatType || 'public_group',
-				avatar: chatAvatar || null,
-			};
-			this.#container.innerHTML = '';
-			this.#chatView.render(this.#container, chatMeta);
-			this.#chatView.loadHistoryChunk();
+			await this.#api.getOrCreateChatById(chatId, chatName);
 			this.#msgService.reconcileOnStartup(
 				this.#api,
 				(result) => this.#onReconcileResult(result),
@@ -18041,8 +18838,10 @@ class Messenger {
 			).catch(e => console.warn('[Messenger] reconcileOnStartup error:', e));
 		} catch (e) {
 			console.error('[Messenger] initChat error:', e);
-			this.#container.innerHTML = '';
-			this.#chatView.renderError(this.#container, chatName, e.message);
+			if (!this.#chatView.hasRenderedMessages()) {
+				this.#container.innerHTML = '';
+				this.#chatView.renderError(this.#container, chatName, e.message);
+			}
 		} finally {
 			this.#markChatsLoaded();
 		}
@@ -18150,8 +18949,8 @@ class Messenger {
 				if (!reg || !reg.showNotification) return;
 				reg.showNotification(title, {
 					body: bodyText,
-					icon: '/icons/icon-192.png',
-					badge: '/icons/badge-72.png',
+					icon: '/api/app/icons/icon-192.png',
+					badge: '/api/app/icons/badge-72.png',
 					tag: chatId ? ('sm-chat-' + chatId) : 'sm-new-message',
 					renotify: true,
 					data: { url: '/', chatId: chatId || null },
@@ -18418,8 +19217,7 @@ class Messenger {
 		this.#api.setCrypto(crypto);
 		this.#cache.setCryptoGetter(() => crypto);
 		if (this.#mode === Messenger.MODE_APP && this.#appView) {
-			this.#appView.refreshLastMessagePreviews()
-				.catch(e => console.warn('[Messenger] refreshLastMessagePreviews', e));
+			this.#appView.scheduleRefreshLastMessagePreviews();
 		}
 	}
 	destroy() {

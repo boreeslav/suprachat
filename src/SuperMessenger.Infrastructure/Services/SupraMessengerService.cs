@@ -253,6 +253,17 @@ public sealed partial class SupraMessengerService
                 .Where(m => m.SenderUserId != userId && m.Status != "read")
                 .ToList();
 
+            var readAt = DateTime.UtcNow;
+            foreach (var m in messages)
+            {
+                await _store.UpsertMessageReadReceiptAsync(new SupraMessageReadReceiptRecord
+                {
+                    MessageId = m.Id,
+                    UserId = userId,
+                    ReadAt = readAt,
+                }, ct);
+            }
+
             await _store.UpdateMessagesStatusAsync(chatGuid, userId, "read", ct);
 
             var updates = messages.Select(m => (

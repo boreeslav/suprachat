@@ -16,6 +16,7 @@ public sealed class FileDataStore : IDataStore
     private readonly JsonFileCollectionStore<SupraUserBlockRecord> _userBlocks;
     private readonly JsonFileCollectionStore<SupraChatRestrictionRecord> _chatRestrictions;
     private readonly JsonFileCollectionStore<SupraMessageUserDeletionRecord> _messageUserDeletions;
+    private readonly JsonFileCollectionStore<SupraMessageReadReceiptRecord> _messageReadReceipts;
     private readonly JsonFileCollectionStore<SupraChatMemberKeyRecord> _chatMemberKeys;
     private readonly JsonFileCollectionStore<LoginChangeRecord> _loginChanges;
 
@@ -28,6 +29,7 @@ public sealed class FileDataStore : IDataStore
         _participants = new(Path.Combine(dataRoot, "participants.json"));
         _messages = new(Path.Combine(dataRoot, "messages.json"));
         _messageUserDeletions = new(Path.Combine(dataRoot, "message-user-deletions.json"));
+        _messageReadReceipts = new(Path.Combine(dataRoot, "message-read-receipts.json"));
         _files = new(Path.Combine(dataRoot, "files.json"));
         _folders = new(Path.Combine(dataRoot, "folders.json"));
         _folderMembers = new(Path.Combine(dataRoot, "folder-members.json"));
@@ -171,6 +173,21 @@ public sealed class FileDataStore : IDataStore
     public async Task<bool> IsMessageDeletedForUserAsync(Guid messageId, Guid userId, CancellationToken ct = default)
         => (await _messageUserDeletions.ReadAllAsync(ct))
             .Any(d => d.MessageId == messageId && d.UserId == userId);
+
+    public async Task<IReadOnlyList<SupraMessageReadReceiptRecord>> GetReadReceiptsByMessageAsync(
+        Guid messageId, CancellationToken ct = default)
+        => (await _messageReadReceipts.ReadAllAsync(ct))
+            .Where(r => r.MessageId == messageId)
+            .ToList();
+
+    public async Task UpsertMessageReadReceiptAsync(SupraMessageReadReceiptRecord receipt, CancellationToken ct = default)
+    {
+        var list = await _messageReadReceipts.ReadAllAsync(ct);
+        if (list.Any(r => r.MessageId == receipt.MessageId && r.UserId == receipt.UserId))
+            return;
+        list.Add(receipt);
+        await _messageReadReceipts.WriteAllAsync(list, ct);
+    }
 
     public async Task UpdateMessagesStatusAsync(Guid chatId, Guid readerUserId, string status, CancellationToken ct = default)
     {
