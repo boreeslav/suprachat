@@ -24,6 +24,7 @@ builder.Services.AddSingleton<IDataStore>(_ => new FileDataStore(dataRoot));
 builder.Services.AddSingleton<AppAppearanceService>(_ => new AppAppearanceService(dataRoot));
 builder.Services.AddSingleton<IndexShellRenderer>();
 builder.Services.AddSingleton<SupraMessengerService>();
+builder.Services.AddSingleton<MessengerSyncService>();
 builder.Services.AddSingleton<SupraEncryptionService>();
 builder.Services.AddSingleton<RealtimeNotifier>();
 builder.Services.AddSingleton(_ => new PushVapidKeyStore(dataRoot, builder.Configuration["App:PublicUrl"]));

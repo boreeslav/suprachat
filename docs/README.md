@@ -9,6 +9,8 @@
 | [03-api-reference.md](03-api-reference.md) | REST API, методы мессенджера, SignalR, DTO |
 | [04-frontend-reference.md](04-frontend-reference.md) | Классы и функции `supra-messenger.js` |
 | [05-encryption.md](05-encryption.md) | E2EE: мастер-пароль, группы, API ключей |
+| [06-network-sync.md](06-network-sync.md) | Сетевая логика: RequestSync, кеш, SignalR, hot path |
+| [../CHANGELOG.md](../CHANGELOG.md) | История изменений по версиям |
 
 ## Быстрый старт
 

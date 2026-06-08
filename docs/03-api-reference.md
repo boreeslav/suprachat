@@ -66,6 +66,7 @@
 |------------|------------------|------------------------|
 | `GetCurrentUser` | — | `user`: id, login, name, avatar, colorSeed, userType, statusText |
 | `GetChats` | — | `chats[]`: id, name, type, avatar, contactUserId, contactStatusText, lastMessage, lastMessageTime, unreadCount |
+| **`RequestSync`** | `chatCursors`, `includeProfiles?`, `includeEncryptionKeys?`, `messageLimit?` | `chats[]`, `messagesByChat`, `profiles`, `encryptionKeys` — **основной бандл синхронизации** (см. [06-network-sync.md](06-network-sync.md)) |
 | `GetOrCreateChatById` | chatId, chatName | chatId, chatName |
 | `CreateDirectChat` | contactId | chatId, chatName |
 | `CreateGroup` | name, participantContactIds (JSON string) | chatId, chatName |
@@ -177,6 +178,9 @@
 | Метод Hub | Описание |
 |-----------|----------|
 | `ReportActivity` | Сброс idle-таймера |
+| `Heartbeat` | Keep-alive |
+
+**При подключении сервер → клиент:** `SupraSyncHint` (`type: "SupraSyncHint"`, `reason: "connected"`) — клиент вызывает `RequestSync`.
 
 ### Поля payload (Body)
 
@@ -198,7 +202,7 @@
 
 ### Ответы
 
-- `SupraGetCurrentUserResponse`, `SupraGetChatsResponse`, `SupraGetContactsResponse`
+- `SupraGetCurrentUserResponse`, `SupraGetChatsResponse`, `SupraRequestSyncResponse`, `SupraGetContactsResponse`
 - `SupraGetMessagesResponse`, `SupraSendMessageResponse`, `SupraMarkReadResponse`
 - `SupraCreateChatResponse`, `SupraGetOrCreateChatByIdResponse`
 - `SupraGetFoldersResponse`, `SupraSaveFolderResponse`, `SupraSimpleResponse`
@@ -208,7 +212,8 @@
 
 - `SupraWsNewMessagePayload`, `SupraWsStatusPayload`, `SupraWsNewChatPayload`
 - `SupraWsUserActivityPayload`, `SupraWsChatHistoryClearedPayload`
-- `SupraWsPresencePayload`, `SupraWsGroupUpdatedPayload`
+- `SupraWsPresencePayload`, `SupraWsGroupUpdatedPayload`, `SupraWsSyncHintPayload`
+- `SupraPublicProfileDto`, `SupraSyncEncryptionKeyDto`
 
 ### Сущности в ответах
 
@@ -234,7 +239,10 @@ GetParticipantsByChatAsync, GetParticipantsByUserAsync, SaveParticipantAsync,
 IsParticipantAsync, DeleteParticipantAsync
 
 // Messages
-GetMessagesByChatAsync, SaveMessageAsync, UpdateMessagesStatusAsync, DeleteMessagesByChatAsync
+GetAllMessagesAsync, GetMessagesByChatAsync, SaveMessageAsync, UpdateMessagesStatusAsync, DeleteMessagesByChatAsync
+
+// Participants / keys (batch reads for sync)
+GetAllParticipantsAsync, GetAllChatMemberKeysAsync
 
 // Folders
 GetFoldersByUserAsync, SaveFolderAsync, DeleteFolderAsync
