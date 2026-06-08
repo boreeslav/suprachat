@@ -40,6 +40,8 @@ public sealed class AppAppearanceSettings
     /// <summary>Uploaded file name for outgoing message sound (under branding dir).</summary>
     public string? OutgoingMessageSoundFileName { get; set; }
     public string DefaultThemeName { get; set; } = "Светлая";
+    /// <summary>When false, chat area does not use theme chatBg color or wallpaper.</summary>
+    public bool? UseThemeChatBg { get; set; } = true;
     public AppBaseColors Base { get; set; } = new();
     public List<AppThemeSettings> Themes { get; set; } = [];
 }

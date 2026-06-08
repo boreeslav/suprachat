@@ -724,9 +724,10 @@
 
 		try {
 
-			if (window.AppBranding) {
-				AppBranding.loadAppearance().catch(() => {});
-			}
+			await Promise.all([
+				window.AppBranding?.loadAppearance?.().catch(() => null) ?? null,
+				window.MessengerChatPreferences?.loadFromServer?.().catch(() => null) ?? null,
+			]);
 
 			if (window.SupraSecureStore?.ensurePersistence) {
 				SupraSecureStore.ensurePersistence().catch(() => {});
@@ -760,6 +761,10 @@
 			if (window.__bootMark) __bootMark('chats-load-start');
 
 			const messenger = boot();
+
+			if (window.AppBranding?.syncMessengerThemes) {
+				await AppBranding.syncMessengerThemes();
+			}
 
 			if (window.__bootMark) __bootMark('messenger-constructed');
 

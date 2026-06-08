@@ -129,6 +129,9 @@ class MessengerI18n {
 			chatSettingsTab: 'Настройки чатов',
 			sendOnEnter: 'Отправка по Enter',
 			sendOnEnterHint: 'Enter отправляет сообщение, Shift+Enter — новая строка',
+			useThemeChatBg: 'Использовать фон темы',
+			useThemeChatBgHint: 'Цвет и изображение фона в области переписки',
+			useThemeChatBgDisabledHint: 'Отключено администратором',
 			foldersTab: 'Папки',
 			aboutAppTab: 'О приложении',
 			debugLogButton: 'Отладка',
@@ -503,6 +506,9 @@ class MessengerI18n {
 			chatSettingsTab: 'Chat settings',
 			sendOnEnter: 'Send on Enter',
 			sendOnEnterHint: 'Enter sends the message, Shift+Enter adds a new line',
+			useThemeChatBg: 'Use theme background',
+			useThemeChatBgHint: 'Chat background color and wallpaper in the message area',
+			useThemeChatBgDisabledHint: 'Disabled by administrator',
 			foldersTab: 'Folders',
 			aboutAppTab: 'About',
 			debugLogButton: 'Debug',
@@ -2357,12 +2363,12 @@ function messengerMakeDismissable(dismiss, cancelValue) {
 }
 
 function messengerHandleOverlayPopstate() {
-	// Порядок: сначала самые "верхние" интерактивные оверлеи (просмотр фото, меню),
-	// затем стек модалок/диалогов, затем медиа-оверлеи.
+	// Порядок: сначала самые "верхние" интерактивные оверлеи (просмотр фото, меню,
+	// полноэкранный аватар), затем стек модалок/диалогов.
 	if (MessengerImageViewer.closeFromPopstate()) { messengerConsumePopstate(); return true; }
 	if (MobileBottomSheetMenu.closeFromPopstate()) { messengerConsumePopstate(); return true; }
-	if (messengerCloseTopOverlayFromPopstate()) { messengerConsumePopstate(); return true; }
 	if (MessengerMediaOverlays.dismissOnPopstate()) { messengerConsumePopstate(); return true; }
+	if (messengerCloseTopOverlayFromPopstate()) { messengerConsumePopstate(); return true; }
 	return false;
 }
 
@@ -2398,6 +2404,7 @@ const MessengerMediaOverlays = {
 class MessengerChatPreferences {
 	static KEY_DESKTOP = 'messenger.sendOnEnter.desktop';
 	static KEY_MOBILE = 'messenger.sendOnEnter.mobile';
+	static #userUseThemeChatBg = null;
 
 	static isMobileViewport() {
 		return window.innerWidth <= 1199;
@@ -2415,6 +2422,50 @@ class MessengerChatPreferences {
 	static setSendOnEnter(forMobile, enabled) {
 		const key = forMobile ? MessengerChatPreferences.KEY_MOBILE : MessengerChatPreferences.KEY_DESKTOP;
 		localStorage.setItem(key, enabled ? '1' : '0');
+	}
+
+	static getUserUseThemeChatBg() {
+		return MessengerChatPreferences.#userUseThemeChatBg;
+	}
+
+	static isAdminUseThemeChatBg() {
+		return MessengerThemeManager.isAdminUseThemeChatBgEnabled();
+	}
+
+	static getUseThemeChatBgChecked() {
+		if (MessengerChatPreferences.#userUseThemeChatBg !== null) {
+			return MessengerChatPreferences.#userUseThemeChatBg;
+		}
+		return MessengerThemeManager.isAdminUseThemeChatBgEnabled();
+	}
+
+	static async loadFromServer() {
+		const r = await fetch('/api/profile/chat-preferences', { credentials: 'same-origin' });
+		if (!r.ok) return;
+		const data = await r.json().catch(() => null);
+		if (!data) return;
+		MessengerChatPreferences.#userUseThemeChatBg = data.useThemeChatBg == null
+			? null
+			: data.useThemeChatBg !== false;
+		MessengerThemeManager.applyChatPreferences({
+			adminUseThemeChatBg: data.adminUseThemeChatBg !== false,
+			userUseThemeChatBg: MessengerChatPreferences.#userUseThemeChatBg,
+		});
+	}
+
+	static async setUserUseThemeChatBg(enabled) {
+		const r = await fetch('/api/profile/chat-preferences', {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			credentials: 'same-origin',
+			body: JSON.stringify({ useThemeChatBg: !!enabled }),
+		});
+		const data = await r.json().catch(() => ({}));
+		if (!r.ok) throw new Error(data.error || 'save failed');
+		MessengerChatPreferences.#userUseThemeChatBg = !!enabled;
+		MessengerThemeManager.applyChatPreferences({
+			userUseThemeChatBg: MessengerChatPreferences.#userUseThemeChatBg,
+		});
 	}
 }
 
@@ -3340,6 +3391,33 @@ function buildThemeAppearancePanel({ themeManager, i18n }) {
 
 	renderGroup(i18n.t('themeGroupDark'), darkThemes);
 	renderGroup(i18n.t('themeGroupLight'), lightThemes);
+
+	const adminAllows = () => MessengerChatPreferences.isAdminUseThemeChatBg();
+	const getChecked = () => MessengerChatPreferences.getUseThemeChatBgChecked();
+	const { row: useThemeBgRow, input: useThemeBgChk } = mkToggleField(
+		i18n.t('useThemeChatBg'),
+		{ checked: getChecked() },
+	);
+	useThemeBgRow.classList.add('mapp-toggle-row--flush-next');
+	const useThemeBgHint = document.createElement('div');
+	useThemeBgHint.className = 'mapp-input-hint mapp-settings-hint--theme-bg';
+	const syncUseThemeBgUi = () => {
+		const allowed = adminAllows();
+		useThemeBgChk.disabled = !allowed;
+		useThemeBgChk.checked = getChecked();
+		useThemeBgHint.textContent = allowed
+			? i18n.t('useThemeChatBgHint')
+			: i18n.t('useThemeChatBgDisabledHint');
+	};
+	useThemeBgChk.addEventListener('change', () => {
+		const next = useThemeBgChk.checked;
+		MessengerChatPreferences.setUserUseThemeChatBg(next).catch(() => {
+			syncUseThemeBgUi();
+		});
+	});
+	syncUseThemeBgUi();
+	card.append(useThemeBgRow, useThemeBgHint);
+
 	wrap.appendChild(card);
 	return wrap;
 }
@@ -3649,7 +3727,10 @@ function openProfileAvatarFullscreen(src, { i18n, themeManager, icons, onEdit } 
 		history.pushState({ mappAvatarView: true }, '');
 		historyPushed = true;
 	}
-	popHandler = () => finishClose();
+	popHandler = () => {
+		finishClose();
+		messengerConsumePopstate();
+	};
 	window.addEventListener('popstate', popHandler);
 	activeProfileAvatarClose = () => finishClose();
 }
@@ -7062,6 +7143,9 @@ class MessengerFileHandler {
 class MessengerThemeManager {
 	static #configuredThemes = null;
 	static #defaultThemeName = null;
+	static #adminUseThemeChatBg = true;
+	static #userUseThemeChatBg = null;
+	static #instances = new Set();
 	static THEME_VAR_SELECTORS = [
 		'body.sm-messenger-active',
 		'.mapp-root',
@@ -7091,12 +7175,81 @@ class MessengerThemeManager {
 	#themeStyleEl = null;
 	#lastThemeCss = '';
 
-	static configure({ themes, defaultThemeName } = {}) {
+	static configure({ themes, defaultThemeName, useThemeChatBg } = {}) {
+		let republish = false;
 		if (Array.isArray(themes) && themes.length) {
 			MessengerThemeManager.#configuredThemes = themes;
+			republish = true;
 		}
 		if (defaultThemeName) {
 			MessengerThemeManager.#defaultThemeName = defaultThemeName;
+		}
+		if (useThemeChatBg !== undefined) {
+			const next = useThemeChatBg !== false;
+			if (MessengerThemeManager.#adminUseThemeChatBg !== next) {
+				MessengerThemeManager.#adminUseThemeChatBg = next;
+				republish = true;
+			}
+		}
+		if (republish) {
+			MessengerThemeManager.refreshThemeChatBg();
+		}
+	}
+
+	static getCurrentThemeName() {
+		const inst = MessengerThemeManager.#instances.values().next().value;
+		return inst?.current?.name || MessengerThemeManager.#defaultThemeName || null;
+	}
+
+	static applyChatPreferences({ adminUseThemeChatBg, userUseThemeChatBg } = {}) {
+		let republish = false;
+		if (adminUseThemeChatBg !== undefined) {
+			const next = adminUseThemeChatBg !== false;
+			if (MessengerThemeManager.#adminUseThemeChatBg !== next) {
+				MessengerThemeManager.#adminUseThemeChatBg = next;
+				republish = true;
+			}
+		}
+		if (userUseThemeChatBg !== undefined) {
+			const next = userUseThemeChatBg === null ? null : userUseThemeChatBg !== false;
+			if (MessengerThemeManager.#userUseThemeChatBg !== next) {
+				MessengerThemeManager.#userUseThemeChatBg = next;
+				republish = true;
+			}
+		}
+		if (republish) {
+			MessengerThemeManager.refreshThemeChatBg();
+		}
+	}
+
+	static isAdminUseThemeChatBgEnabled() {
+		return MessengerThemeManager.#adminUseThemeChatBg;
+	}
+
+	static #effectiveUseThemeChatBg() {
+		if (!MessengerThemeManager.#adminUseThemeChatBg) return false;
+		if (MessengerThemeManager.#userUseThemeChatBg !== null) {
+			return MessengerThemeManager.#userUseThemeChatBg;
+		}
+		return true;
+	}
+
+	static refreshThemeChatBg() {
+		const inst = MessengerThemeManager.#instances.values().next().value;
+		const theme = inst?.current;
+		const apiUrl = (theme?.chatBgImageUrl || '').trim();
+		const enabled = MessengerThemeManager.#effectiveUseThemeChatBg();
+		const apply = () => {
+			global.ThemeChatBg?.paint?.();
+			for (const i of MessengerThemeManager.#instances) {
+				i.#lastThemeCss = '';
+				i.#publishThemeVars();
+			}
+		};
+		if (global.ThemeChatBg?.sync) {
+			ThemeChatBg.sync(apiUrl, enabled).then(apply).catch(apply);
+		} else {
+			apply();
 		}
 	}
 
@@ -7358,6 +7511,7 @@ class MessengerThemeManager {
 	#storageKey;
 
 	constructor(storageKey) {
+		MessengerThemeManager.#instances.add(this);
 		this.#storageKey = storageKey;
 		const saved = (() => {
 			try {
@@ -7385,7 +7539,7 @@ class MessengerThemeManager {
 		try {
 			localStorage.setItem(this.#storageKey, theme.name);
 		} catch {}
-		this.#publishThemeVars();
+		MessengerThemeManager.refreshThemeChatBg();
 	}
 
 	applyTheme(theme) {
@@ -7395,6 +7549,7 @@ class MessengerThemeManager {
 
 	refreshDom() {
 		this.#publishThemeVars();
+		global.ThemeChatBg?.paint?.();
 	}
 
 	#collectThemeVars() {
@@ -7469,33 +7624,21 @@ class MessengerThemeManager {
 		if (bodyBg) {
 			css += `\nbody.sm-messenger-active { background: ${bodyBg}; }\n`;
 		}
-		const chatBgImage = (this.#current?.chatBgImageUrl || '').trim();
-		const chatBgImageRule = chatBgImage
+		const useThemeChatBg = MessengerThemeManager.#effectiveUseThemeChatBg();
+		const chatBgRules = useThemeChatBg
 			? [
-				'body.sm-messenger-active .mc-messages-wrap::before {',
-				'  content: "";',
-				'  position: absolute;',
-				'  inset: 0;',
-				'  background-color: var(--m-chat-bg);',
-				`  background-image: url("${chatBgImage.replace(/"/g, '\\"')}");`,
-				'  background-size: cover;',
-				'  background-position: center;',
-				'  background-repeat: no-repeat;',
-				'  pointer-events: none;',
-				'  z-index: 0;',
-				'}',
-				'body.sm-messenger-active .mc-messages {',
-				'  position: relative;',
-				'  z-index: 1;',
-				'  background: transparent;',
-				'}',
-			].join('\n')
-			: '';
+				'body.sm-messenger-active .mapp-root { background: var(--mapp-content-bg); }',
+				'#chat.sm-index-chat { background: var(--mapp-content-bg); }',
+			]
+			: [
+				'body.sm-messenger-active .mapp-root { background: transparent !important; }',
+				'body.sm-messenger-active .mc-root { background: transparent !important; }',
+				'body.sm-messenger-active .mapp-chat-area { background: transparent !important; }',
+				'body.sm-messenger-active #chat.sm-index-chat { background: transparent !important; }',
+			];
 		css += [
-			'body.sm-messenger-active .mapp-root { background: var(--mapp-content-bg); }',
+			...chatBgRules,
 			'body.sm-messenger-active .mapp-sidebar { background: var(--mapp-sidebar-bg); color: var(--mapp-text); }',
-			'#chat.sm-index-chat { background: var(--mapp-content-bg); }',
-			chatBgImageRule,
 		].filter(Boolean).join('\n') + '\n';
 		if (css === this.#lastThemeCss) return;
 		this.#lastThemeCss = css;
@@ -11707,6 +11850,7 @@ class MessengerAppView {
 		} else {
 			this.#relayoutActivePanel(entry.state);
 		}
+		global.ThemeChatBg?.paint?.();
 	}
 
 	#createAndOpenPanel(chat, pendingUnreadCount) {
@@ -11850,6 +11994,7 @@ class MessengerAppView {
 		this.el.chatArea.appendChild(state.el);
 		this.#panelFactory.loadHistory(chat.id, state);
 		this.#refreshDirectChatHeaderSub(chat);
+		global.ThemeChatBg?.paint?.();
 	}
 
 	#prefetchDirectContactPresence(chat) {
@@ -14509,7 +14654,8 @@ class MessengerTransport {
 		if (!body || typeof body !== 'object') return;
 		const type = body.type;
 		if (!body.chatId && type !== 'SupraPresenceUpdate' && type !== 'SupraChatHistoryCleared' &&
-			type !== 'SupraProfileUpdated') return;
+			type !== 'SupraProfileUpdated' && type !== 'SupraAppearanceUpdated' &&
+			type !== 'SupraLoginChanged') return;
 		this.#onMessage(body);
 	}
 	destroy() {
@@ -15890,6 +16036,7 @@ class MessengerChatPanel {
 			chat.id, msgArea, onSend, onActivity, fileOptions, this.#connectionStateMgr
 		);
 		el.append(header, msgWrap, replyBar, selectBar, inputArea);
+		global.ThemeChatBg?.paint?.();
 		const state = {
 			chatId: chat.id,
 			el,
@@ -17588,6 +17735,7 @@ class MessengerChatView {
 		root.append(header, msgWrap, inputArea);
 		container.appendChild(root);
 		this.#themeManager.applyChatVars(root);
+		global.ThemeChatBg?.paint?.();
 		Object.assign(this.el, { root, messages, topLoader });
 		this.#stickyDateSep = new MessengerStickyDateSeparator(messages, msgWrap);
 		messages.addEventListener('scroll', () => {
@@ -18900,6 +19048,9 @@ class Messenger {
 		}
 	}
 	async #onClearAllCache() {
+		if (global.ThemeChatBg?.invalidate) {
+			await ThemeChatBg.invalidate();
+		}
 		await this.#cache.clearAll();
 		if (typeof AppScriptCache !== 'undefined') AppScriptCache.clear();
 		if (this.#mode === Messenger.MODE_APP) {
@@ -19203,6 +19354,25 @@ class Messenger {
 				}
 				break;
 			}
+			case 'SupraAppearanceUpdated':
+				this.#handleAppearanceUpdated(body);
+				break;
+		}
+	}
+
+	async #handleAppearanceUpdated(_body) {
+		try {
+			if (global.ThemeChatBg?.invalidate) {
+				await ThemeChatBg.invalidate();
+			}
+			if (global.AppBranding?.reloadAppearance) {
+				await AppBranding.reloadAppearance();
+			}
+			if (global.MessengerChatPreferences?.loadFromServer) {
+				await MessengerChatPreferences.loadFromServer().catch(() => {});
+			}
+		} catch (e) {
+			console.warn('[Messenger] appearance update failed', e);
 		}
 	}
 	async clearCache() {
@@ -19234,6 +19404,10 @@ if (typeof window !== 'undefined') {
 	window.MessengerDialog = MessengerDialog;
 	window.MessengerMessageSounds = MessengerMessageSounds;
 	window.MessengerThemeManager = MessengerThemeManager;
+	window.MessengerChatPreferences = MessengerChatPreferences;
+	if (global.AppBranding?.syncMessengerThemes) {
+		AppBranding.syncMessengerThemes();
+	}
 	// Глобальный обработчик «назад»: закрывает верхний оверлей/диалог раньше всех
 	// остальных слушателей (чтобы не было выхода в список чатов).
 	window.addEventListener('popstate', () => { messengerHandleOverlayPopstate(); });

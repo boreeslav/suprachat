@@ -22,6 +22,8 @@ public sealed class ProfileController : ControllerBase
     private readonly SupraMessengerService _messenger;
     private readonly RealtimeNotifier _realtime;
     private readonly UserLoginChangeService _loginChanges;
+    private readonly MessengerUserPreferencesStore _messengerPrefs;
+    private readonly AppAppearanceService _appearance;
     private readonly IConfiguration _config;
     private readonly string _avatarsRoot;
 
@@ -32,6 +34,8 @@ public sealed class ProfileController : ControllerBase
         SupraMessengerService messenger,
         RealtimeNotifier realtime,
         UserLoginChangeService loginChanges,
+        MessengerUserPreferencesStore messengerPrefs,
+        AppAppearanceService appearance,
         IConfiguration config)
     {
         _store = store;
@@ -40,6 +44,8 @@ public sealed class ProfileController : ControllerBase
         _messenger = messenger;
         _realtime = realtime;
         _loginChanges = loginChanges;
+        _messengerPrefs = messengerPrefs;
+        _appearance = appearance;
         _config = config;
         var dataRoot = config["Data:Root"] ?? "data";
         _avatarsRoot = Path.Combine(dataRoot, "avatars");
@@ -165,6 +171,35 @@ public sealed class ProfileController : ControllerBase
             loginChanged,
             previousLogin = loginChanged ? resolvedViaLogin : null,
         });
+    }
+
+    [HttpGet("chat-preferences")]
+    public async Task<IActionResult> GetChatPreferences(CancellationToken ct)
+    {
+        var user = await _current.GetCurrentUserAsync(ct);
+        if (user == null) return Unauthorized();
+        var prefs = await _messengerPrefs.GetAsync(user.Id, ct);
+        var appearance = await _appearance.GetEffectiveAsync(ct);
+        return Ok(new
+        {
+            useThemeChatBg = prefs.UseThemeChatBg,
+            adminUseThemeChatBg = appearance.UseThemeChatBg ?? true,
+        });
+    }
+
+    [HttpPut("chat-preferences")]
+    public async Task<IActionResult> UpdateChatPreferences(
+        [FromBody] ChatPreferencesRequest req,
+        CancellationToken ct)
+    {
+        var user = await _current.GetCurrentUserAsync(ct);
+        if (user == null) return Unauthorized();
+        if (req == null) return BadRequest();
+        var appearance = await _appearance.GetEffectiveAsync(ct);
+        if (!(appearance.UseThemeChatBg ?? true))
+            return BadRequest(new { error = "Фон темы отключён администратором" });
+        await _messengerPrefs.SetUseThemeChatBgAsync(user.Id, req.UseThemeChatBg, ct);
+        return Ok(new { useThemeChatBg = req.UseThemeChatBg });
     }
 
     [HttpPut("privacy")]
@@ -349,6 +384,11 @@ public sealed class ChangeLoginRequest
 public sealed class MasterPasswordLinkRequest
 {
     public bool MatchesLogin { get; set; }
+}
+
+public sealed class ChatPreferencesRequest
+{
+    public bool UseThemeChatBg { get; set; }
 }
 
 public sealed class PrivacySettingsRequest

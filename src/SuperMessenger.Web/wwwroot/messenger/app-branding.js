@@ -2,8 +2,236 @@
 	const API = '/api/app/appearance';
 	const LOGO_SELECTORS = '[data-app-logo]';
 
+	const THEME_BG_DB = 'ThemeChatBgCacheDB';
+	const THEME_BG_STORE = 'images';
+	const THEME_BG_BUILD_KEY = 'sm-theme-bg-build';
+	let themeBgDbPromise = null;
+	let offlineBlobUrl = null;
+
+	function openThemeBgDb() {
+		if (themeBgDbPromise) return themeBgDbPromise;
+		themeBgDbPromise = new Promise((resolve, reject) => {
+			const req = indexedDB.open(THEME_BG_DB, 1);
+			req.onupgradeneeded = (e) => {
+				const db = e.target.result;
+				if (!db.objectStoreNames.contains(THEME_BG_STORE)) {
+					db.createObjectStore(THEME_BG_STORE, { keyPath: 'url' });
+				}
+			};
+			req.onsuccess = (e) => resolve(e.target.result);
+			req.onerror = (e) => reject(e.target.error);
+		});
+		return themeBgDbPromise;
+	}
+
+	async function readThemeBgBlob(url) {
+		try {
+			const db = await openThemeBgDb();
+			return await new Promise((resolve, reject) => {
+				const tx = db.transaction(THEME_BG_STORE, 'readonly');
+				const req = tx.objectStore(THEME_BG_STORE).get(url);
+				req.onsuccess = () => resolve(req.result?.blob ?? null);
+				req.onerror = () => reject(req.error);
+			});
+		} catch {
+			return null;
+		}
+	}
+
+	async function writeThemeBgBlob(url, blob) {
+		try {
+			const db = await openThemeBgDb();
+			await new Promise((resolve, reject) => {
+				const tx = db.transaction(THEME_BG_STORE, 'readwrite');
+				tx.objectStore(THEME_BG_STORE).put({ url, blob, savedAt: Date.now() });
+				tx.oncomplete = () => resolve();
+				tx.onerror = () => reject(tx.error);
+			});
+		} catch { /* best-effort */ }
+	}
+
+	function absoluteThemeBgUrl(url) {
+		if (!url) return '';
+		try {
+			return new URL(url, global.location?.origin || '').href;
+		} catch {
+			return url;
+		}
+	}
+
+	function cssUrlValue(url) {
+		return `url("${String(url || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")`;
+	}
+
+	function revokeOfflineBlobUrl() {
+		if (offlineBlobUrl?.startsWith('blob:')) {
+			URL.revokeObjectURL(offlineBlobUrl);
+		}
+		offlineBlobUrl = null;
+	}
+
+	function ensureWrapLayer(wrap) {
+		if (!wrap?.classList?.contains('mc-messages-wrap')) return;
+		const show = ThemeChatBg.enabled && ThemeChatBg.displayUrl;
+		let layer = wrap.querySelector(':scope > .mc-theme-bg-layer');
+		if (!show) {
+			layer?.remove();
+			return;
+		}
+		if (!layer) {
+			layer = document.createElement('div');
+			layer.className = 'mc-theme-bg-layer';
+			layer.setAttribute('aria-hidden', 'true');
+			wrap.insertBefore(layer, wrap.firstChild);
+		}
+		const msg = wrap.querySelector(':scope > .mc-messages');
+		if (msg) {
+			msg.style.position = 'relative';
+			msg.style.zIndex = '1';
+			msg.style.background = 'transparent';
+		}
+	}
+
+	function scanNodeForMessageWraps(node) {
+		if (!node || node.nodeType !== 1) return;
+		if (node.classList?.contains('mc-messages-wrap')) ensureWrapLayer(node);
+		node.querySelectorAll?.('.mc-messages-wrap')?.forEach(ensureWrapLayer);
+	}
+
+	function startMessageWrapObserver() {
+		if (ThemeChatBg._observer || typeof MutationObserver === 'undefined') return;
+		const root = document.documentElement;
+		if (!root) return;
+		ThemeChatBg._observer = new MutationObserver((mutations) => {
+			for (const m of mutations) {
+				for (const node of m.addedNodes) scanNodeForMessageWraps(node);
+			}
+		});
+		ThemeChatBg._observer.observe(root, { childList: true, subtree: true });
+	}
+
+	/** Единый кеш и отрисовка фона темы для всех чатов. */
+	const ThemeChatBg = {
+		apiUrl: null,
+		displayUrl: null,
+		enabled: false,
+		loading: null,
+		_observer: null,
+
+		getDisplayUrl() {
+			return this.enabled && this.displayUrl ? this.displayUrl : null;
+		},
+
+		ensureWrapLayer,
+
+		paint() {
+			const show = this.enabled && this.displayUrl;
+			document.documentElement.style.setProperty(
+				'--m-chat-bg-image',
+				show ? cssUrlValue(this.displayUrl) : 'none',
+			);
+			document.querySelectorAll('.mc-messages-wrap').forEach(ensureWrapLayer);
+		},
+
+		async _loadOnce(apiUrl) {
+			const abs = absoluteThemeBgUrl(apiUrl);
+			const cached = await readThemeBgBlob(apiUrl);
+			if (cached && global.navigator?.onLine === false) {
+				revokeOfflineBlobUrl();
+				offlineBlobUrl = URL.createObjectURL(cached);
+				return offlineBlobUrl;
+			}
+			if (cached) return abs;
+			const response = await fetch(apiUrl, { credentials: 'same-origin' });
+			if (!response.ok) throw new Error(`HTTP ${response.status}`);
+			await writeThemeBgBlob(apiUrl, await response.blob());
+			return abs;
+		},
+
+		/** Загрузить фон один раз; повторный вызов с тем же URL — только paint. */
+		async sync(apiUrl, enabled) {
+			this.enabled = !!enabled;
+			const next = this.enabled && apiUrl ? String(apiUrl).trim() : '';
+			if (!next) {
+				this.apiUrl = null;
+				this.displayUrl = null;
+				this.loading = null;
+				revokeOfflineBlobUrl();
+				this.paint();
+				return null;
+			}
+			if (next === this.apiUrl && this.displayUrl) {
+				this.paint();
+				return this.displayUrl;
+			}
+			if (next === this.apiUrl && this.loading) {
+				await this.loading;
+				this.paint();
+				return this.displayUrl;
+			}
+			if (next !== this.apiUrl) {
+				revokeOfflineBlobUrl();
+			}
+			this.apiUrl = next;
+			this.displayUrl = null;
+			this.loading = this._loadOnce(next);
+			try {
+				this.displayUrl = await this.loading;
+			} catch {
+				const cached = await readThemeBgBlob(next);
+				if (cached) {
+					revokeOfflineBlobUrl();
+					offlineBlobUrl = URL.createObjectURL(cached);
+					this.displayUrl = offlineBlobUrl;
+				} else {
+					this.displayUrl = absoluteThemeBgUrl(next);
+				}
+			} finally {
+				this.loading = null;
+			}
+			this.paint();
+			return this.displayUrl;
+		},
+
+		/** Сброс кеша: команда админа, обновление приложения, «очистить весь кеш». */
+		async invalidate() {
+			this.apiUrl = null;
+			this.displayUrl = null;
+			this.enabled = false;
+			this.loading = null;
+			revokeOfflineBlobUrl();
+			try {
+				const db = await openThemeBgDb();
+				await new Promise((resolve, reject) => {
+					const tx = db.transaction(THEME_BG_STORE, 'readwrite');
+					tx.objectStore(THEME_BG_STORE).clear();
+					tx.oncomplete = () => resolve();
+					tx.onerror = () => reject(tx.error);
+				});
+			} catch { /* best-effort */ }
+			this.paint();
+		},
+
+		checkAppBuild() {
+			let build = '';
+			try {
+				build = String(document.querySelector('meta[name="sm-build"]')?.content || '');
+			} catch { /* ignore */ }
+			if (!build || build === '0') return;
+			const prev = localStorage.getItem(THEME_BG_BUILD_KEY);
+			if (prev && prev !== build) void this.invalidate();
+			localStorage.setItem(THEME_BG_BUILD_KEY, build);
+		},
+	};
+
+	global.ThemeChatBg = ThemeChatBg;
+	global.ThemeChatBgCache = ThemeChatBg;
+	ThemeChatBg.checkAppBuild();
+	if (document.body) startMessageWrapObserver();
+	else document.addEventListener('DOMContentLoaded', startMessageWrapObserver);
+
 	const THEME_KEYS = [
-		'name', 'bodyBg', 'headerBg', 'chatBg', 'chatBgImageUrl', 'myBubbleBg', 'myBubbleText',
+		'name', 'bodyBg', 'headerBg', 'chatBg', 'chatBgImageFileName', 'chatBgImageUrl', 'myBubbleBg', 'myBubbleText',
 		'otherBubbleBg', 'otherBubbleText', 'accent', 'inputBg', 'inputFieldBg',
 		'inputFieldBorder', 'inputText', 'inputPlaceholder', 'headerText', 'headerSubText',
 		'headerBorder', 'inputAreaBorder', 'scrollThumb', 'senderName', 'menuBg',
@@ -203,13 +431,20 @@
 	}
 
 	function configureMessengerThemes(data) {
+		if (!data) return false;
 		const themes = (data.themes || []).map(themeFromApi).filter(Boolean);
-		if (global.MessengerThemeManager?.configure && themes.length) {
-			global.MessengerThemeManager.configure({
-				themes,
-				defaultThemeName: data.defaultThemeName,
-			});
-		}
+		if (!themes.length || !global.MessengerThemeManager?.configure) return false;
+		global.MessengerThemeManager.configure({
+			themes,
+			defaultThemeName: data.defaultThemeName,
+			useThemeChatBg: data.useThemeChatBg !== false,
+		});
+		global.MessengerThemeManager?.refreshThemeChatBg?.();
+		return true;
+	}
+
+	function syncMessengerThemes() {
+		return configureMessengerThemes(global.__appBranding);
 	}
 
 	function applyDocumentBranding(data) {
@@ -244,21 +479,45 @@
 	}
 
 	async function loadAppearance() {
-		if (loadPromise) return loadPromise;
+		if (!loadPromise) {
+			loadPromise = (async () => {
+				try {
+					const data = await fetchAppearanceData();
+					if (data) return applyDocumentBranding(data);
+					return null;
+				} catch {
+					return null;
+				}
+			})();
+		}
+		const result = await loadPromise;
+		if (result) configureMessengerThemes(result);
+		return result;
+	}
+
+	async function reloadAppearance() {
 		loadPromise = (async () => {
 			try {
-				const data = await fetchAppearanceData();
+				const bust = `${API}?t=${Date.now()}`;
+				const data = await fetch(bust, { credentials: 'same-origin' })
+					.then((r) => (r.ok ? r.json() : null))
+					.catch(() => null);
+				global.__appAppearancePromise = Promise.resolve(data);
 				if (data) return applyDocumentBranding(data);
 				return null;
 			} catch {
 				return null;
 			}
 		})();
-		return loadPromise;
+		const result = await loadPromise;
+		if (result) configureMessengerThemes(result);
+		return result;
 	}
 
 	global.AppBranding = {
 		loadAppearance,
+		reloadAppearance,
+		syncMessengerThemes,
 		applyDocumentBranding,
 		applyAppName,
 		applyBaseColors,

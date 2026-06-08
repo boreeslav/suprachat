@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SuperMessenger.Core.Abstractions;
+using SuperMessenger.Core.Dtos;
 using SuperMessenger.Core.Entities;
 using SuperMessenger.Infrastructure.Security;
 
@@ -18,19 +19,27 @@ public sealed class AdminController : ControllerBase
     private readonly AppAppearanceService _appearance;
     private readonly UserLoginChangeService _loginChanges;
     private readonly PushDiagnosticLogStore _pushLog;
+    private readonly RealtimeNotifier _realtime;
 
     public AdminController(
         IDataStore store,
         IConfiguration config,
         AppAppearanceService appearance,
         UserLoginChangeService loginChanges,
-        PushDiagnosticLogStore pushLog)
+        PushDiagnosticLogStore pushLog,
+        RealtimeNotifier realtime)
     {
         _store = store;
         _config = config;
         _appearance = appearance;
         _loginChanges = loginChanges;
         _pushLog = pushLog;
+        _realtime = realtime;
+    }
+
+    async Task BroadcastAppearanceThemesUpdatedAsync(string reason, CancellationToken ct)
+    {
+        await _realtime.BroadcastAsync(new SupraWsAppearanceUpdatedPayload { reason = reason }, ct);
     }
 
     [HttpGet("users")]
@@ -194,11 +203,19 @@ public sealed class AdminController : ControllerBase
                     ?? defaults.Themes.FirstOrDefault(t =>
                         string.Equals(t.Name, themeName, StringComparison.Ordinal));
                 var merged = MergeThemeDto(dto, def ?? new AppThemeSettings { Name = themeName });
-                // Renamed in admin: same list index, new name — keep uploaded wallpaper.
-                if (string.IsNullOrEmpty(merged.ChatBgImageFileName)
-                    && i < current.Themes.Count
+                // Wallpaper is per theme file — never inherit from defaults/another theme by mistake.
+                merged.ChatBgImageFileName = null;
+                var imageOwner = current.Themes.FirstOrDefault(t =>
+                    string.Equals(t.Name, themeName, StringComparison.Ordinal));
+                if (!string.IsNullOrEmpty(imageOwner?.ChatBgImageFileName))
+                {
+                    merged.ChatBgImageFileName = imageOwner.ChatBgImageFileName;
+                }
+                else if (i < current.Themes.Count
+                    && !string.Equals(current.Themes[i].Name, themeName, StringComparison.Ordinal)
                     && !string.IsNullOrEmpty(current.Themes[i].ChatBgImageFileName))
                 {
+                    // Renamed in admin: same list index, new name — keep uploaded wallpaper.
                     merged.ChatBgImageFileName = current.Themes[i].ChatBgImageFileName;
                 }
                 themes.Add(merged);
@@ -242,6 +259,7 @@ public sealed class AdminController : ControllerBase
             DefaultThemeName = string.IsNullOrWhiteSpace(req.DefaultThemeName)
                 ? current.DefaultThemeName
                 : req.DefaultThemeName.Trim(),
+            UseThemeChatBg = req.UseThemeChatBg ?? current.UseThemeChatBg ?? true,
             Base = req.Base != null ? MergeBaseDto(req.Base, current.Base) : current.Base,
             Themes = themes.Count > 0 ? themes : current.Themes,
         };
@@ -380,6 +398,7 @@ public sealed class AdminController : ControllerBase
             return BadRequest(new { error = saveErr ?? "Не удалось сохранить фон чата" });
 
         var settings = await _appearance.GetEffectiveAsync(ct);
+        await BroadcastAppearanceThemesUpdatedAsync("themeChatBg", ct);
         return Ok(_appearance.ToPublicDto(settings));
     }
 
@@ -394,6 +413,7 @@ public sealed class AdminController : ControllerBase
             return BadRequest(new { error });
 
         var settings = await _appearance.GetEffectiveAsync(ct);
+        await BroadcastAppearanceThemesUpdatedAsync("themeChatBg", ct);
         return Ok(_appearance.ToPublicDto(settings));
     }
 
@@ -472,6 +492,7 @@ public sealed class AdminController : ControllerBase
     {
         await _appearance.ResetToDefaultsAsync(ct);
         var settings = await _appearance.GetEffectiveAsync(ct);
+        await BroadcastAppearanceThemesUpdatedAsync("themeChatBg", ct);
         return Ok(_appearance.ToPublicDto(settings));
     }
 
@@ -494,7 +515,6 @@ public sealed class AdminController : ControllerBase
             BodyBg = dto.BodyBg ?? def.BodyBg,
             HeaderBg = dto.HeaderBg ?? def.HeaderBg,
             ChatBg = dto.ChatBg ?? def.ChatBg,
-            ChatBgImageFileName = def.ChatBgImageFileName,
             MyBubbleBg = dto.MyBubbleBg ?? def.MyBubbleBg,
             MyBubbleText = dto.MyBubbleText ?? def.MyBubbleText,
             OtherBubbleBg = dto.OtherBubbleBg ?? def.OtherBubbleBg,

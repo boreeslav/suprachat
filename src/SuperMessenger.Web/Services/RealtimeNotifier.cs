@@ -28,4 +28,15 @@ public sealed class RealtimeNotifier
         foreach (var uid in userIds.Distinct())
             await SendToUserAsync(uid, payload, ct);
     }
+
+    /// <summary>Техническое сообщение всем подключённым клиентам мессенджера.</summary>
+    public Task BroadcastAsync(object payload, CancellationToken ct = default)
+    {
+        var envelope = new
+        {
+            Header = new { BodyTypeName = "SupraMessenger", Sender = "SupraMessenger" },
+            Body = payload,
+        };
+        return _hub.Clients.All.SendAsync("message", envelope, ct);
+    }
 }
