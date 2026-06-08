@@ -126,7 +126,10 @@ class MessengerI18n {
 			accountTab: 'Аккаунт',
 			securityTab: 'Безопасность',
 			appearanceTab: 'Оформление',
-			chatSettingsTab: 'Настройки чатов',
+			appScale: 'Масштаб',
+			appScaleHint: 'Размер элементов интерфейса на телефоне',
+			appScaleChange: 'Изменить',
+			messagesSection: 'Сообщения',
 			sendOnEnter: 'Отправка по Enter',
 			sendOnEnterHint: 'Enter отправляет сообщение, Shift+Enter — новая строка',
 			useThemeChatBg: 'Использовать фон темы',
@@ -503,7 +506,10 @@ class MessengerI18n {
 			accountTab: 'Account',
 			securityTab: 'Security',
 			appearanceTab: 'Appearance',
-			chatSettingsTab: 'Chat settings',
+			appScale: 'Scale',
+			appScaleHint: 'Interface size on mobile devices',
+			appScaleChange: 'Change',
+			messagesSection: 'Messages',
 			sendOnEnter: 'Send on Enter',
 			sendOnEnterHint: 'Enter sends the message, Shift+Enter adds a new line',
 			useThemeChatBg: 'Use theme background',
@@ -3341,6 +3347,114 @@ function buildThemePreviewMini(theme) {
 	return preview;
 }
 
+function openAppScaleDialog({ i18n, sm }) {
+	if (!sm) return;
+
+	const initialStep = sm.getScaleStep();
+	const baselineMult = sm.getScaleMultiplier(initialStep);
+
+	const overlay = document.createElement('div');
+	overlay.className = 'mc-dialog-overlay mapp-app-scale-overlay';
+
+	const dialog = document.createElement('div');
+	dialog.className = 'mc-dialog mapp-app-scale-dialog';
+
+	const titleEl = document.createElement('div');
+	titleEl.className = 'mc-dialog-title';
+	titleEl.textContent = i18n.t('appScale');
+
+	const hint = document.createElement('div');
+	hint.className = 'mapp-input-hint mapp-app-scale-dialog-hint';
+	hint.textContent = i18n.t('appScaleHint');
+
+	const track = document.createElement('div');
+	track.className = 'mapp-app-scale-row';
+
+	const smallIcon = document.createElement('span');
+	smallIcon.className = 'mapp-app-scale-icon mapp-app-scale-icon--small';
+	smallIcon.setAttribute('aria-hidden', 'true');
+	smallIcon.textContent = 'a';
+
+	const slider = document.createElement('input');
+	slider.type = 'range';
+	slider.className = 'mapp-app-scale-slider';
+	slider.min = '0';
+	slider.max = String(sm.SCALE_STEP_COUNT - 1);
+	slider.step = '1';
+	slider.value = String(initialStep);
+	slider.setAttribute('aria-label', i18n.t('appScale'));
+
+	const largeIcon = document.createElement('span');
+	largeIcon.className = 'mapp-app-scale-icon mapp-app-scale-icon--large';
+	largeIcon.setAttribute('aria-hidden', 'true');
+	largeIcon.textContent = 'A';
+
+	track.append(smallIcon, slider, largeIcon);
+
+	const actions = document.createElement('div');
+	actions.className = 'mc-dialog-actions';
+	const cancelBtn = document.createElement('button');
+	cancelBtn.type = 'button';
+	cancelBtn.className = 'mc-dialog-btn mc-dialog-btn--cancel';
+	cancelBtn.textContent = i18n.t('cancel');
+	const applyBtn = document.createElement('button');
+	applyBtn.type = 'button';
+	applyBtn.className = 'mc-dialog-btn mc-dialog-btn--confirm';
+	applyBtn.textContent = i18n.t('confirm');
+	actions.append(cancelBtn, applyBtn);
+
+	dialog.append(titleEl, hint, track, actions);
+	overlay.appendChild(dialog);
+	document.body.appendChild(overlay);
+	lockAppScroll();
+
+	const syncOverlayScale = () => {
+		const mult = sm.getScaleMultiplier(Number(slider.value));
+		const inv = baselineMult / mult;
+		if (Math.abs(inv - 1) < 0.001) overlay.style.removeProperty('zoom');
+		else overlay.style.zoom = String(inv);
+	};
+
+	const close = (revert) => {
+		unlockAppScroll();
+		overlay.remove();
+		if (revert) sm.setScaleStep(initialStep);
+	};
+
+	slider.addEventListener('input', () => {
+		sm.setScaleStep(Number(slider.value));
+		syncOverlayScale();
+	});
+
+	cancelBtn.addEventListener('click', () => close(true));
+	applyBtn.addEventListener('click', () => close(false));
+	overlay.addEventListener('click', (e) => { if (e.target === overlay) close(true); });
+}
+
+function buildAppScalePanel({ i18n }) {
+	const sm = typeof window !== 'undefined' ? window.SmMobileViewport : null;
+	const wrap = document.createElement('div');
+	wrap.className = 'mapp-app-scale-panel';
+	const card = mkUiCard(i18n.t('appScale'));
+
+	const openBtn = document.createElement('button');
+	openBtn.type = 'button';
+	openBtn.className = 'mapp-app-scale-open';
+	const openLbl = document.createElement('span');
+	openLbl.className = 'mapp-app-scale-open-label';
+	openLbl.textContent = i18n.t('appScaleChange');
+	const openChev = document.createElement('span');
+	openChev.className = 'mapp-app-scale-open-chevron';
+	openChev.setAttribute('aria-hidden', 'true');
+	openChev.textContent = '›';
+	openBtn.append(openLbl, openChev);
+	openBtn.addEventListener('click', () => openAppScaleDialog({ i18n, sm }));
+
+	card.appendChild(openBtn);
+	wrap.appendChild(card);
+	return wrap;
+}
+
 function buildThemeAppearancePanel({ themeManager, i18n }) {
 	const wrap = document.createElement('div');
 	wrap.className = 'mapp-theme-appearance';
@@ -4507,7 +4621,7 @@ class MessengerUserProfileModal {
 			password: this.#i18n.t('securityTab'),
 			privacy: this.#i18n.t('privacy'),
 			invites: this.#i18n.t('invitationsTab'),
-			chatSettings: this.#i18n.t('chatSettingsTab'),
+			chatSettings: this.#i18n.t('appearanceTab'),
 			folders: this.#i18n.t('foldersTab'),
 			about: this.#i18n.t('aboutAppTab'),
 			help: this.#i18n.t('helpTab'),
@@ -4918,7 +5032,7 @@ class MessengerUserProfileModal {
 			mkNavRow(this.#i18n.t('securityTab'), 'password'),
 			mkNavRow(this.#i18n.t('privacy'), 'privacy'),
 			mkNavRow(this.#i18n.t('invitationsTab'), 'invites'),
-			mkNavRow(this.#i18n.t('chatSettingsTab'), 'chatSettings'),
+			mkNavRow(this.#i18n.t('appearanceTab'), 'chatSettings'),
 			mkNavRow(this.#i18n.t('foldersTab'), 'folders'),
 			mkNavRow(this.#i18n.t('aboutAppTab'), 'about'),
 			mkNavRow(this.#i18n.t('helpTab'), 'help'),
@@ -5152,7 +5266,8 @@ class MessengerUserProfileModal {
 			themeManager: this.#themeManager,
 			i18n: this.#i18n,
 		}));
-		const chatPrefsCard = mkUiCard(this.#i18n.t('chatSettingsTab'));
+		chatSettingsScroll.appendChild(buildAppScalePanel({ i18n: this.#i18n }));
+		const chatPrefsCard = mkUiCard(this.#i18n.t('messagesSection'));
 		const { row: sendOnEnterRow, input: sendOnEnterChk } = mkToggleField(
 			this.#i18n.t('sendOnEnter'),
 			{ checked: MessengerChatPreferences.getSendOnEnter() },
@@ -7873,9 +7988,9 @@ function resolveReplyTextPreview(msg) {
 	return raw.length > 120 ? raw.slice(0, 120) + '…' : raw;
 }
 
-/** Долгое нажатие на изображение в чате (мобильный вид) — меню сообщения; короткий тап — просмотр. */
-function bindImageLongPressMenu(img, openMenu) {
-	if (!img || typeof openMenu !== 'function' || !isMobileSheetMenu()) return;
+/** Долгое нажатие (мобильный вид); короткий тап не перехватывается. */
+function bindLongPressAction(el, onLongPress) {
+	if (!el || typeof onLongPress !== 'function' || !isMobileSheetMenu()) return;
 	let pressTimer = null;
 	let suppressNextClick = false;
 	let startX = 0;
@@ -7890,7 +8005,7 @@ function bindImageLongPressMenu(img, openMenu) {
 		}
 	};
 
-	img.addEventListener('pointerdown', (e) => {
+	el.addEventListener('pointerdown', (e) => {
 		if (e.button !== 0) return;
 		suppressNextClick = false;
 		startX = e.clientX;
@@ -7899,21 +8014,21 @@ function bindImageLongPressMenu(img, openMenu) {
 		pressTimer = setTimeout(() => {
 			pressTimer = null;
 			suppressNextClick = true;
-			openMenu(e);
+			onLongPress(e);
 		}, LONG_PRESS_MS);
 	});
 
-	img.addEventListener('pointermove', (e) => {
+	el.addEventListener('pointermove', (e) => {
 		if (pressTimer == null) return;
 		const dx = e.clientX - startX;
 		const dy = e.clientY - startY;
 		if (dx * dx + dy * dy > SLOP_PX * SLOP_PX) clearTimer();
 	});
 
-	img.addEventListener('pointerup', clearTimer);
-	img.addEventListener('pointercancel', clearTimer);
+	el.addEventListener('pointerup', clearTimer);
+	el.addEventListener('pointercancel', clearTimer);
 
-	img.addEventListener('click', (e) => {
+	el.addEventListener('click', (e) => {
 		if (!suppressNextClick) return;
 		e.preventDefault();
 		e.stopPropagation();
@@ -15304,6 +15419,37 @@ class MessengerMessageRenderer {
 		return s;
 	}
 
+	static SHORT_MSG_MAX_LEN = 25;
+	static SHORT_MSG_END_PADDING_PX = 25;
+
+	#plainMessageText(msg) {
+		if (!msg?.text || msg.deletedForEveryone) return null;
+		if (MessengerCustomMessage.parse(msg.text)) return null;
+		if (this.#isLockedMsg(msg)) return this.#lockedDisplayText(msg);
+		let s = String(msg.text);
+		s = s.replace(/`([^`]+)`/g, '$1');
+		s = s.replace(/\*\*\*(.+?)\*\*\*/gs, '$1');
+		s = s.replace(/\*\*(.+?)\*\*/gs, '$1');
+		s = s.replace(/\*(.+?)\*/gs, '$1');
+		s = s.replace(/~~(.+?)~~/gs, '$1');
+		s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '$1');
+		return s;
+	}
+
+	#isShortMessageText(msg) {
+		const plain = this.#plainMessageText(msg);
+		if (plain == null) return false;
+		return [...plain].length < MessengerMessageRenderer.SHORT_MSG_MAX_LEN;
+	}
+
+	#syncShortEndPadding(bubble, msg) {
+		if (!bubble) return;
+		const short = this.#isShortMessageText(msg);
+		bubble.querySelectorAll('.mc-msg-text').forEach(textEl => {
+			textEl.classList.toggle('mc-msg-text--short-end', short);
+		});
+	}
+
 	#isLockedMsg(msg) {
 		return !!msg?._locked
 			|| msg?.text === SupraCrypto.LOCKED_OTHER
@@ -15468,7 +15614,7 @@ class MessengerMessageRenderer {
 		return quote;
 	}
 
-	createMsgEl(msg, currentUser, avatarCache, onAvatarClick, onQuoteClick = null) {
+	createMsgEl(msg, currentUser, avatarCache, onAvatarClick, onQuoteClick = null, showMessageAvatars = true) {
 		const isMine = !!msg.isOwn;
 		const isDeleted = !!msg.deletedForEveryone;
 		const row = this.#utils.mk('div', `mc-msg-row ${isMine ? 'mc-msg-row--mine' : 'mc-msg-row--other'}`);
@@ -15478,22 +15624,25 @@ class MessengerMessageRenderer {
 		row.dataset.msgTs = String(ts);
 		const senderName = isMine ? (currentUser?.name || msg.senderName) : msg.senderName;
 		const colorSeed = isMine ? (currentUser?.colorSeed || msg.senderId) : msg.senderId;
-		let cachedAvatar = msg.senderId ? (avatarCache.get(msg.senderId) || null) : null;
-		if (!cachedAvatar && msg.senderAvatar) {
-			cachedAvatar = msg.senderAvatar;
-			if (msg.senderId) avatarCache.set(msg.senderId, msg.senderAvatar);
-		}
-		const avatar = this.#avatarBuilder.build(colorSeed, senderName || '?', cachedAvatar, 30);
-		avatar.classList.add('mc-msg-avatar');
-		if (!isMine && typeof onAvatarClick === 'function') {
-			avatar.classList.add('mc-cursor-pointer');
-			avatar.addEventListener('click', e => {
-				e.stopPropagation();
-				onAvatarClick(msg);
-			});
+		let avatar = null;
+		if (showMessageAvatars && !isMine) {
+			let cachedAvatar = msg.senderId ? (avatarCache.get(msg.senderId) || null) : null;
+			if (!cachedAvatar && msg.senderAvatar) {
+				cachedAvatar = msg.senderAvatar;
+				if (msg.senderId) avatarCache.set(msg.senderId, msg.senderAvatar);
+			}
+			avatar = this.#avatarBuilder.build(colorSeed, senderName || '?', cachedAvatar, 30);
+			avatar.classList.add('mc-msg-avatar');
+			if (typeof onAvatarClick === 'function') {
+				avatar.classList.add('mc-cursor-pointer');
+				avatar.addEventListener('click', e => {
+					e.stopPropagation();
+					onAvatarClick(msg);
+				});
+			}
 		}
 		const bubble = this.#utils.mk('div', 'mc-bubble');
-		if (!isMine && msg.senderName) {
+		if (!isMine && showMessageAvatars && msg.senderName) {
 			const senderEl = this.#utils.mk('div', 'mc-msg-sender');
 			senderEl.textContent = msg.senderName;
 			bubble.appendChild(senderEl);
@@ -15529,8 +15678,10 @@ class MessengerMessageRenderer {
 		}
 		this.#syncTierLock(footer, msg, isMine);
 		bubble.appendChild(footer);
+		this.#syncShortEndPadding(bubble, msg);
 		if (isMine) row.append(bubble);
-		else row.append(avatar, bubble);
+		else if (avatar) row.append(avatar, bubble);
+		else row.append(bubble);
 		return row;
 	}
 
@@ -15577,6 +15728,7 @@ class MessengerMessageRenderer {
 		} else if (editedEl) {
 			editedEl.remove();
 		}
+		this.#syncShortEndPadding(bubble, msg);
 	}
 	setStatusIcon(el, status) {
 		el.innerHTML = '';
@@ -16173,8 +16325,10 @@ class MessengerChatPanel {
 		);
 		el.append(header, msgWrap, replyBar, selectBar, inputArea);
 		global.ThemeChatBg?.paint?.();
+		const isGroupChat = chat.type === 'group' || chat.type === 'public_group';
 		const state = {
 			chatId: chat.id,
+			isGroupChat,
 			el,
 			msgArea,
 			topLoader,
@@ -16745,12 +16899,16 @@ class MessengerChatPanel {
 			this.#showMessageMenu(e, state, currentMsg, row);
 		};
 
+		row.addEventListener('click', e => {
+			if (!state.selectionMode) return;
+			if (e.target.closest('.mc-msg-quote')) return;
+			e.preventDefault();
+			e.stopPropagation();
+			this.#toggleMessageSelection(state, msg.id, row);
+		}, true);
+
 		bubble.addEventListener('click', e => {
-			if (state.selectionMode) {
-				e.stopPropagation();
-				this.#toggleMessageSelection(state, msg.id, row);
-				return;
-			}
+			if (state.selectionMode) return;
 			if (isMobileSheetMenu()) {
 				openMenu(e, true);
 			}
@@ -16763,10 +16921,12 @@ class MessengerChatPanel {
 			openMenu(e, false);
 		});
 
-		const bubbleImage = bubble.querySelector('.mc-bubble-image');
-		if (bubbleImage) {
-			bindImageLongPressMenu(bubbleImage, (e) => openMenu(e, true));
-		}
+		bindLongPressAction(bubble, (e) => {
+			if (state.selectionMode || msg.deletedForEveryone) return;
+			e.preventDefault();
+			e.stopPropagation();
+			this.#enterSelectionMode(state, msg.id);
+		});
 
 		row._msgData = msg;
 	}
@@ -17051,6 +17211,34 @@ class MessengerChatPanel {
 		}
 	}
 
+	#createMsgSelectCheck() {
+		const check = this.#utils.mk('div', 'mc-msg-select-check');
+		check.innerHTML = this.#icons.checkSingle();
+		check.setAttribute('aria-hidden', 'true');
+		return check;
+	}
+
+	#applyRowSelectionUi(row, selected) {
+		if (!row) return;
+		row.classList.toggle('mc-msg-row--selected', !!selected);
+	}
+
+	#enableRowSelectionUi(row, selected = false) {
+		const id = row?.dataset?.msgId;
+		if (!id) return;
+		row.classList.add('mc-msg-row--selectable');
+		this.#applyRowSelectionUi(row, selected);
+		if (!row.querySelector('.mc-msg-select-check')) {
+			row.insertBefore(this.#createMsgSelectCheck(), row.firstChild);
+		}
+	}
+
+	#disableRowSelectionUi(row) {
+		if (!row) return;
+		row.classList.remove('mc-msg-row--selectable', 'mc-msg-row--selected');
+		row.querySelector('.mc-msg-select-check')?.remove();
+	}
+
 	#enterSelectionMode(state, initialId) {
 		state.selectionMode = true;
 		state.selectedIds.clear();
@@ -17060,8 +17248,7 @@ class MessengerChatPanel {
 		state.msgArea.querySelectorAll('.mc-msg-row').forEach(row => {
 			const id = row.dataset.msgId;
 			if (!id) return;
-			row.classList.toggle('mc-msg-row--selectable', true);
-			row.classList.toggle('mc-msg-row--selected', state.selectedIds.has(id));
+			this.#enableRowSelectionUi(row, state.selectedIds.has(id));
 		});
 		this.#updateSelectionBar(state);
 	}
@@ -17071,14 +17258,14 @@ class MessengerChatPanel {
 		state.selectedIds.clear();
 		state.selectBar.hidden = true;
 		state.msgArea.querySelectorAll('.mc-msg-row').forEach(row => {
-			row.classList.remove('mc-msg-row--selectable', 'mc-msg-row--selected');
+			this.#disableRowSelectionUi(row);
 		});
 	}
 
 	#toggleMessageSelection(state, msgId, row) {
 		if (state.selectedIds.has(msgId)) state.selectedIds.delete(msgId);
 		else state.selectedIds.add(msgId);
-		row?.classList.toggle('mc-msg-row--selected', state.selectedIds.has(msgId));
+		this.#applyRowSelectionUi(row, state.selectedIds.has(msgId));
 		this.#updateSelectionBar(state);
 	}
 
@@ -17190,10 +17377,12 @@ class MessengerChatPanel {
 					state.currentUser,
 					state.avatarCache,
 					state.onAvatarClick,
-					id => this.#scrollToQuotedMessage(state, id)
+					id => this.#scrollToQuotedMessage(state, id),
+					state.isGroupChat
 				);
 				this.#bindMessageRowEvents(state, el, msg);
 				state.messages.set(msg.id, { data: msg, el });
+				if (state.selectionMode) this.#enableRowSelectionUi(el, state.selectedIds.has(msg.id));
 			}
 			fragment.appendChild(el);
 		}
@@ -17342,10 +17531,12 @@ class MessengerChatPanel {
 					state.currentUser,
 					state.avatarCache,
 					state.onAvatarClick,
-					id => this.#scrollToQuotedMessage(state, id)
+					id => this.#scrollToQuotedMessage(state, id),
+					state.isGroupChat
 				);
 				this.#bindMessageRowEvents(state, el, msg);
 				state.messages.set(msg.id, { data: msg, el });
+				if (state.selectionMode) this.#enableRowSelectionUi(el, state.selectedIds.has(msg.id));
 			}
 			fragment.appendChild(el);
 		}
@@ -17937,7 +18128,14 @@ class MessengerChatView {
 			} else if (MessengerCustomMessage.isSystemEvent(msg)) {
 				el = this.#msgRenderer.createSystemEventEl(msg);
 			} else {
-				el = this.#msgRenderer.createMsgEl(msg, this.#currentUser, this.#avatarCache);
+				el = this.#msgRenderer.createMsgEl(
+					msg,
+					this.#currentUser,
+					this.#avatarCache,
+					null,
+					null,
+					this.#isGroupChat()
+				);
 				this.#messages.set(msg.id, { data: msg, el });
 			}
 			fragment.appendChild(el);
@@ -18060,7 +18258,14 @@ class MessengerChatView {
 			} else if (MessengerCustomMessage.isSystemEvent(msg)) {
 				el = this.#msgRenderer.createSystemEventEl(msg);
 			} else {
-				el = this.#msgRenderer.createMsgEl(msg, this.#currentUser, this.#avatarCache);
+				el = this.#msgRenderer.createMsgEl(
+					msg,
+					this.#currentUser,
+					this.#avatarCache,
+					null,
+					null,
+					this.#isGroupChat()
+				);
 				this.#messages.set(msg.id, { data: msg, el });
 			}
 			fragment.appendChild(el);
@@ -18502,6 +18707,10 @@ class MessengerChatView {
 		wrap.appendChild(pill);
 		this.el.messages.appendChild(wrap);
 	}
+	#isGroupChat() {
+		return this.#chatMeta?.type === 'group' || this.#chatMeta?.type === 'public_group';
+	}
+
 	#updateAvatarCache(msg) {
 		if (!msg.senderAvatar || !msg.senderId) return;
 		if (this.#avatarCache.get(msg.senderId) === msg.senderAvatar) return;
@@ -19088,7 +19297,8 @@ class Messenger {
 		await this.#appView.restoreNavState();
 		this.#markRendered();
 		if (bootMark) bootMark('init-shell-ready');
-		void this.#refreshBootUser(bootUser).then(() => this.#loadBootChats(bootMark));
+		void this.#refreshBootUser(bootUser);
+		void this.#loadBootChats(bootMark);
 		this.#msgService.reconcileOnStartup(
 			this.#api,
 			(result) => this.#onReconcileResult(result),
@@ -19097,12 +19307,16 @@ class Messenger {
 		const atMatch = window.location.pathname.match(/^\/@([^/?#]+)$/i);
 		if (atMatch) {
 			const slug = decodeURIComponent(atMatch[1]);
-			if (isGroupChatId(slug)) {
-				await this.#appView.openGroupByChatId(slug).catch(() => {});
-			} else {
-				await this.#appView.openProfileByLogin(slug).catch(() => {});
-			}
-			normalizeAppUrl();
+			void (async () => {
+				try {
+					if (isGroupChatId(slug)) {
+						await this.#appView.openGroupByChatId(slug);
+					} else {
+						await this.#appView.openProfileByLogin(slug);
+					}
+					normalizeAppUrl();
+				} catch { /* ignore */ }
+			})();
 		}
 	}
 	async #initChat() {
