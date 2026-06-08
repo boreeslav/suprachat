@@ -694,7 +694,10 @@
 				return user;
 			});
 		}
-		return fetch('/api/auth/me', { credentials: 'same-origin' })
+		const controller = new AbortController();
+		const authTimeoutMs = 8000;
+		const authTimer = setTimeout(() => controller.abort(), authTimeoutMs);
+		return fetch('/api/auth/me', { credentials: 'same-origin', signal: controller.signal })
 			.then((r) => {
 				if (r.status === 401 || r.status === 403) return null;
 				if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -712,7 +715,24 @@
 				const cached = loadOfflineUser();
 				if (cached) return cached;
 				throw e;
-			});
+			})
+			.finally(() => clearTimeout(authTimer));
+	}
+
+	let appBootPromise = null;
+
+	function beginAuthenticatedBoot(user) {
+		if (!user?.id) return null;
+		if (!appBootPromise) {
+			appBootPromise = startAuthenticatedApp(user);
+		}
+		return appBootPromise;
+	}
+
+	function patchBootUser(user) {
+		if (!user?.id) return;
+		globalThis.__smBootUser = user;
+		try { localStorage.setItem('sm-offline-user-v1', JSON.stringify(user)); } catch (_) {}
 	}
 
 
@@ -724,21 +744,50 @@
 
 		try {
 
-			await Promise.all([
-				window.AppBranding?.loadAppearance?.().catch(() => null) ?? null,
-				window.MessengerChatPreferences?.loadFromServer?.().catch(() => null) ?? null,
-			]);
+			globalThis.__smBootUser = user;
 
+			void (window.AppBranding?.loadAppearance?.().catch(() => null));
+			void (window.MessengerChatPreferences?.loadFromServer?.().catch(() => null));
 			if (window.SupraSecureStore?.ensurePersistence) {
-				SupraSecureStore.ensurePersistence().catch(() => {});
+				void SupraSecureStore.ensurePersistence().catch(() => {});
 			}
-
-			await SupraAuthCrypto.restoreSession(user.id);
 
 			let pendingLoginPassword = SupraAuthCrypto.peekPendingLoginPassword();
 
+			if (window.__bootMark) __bootMark('chats-load-start');
+
+			const messenger = boot();
+
+			if (window.AppBranding?.syncMessengerThemes) {
+				AppBranding.syncMessengerThemes();
+			}
+
+			if (window.__bootMark) __bootMark('messenger-constructed');
+
+			if (messenger) {
+				// Сплэш скрываем по готовности оболочки (кэш чатов уже в сайдбаре);
+				// полный sync bundle догружается в фоне через whenChatsLoaded / whenReady.
+				await Promise.all([
+					messenger.whenRendered?.(),
+					waitForMessengerCss(4000),
+				]);
+			}
+
+			// Мгновенное снятие сплэша до тяжёлой крипты (RSA блокирует main thread —
+			// анимированный hide и visibility:#chat не успевают обновиться).
+			if (window.AppSplash) {
+				AppSplash.hide(true);
+			}
+
+			if (window.AppSplash?.yieldToMain) {
+				await AppSplash.yieldToMain();
+			}
+
+			if (window.__bootMark) __bootMark('splash-ui-ready');
+
 			const cryptoPromise = (async () => {
 				if (window.__bootMark) __bootMark('crypto-unlock-start');
+				await SupraAuthCrypto.restoreSession(user.id);
 				let crypto = await tryRestoreCryptoSession(user);
 				if (!crypto && pendingLoginPassword) {
 					const attempt = await SupraAuthCrypto.tryUnlockWithLoginPassword(
@@ -756,43 +805,11 @@
 				return crypto;
 			})();
 
-			globalThis.__smBootUser = user;
-
-			if (window.__bootMark) __bootMark('chats-load-start');
-
-			const messenger = boot();
-
-			if (window.AppBranding?.syncMessengerThemes) {
-				await AppBranding.syncMessengerThemes();
-			}
-
-			if (window.__bootMark) __bootMark('messenger-constructed');
-
 			const cryptoReady = cryptoPromise.then((crypto) => {
 				if (crypto) attachCrypto(crypto);
 				if (window.__bootMark) __bootMark('crypto-ready');
 				return crypto;
 			});
-
-			if (messenger) {
-				await Promise.all([
-					messenger.whenRendered?.(),
-					messenger.whenChatsLoaded?.(),
-					waitForMessengerCss(4000),
-				]);
-			} else {
-				await cryptoReady;
-			}
-
-			if (window.AppSplash?.yieldToMain) {
-				await AppSplash.yieldToMain();
-			}
-
-			if (window.__bootMark) __bootMark('splash-ui-ready');
-
-			if (window.AppSplash) {
-				AppSplash.hide();
-			}
 
 			if (window.__bootReport) __bootReport('app-ready');
 
@@ -818,11 +835,9 @@
 
 			const appRoot = typeof globalThis !== 'undefined' ? globalThis : window;
 
-			const branding = appRoot.__appBranding
+			void appRoot.AppBranding?.loadAppearance?.().catch(() => null);
 
-				|| (appRoot.AppBranding?.loadAppearance ? await appRoot.AppBranding.loadAppearance() : null)
-
-				|| {};
+			const branding = appRoot.__appBranding || {};
 
 			const welcomeHtml = appRoot.AppBranding?.formatLoginWelcomeHtml
 				? appRoot.AppBranding.formatLoginWelcomeHtml(
@@ -856,13 +871,18 @@
 
 
 
+	const cachedOfflineUser = loadOfflineUser();
+	if (cachedOfflineUser) {
+		beginAuthenticatedBoot(cachedOfflineUser);
+	}
+
 	authMePromise()
 
 		.then((user) => {
 
 			if (user === null) {
 
-				handleUnauthenticated();
+				if (!appBootPromise) handleUnauthenticated();
 
 				return null;
 
@@ -870,21 +890,37 @@
 
 			if (!user?.id) {
 				const cached = loadOfflineUser();
-				if (cached) return cached;
+				if (cached) {
+					if (!appBootPromise) beginAuthenticatedBoot(cached);
+					return cached;
+				}
+				if (!appBootPromise) handleUnauthenticated();
+				return null;
 			}
 
+			if (appBootPromise) {
+				patchBootUser(user);
+				return user;
+			}
+
+			beginAuthenticatedBoot(user);
 			return user;
 
 		})
 
-		.then((user) => startAuthenticatedApp(user))
-
 		.catch(async (e) => {
 
 			const cached = loadOfflineUser();
-			if (cached && isNetworkFetchError(e)) {
-				console.warn('[SuperMessenger] offline boot from cache', e);
-				await startAuthenticatedApp(cached);
+			if (cached && (isNetworkFetchError(e) || e?.name === 'AbortError')) {
+				if (!appBootPromise) {
+					console.warn('[SuperMessenger] offline boot from cache', e);
+					beginAuthenticatedBoot(cached);
+				}
+				return;
+			}
+
+			if (appBootPromise) {
+				console.warn('[SuperMessenger] auth check failed (background)', e);
 				return;
 			}
 

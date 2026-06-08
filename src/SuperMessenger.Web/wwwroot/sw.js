@@ -21,6 +21,7 @@ const PRECACHE_PATHS = [
 	'/index.html',
 	'/messenger/app-boot-timing.js',
 	'/messenger/app-boot-timing.min.js',
+	'/messenger/app-mobile-viewport.js',
 	'/messenger/app-splash.js',
 	'/messenger/app-splash.min.js',
 	'/messenger/app-script-cache.js',

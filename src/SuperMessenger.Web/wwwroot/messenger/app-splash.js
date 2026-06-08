@@ -441,13 +441,12 @@
 		setTimeout(finish, 450);
 	}
 
-	function hide() {
+	function hide(immediateOrOptions) {
 		clearNavFlag();
-		if (!enabled) {
-			removeSplash(true);
-			return;
-		}
-		removeSplash(false);
+		const immediate = immediateOrOptions === true
+			|| (immediateOrOptions && immediateOrOptions.immediate === true)
+			|| !enabled;
+		removeSplash(immediate);
 	}
 
 	function shouldShowOnInit() {
@@ -481,20 +480,32 @@
 				showFallback();
 			}
 
-			const data = await fetchAppearance();
-			if (data) {
-				global.__appBranding = data;
+			const cachedBranding = global.__appBranding || ssr;
+			if (cachedBranding) {
+				global.__appBranding = cachedBranding;
 				if (ssr) {
-					// Сплэш уже в HTML с сервера — не перерисовываем, только метаданные.
 					if (global.__bootMark) global.__bootMark('appearance-ssr-skip-dom');
-				} else if (data.splashHtml?.trim()) {
+				} else if (cachedBranding.splashHtml?.trim()) {
+					applySplash(cachedBranding);
+				} else if (!root && (pending || shouldShowOnInit())) {
+					showFallback();
+				} else if (root) {
+					applyBrandingHints(cachedBranding);
+				}
+			}
+			void fetchAppearance().then((data) => {
+				if (!data) return;
+				global.__appBranding = data;
+				if (ssr) return;
+				if (data.splashHtml?.trim()) {
 					applySplash(data);
 				} else if (!root && (pending || shouldShowOnInit())) {
 					showFallback();
 				} else if (root) {
 					applyBrandingHints(data);
 				}
-			} else if (!root && !ssr && (pending || shouldShowOnInit())) {
+			}).catch(() => {});
+			if (!cachedBranding && !root && !ssr && (pending || shouldShowOnInit())) {
 				showFallback();
 			}
 		} finally {

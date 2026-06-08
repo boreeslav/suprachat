@@ -306,6 +306,45 @@
 
 .mc-msg-row--selectable {
 	cursor: pointer;
+	position: relative;
+	padding-left: 34px;
+	transition: padding-left .2s ease;
+}
+
+.mc-msg-select-check {
+	position: absolute;
+	left: 2px;
+	bottom: 8px;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	border: 2px solid var(--m-border, rgba(128, 128, 128, .45));
+	background: transparent;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	pointer-events: none;
+	transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+
+.mc-msg-select-check svg {
+	width: 14px;
+	height: 14px;
+	color: #fff;
+	opacity: 0;
+	transform: scale(.6);
+	transition: opacity .15s ease, transform .15s ease;
+}
+
+.mc-msg-row--selected .mc-msg-select-check {
+	background: var(--m-accent, #4a9eff);
+	border-color: var(--m-accent, #4a9eff);
+}
+
+.mc-msg-row--selected .mc-msg-select-check svg {
+	opacity: 1;
+	transform: scale(1);
 }
 
 .mc-msg-row--selected .mc-bubble {
@@ -546,6 +585,10 @@
 
 .mc-msg-text {
 	line-height: 1.45;
+}
+
+.mc-msg-text--short-end {
+	padding-inline-end: 25px;
 }
 
 .mc-msg-footer {
@@ -3319,7 +3362,55 @@
 
 /* ─── Responsive ──────────────────────────────────────────── */
 
+/* Единый масштаб на телефонах: app-mobile-viewport.js фиксирует layout viewport
+   на --sm-mobile-ref-width (320px) и подбирает initial-scale под ширину экрана.
+   text-size-adjust отключает авто-уменьшение шрифтов в WebKit. */
+html.sm-mobile-viewport {
+	overflow: hidden;
+	width: 100%;
+	height: 100%;
+}
+
+html.sm-mobile-viewport,
+html.sm-mobile-viewport body {
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
+html.sm-mobile-viewport body {
+	overflow: hidden;
+	margin: 0;
+	width: 100%;
+	height: 100%;
+	max-width: 100%;
+	max-height: 100%;
+}
+
+html.sm-mobile-viewport .sm-index-chat {
+	height: 100%;
+	min-height: 0;
+	max-height: 100%;
+	overflow: hidden;
+}
+
+html.sm-mobile-viewport body.sm-messenger-active .mapp-root {
+	height: 100%;
+	min-height: 0;
+	max-height: 100%;
+}
+
+html.sm-mobile-viewport .mapp-root.mapp-no-ui {
+	height: 100%;
+	min-height: 0;
+	max-height: 100%;
+}
+
 @media (max-width: 680px) {
+	html,
+	body {
+		-webkit-text-size-adjust: 100%;
+		text-size-adjust: 100%;
+	}
 	/* Embedded in MobilePortal (.content has padding-top / optional bottom inset):
 	   full viewport height pushes the composer below the visible scrollport. */
 	.mapp-root {
@@ -3349,6 +3440,7 @@
 		position: absolute;
 		inset: 0;
 		width: 100%;
+		min-width: 0;
 		max-width: 100%;
 		z-index: 10;
 		transition: transform .25s ease, opacity .25s ease;
@@ -4544,6 +4636,98 @@ body.mapp-scroll-lock .mapp-bottom-sheet {
 .mapp-avatar-crop-zoom {
 	flex: 1;
 	min-width: 0;
+	accent-color: var(--m-accent, var(--brand-accent, #4a7fc1));
+}
+
+/* ===== App scale (Appearance settings) ===== */
+.mapp-app-scale-panel {
+	margin-bottom: 0;
+}
+
+.mapp-app-scale-open {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	padding: 12px 14px;
+	border: none;
+	background: transparent;
+	color: var(--mapp-text, #1a1a1a);
+	font-size: 14px;
+	cursor: pointer;
+	text-align: left;
+	border-radius: 8px;
+	transition: background .12s;
+}
+
+.mapp-app-scale-open:hover {
+	background: var(--mapp-hover, #f0f0f0);
+}
+
+.mapp-app-scale-open-chevron {
+	color: var(--mapp-sub-text, #888);
+	font-size: 18px;
+	line-height: 1;
+	flex-shrink: 0;
+	margin-left: 8px;
+}
+
+.mapp-app-scale-overlay {
+	transform-origin: center center;
+}
+
+.mapp-app-scale-dialog {
+	width: 252px;
+	max-width: calc(100vw - 56px);
+	padding: 20px 18px 14px;
+	gap: 10px;
+}
+
+.mapp-app-scale-dialog-hint {
+	margin: 0 0 2px;
+	text-align: center;
+	font-size: 12px;
+	line-height: 1.35;
+}
+
+.mapp-app-scale-dialog .mapp-app-scale-row {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 12px 16px 4px;
+	margin: 0 auto;
+}
+
+.mapp-app-scale-dialog .mc-dialog-actions {
+	width: 100%;
+	gap: 8px;
+}
+
+.mapp-app-scale-icon {
+	flex-shrink: 0;
+	font-weight: 700;
+	color: var(--mapp-sub-text, #888);
+	line-height: 1;
+	user-select: none;
+	width: 1.25em;
+	text-align: center;
+}
+
+.mapp-app-scale-icon--small {
+	font-size: 12px;
+}
+
+.mapp-app-scale-icon--large {
+	font-size: 20px;
+}
+
+.mapp-app-scale-slider {
+	flex: 0 1 168px;
+	width: 168px;
+	max-width: 168px;
+	min-width: 0;
+	margin: 0;
 	accent-color: var(--m-accent, var(--brand-accent, #4a7fc1));
 }
 
@@ -6339,9 +6523,12 @@ textarea.mapp-profile-field-input:focus,
 
 .sm-index-shell {
 	margin: 0;
+	height: 100%;
 	font-family: system-ui, sans-serif;
 }
 
 .sm-index-chat {
-	height: 100vh;
+	height: 100%;
+	min-height: 0;
+	overflow: hidden;
 }

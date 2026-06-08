@@ -79,7 +79,7 @@ public sealed class IndexShellRenderer
         if (!m.Success || m.Groups[1].Value is not { Length: > 0 } build || build == "0")
             return html;
 
-        var scripts = new[] { "app-boot-timing", "app-update-notifier", "app-script-cache", "app-splash" };
+        var scripts = new[] { "app-boot-timing", "app-mobile-viewport", "app-update-notifier", "app-script-cache", "app-splash" };
         foreach (var name in scripts)
         {
             html = Regex.Replace(

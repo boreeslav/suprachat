@@ -537,3 +537,23 @@ Terrasoft-совместимый загрузчик (используется п
 |-------|---------------|
 | 680px | mobile, fullscreen modals, chat navigation |
 | 1199px | bottom sheet menus |
+
+## Единый масштаб на мобильных
+
+`app-mobile-viewport.js` подключается синхронно в `<head>` (`index.html`, `login.html`, `register.html`) **до** отрисовки страницы.
+
+На устройствах с `min(screen.width, screen.height) ≤ 680` meta viewport переключается на фиксированную ширину с `initial-scale = screen.width / refWidth` (пересчёт при `orientationchange`). Базовая ширина в центральном положении ползунка — **320 CSS px** (`BASE_REF_WIDTH`).
+
+**Масштаб в «Оформление»** — кнопка «Изменить» открывает компактный диалог с ползунком (5 ступеней); масштаб приложения меняется сразу при движении ползунка, сам диалог остаётся прежнего размера (компенсация `zoom` на оверлее). «Отмена» возвращает значение на момент открытия. localStorage `sm-ui-scale-step`, по умолчанию индекс `1` (−6%).
+
+| Шаг | Отклонение |
+|-----|------------|
+| 0 | −12% |
+| 1 | −6% (по умолчанию) |
+| 2 | 0% |
+| 3 | +6% |
+| 4 | +12% |
+
+API: `window.SmMobileViewport` (`setScaleStep`, `getScaleStep`, `getScalePercentOffset`, …).
+
+На планшетах и десктопе остаётся `width=device-width`. Класс `html.sm-mobile-viewport` + `text-size-adjust: 100%` отключают авто-уменьшение шрифтов в WebKit.

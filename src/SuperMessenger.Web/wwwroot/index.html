@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+  <script src="/messenger/app-mobile-viewport.js?v=auto"></script>
   <meta name="sm-build" content="0"/>
   <meta name="sm-app-version" content="<!--SM_APP_VERSION-->"/>
   <title><!--SM_APP_TITLE--></title>
@@ -18,7 +19,7 @@
   <!--SM_LOGO_PRELOAD-->
   <style id="app-splash-css"><!--SM_SPLASH_CSS--></style>
   <style id="app-splash-critical-css">
-    html.sm-splash-active,html.sm-splash-active body{margin:0;overflow:hidden}
+    html,body{margin:0;height:100%;overflow:hidden}
     html.sm-splash-active #chat{visibility:hidden}
     html[data-splash-ssr="1"] #app-splash-root{
       position:fixed;inset:0;z-index:2147483646;display:flex;align-items:center;justify-content:center;
@@ -30,9 +31,9 @@
     html[data-splash-ssr="1"] #app-splash-root:not(.sm-splash-animate) .sm-splash-app-name{
       opacity:1!important;transform:none!important;animation:none!important
     }
-    #chat.sm-index-chat{min-height:100dvh;background:var(--mapp-content-bg,#f0f2f5)}
-    body.sm-messenger-active .mapp-root{display:flex;min-height:100dvh;width:100%;background:var(--mapp-content-bg,#f0f2f5)}
-    body.sm-messenger-active .mapp-sidebar{background:var(--mapp-sidebar-bg,#fff);min-height:100dvh;color:var(--mapp-text,#1c1c1e)}
+    #chat.sm-index-chat{height:100%;min-height:0;background:var(--mapp-content-bg,#f0f2f5)}
+    body.sm-messenger-active .mapp-root{display:flex;height:100%;min-height:0;width:100%;max-width:100%;overflow:hidden;background:var(--mapp-content-bg,#f0f2f5)}
+    body.sm-messenger-active .mapp-sidebar{background:var(--mapp-sidebar-bg,#fff);height:100%;min-height:0;color:var(--mapp-text,#1c1c1e)}
   </style>
   <link rel="preload" href="/messenger/app-script-cache.js?v=auto" as="script"/>
   <link rel="preload" href="/messenger/supra-messenger.css?v=auto" as="style"/>
@@ -45,7 +46,9 @@
   <script>
     (function (g) {
       if (g.__bootMark) g.__bootMark('head-boot');
-      g.__authMePromise = fetch('/api/auth/me', { credentials: 'same-origin' })
+      var authCtrl = new AbortController();
+      var authTimer = setTimeout(function () { authCtrl.abort(); }, 8000);
+      g.__authMePromise = fetch('/api/auth/me', { credentials: 'same-origin', signal: authCtrl.signal })
         .then(function (r) {
           if (g.__bootMark) g.__bootMark('auth-me-response', { status: r.status });
           if (r.status === 401 || r.status === 403) return null;
@@ -73,7 +76,8 @@
             }
           } catch (_) {}
           return undefined;
-        });
+        })
+        .finally(function () { clearTimeout(authTimer); });
       if (g.__bootMark) g.__bootMark('appearance-prefetch-start');
       g.__appAppearancePromise = fetch('/api/app/appearance', { credentials: 'same-origin' })
         .then(function (r) {
