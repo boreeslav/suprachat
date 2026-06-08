@@ -73,7 +73,7 @@
 | Группа | Методы |
 |--------|--------|
 | Пользователь | `GetCurrentUserAsync` |
-| Чаты | `GetChatsAsync`, `CreateDirectChatAsync`, `CreateGroupAsync`, `GetOrCreateChatByIdAsync`, `LeaveChatAsync` |
+| Чаты | `GetChatsAsync`, `RequestSyncAsync`, `CreateDirectChatAsync`, `CreateGroupAsync`, `GetOrCreateChatByIdAsync`, `LeaveChatAsync` |
 | Сообщения | `GetMessagesAsync`, `SendMessageAsync`, `MarkMessagesReadAsync`, `ClearChatHistoryAsync` |
 | Контакты | `GetContactsAsync`, `GetAllContactsAsync` |
 | Приватность | `CanSeeOnlineStatusAsync`, `CanWriteAsync` |
@@ -106,6 +106,7 @@
 ### MessengerHub (`/hubs/messenger`)
 
 - `OnConnectedAsync` / `OnDisconnectedAsync` — группа `user:{userId}`, presence, `LastSeenAt`
+- При connect — `SupraSyncHint` (подсказка клиенту вызвать `RequestSync`)
 - `ReportActivity()` — сброс idle → online для контактов с правом видеть статус
 
 ### RealtimeNotifier
@@ -126,8 +127,12 @@ SendToUserAsync(userId, payload)
 | `SupraWsChatHistoryClearedPayload` | Очистка истории |
 | `SupraWsPresencePayload` | online / idle / offline |
 | `SupraWsGroupUpdatedPayload` | Изменение группы |
+| `SupraWsSyncHintPayload` | Подсказка синхронизации (`RequestSync`) |
+| `SupraWsProfileUpdatedPayload` | Обновление профиля контакта |
 
 Клиент (`MessengerTransport`) подписывается на `message` и маршрутизирует по полям payload в `Messenger.#onTransportMessage`.
+
+Подробная схема сетевых запросов, кешей и hot path: **[06-network-sync.md](06-network-sync.md)**.
 
 ## Присутствие (UserPresenceService)
 
@@ -154,24 +159,27 @@ SendToUserAsync(userId, payload)
 ### Инициализация (`class Messenger`)
 
 1. Создание singleton-инстансов: cache, i18n, icons, utils, theme, api, avatar, presence, renderer, panels, modals, sidebar, transport.
-2. `MODE_APP` → `#initApp()`: render, getCurrentUser, getChats, folders, deep link `/@...`.
+2. `MODE_APP` → `#initApp()`: render, кеш чатов из localStorage, `RequestSync`, folders, deep link `/@...`.
 3. `MODE_CHAT` → `#initChat()`: один чат по `chatId`.
 
 ### Поток открытия чата
 
 ```
 MessengerSidebar (click) → MessengerAppView.#openChat
-  → MessengerChatPanel.createPanel
-  → getMessages + subscribe transport
-  → markRead
+  → панель из pool или createPanel
+  → loadHistory из IndexedDB (GetMessages только если кеш пуст)
+  → markReadIfEngaged только при непрочитанных
 ```
+
+Синхронизация при boot/reconnect: `requestSyncBundle` → `POST RequestSync` (см. [06-network-sync.md](06-network-sync.md)).
 
 ### Кеш сообщений
 
 `MessengerMessageService` + `MessengerCache` (IndexedDB):
 
 - Сохранение при получении/отправке.
-- `reconcileOnStartup` — догрузка с сервера по `afterMessageId`.
+- `RequestSync` — догоняющие сообщения по `chatCursors` (lastId из IndexedDB).
+- `reconcileOnStartup` — подтверждение зависших `sending` (отдельно от бандла).
 - Дедупликация по `id` / `localId`.
 
 ### Адаптивность

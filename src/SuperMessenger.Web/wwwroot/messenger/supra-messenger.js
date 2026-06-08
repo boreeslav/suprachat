@@ -9694,6 +9694,10 @@ class MessengerMessageService {
 		const { messages, reconcile } = await this.syncNewMessages(chatId, api, 50);
 		return { messages, reconcile };
 	}
+
+	async getLastCachedMessageId(chatId) {
+		return this.#cache.getLastMessageId(chatId);
+	}
 	async updateMessageServerId(chatId, localId, serverId) {
 		await this.#cache.updateMessageServerId(chatId, localId, serverId);
 	}
@@ -11080,6 +11084,10 @@ class MessengerAppView {
 	#chatsBootLoading = false;
 	#previewDecryptScheduled = false;
 	#previewDecryptPending = false;
+	#pendingMarkRead = new Set();
+	#syncInFlight = null;
+	#lastSyncAt = 0;
+	static SYNC_DEBOUNCE_MS = 2500;
 	/** @type {Map<string, { state: object, chat: object, stale: boolean }>} */
 	#panelPool = new Map();
 	#panelPoolOrder = [];
@@ -11114,12 +11122,17 @@ class MessengerAppView {
 		return this.#isChatVisible(chatId);
 	}
 
-	markReadIfEngaged(chatId) {
+	markReadIfEngaged(chatId, { becauseNewMessage = false } = {}) {
+		const chat = this.#chats.find(c => c.id === chatId);
+		const hasUnreadSignal = this.#pendingMarkRead.has(chatId) || (chat?.unreadCount > 0);
+		if (!hasUnreadSignal && !becauseNewMessage) return;
 		if (!this.#readGate.shouldMarkRead(chatId, {
 			isActiveChat: this.#activeChat?.id === chatId,
 			isChatVisible: this.#isChatVisible(chatId),
 		})) return;
-		this.#api.markRead(chatId).catch(() => {});
+		this.#api.markRead(chatId).then(() => {
+			this.#pendingMarkRead.delete(chatId);
+		}).catch(() => {});
 	}
 
 	#pushTraceHasDeliveryIssue(trace) {
@@ -11249,9 +11262,6 @@ class MessengerAppView {
 		this.#connectionStateMgr = mgr;
 		this.#sidebar.setConnectionStateManager(mgr);
 		mgr?.subscribe((state) => {
-			if (state === MessengerConnectionStateManager.STATE_CONNECTED) {
-				this.#prefetchAllDirectContactPresence();
-			}
 			this.#refreshActiveChatHeader();
 			if (this.#activeChat?.type === 'direct') {
 				this.#refreshDirectChatHeaderSub(this.#activeChat);
@@ -11582,57 +11592,144 @@ class MessengerAppView {
 
 	async refreshChatListPreview(chatId) {
 		const chat = this.#chats.find(c => c.id === chatId);
-		if (!chat) return;
-		if (this.#msgService) {
-			try {
-				const messages = await this.#cachedMessagesForPreview(chatId);
-				const last = MessengerChatListPreview.pickLastVisibleMessage(messages);
-				if (last && this.#applyCachedPreviewIfBetter(chat, last)) {
-					if (this.#api?.decryptChatListPreviews) {
-						await this.#api.decryptChatListPreviews([chat]);
-					}
-					this.#renderChatList();
-					return;
-				}
-			} catch (e) {
-				console.warn('[MessengerAppView] refreshChatListPreview cache', e);
-			}
-		}
+		if (!chat || !this.#msgService) return;
 		try {
-			const chats = await this.#api.getChats();
-			const fresh = chats.find(c => c.id === chatId);
-			if (fresh) {
-				if (fresh.lastMessage) {
-					await this.#setChatListPreview(
-						chat,
-						chatId,
-						fresh.lastMessage,
-						fresh.lastMessageTime || new Date()
-					);
-				} else {
-					chat.lastMessage = '';
-					chat.lastMessageTime = fresh.lastMessageTime;
-				}
-				if (this.#api?.decryptChatListPreviews) {
-					await this.#api.decryptChatListPreviews([chat]);
-				}
-				this.#renderChatList();
+			const messages = await this.#cachedMessagesForPreview(chatId);
+			const last = MessengerChatListPreview.pickLastVisibleMessage(messages);
+			if (last && this.#applyCachedPreviewIfBetter(chat, last)) {
+				void this.#api?.decryptChatListPreviews?.([chat]).then(() => {
+					this.#renderChatList();
+				}).catch(() => {});
+				return;
 			}
 		} catch (e) {
-			console.warn('[MessengerAppView] refreshChatListPreview getChats', e);
+			console.warn('[MessengerAppView] refreshChatListPreview cache', e);
 		}
 	}
+
+	#applyProfilesFromSync(profiles) {
+		if (!profiles || typeof profiles !== 'object') return;
+		for (const [userId, profile] of Object.entries(profiles)) {
+			if (!profile) continue;
+			this.#api?.cacheContactProfile?.(userId, profile);
+			if (profile.onlineStatus) {
+				this.#presence?.update(userId, profile.onlineStatus);
+			}
+			this.updateContactProfile(userId, {
+				statusText: profile.statusText != null ? String(profile.statusText).trim() : '',
+				displayName: profile.displayName || undefined,
+				aboutText: profile.aboutText != null ? String(profile.aboutText).trim() : undefined,
+				avatar: profile.avatar !== undefined ? profile.avatar : undefined,
+				lastSeenAt: profile.lastSeenAt ?? undefined,
+			});
+		}
+	}
+
+	async #buildSyncCursors() {
+		const cursors = {};
+		if (!this.#msgService) return cursors;
+		await Promise.all(this.#chats.map(async (chat) => {
+			try {
+				const lastId = await this.#msgService.getLastCachedMessageId(chat.id);
+				if (lastId) cursors[chat.id] = lastId;
+			} catch { /* ignore */ }
+		}));
+		return cursors;
+	}
+
+	async #applySyncBundle(result, msgService, api, { reconcileActive = true } = {}) {
+		if (!result?.success) return;
+		if (result.chats?.length) {
+			this.setChats(result.chats);
+		}
+		if (result.profiles) {
+			this.#applyProfilesFromSync(result.profiles);
+		}
+		if (result.encryptionKeys) {
+			api.importSyncEncryptionKeys?.(result.encryptionKeys);
+		}
+		const entries = Object.entries(result.messagesByChat || {});
+		await Promise.all(entries.map(async ([chatId, msgs]) => {
+			if (!msgs?.length) return;
+			await msgService.ingest(chatId, msgs, api);
+			for (const msg of msgs) {
+				this.receiveMessage(chatId, msg, null, { bumpUnread: false });
+			}
+		}));
+		if (reconcileActive && this.#activeState?.chatId) {
+			const activeId = this.#activeState.chatId;
+			try {
+				const { reconcile } = await msgService.syncNewMessages(activeId, api, 50);
+				if (reconcile?.historyCleared) {
+					this.handleHistoryCleared(activeId);
+				} else {
+					for (const id of reconcile?.removedIds || []) {
+						this.deleteMessage(activeId, id, id);
+					}
+				}
+			} catch (e) {
+				console.warn('[MessengerAppView] active chat reconcile', activeId, e);
+			}
+		}
+		if (this.#activeState && this.#isChatVisible(this.#activeState.chatId)) {
+			await this.#panelFactory.syncPanelMessages(
+				this.#activeState.chatId,
+				this.#activeState
+			);
+			if (api.getCrypto()?.isUnlocked) {
+				await this.#panelFactory.refreshEncryptedMessagesDisplay(
+					this.#activeState,
+					this.#activeState.chatId
+				);
+			}
+			this.markReadIfEngaged(this.#activeState.chatId);
+		}
+	}
+
+	async requestSyncBundle(msgService, api, options = {}) {
+		if (this.#syncInFlight) return this.#syncInFlight;
+		const now = Date.now();
+		if (!options.force && now - this.#lastSyncAt < MessengerAppView.SYNC_DEBOUNCE_MS) {
+			return null;
+		}
+		this.#syncInFlight = (async () => {
+			try {
+				const cursors = options.chatCursors ?? await this.#buildSyncCursors();
+				const result = await api.requestSync({
+					chatCursors: cursors,
+					includeProfiles: options.includeProfiles !== false,
+					includeEncryptionKeys: options.includeEncryptionKeys !== false,
+					messageLimit: options.messageLimit ?? 50,
+				});
+				await this.#applySyncBundle(result, msgService, api, {
+					reconcileActive: options.reconcileActive !== false,
+				});
+				this.#lastSyncAt = Date.now();
+				return result;
+			} catch (e) {
+				console.warn('[MessengerAppView] requestSyncBundle', e);
+				throw e;
+			} finally {
+				this.#syncInFlight = null;
+			}
+		})();
+		return this.#syncInFlight;
+	}
+
 	setChats(chats) {
 		this.#chatsBootLoading = false;
+		for (const c of chats) {
+			if (c.unreadCount > 0 && this.#activeChat?.id === c.id && this.#isChatVisible(c.id)) {
+				this.#pendingMarkRead.add(c.id);
+				c.unreadCount = 0;
+			}
+		}
 		this.#chats = chats;
 		this.#api?.syncChatsMeta?.(chats);
 		if (this.#currentUser?.id && chats?.length) {
 			MessengerOfflineStore.saveChats(this.#currentUser.id, chats);
 		}
 		this.#renderChatList();
-		if (this.#canShowContactPresence()) {
-			this.#prefetchAllDirectContactPresence();
-		}
 		if (chats?.length) {
 			this.scheduleRefreshLastMessagePreviews();
 		}
@@ -11813,7 +11910,7 @@ class MessengerAppView {
 		const chat = this.#activeChat;
 		const chatId = state.chatId;
 		if (chatId) {
-			this.refreshChatListPreview(chatId).catch(() => {});
+			void this.refreshChatListPreview(chatId);
 		}
 		const crypto = this.#api.getCrypto();
 		const relock = (crypto && chatId)
@@ -12016,6 +12113,7 @@ class MessengerAppView {
 		void this.#ensureChatKeysInBackground(chatData);
 		const pendingUnreadCount = chatData?.unreadCount || 0;
 		if (chatData?.unreadCount > 0) {
+			this.#pendingMarkRead.add(chat.id);
 			chatData.unreadCount = 0;
 			this.#sidebar.updateUnreadBadge(chat.id, 0, this.#chats);
 		}
@@ -12038,8 +12136,6 @@ class MessengerAppView {
 				this.#hideBottomNavigationBar();
 			}
 		}
-
-		if (chatData.type === 'direct') this.#prefetchDirectContactPresence(chatData);
 
 		const cached = this.#panelPool.get(chat.id);
 		if (cached && !cached.stale) {
@@ -12882,8 +12978,8 @@ class MessengerAppView {
 					chat.unreadCount = (chat.unreadCount || 0) + 1;
 					this.#sidebar.updateUnreadBadge(chatId, chat.unreadCount, this.#chats);
 				}
-			} else {
-				this.markReadIfEngaged(chatId);
+			} else if (!msg.isOwn) {
+				this.markReadIfEngaged(chatId, { becauseNewMessage: true });
 			}
 			const msgTs = MessengerUtils.messageTimestampMs(msg);
 			const currentTs = chat.lastMessageTime
@@ -12941,43 +13037,9 @@ class MessengerAppView {
 	}
 	async syncAfterReconnect(msgService, api) {
 		try {
-			const chats = await api.getChats();
-			this.setChats(chats);
+			await this.requestSyncBundle(msgService, api);
 		} catch (e) {
-			console.warn('[MessengerAppView] syncAfterReconnect getChats', e);
-		}
-		for (const chat of this.#chats) {
-			try {
-				const { messages, reconcile } = await msgService.syncChatAfterOffline(chat.id, api);
-				for (const msg of messages) {
-					this.receiveMessage(chat.id, msg, null, { bumpUnread: false });
-				}
-				if (reconcile?.historyCleared) {
-					this.handleHistoryCleared(chat.id);
-					continue;
-				}
-				for (const id of reconcile?.removedIds || []) {
-					this.deleteMessage(chat.id, id, id);
-				}
-			} catch (e) {
-				console.warn('[MessengerAppView] syncAfterReconnect chat', chat.id, e);
-			}
-		}
-		for (const chat of this.#chats) {
-			await this.refreshChatListPreview(chat.id).catch(() => {});
-		}
-		if (this.#activeState && this.#isChatVisible(this.#activeState.chatId)) {
-			await this.#panelFactory.syncPanelMessages(
-				this.#activeState.chatId,
-				this.#activeState
-			);
-			if (this.#api.getCrypto()?.isUnlocked) {
-				await this.#panelFactory.refreshEncryptedMessagesDisplay(
-					this.#activeState,
-					this.#activeState.chatId
-				);
-			}
-			this.markReadIfEngaged(this.#activeState.chatId);
+			console.warn('[MessengerAppView] syncAfterReconnect', e);
 		}
 	}
 	receiveActivity(chatId, userId, userName, activityType, active) {
@@ -13001,13 +13063,22 @@ class MessengerAppView {
 			this.#showChatListMobile();
 		}
 		try {
-			const chats = await this.#api.getChats();
-			this.setChats(chats);
+			if (this.#msgService) {
+				await this.requestSyncBundle(this.#msgService, this.#api, { reconcileActive: false });
+			} else {
+				const chats = await this.#api.getChats();
+				this.setChats(chats);
+			}
 		} catch (e) {
 			console.warn('[MessengerAppView] reloadAllChats error:', e);
-			const userId = this.#currentUser?.id;
-			const cached = userId ? MessengerOfflineStore.loadChats(userId) : null;
-			if (cached?.length) this.setChats(cached);
+			try {
+				const chats = await this.#api.getChats();
+				this.setChats(chats);
+			} catch {
+				const userId = this.#currentUser?.id;
+				const cached = userId ? MessengerOfflineStore.loadChats(userId) : null;
+				if (cached?.length) this.setChats(cached);
+			}
 		}
 		this.#persistNavState();
 	}
@@ -13020,6 +13091,10 @@ class MessengerApiClient {
 	#crypto = null;
 	#currentUserId = null;
 	#chatsMeta = new Map();
+	/** userId → public profile snapshot from sync/cache */
+	#profileCache = new Map();
+	/** chatId → wrapped auto password from RequestSync bundle */
+	#syncWrappedKeys = new Map();
 	/** chatId → { hasKey, checkedAt } — не дергаем /group-keys на каждое сообщение */
 	#chatKeyStatus = new Map();
 	#distributeLastAt = new Map();
@@ -13073,7 +13148,7 @@ class MessengerApiClient {
 		if (!this.#crypto) return null;
 		const chat = typeof chatOrId === 'string' ? this.#chatsMeta.get(chatOrId) : chatOrId;
 		if (!chat) return null;
-		return this.#crypto.getChatKey(chat, { fetchWrapped: true });
+		return this.#crypto.getChatKey(chat, this.#cryptoFetchOpts(chat?.id));
 	}
 
 	#withBasicTierMark(m, chat, tier) {
@@ -13240,7 +13315,7 @@ class MessengerApiClient {
 		if (!chat) return m;
 		const { encText, encReply } = this.#captureEncFields(m);
 		const tier = (m.encryptionTier || 'basic').toLowerCase();
-		const opts = { fetchWrapped: true };
+		const opts = this.#cryptoFetchOpts(chatId);
 		if (tier === 'protected' && !this.#crypto.getCustomPassword(chatId)) {
 			return this.#attachEncFields({
 				...m,
@@ -13486,7 +13561,7 @@ class MessengerApiClient {
 
 	async #fetchOutgoingChatKey(chat, tier) {
 		const useProtected = tier === 'protected';
-		const opts = { fetchWrapped: true };
+		const opts = this.#cryptoFetchOpts(chat?.id);
 		return useProtected
 			? this.#crypto.getProtectedChatKey(chat, opts)
 			: this.#crypto.getAutoChatKey(chat, opts);
@@ -13721,14 +13796,71 @@ class MessengerApiClient {
 		return chats;
 	}
 
+	async requestSync({
+		chatCursors = {},
+		includeProfiles = true,
+		includeEncryptionKeys = true,
+		messageLimit = 50,
+	} = {}) {
+		const r = await this.call('RequestSync', {
+			chatCursors,
+			includeProfiles,
+			includeEncryptionKeys,
+			messageLimit,
+		});
+		if (!r?.success) throw new Error(r?.error || 'RequestSync failed');
+		if (r.chats?.length) {
+			r.chats = r.chats.map(c => this.#mapChatDto(c));
+			this.#updateChatsMeta(r.chats);
+		}
+		return r;
+	}
+
+	cacheContactProfile(userId, profile) {
+		if (!userId || !profile) return;
+		this.#profileCache.set(userId, { ...profile, cachedAt: Date.now() });
+	}
+
+	getCachedContactProfile(userId) {
+		return this.#profileCache.get(userId) || null;
+	}
+
+	importSyncEncryptionKeys(encryptionKeys) {
+		if (!encryptionKeys || typeof encryptionKeys !== 'object') return;
+		for (const [chatId, entry] of Object.entries(encryptionKeys)) {
+			if (!chatId || !entry) continue;
+			if (entry.found) {
+				this.#chatKeyStatus.set(chatId, { hasKey: true, checkedAt: Date.now() });
+				const meta = this.#chatsMeta.get(chatId);
+				if (meta) meta.hasGroupAutoKey = true;
+				if (entry.wrappedAutoPassword) {
+					this.#syncWrappedKeys.set(chatId, entry.wrappedAutoPassword);
+				}
+			}
+		}
+	}
+
+	#cryptoFetchOpts(chatId) {
+		const wrapped = this.#syncWrappedKeys.get(chatId);
+		if (wrapped) return { wrappedAutoPassword: wrapped };
+		return { fetchWrapped: true };
+	}
+
 	async decryptChatListPreviews(chats) {
 		if (!this.#crypto || !chats?.length) return chats;
 		await Promise.all(chats.map(async (chat) => {
 			try {
 				const raw = chat?.lastMessage;
 				if (!raw || !SupraCrypto.isEncrypted(raw)) return;
+				const prevPreview = chat.lastMessage;
+				const prevReadable = prevPreview
+					&& prevPreview !== SupraCrypto.LOCKED_PREVIEW
+					&& prevPreview !== SupraCrypto.LOCKED_OTHER
+					&& !MessengerChatListPreview.isLockedStorage(prevPreview);
 				await this.ensureChatEncryptionKeys(chat, { distribute: false });
-				chat.lastMessage = await this.#decryptChatPreviewLastMessage(chat);
+				const decrypted = await this.#decryptChatPreviewLastMessage(chat);
+				if (decrypted === SupraCrypto.LOCKED_PREVIEW && prevReadable) return;
+				chat.lastMessage = decrypted;
 			} catch (e) {
 				console.warn('[MessengerApiClient] decryptChatListPreviews', chat.id, e);
 			}
@@ -13739,7 +13871,7 @@ class MessengerApiClient {
 	async #decryptChatPreviewLastMessage(chat) {
 		const raw = chat?.lastMessage;
 		if (!raw || !SupraCrypto.isEncrypted(raw) || !this.#crypto) return raw || '';
-		const opts = { fetchWrapped: true };
+		const opts = this.#cryptoFetchOpts(chat?.id);
 		let key = await this.#crypto.getAutoChatKey(chat, opts);
 		if (key) {
 			const text = await this.#crypto.decryptText(raw, key);
@@ -13853,9 +13985,13 @@ class MessengerApiClient {
 	}
 
 	async getContactProfile(userId) {
+		const cached = this.getCachedContactProfile(userId);
+		if (cached) return cached;
 		const r = await fetch(`/api/profile/${userId}`, { credentials: 'same-origin' });
 		if (!r.ok) throw new Error('HTTP ' + r.status);
-		return await r.json();
+		const profile = await r.json();
+		this.cacheContactProfile(userId, profile);
+		return profile;
 	}
 
 	async getContactByLogin(login) {
@@ -14655,7 +14791,7 @@ class MessengerTransport {
 		const type = body.type;
 		if (!body.chatId && type !== 'SupraPresenceUpdate' && type !== 'SupraChatHistoryCleared' &&
 			type !== 'SupraProfileUpdated' && type !== 'SupraAppearanceUpdated' &&
-			type !== 'SupraLoginChanged') return;
+			type !== 'SupraLoginChanged' && type !== 'SupraSyncHint') return;
 		this.#onMessage(body);
 	}
 	destroy() {
@@ -18886,20 +19022,29 @@ class Messenger {
 			this.#appView.applyCachedChatsIfEmpty(cached);
 		}
 		try {
-			const chats = await this.#api.getChats();
-			if (userId) MessengerOfflineStore.saveChats(userId, chats);
-			if (bootMark) bootMark('init-chats-loaded', { count: chats?.length ?? 0 });
-			this.#appView.setChats(chats);
+			const result = await this.#appView.requestSyncBundle(this.#msgService, this.#api, {
+				reconcileActive: false,
+				force: true,
+			});
+			if (userId && result?.chats?.length) {
+				MessengerOfflineStore.saveChats(userId, result.chats);
+			}
+			if (bootMark) bootMark('init-chats-loaded', { count: result?.chats?.length ?? 0 });
 			if (bootMark) bootMark('init-data-ready');
-			void this.#syncAfterReconnect().catch(e =>
-				console.warn('[Messenger] boot syncAfterReconnect', e));
 		} catch (e) {
-			console.warn('[Messenger] getChats', e);
-			const cached = userId ? MessengerOfflineStore.loadChats(userId) : null;
-			if (cached?.length) {
-				this.#appView.setChats(cached);
-			} else {
-				this.#appView.setChatsBootLoading(false);
+			console.warn('[Messenger] requestSync boot', e);
+			try {
+				const chats = await this.#api.getChats();
+				if (userId) MessengerOfflineStore.saveChats(userId, chats);
+				this.#appView.setChats(chats);
+			} catch (fallbackErr) {
+				console.warn('[Messenger] getChats fallback', fallbackErr);
+				const cached = userId ? MessengerOfflineStore.loadChats(userId) : null;
+				if (cached?.length) {
+					this.#appView.setChats(cached);
+				} else {
+					this.#appView.setChatsBootLoading(false);
+				}
 			}
 		} finally {
 			this.#markChatsLoaded();
@@ -19060,10 +19205,10 @@ class Messenger {
 			await this.#initChat();
 		}
 	}
-	#markReadIfEngaged(chatId) {
+	#markReadIfEngaged(chatId, opts = {}) {
 		if (!chatId) return;
 		if (this.#mode === Messenger.MODE_APP) {
-			this.#appView.markReadIfEngaged(chatId);
+			this.#appView.markReadIfEngaged(chatId, opts);
 		} else if (this.#chatView.chatMeta?.id === chatId) {
 			this.#chatView.markReadIfEngaged();
 		}
@@ -19172,8 +19317,8 @@ class Messenger {
 						} else {
 							this.#appView.receiveMessage(body.chatId, msg, listPreviewSource);
 						}
-						if (this.#appView.isChatVisibleForRead(body.chatId)) {
-							this.#markReadIfEngaged(body.chatId);
+						if (this.#appView.isChatVisibleForRead(body.chatId) && !msg.isOwn) {
+							this.#markReadIfEngaged(body.chatId, { becauseNewMessage: true });
 						}
 					} else if (this.#chatView.chatMeta?.id === body.chatId) {
 						try {
@@ -19324,6 +19469,15 @@ class Messenger {
 			}
 			case 'SupraProfileUpdated': {
 				const { userId, statusText, displayName, aboutText, avatar } = body;
+				if (userId) {
+					this.#api?.cacheContactProfile?.(userId, {
+						id: userId,
+						statusText,
+						displayName,
+						aboutText,
+						avatar,
+					});
+				}
 				if (!userId || this.#mode !== Messenger.MODE_APP) break;
 				const me = this.#appView.getCurrentUser();
 				if (me?.id === userId) {
@@ -19356,6 +19510,12 @@ class Messenger {
 			}
 			case 'SupraAppearanceUpdated':
 				this.#handleAppearanceUpdated(body);
+				break;
+			case 'SupraSyncHint':
+				if (this.#mode === Messenger.MODE_APP) {
+					void this.#appView.requestSyncBundle(this.#msgService, this.#api).catch(e =>
+						console.warn('[Messenger] SupraSyncHint sync', e));
+				}
 				break;
 		}
 	}

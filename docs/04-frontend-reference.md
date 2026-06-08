@@ -333,8 +333,11 @@ IndexedDB кеш сообщений и файлов.
 | `handleHistoryCleared(chatId)` | |
 | `reloadAllChats()` | |
 | `isActiveChatId(chatId)` | |
+| **`requestSyncBundle(msgService, api, options?)`** | Boot / reconnect / SupraSyncHint |
+| `syncAfterReconnect(msgService, api)` | Обёртка над `requestSyncBundle` |
+| `markReadIfEngaged(chatId)` | `MarkMessagesRead` только при непрочитанных |
 
-Приватные: `#openChat`, `#openProfileModal`, `#openGroupJoinModal`, `#showGroupProfile`, `#createFolder`, …
+Приватные: `#openChat`, `#applySyncBundle`, `#buildSyncCursors`, `#openProfileModal`, …
 
 ---
 
@@ -342,11 +345,16 @@ IndexedDB кеш сообщений и файлов.
 
 HTTP-обёртка над `/api/messenger/*` и REST profile/group.
 
+Полное описание сетевой логики: **[06-network-sync.md](06-network-sync.md)**.
+
 | Метод | Описание |
 |-------|----------|
 | `call(methodName, data)` | Базовый POST |
 | `getCurrentUser()` | |
-| `getChats()` | |
+| `getChats()` | Fallback; основной путь — `requestSync` |
+| **`requestSync({ chatCursors, includeProfiles, includeEncryptionKeys, messageLimit })`** | Бандл синхронизации |
+| `importSyncEncryptionKeys(encryptionKeys)` | Ключи из бандла → `#syncWrappedKeys` |
+| `cacheContactProfile(userId, profile)` / `getCachedContactProfile(userId)` | Кеш публичных профилей |
 | `getContacts(page, rowCount, search)` | |
 | `getAllContacts(...)` | |
 | `getMessages(chatId, offset, count)` | |
@@ -371,7 +379,7 @@ HTTP-обёртка над `/api/messenger/*` и REST profile/group.
 
 ## MessengerTransport
 
-Realtime: SignalR → WebSocket → ServerChannel.
+Realtime: SignalR → WebSocket → ServerChannel. Обрабатывает `SupraSyncHint` → синхронизация (см. [06-network-sync.md](06-network-sync.md)).
 
 | Метод / свойство | Описание |
 |------------------|----------|

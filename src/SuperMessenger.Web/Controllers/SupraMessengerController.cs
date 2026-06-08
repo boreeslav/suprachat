@@ -23,6 +23,7 @@ public sealed class SupraMessengerController : ControllerBase
     private readonly IDataStore _store;
     private readonly PushDiagnosticLogStore _pushLog;
     private readonly MessageInfoService _messageInfo;
+    private readonly MessengerSyncService _sync;
 
     public SupraMessengerController(
         SupraMessengerService messenger,
@@ -33,7 +34,8 @@ public sealed class SupraMessengerController : ControllerBase
         NotificationPreferencesStore notifPrefs,
         IDataStore store,
         PushDiagnosticLogStore pushLog,
-        MessageInfoService messageInfo)
+        MessageInfoService messageInfo,
+        MessengerSyncService sync)
     {
         _messenger = messenger;
         _current = current;
@@ -44,6 +46,7 @@ public sealed class SupraMessengerController : ControllerBase
         _store = store;
         _pushLog = pushLog;
         _messageInfo = messageInfo;
+        _sync = sync;
     }
 
     [HttpPost("{methodName}")]
@@ -57,6 +60,7 @@ public sealed class SupraMessengerController : ControllerBase
         {
             "GetCurrentUser" => await _messenger.GetCurrentUserAsync(user, ct),
             "GetChats" => await _messenger.GetChatsAsync(user.Id, ct),
+            "RequestSync" => await HandleRequestSync(user, data, ct),
             "GetContacts" => await _messenger.GetContactsAsync(
                 user.Id,
                 GetInt(data, "page", 1),
@@ -233,6 +237,28 @@ public sealed class SupraMessengerController : ControllerBase
         var participants = await _messenger.GetAllParticipantUserIdsAsync(chatId, ct);
         foreach (var uid in participants)
             await _realtime.SendToUserAsync(uid, payload, ct);
+    }
+
+    private async Task<object> HandleRequestSync(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var request = new SupraRequestSyncRequest
+        {
+            includeProfiles = !data.TryGetProperty("includeProfiles", out var ip) || ip.ValueKind != JsonValueKind.False,
+            includeEncryptionKeys = !data.TryGetProperty("includeEncryptionKeys", out var ik) || ik.ValueKind != JsonValueKind.False,
+            messageLimit = GetInt(data, "messageLimit", 50),
+        };
+        if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("chatCursors", out var cursorsEl)
+            && cursorsEl.ValueKind == JsonValueKind.Object)
+        {
+            request.chatCursors = new Dictionary<string, string?>();
+            foreach (var prop in cursorsEl.EnumerateObject())
+            {
+                request.chatCursors[prop.Name] = prop.Value.ValueKind == JsonValueKind.Null
+                    ? null
+                    : prop.Value.GetString();
+            }
+        }
+        return await _sync.RequestSyncAsync(user, request, ct);
     }
 
     private async Task<object> HandleMarkRead(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)

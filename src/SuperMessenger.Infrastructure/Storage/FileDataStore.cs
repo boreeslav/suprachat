@@ -116,6 +116,9 @@ public sealed class FileDataStore : IDataStore
         await _chats.WriteAllAsync(list, ct);
     }
 
+    public async Task<IReadOnlyList<SupraChatParticipantRecord>> GetAllParticipantsAsync(CancellationToken ct = default)
+        => await _participants.ReadAllAsync(ct);
+
     public async Task<IReadOnlyList<SupraChatParticipantRecord>> GetParticipantsByChatAsync(Guid chatId, CancellationToken ct = default)
         => (await _participants.ReadAllAsync(ct)).Where(p => p.ChatId == chatId).ToList();
 
@@ -135,6 +138,9 @@ public sealed class FileDataStore : IDataStore
 
     public async Task<bool> IsParticipantAsync(Guid chatId, Guid userId, CancellationToken ct = default)
         => (await _participants.ReadAllAsync(ct)).Any(p => p.ChatId == chatId && p.UserId == userId);
+
+    public async Task<IReadOnlyList<SupraChatMessageRecord>> GetAllMessagesAsync(CancellationToken ct = default)
+        => await _messages.ReadAllAsync(ct);
 
     public async Task<IReadOnlyList<SupraChatMessageRecord>> GetMessagesByChatAsync(Guid chatId, CancellationToken ct = default)
         => (await _messages.ReadAllAsync(ct)).Where(m => m.ChatId == chatId).ToList();
@@ -339,6 +345,9 @@ public sealed class FileDataStore : IDataStore
         list.RemoveAll(r => r.ChatId == chatId && r.UserId == userId);
         await _chatRestrictions.WriteAllAsync(list, ct);
     }
+
+    public async Task<IReadOnlyList<SupraChatMemberKeyRecord>> GetAllChatMemberKeysAsync(CancellationToken ct = default)
+        => await _chatMemberKeys.ReadAllAsync(ct);
 
     public async Task<IReadOnlyList<SupraChatMemberKeyRecord>> GetChatMemberKeysByChatAsync(Guid chatId, CancellationToken ct = default)
         => (await _chatMemberKeys.ReadAllAsync(ct)).Where(k => k.ChatId == chatId).ToList();

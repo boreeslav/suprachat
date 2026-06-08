@@ -20,11 +20,13 @@ public interface IDataStore
     Task<SupraChatRecord?> GetChatByIdAsync(Guid id, CancellationToken ct = default);
     Task SaveChatAsync(SupraChatRecord chat, CancellationToken ct = default);
 
+    Task<IReadOnlyList<SupraChatParticipantRecord>> GetAllParticipantsAsync(CancellationToken ct = default);
     Task<IReadOnlyList<SupraChatParticipantRecord>> GetParticipantsByChatAsync(Guid chatId, CancellationToken ct = default);
     Task<IReadOnlyList<SupraChatParticipantRecord>> GetParticipantsByUserAsync(Guid userId, CancellationToken ct = default);
     Task SaveParticipantAsync(SupraChatParticipantRecord participant, CancellationToken ct = default);
     Task<bool> IsParticipantAsync(Guid chatId, Guid userId, CancellationToken ct = default);
 
+    Task<IReadOnlyList<SupraChatMessageRecord>> GetAllMessagesAsync(CancellationToken ct = default);
     Task<IReadOnlyList<SupraChatMessageRecord>> GetMessagesByChatAsync(Guid chatId, CancellationToken ct = default);
     Task<SupraChatMessageRecord?> GetMessageByIdAsync(Guid messageId, CancellationToken ct = default);
     Task SaveMessageAsync(SupraChatMessageRecord message, CancellationToken ct = default);
@@ -63,6 +65,7 @@ public interface IDataStore
     Task SaveChatRestrictionAsync(SupraChatRestrictionRecord restriction, CancellationToken ct = default);
     Task DeleteChatRestrictionAsync(Guid chatId, Guid userId, CancellationToken ct = default);
 
+    Task<IReadOnlyList<SupraChatMemberKeyRecord>> GetAllChatMemberKeysAsync(CancellationToken ct = default);
     Task<IReadOnlyList<SupraChatMemberKeyRecord>> GetChatMemberKeysByChatAsync(Guid chatId, CancellationToken ct = default);
     Task<SupraChatMemberKeyRecord?> GetChatMemberKeyAsync(Guid chatId, Guid userId, CancellationToken ct = default);
     Task SaveChatMemberKeyAsync(SupraChatMemberKeyRecord record, CancellationToken ct = default);

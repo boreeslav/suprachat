@@ -68,6 +68,50 @@ public sealed class SupraGetChatsResponse
     public string? error { get; set; }
 }
 
+/// <summary>Публичный профиль контакта для синхронизации (без приватных полей).</summary>
+public sealed class SupraPublicProfileDto
+{
+    public string id { get; set; } = "";
+    public string login { get; set; } = "";
+    public string displayName { get; set; } = "";
+    public string? avatar { get; set; }
+    public string statusText { get; set; } = "";
+    public string aboutText { get; set; } = "";
+    public DateTime? lastSeenAt { get; set; }
+    public string? onlineStatus { get; set; }
+    public bool canWrite { get; set; }
+}
+
+public sealed class SupraSyncEncryptionKeyDto
+{
+    public bool found { get; set; }
+    public string? wrappedAutoPassword { get; set; }
+}
+
+public sealed class SupraRequestSyncRequest
+{
+  public Dictionary<string, string?>? chatCursors { get; set; }
+  public bool includeProfiles { get; set; } = true;
+  public bool includeEncryptionKeys { get; set; } = true;
+  public int messageLimit { get; set; } = 50;
+}
+
+public sealed class SupraRequestSyncResponse
+{
+    public bool success { get; set; }
+    public List<SupraChatDto> chats { get; set; } = [];
+    public Dictionary<string, List<SupraChatMessageDto>> messagesByChat { get; set; } = new();
+    public Dictionary<string, SupraPublicProfileDto> profiles { get; set; } = new();
+    public Dictionary<string, SupraSyncEncryptionKeyDto> encryptionKeys { get; set; } = new();
+    public string? error { get; set; }
+}
+
+public sealed class SupraWsSyncHintPayload
+{
+    public string type { get; set; } = "SupraSyncHint";
+    public string reason { get; set; } = "connected";
+}
+
 public sealed class SupraGetContactsResponse
 {
     public bool success { get; set; }

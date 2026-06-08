@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using SuperMessenger.Core.Abstractions;
+using SuperMessenger.Core.Dtos;
 using SuperMessenger.Web.Services;
 using System.Security.Claims;
 
@@ -13,17 +14,20 @@ public sealed class MessengerHub : Hub
     private readonly UserPresenceNotifier _presenceNotifier;
     private readonly IDataStore _store;
     private readonly UserLoginChangeService _loginChanges;
+    private readonly RealtimeNotifier _realtime;
 
     public MessengerHub(
         UserPresenceService presence,
         UserPresenceNotifier presenceNotifier,
         IDataStore store,
-        UserLoginChangeService loginChanges)
+        UserLoginChangeService loginChanges,
+        RealtimeNotifier realtime)
     {
         _presence = presence;
         _presenceNotifier = presenceNotifier;
         _store = store;
         _loginChanges = loginChanges;
+        _realtime = realtime;
     }
 
     public override async Task OnConnectedAsync()
@@ -36,6 +40,10 @@ public sealed class MessengerHub : Hub
             await _presenceNotifier.BroadcastPresenceAsync(userId.Value);
             await _presenceNotifier.SendInitialPresenceToViewerAsync(userId.Value);
             await _loginChanges.DeliverPendingLoginChangesAsync(userId.Value, Context.ConnectionAborted);
+            await _realtime.SendToUserAsync(userId.Value, new SupraWsSyncHintPayload
+            {
+                reason = "connected",
+            }, Context.ConnectionAborted);
         }
         await base.OnConnectedAsync();
     }
