@@ -154,12 +154,8 @@ app.UseStaticFiles(new StaticFileOptions
 app.MapControllers();
 app.MapHub<MessengerHub>("/hubs/messenger");
 
-app.MapGet("/register/{token}", async (string token, IWebHostEnvironment env) =>
-{
-    var path = Path.Combine(env.WebRootPath, "register.html");
-    var html = await File.ReadAllTextAsync(path);
-    return Results.Content(html, "text/html; charset=utf-8");
-});
+app.MapGet("/+{token}", ServeRegisterPage);
+app.MapGet("/register/{token}", ServeRegisterPage);
 
 // Do not serve SPA shell for static pages and API
 app.MapFallback(async context =>
@@ -179,3 +175,11 @@ app.MapFallback(async context =>
 });
 
 app.Run();
+
+static async Task<IResult> ServeRegisterPage(string token, IWebHostEnvironment env)
+{
+    _ = token;
+    var path = Path.Combine(env.WebRootPath, "register.html");
+    var html = await File.ReadAllTextAsync(path);
+    return Results.Content(html, "text/html; charset=utf-8");
+}

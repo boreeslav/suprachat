@@ -150,7 +150,7 @@ public sealed class AdminController : ControllerBase
         var adminId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (!Guid.TryParse(adminId, out var creatorId)) return Unauthorized();
 
-        var token = Guid.NewGuid().ToString("N");
+        var token = await InvitationTokenGenerator.GenerateUniqueAsync(_store, ct);
         var inv = new InvitationRecord
         {
             Id = Guid.NewGuid(),

@@ -369,29 +369,42 @@
             if (opts.camera) {
                 input.accept  = opts.accept || 'image/*,video/*';
                 input.capture = opts.cameraFacing || 'environment';
-            } else {
-                if (opts.accept) input.accept = opts.accept;
+            } else if (opts.accept) {
+                input.accept = opts.accept;
             }
+            let settled = false;
             const cleanup = () => {
                 input.removeEventListener('change', onChange);
                 window.removeEventListener('focus', onWindowFocus);
                 if (input.parentNode) input.parentNode.removeChild(input);
             };
-            const onChange = () => {
+            const finishResolve = (files) => {
+                if (settled) return;
+                settled = true;
                 cleanup();
+                resolve(files);
+            };
+            const finishReject = (err) => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                reject(err);
+            };
+            const onChange = () => {
                 const files = Array.from(input.files || []);
                 files.length
-                    ? resolve(files)
-                    : reject(new Error('Файлы не выбраны'));
+                    ? finishResolve(files)
+                    : finishReject(new Error('Файлы не выбраны'));
             };
             const onWindowFocus = () => {
                 window.removeEventListener('focus', onWindowFocus);
+                // На Android change может прийти позже focus после мультивыбора в галерее.
                 setTimeout(() => {
+                    if (settled) return;
                     if (!input.files || !input.files.length) {
-                        cleanup();
-                        reject(new Error('Диалог закрыт без выбора файла'));
+                        finishReject(new Error('Диалог закрыт без выбора файла'));
                     }
-                }, 300);
+                }, 800);
             };
             input.addEventListener('change', onChange);
             window.addEventListener('focus', onWindowFocus);

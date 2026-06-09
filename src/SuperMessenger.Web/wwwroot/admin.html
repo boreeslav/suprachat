@@ -1678,15 +1678,20 @@
       }
     }
 
+    function inviteHref(link) {
+      if (!link) return link;
+      return /^https?:\/\//i.test(link) ? link : 'https://' + link;
+    }
+
     async function loadInvites() {
       const r = await api('/api/admin/invitations');
       const list = await r.json();
       document.querySelector('#invTable tbody').innerHTML = list.map(i => `
         <tr data-id="${i.id}">
-          <td><a href="${i.link}" target="_blank" rel="noopener">${i.link}</a></td>
+          <td><a href="${inviteHref(i.link)}" target="_blank" rel="noopener">${i.link}</a></td>
           <td>${new Date(i.createdOn).toLocaleString()}</td>
           <td class="actions">
-            <button type="button" class="secondary qr-btn" data-link="${encodeURIComponent(i.link)}">QR</button>
+            <button type="button" class="secondary qr-btn" data-link="${encodeURIComponent(inviteHref(i.link))}">QR</button>
             <button type="button" class="danger del-inv">Удалить</button>
           </td>
         </tr>`).join('') || '<tr><td colspan="3">Нет активных приглашений</td></tr>';
@@ -1708,9 +1713,9 @@
       const j = await r.json();
       const el = document.getElementById('newInvite');
       el.hidden = false;
-      el.innerHTML = 'Новая ссылка: <a href="' + j.link + '">' + j.link + '</a> ' +
+      el.innerHTML = 'Новая ссылка: <a href="' + inviteHref(j.link) + '">' + j.link + '</a> ' +
         '<button type="button" class="secondary" id="newInviteQr">QR</button>';
-      document.getElementById('newInviteQr').onclick = () => showQrDialog(j.link);
+      document.getElementById('newInviteQr').onclick = () => showQrDialog(inviteHref(j.link));
       loadInvites();
     };
 

@@ -328,7 +328,7 @@ public sealed class ProfileController : ControllerBase
         if (activeCount >= UserInvitationService.MaxActivePerUser)
             return BadRequest(new { error = $"Не более {UserInvitationService.MaxActivePerUser} активных ссылок" });
 
-        var token = Guid.NewGuid().ToString("N");
+        var token = await InvitationTokenGenerator.GenerateUniqueAsync(_store, ct);
         var now = DateTime.UtcNow;
         var inv = new Core.Entities.InvitationRecord
         {
