@@ -78,6 +78,8 @@ class MessengerI18n {
 			takePhoto: 'Сделать фото',
 			uploadError: 'Ошибка загрузки',
 			downloading: 'Скачать',
+			imageViewerForward: 'Переслать',
+			imageViewerDownload: 'Скачать',
 			today: 'Сегодня',
 			newMessages: 'Новые сообщения',
 			messageFailed: 'Не отправлено',
@@ -210,6 +212,7 @@ class MessengerI18n {
 			tokenChanged: 'Сессия обновлена. Перезагрузка сообщений…',
 			networkOffline: 'Нет соединения',
 			networkOfflineMsg: 'Нет связи с сервером. История доступна офлайн; отправка сообщений возобновится после подключения.',
+			connectingToServer: 'Подключение к серверу...',
 			offlineSendPlaceholder: 'Ожидание подключения к серверу…',
 			offlineSendBlocked: 'Отправка недоступна без соединения с сервером.',
 			confirm: 'Подтвердить',
@@ -328,6 +331,9 @@ class MessengerI18n {
 			msgActionReply: 'Ответить',
 			msgActionForward: 'Переслать',
 			msgActionCopy: 'Скопировать текст',
+			msgActionOpenLink: 'Перейти по ссылке',
+			msgLinkOpenTitle: 'Перейти по ссылке?',
+			msgLinkOpenGo: 'Перейти',
 			msgActionSelect: 'Выбрать',
 			msgActionDelete: 'Удалить',
 			msgActionInfo: 'Информация',
@@ -373,16 +379,28 @@ class MessengerI18n {
 			messageDeleted: 'Сообщение удалено',
 			edited: 'изм.',
 			editMessageTitle: 'Редактировать сообщение',
+			composerQuoteLabel: 'Цитирование',
+			composerEditLabel: 'Редактирование',
 			forwardTitle: 'Переслать',
 			forwardSend: 'Отправить',
 			forwardMaxContacts: 'Можно выбрать не более 10 контактов',
 			forwardNotAllowed: 'Нельзя переслать защищённое или недоступное сообщение',
 			forwardSearch: 'Поиск чатов и контактов',
+			forwardShowSenderName: 'Показывать имя отправителя',
+			forwardIncludeCaption: 'Включить текст сообщения',
 			forwardChatsNotFound: 'Чаты не найдены',
 			textCopied: 'Текст скопирован',
 			selectMode: 'Выбрано',
 			selectCancel: 'Отмена',
 			selectAction: 'Действия',
+			photoComposeTitle: 'Отправить фото',
+			photoComposeCaptionPlaceholder: 'Добавьте подпись…',
+			photoComposeSend: 'Отправить',
+			photoComposeCancel: 'Отмена',
+			photoComposeAdd: 'Добавить фото',
+			photoComposeMax: 'Можно добавить не более 6 фото',
+			photoComposeImageOnly: 'Выберите изображение.',
+			photoAlbumPreview: (n) => `${n} фото`,
 		},
 		en: {
 			loading: 'Loading…',
@@ -458,6 +476,8 @@ class MessengerI18n {
 			takePhoto: 'Take photo',
 			uploadError: 'Upload error',
 			downloading: 'Download',
+			imageViewerForward: 'Forward',
+			imageViewerDownload: 'Download',
 			today: 'Today',
 			newMessages: 'New messages',
 			messageFailed: 'Failed to send',
@@ -590,6 +610,7 @@ class MessengerI18n {
 			tokenChanged: 'Session updated. Reloading messages…',
 			networkOffline: 'No connection',
 			networkOfflineMsg: 'No server connection. History is available offline; sending resumes when connected.',
+			connectingToServer: 'Connecting to server...',
 			offlineSendPlaceholder: 'Waiting for server connection…',
 			offlineSendBlocked: 'Sending is unavailable without a server connection.',
 			confirm: 'Confirm',
@@ -702,6 +723,9 @@ class MessengerI18n {
 			msgActionReply: 'Reply',
 			msgActionForward: 'Forward',
 			msgActionCopy: 'Copy text',
+			msgActionOpenLink: 'Open link',
+			msgLinkOpenTitle: 'Open link?',
+			msgLinkOpenGo: 'Open',
 			msgActionSelect: 'Select',
 			msgActionDelete: 'Delete',
 			msgActionInfo: 'Info',
@@ -747,16 +771,28 @@ class MessengerI18n {
 			messageDeleted: 'Message deleted',
 			edited: 'edited',
 			editMessageTitle: 'Edit message',
+			composerQuoteLabel: 'Quote',
+			composerEditLabel: 'Editing',
 			forwardTitle: 'Forward',
 			forwardSend: 'Send',
 			forwardMaxContacts: 'You can select up to 10 contacts',
 			forwardNotAllowed: 'Protected or unavailable messages cannot be forwarded',
 			forwardSearch: 'Search chats and contacts',
+			forwardShowSenderName: 'Show sender name',
+			forwardIncludeCaption: 'Include message text',
 			forwardChatsNotFound: 'No chats found',
 			textCopied: 'Text copied',
 			selectMode: 'Selected',
 			selectCancel: 'Cancel',
 			selectAction: 'Actions',
+			photoComposeTitle: 'Send photos',
+			photoComposeCaptionPlaceholder: 'Add a caption…',
+			photoComposeSend: 'Send',
+			photoComposeCancel: 'Cancel',
+			photoComposeAdd: 'Add photo',
+			photoComposeMax: 'You can add up to 6 photos',
+			photoComposeImageOnly: 'Please choose an image.',
+			photoAlbumPreview: (n) => `${n} photos`,
 		},
 	};
 
@@ -832,6 +868,9 @@ class MessengerIcons {
 	closeBig() {
 		return `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 	}
+	plus() {
+		return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+	}
 
 	qrCode() {
 		return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -863,6 +902,12 @@ class MessengerIcons {
 	}
 	forward() {
 		return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 17 20 12 15 7"/><path d="M4 12h16"/></svg>`;
+	}
+	externalLink() {
+		return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+	}
+	download() {
+		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 	}
 	select() {
 		return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="9 12 11 14 15 10"/></svg>`;
@@ -1234,6 +1279,7 @@ class MessengerDialog {
 			confirmLabel = 'OK',
 			cancelLabel = 'Cancel',
 			checkboxLabel = '',
+			checkboxChecked = false,
 			themeManager = null,
 		} = options;
 
@@ -1256,6 +1302,7 @@ class MessengerDialog {
 			chkWrap.className = 'mc-dialog-checkbox-wrap';
 			const chkInput = document.createElement('input');
 			chkInput.type = 'checkbox';
+			chkInput.checked = !!checkboxChecked;
 			const chkLabel = document.createElement('span');
 			chkLabel.textContent = checkboxLabel;
 			chkWrap.append(chkInput, chkLabel);
@@ -1859,6 +1906,27 @@ function isMobileSheetMenu() {
 	return window.innerWidth <= 1199;
 }
 
+let _lastPrimaryPointerType = 'mouse';
+
+function bindPrimaryPointerTracking() {
+	if (bindPrimaryPointerTracking._bound) return;
+	bindPrimaryPointerTracking._bound = true;
+	document.addEventListener('pointerdown', (e) => {
+		if (e.isPrimary) _lastPrimaryPointerType = e.pointerType || 'mouse';
+	}, true);
+}
+
+function isTouchPointerType(pointerType) {
+	return pointerType === 'touch';
+}
+
+function isTouchInteractionEvent(e) {
+	if (e.pointerType === 'touch') return true;
+	if (e.pointerType === 'mouse' || e.pointerType === 'pen') return false;
+	if (e.type === 'contextmenu' && e.button === 2) return false;
+	return isTouchPointerType(_lastPrimaryPointerType);
+}
+
 function isSvgLogoUrl(url) {
 	if (!url || typeof url !== 'string') return false;
 	const s = url.trim();
@@ -2198,6 +2266,12 @@ function messengerDisplayOrigin() {
 	}
 }
 
+function inviteLinkToAbsolute(link) {
+	if (!link) return link;
+	if (/^https?:\/\//i.test(link)) return link;
+	return 'https://' + link;
+}
+
 function formatMessengerShareUrl(url) {
 	if (!url) return url;
 	const origin = messengerOrigin();
@@ -2411,6 +2485,7 @@ const MessengerMediaOverlays = {
 class MessengerChatPreferences {
 	static KEY_DESKTOP = 'messenger.sendOnEnter.desktop';
 	static KEY_MOBILE = 'messenger.sendOnEnter.mobile';
+	static KEY_DELETE_FOR_EVERYONE = 'messenger.deleteForEveryone';
 	static #userUseThemeChatBg = null;
 
 	static isMobileViewport() {
@@ -2429,6 +2504,14 @@ class MessengerChatPreferences {
 	static setSendOnEnter(forMobile, enabled) {
 		const key = forMobile ? MessengerChatPreferences.KEY_MOBILE : MessengerChatPreferences.KEY_DESKTOP;
 		localStorage.setItem(key, enabled ? '1' : '0');
+	}
+
+	static getDeleteForEveryone() {
+		return localStorage.getItem(MessengerChatPreferences.KEY_DELETE_FOR_EVERYONE) === '1';
+	}
+
+	static setDeleteForEveryone(enabled) {
+		localStorage.setItem(MessengerChatPreferences.KEY_DELETE_FOR_EVERYONE, enabled ? '1' : '0');
 	}
 
 	static getUserUseThemeChatBg() {
@@ -2507,6 +2590,7 @@ function createProfileQrButton({ link, qrTitle, icons, i18n, themeManager, class
 class MessengerQrDialog {
 	static show({ link, title, i18n, themeManager }) {
 		if (!link) return;
+		const qrText = inviteLinkToAbsolute(link);
 		const overlay = document.createElement('div');
 		overlay.className = 'mapp-qr-overlay';
 		const dialog = document.createElement('div');
@@ -2522,7 +2606,7 @@ class MessengerQrDialog {
 		canvasWrap.className = 'mapp-qr-canvas';
 		const linkEl = document.createElement('div');
 		linkEl.className = 'mapp-qr-link mapp-selectable-text';
-		linkEl.textContent = formatMessengerShareUrl(link);
+		linkEl.textContent = /^https?:\/\//i.test(link) ? formatMessengerShareUrl(link) : link;
 		const closeBtn = document.createElement('button');
 		closeBtn.type = 'button';
 		closeBtn.className = 'mapp-btn mapp-btn-secondary mapp-qr-close-btn';
@@ -2536,7 +2620,7 @@ class MessengerQrDialog {
 			canvasWrap.textContent = i18n?.t('qrLibMissing') || 'QR library not loaded';
 		};
 		if (typeof SupraQr !== 'undefined' && SupraQr.isAvailable()) {
-			SupraQr.render(canvasWrap, { text: link, size: 220 }).catch(showError);
+			SupraQr.render(canvasWrap, { text: qrText, size: 220 }).catch(showError);
 		} else {
 			showError();
 		}
@@ -2563,13 +2647,149 @@ async function compressImageFile(file, maxSize = AVATAR_MAX_DIMENSION, quality =
 			canvas.getContext('2d').drawImage(img, 0, 0, w, h);
 			canvas.toBlob(blob => {
 				if (!blob) { resolve(file); return; }
-				resolve(new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
+				resolve(new File([blob], file.name || 'photo.jpg', { type: 'image/jpeg' }));
 			}, 'image/jpeg', quality);
 		};
 		img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(file); };
 		img.src = objUrl;
 	});
 }
+
+const MESSENGER_VIEWER_FHD_MAX = 1920;
+const MESSENGER_PREVIEW_JPEG_QUALITY = 0.88;
+const MESSENGER_THUMB_JPEG_QUALITY = 0.9;
+
+function getMessengerScreenThumbMax() {
+	if (typeof window === 'undefined') return 640;
+	const w = window.innerWidth || document.documentElement?.clientWidth || 640;
+	return Math.max(280, Math.min(Math.round(w), MESSENGER_VIEWER_FHD_MAX));
+}
+
+function messengerThumbCacheKey(url, maxSize) {
+	return `${url}#t${maxSize}`;
+}
+
+async function createImagePreviewObjectUrl(file, maxSize = null) {
+	if (!file?.type?.startsWith('image/')) return URL.createObjectURL(file);
+	const thumbMax = maxSize ?? getMessengerScreenThumbMax();
+	const compressed = await compressImageFile(file, thumbMax, MESSENGER_PREVIEW_JPEG_QUALITY);
+	return URL.createObjectURL(compressed);
+}
+
+function bindChatImageOpen(target, { icons, cache, i18n, getMsgArea = null } = {}) {
+	if (!target) return null;
+	const img = target.classList?.contains('mc-bubble-image') || target.classList?.contains('mc-photo-collage-item')
+		? target
+		: target.querySelector?.('.mc-bubble-image, .mc-photo-collage-item');
+	const host = img || target;
+	if (!host || host.dataset.chatImageOpenBound) return img;
+
+	const openFromImg = (el, e) => {
+		if (!el) return;
+		const row = el.closest('.mc-msg-row');
+		if (row?.classList.contains('mc-msg-row--selectable')) return;
+		e.stopPropagation();
+		const viewerUrl = el.dataset.viewerUrl || el.src;
+		if (!viewerUrl || !icons) return;
+		const msgArea = typeof getMsgArea === 'function'
+			? getMsgArea()
+			: el.closest('.mc-messages');
+		MessengerImageViewer.openForChat({
+			src: viewerUrl,
+			displaySrc: el.classList.contains('mc-image-slot--ready') ? el.src : '',
+			icons,
+			cache,
+			msgArea,
+			i18n,
+		});
+	};
+
+	host.dataset.chatImageOpenBound = '1';
+	if (img) {
+		img.addEventListener('click', (e) => openFromImg(img, e));
+	} else {
+		host.addEventListener('click', (e) => {
+			if (e.target.closest('.mc-msg-footer')) return;
+			const el = host.querySelector('.mc-bubble-image, .mc-photo-collage-item');
+			openFromImg(el, e);
+		});
+	}
+	return img;
+}
+
+const MessengerImageSlot = {
+	isLocalSrc(url) {
+		return typeof url === 'string' && (url.startsWith('blob:') || url.startsWith('data:'));
+	},
+	wrap(img, wrapClass = 'mc-image-slot-wrap') {
+		if (!img) return null;
+		const existing = img.closest(`.${wrapClass}, .mc-photo-collage-cell`);
+		if (existing) return existing;
+		const cell = document.createElement('div');
+		cell.className = `${wrapClass} mc-image-slot mc-image-slot--pending`;
+		img.parentNode?.insertBefore(cell, img);
+		cell.appendChild(img);
+		return cell;
+	},
+	markPending(img) {
+		if (!img) return;
+		img.classList.add('mc-image-slot--pending');
+		img.classList.remove('mc-image-slot--ready');
+		const cell = img.closest('.mc-image-slot');
+		if (cell) {
+			cell.classList.add('mc-image-slot--pending');
+			cell.classList.remove('mc-image-slot--ready');
+		}
+	},
+	markReady(img) {
+		if (!img) return;
+		img.classList.remove('mc-image-slot--pending');
+		img.classList.add('mc-image-slot--ready');
+		const cell = img.closest('.mc-image-slot');
+		if (cell) {
+			cell.classList.remove('mc-image-slot--pending');
+			cell.classList.add('mc-image-slot--ready');
+		}
+	},
+	clearSrc(img) {
+		if (!img) return;
+		img.removeAttribute('src');
+		this.markPending(img);
+	},
+	applySrc(img, url) {
+		if (!img || !url || !this.isLocalSrc(url)) return;
+		this.markPending(img);
+		const onLoad = () => this.markReady(img);
+		const onError = () => this.clearSrc(img);
+		img.addEventListener('load', onLoad, { once: true });
+		img.addEventListener('error', onError, { once: true });
+		if (img.src === url && img.complete && img.naturalWidth > 0) {
+			onLoad();
+			return;
+		}
+		img.src = url;
+		if (img.complete) {
+			if (img.naturalWidth > 0) onLoad();
+			else onError();
+		}
+	},
+	createCollageCell() {
+		const cell = document.createElement('div');
+		cell.className = 'mc-photo-collage-cell mc-image-slot mc-image-slot--pending';
+		const img = document.createElement('img');
+		img.className = 'mc-photo-collage-item mc-image-slot--pending';
+		cell.appendChild(img);
+		return { cell, img };
+	},
+	createBubbleImageWrap() {
+		const cell = document.createElement('div');
+		cell.className = 'mc-image-slot-wrap mc-image-slot mc-image-slot--pending';
+		const img = document.createElement('img');
+		img.className = 'mc-bubble-image mc-image-slot--pending';
+		cell.appendChild(img);
+		return { cell, img };
+	},
+};
 
 // In-app camera capture (works on desktop + mobile via getUserMedia).
 // Produces a square JPEG File and passes it to onCapture.
@@ -3076,6 +3296,12 @@ async function pickMessengerFiles({ accept = undefined, multiple = false } = {})
 		return [];
 	}
 	return FileUploader.pickFiles({ camera: false, accept, multiple });
+}
+
+/** Image picker with multi-select; без accept — на Android работает мультивыбор в галерее. */
+async function pickMessengerImages({ multiple = true } = {}) {
+	const files = await pickMessengerFiles({ multiple, accept: undefined });
+	return (files || []).filter(f => f.type?.startsWith('image/'));
 }
 
 // Opens the chat-style file picker immediately, optional crop, then onPick(file).
@@ -6919,6 +7145,228 @@ class MessengerStickyDateSeparator {
 	}
 }
 
+function syncMediaCaptionFooterLayout(bubble) {
+	if (!bubble) return;
+	const isMedia = bubble.classList.contains('mc-image-bubble')
+		|| bubble.classList.contains('mc-photo-album-bubble');
+	if (!isMedia) return;
+	const hasCaption = !!bubble.querySelector('.mc-photo-album-caption');
+	bubble.classList.toggle('mc-bubble--media-no-caption', !hasCaption);
+}
+
+const MessengerPhotoCollage = {
+	MAX_PHOTOS: 6,
+
+	buildEl(utils, items, { cache = null, icons = null, msgArea = null, i18n = null, onItemClick = null } = {}) {
+		const count = Math.min(items.length, this.MAX_PHOTOS);
+		if (!count) return null;
+		const collage = utils.mk('div', `mc-photo-collage mc-photo-collage--count-${count}`);
+		for (let i = 0; i < count; i++) {
+			const item = items[i];
+			const { cell, img } = MessengerImageSlot.createCollageCell();
+			img.alt = item.fileName || item.name || '';
+			img.loading = 'lazy';
+			img.decoding = 'async';
+			const displaySrc = item.objectUrl || item.src || null;
+			const viewerUrl = item.viewerUrl || (item.fileId
+				? MessengerFileService.getFileUrl(item.fileId)
+				: null);
+			if (item.fileId) img.dataset.fileId = item.fileId;
+			if (viewerUrl) img.dataset.viewerUrl = viewerUrl;
+			if (displaySrc) {
+				MessengerImageSlot.applySrc(img, displaySrc);
+			} else if (viewerUrl && cache) {
+				cache.applyCollageThumbnailSrc(img, viewerUrl);
+			}
+			const openViewer = (e) => {
+				const row = img.closest('.mc-msg-row');
+				if (row?.classList.contains('mc-msg-row--selectable')) return;
+				e.stopPropagation();
+				const resolvedUrl = img.dataset.viewerUrl || viewerUrl || img.src;
+				if (!icons || !resolvedUrl) return;
+				MessengerImageViewer.openForChat({
+					src: resolvedUrl,
+					displaySrc: img.classList.contains('mc-image-slot--ready') ? img.src : '',
+					icons,
+					cache,
+					msgArea: msgArea || img.closest('.mc-messages'),
+					i18n,
+				});
+			};
+			if (onItemClick) img.addEventListener('click', onItemClick);
+			else img.addEventListener('click', openViewer);
+			collage.appendChild(cell);
+		}
+		return collage;
+	},
+};
+
+class MessengerPhotoComposeModal {
+	static open({ utils, icons, i18n, themeManager = null, initialFiles = [], onSend = null, onCancel = null } = {}) {
+		const files = (initialFiles || []).filter(f => f?.type?.startsWith('image/'));
+		if (!files.length) return;
+
+		const previewUrls = files.map(() => null);
+		let closed = false;
+
+		const overlay = utils.mk('div', 'mapp-modal-overlay mc-photo-compose-overlay');
+		applyMobileFullscreenOverlay(overlay);
+		lockAppScroll();
+
+		const modal = utils.mk('div', 'mapp-modal mc-photo-compose-modal');
+		const header = utils.mk('div', 'mapp-modal-header');
+		const title = utils.mk('div', 'mapp-modal-title');
+		title.textContent = i18n?.t('photoComposeTitle') || 'Send photos';
+		const closeBtn = utils.mk('button', 'mapp-modal-close');
+		closeBtn.type = 'button';
+		closeBtn.innerHTML = icons?.closeBig?.() || '×';
+		header.append(title, closeBtn);
+
+		const body = utils.mk('div', 'mapp-modal-body mc-photo-compose-body');
+		const grid = utils.mk('div', 'mc-photo-compose-grid');
+
+		const inputArea = utils.mk('div', 'mc-input-area mc-photo-compose-input');
+		const caption = utils.mk('textarea', 'mc-input-field');
+		caption.rows = 1;
+		caption.placeholder = i18n?.t('photoComposeCaptionPlaceholder') || '';
+
+		const sendBtn = utils.mk('button', 'mc-send-btn');
+		sendBtn.type = 'button';
+		sendBtn.title = i18n?.t('photoComposeSend') || 'Send';
+		sendBtn.innerHTML = icons?.send?.() || '→';
+
+		const doSend = () => {
+			if (!files.length) return;
+			const captionText = caption.value.trim();
+			const snapshot = files.slice();
+			cleanup();
+			onSend?.(snapshot, captionText);
+		};
+
+		caption.addEventListener('input', () => {
+			caption.style.height = 'auto';
+			if (caption.scrollHeight > 40) caption.style.height = Math.min(caption.scrollHeight, 120) + 'px';
+		});
+		caption.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter' && !e.shiftKey && MessengerChatPreferences.getSendOnEnter()) {
+				e.preventDefault();
+				doSend();
+			}
+		});
+		sendBtn.addEventListener('click', doSend);
+		inputArea.append(caption, sendBtn);
+
+		const cleanup = () => {
+			if (closed) return;
+			closed = true;
+			previewUrls.forEach(u => { if (u) URL.revokeObjectURL(u); });
+			unlockAppScroll();
+			overlay.remove();
+		};
+
+		const ensurePreview = (file, idx) => {
+			if (previewUrls[idx]) return;
+			createImagePreviewObjectUrl(file).then((url) => {
+				if (closed || !previewUrls) return;
+				previewUrls[idx] = url;
+				const slot = grid.querySelector(`.mc-photo-compose-thumb[data-preview-idx="${idx}"]`);
+				if (slot) {
+					slot.style.backgroundImage = `url("${url}")`;
+					slot.classList.add('mc-image-slot--ready');
+				}
+			}).catch(() => {});
+		};
+
+		const renderGrid = () => {
+			grid.replaceChildren();
+			files.forEach((file, idx) => {
+				const wrap = utils.mk('div', 'mc-photo-compose-thumb-wrap');
+				const slot = utils.mk('div', 'mc-photo-compose-thumb mc-image-slot');
+				slot.dataset.previewIdx = String(idx);
+				slot.title = file.name;
+				if (previewUrls[idx]) {
+					slot.style.backgroundImage = `url("${previewUrls[idx]}")`;
+					slot.classList.add('mc-image-slot--ready');
+				} else {
+					ensurePreview(file, idx);
+				}
+				const removeBtn = utils.mk('button', 'mc-photo-compose-remove');
+				removeBtn.type = 'button';
+				removeBtn.innerHTML = icons?.closeBig?.() || '×';
+				removeBtn.title = i18n?.t('selectCancel') || 'Cancel';
+				removeBtn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					if (files.length <= 1) {
+						cleanup();
+						onCancel?.();
+						return;
+					}
+					if (previewUrls[idx]) URL.revokeObjectURL(previewUrls[idx]);
+					files.splice(idx, 1);
+					previewUrls.splice(idx, 1);
+					renderGrid();
+				});
+				wrap.append(slot, removeBtn);
+				grid.appendChild(wrap);
+			});
+			grid.appendChild(addBtn);
+		};
+
+		const addBtn = utils.mk('button', 'mc-photo-compose-add');
+		addBtn.type = 'button';
+		addBtn.title = i18n?.t('photoComposeAdd') || 'Add photo';
+		addBtn.innerHTML = icons?.plus?.() || '+';
+
+		const appendImages = (picked) => {
+			let added = 0;
+			for (const f of picked || []) {
+				if (!f.type?.startsWith('image/')) continue;
+				const idx = files.length;
+				files.push(f);
+				previewUrls.push(null);
+				added++;
+				ensurePreview(f, idx);
+			}
+			if (added) renderGrid();
+			return added;
+		};
+
+		const openImagePicker = async () => {
+			try {
+				const picked = await pickMessengerImages({ multiple: true });
+				if (!picked.length) return;
+				appendImages(picked);
+			} catch {
+				/* picker closed */
+			}
+		};
+
+		addBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			openImagePicker();
+		});
+
+		files.forEach((file, idx) => ensurePreview(file, idx));
+
+		renderGrid();
+		body.append(grid);
+		modal.append(header, body, inputArea);
+		overlay.appendChild(modal);
+		document.body.appendChild(overlay);
+
+		const dismiss = messengerMakeDismissable(() => {
+			cleanup();
+			onCancel?.();
+		}, null);
+		closeBtn.addEventListener('click', () => dismiss());
+		if (!overlay.classList.contains('mapp-modal-overlay--fullscreen')) {
+			overlay.addEventListener('click', (e) => { if (e.target === overlay) dismiss(); });
+		}
+
+		requestAnimationFrame(() => caption.focus());
+	}
+}
+
 class MessengerFileUploadBubble {
 	#utils;
 	#icons;
@@ -6969,16 +7417,17 @@ class MessengerFileUploadBubble {
 		footer.appendChild(footerStatusEl);
 
 		if (isImage) {
-			bubble.classList.add('mc-image-bubble', 'mc-file-upload-bubble');
-			objectUrl = URL.createObjectURL(file);
-			const img = document.createElement('img');
-			img.className = 'mc-bubble-image';
+			bubble.classList.add('mc-image-bubble', 'mc-file-upload-bubble', 'mc-bubble--media-no-caption');
+			const { cell: imgWrap, img } = MessengerImageSlot.createBubbleImageWrap();
 			img.alt = file.name;
-			img.src = objectUrl;
+			createImagePreviewObjectUrl(file).then((url) => {
+				objectUrl = url;
+				MessengerImageSlot.applySrc(img, url);
+			}).catch(() => {});
 			progressWrap = this.#utils.mk('div', 'mc-file-progress-wrap mc-image-upload-progress');
 			progressBar = this.#utils.mk('div', 'mc-file-progress-bar');
 			progressWrap.appendChild(progressBar);
-			bubble.append(img, progressWrap, footer);
+			bubble.append(imgWrap, progressWrap, footer);
 		} else {
 			bubble.classList.add('mc-file-bubble');
 			const header = this.#utils.mk('div', 'mc-file-bubble-header');
@@ -6999,22 +7448,14 @@ class MessengerFileUploadBubble {
 		row.appendChild(bubble);
 		const bubbleFactory = this;
 
-		const bindImageClick = (img, serverUrl) => {
-			img.addEventListener('click', (e) => {
-				e.stopPropagation();
-				MessengerImageViewer.openForChat({
-					src: serverUrl || img.dataset.viewerUrl || img.src,
-					displaySrc: img.src,
-					icons,
-					cache,
-					msgArea: msgAreaRef,
-				});
-			});
-		};
-
 		if (isImage) {
-			const img = bubble.querySelector('.mc-bubble-image');
-			bindImageClick(img, null);
+			const imgWrap = bubble.querySelector('.mc-image-slot-wrap');
+			bindChatImageOpen(imgWrap, {
+				icons,
+				cache,
+				i18n: bubbleFactory.#i18n,
+				getMsgArea: () => msgAreaRef,
+			});
 		}
 
 		return {
@@ -7045,13 +7486,16 @@ class MessengerFileUploadBubble {
 						const serverUrl = MessengerFileService.getFileUrl(payload.fileId);
 						img.dataset.viewerUrl = serverUrl;
 						img.dataset.fileId = payload.fileId;
-						img.replaceWith(img.cloneNode(true));
-						const freshImg = bubble.querySelector('.mc-bubble-image');
-						freshImg.src = objectUrl || freshImg.src;
-						bindImageClick(freshImg, serverUrl);
 					}
 					this.setSentStatus('sent');
-					return;
+					return Promise.resolve(
+						objectUrl && cache
+							? cache.adoptLocalPreview(
+								MessengerFileService.getFileUrl(payload.fileId),
+								objectUrl,
+							)
+							: null,
+					);
 				}
 				bubble.innerHTML = '';
 				bubble.className = 'mc-bubble mc-file-bubble';
@@ -7079,6 +7523,7 @@ class MessengerFileUploadBubble {
 				});
 				bubble.append(wrap, footer);
 				this.setSentStatus('sent');
+				return Promise.resolve();
 			},
 		};
 	}
@@ -7092,6 +7537,113 @@ class MessengerFileUploadBubble {
 		if (bytes < 1024) return `${bytes} B`;
 		if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
 		return `${(bytes / 1048576).toFixed(2)} MB`;
+	}
+
+	createAlbum(files, caption = '') {
+		const row = this.#utils.mk('div', 'mc-msg-row mc-msg-row--mine mc-file-upload-row');
+		const localId = this.#utils.guid();
+		row.dataset.localUploadId = localId;
+		row.dataset.msgId = localId;
+
+		const bubble = this.#utils.mk('div', 'mc-bubble mc-photo-album-bubble mc-file-upload-bubble');
+		const icons = this.#icons;
+		const cache = this.#cache;
+		const utils = this.#utils;
+		const previewUrls = files.map(() => null);
+		let msgAreaRef = null;
+		let progressWrap = null;
+		let progressBar = null;
+		let footerStatusEl = null;
+
+		const footer = this.#utils.mk('div', 'mc-msg-footer');
+		const timeEl = this.#utils.mk('span', 'mc-msg-time');
+		timeEl.textContent = this.#utils.formatTime(new Date());
+		footer.appendChild(timeEl);
+		footerStatusEl = this.#utils.mk('span', 'mc-msg-status');
+		this.#setStatusIcon(footerStatusEl, 'sending');
+		footer.appendChild(footerStatusEl);
+
+		const collageItems = files.map((file, i) => ({
+			name: file.name,
+			objectUrl: previewUrls[i] || null,
+		}));
+		const collage = MessengerPhotoCollage.buildEl(utils, collageItems, {
+			cache,
+			icons,
+			i18n: this.#i18n,
+			get msgArea() { return msgAreaRef; },
+		});
+		files.forEach((file, i) => {
+			createImagePreviewObjectUrl(file).then((url) => {
+				previewUrls[i] = url;
+				const img = collage?.querySelector(`.mc-photo-collage-cell:nth-child(${i + 1}) .mc-photo-collage-item`);
+				if (img) MessengerImageSlot.applySrc(img, url);
+			}).catch(() => {});
+		});
+		progressWrap = this.#utils.mk('div', 'mc-file-progress-wrap mc-image-upload-progress');
+		progressBar = this.#utils.mk('div', 'mc-file-progress-bar');
+		progressWrap.appendChild(progressBar);
+		progressWrap.hidden = true;
+
+		const parts = [collage, progressWrap];
+		const captionText = (caption || '').trim();
+		if (captionText) {
+			const capEl = this.#utils.mk('div', 'mc-msg-text mc-photo-album-caption');
+			capEl.innerHTML = renderMessengerMessageHtml(captionText);
+			parts.push(capEl);
+		} else {
+			bubble.classList.add('mc-bubble--media-no-caption');
+		}
+		parts.push(footer);
+		bubble.append(...parts);
+		row.appendChild(bubble);
+		const bubbleFactory = this;
+
+		return {
+			el: row,
+			localId,
+			previewUrls,
+			progressBar,
+			progressWrap,
+			setMsgArea(area) { msgAreaRef = area; },
+			setProgress(pct) {
+				if (progressBar) progressBar.style.width = `${pct}%`;
+			},
+			setSentStatus(status) {
+				if (footerStatusEl) bubbleFactory.#setStatusIcon(footerStatusEl, status);
+			},
+			setError(msg) {
+				if (progressWrap) progressWrap.hidden = true;
+				if (footerStatusEl) {
+					footerStatusEl.textContent = msg;
+					footerStatusEl.className = 'mc-msg-status mc-msg-status--error';
+				}
+			},
+			setComplete(contentType, payload) {
+				if (progressWrap) progressWrap.hidden = true;
+				if (contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+					const imgs = bubble.querySelectorAll('.mc-photo-collage-item');
+					const tasks = [];
+					(payload.fileIds || []).forEach((fileId, i) => {
+						const serverUrl = MessengerFileService.getFileUrl(fileId);
+						const img = imgs[i];
+						if (!img) return;
+						img.dataset.fileId = fileId;
+						img.dataset.viewerUrl = serverUrl;
+						const previewUrl = previewUrls[i];
+						if (previewUrl && cache) {
+							tasks.push(cache.adoptLocalPreview(serverUrl, previewUrl));
+						}
+					});
+					this.setSentStatus('sent');
+					return Promise.all(tasks);
+				}
+				return Promise.resolve();
+			},
+			destroy() {
+				previewUrls.forEach(u => { if (u) URL.revokeObjectURL(u); });
+			},
+		};
 	}
 }
 
@@ -7116,22 +7668,159 @@ class MessengerFileHandler {
 		return MessengerAppContext.getBpmCsrf();
 	}
 
+	#buildUploadOptions(url, uploadFile, fileId, chatId, uploadToken) {
+		return {
+			url,
+			headers: {
+				'BPMCSRF': this.#getBpmCsrf()
+			},
+			chunkSize: 0,
+			file: uploadFile,
+			data: {
+				[uploadToken]: '',
+				fileId: () => fileId,
+				totalFileLength: (file) => file.size,
+				mimeType: (file) => file.type,
+				fileName: (file) => file.name,
+				columnName: 'Data',
+				parentColumnName: 'SupraChat',
+				parentColumnValue: chatId,
+				additionalParams: null,
+				entitySchemaName: 'SupraFileChatMessage',
+			},
+		};
+	}
+
+	#uploadOneFile(file, chatId, primaryUrl, fallbackUrl, uploadToken) {
+		const fileId = FileUploader.generateGUID();
+		let fallbackStarted = false;
+		return new Promise((resolve, reject) => {
+			const run = (url) => {
+				const task = FileUploader.upload(this.#buildUploadOptions(url, file, fileId, chatId, uploadToken));
+				task.on('complete', (error) => {
+					if (error) {
+						if (error.httpStatus === 404 && !fallbackStarted) {
+							fallbackStarted = true;
+							run(fallbackUrl);
+							return;
+						}
+						reject(error);
+						return;
+					}
+					resolve({
+						fileId,
+						fileName: file.name,
+						fileSize: file.size,
+						mimeType: file.type,
+					});
+				});
+			};
+			run(primaryUrl);
+		});
+	}
+
 	upload(type, chatId, msgArea, appendBubbleCallback, onMessageSent = null) {
 		if (typeof FileUploader === 'undefined') {
 			console.warn('[MessengerFileHandler] FileUploader not found');
 			return;
 		}
-
-		const fileId = FileUploader.generateGUID();
 		const isCamera = type === 'camera';
-		let capturedFile = null;
+		const pickOpts = isCamera
+			? { camera: true, accept: 'image/*' }
+			: { camera: false, multiple: true };
+		FileUploader.pickFiles(pickOpts).then((files) => {
+			if (!files?.length) return;
+			const images = files.filter(f => f.type?.startsWith('image/'));
+			const others = files.filter(f => !f.type?.startsWith('image/'));
+			if (images.length) {
+				MessengerPhotoComposeModal.open({
+					utils: this.#utils,
+					icons: this.#icons,
+					i18n: this.#i18n,
+					initialFiles: images,
+					onSend: (picked, caption) => {
+						this.#sendPhotoAlbum(picked, caption, chatId, msgArea, appendBubbleCallback, onMessageSent);
+					},
+				});
+			}
+			for (const file of others) {
+				this.#uploadSingleFile(file, chatId, msgArea, appendBubbleCallback, onMessageSent);
+			}
+		}).catch(() => {});
+	}
+
+	async #sendPhotoAlbum(files, caption, chatId, msgArea, appendBubbleCallback, onMessageSent) {
+		if (!files?.length) return;
+		const perMessage = MessengerPhotoCollage.MAX_PHOTOS;
+		const trimmedCaption = (caption || '').trim();
+		const batches = [];
+
+		for (let offset = 0; offset < files.length; offset += perMessage) {
+			const batchFiles = files.slice(offset, offset + perMessage);
+			const batchCaption = offset === 0 ? trimmedCaption : '';
+			const bubbleCtrl = this.#bubbleFactory.createAlbum(batchFiles, batchCaption);
+			bubbleCtrl.setMsgArea(msgArea);
+			bubbleCtrl.el._uploadCtrl = bubbleCtrl;
+			appendBubbleCallback(bubbleCtrl.el);
+			batches.push({ files: batchFiles, caption: batchCaption, bubbleCtrl });
+		}
+		if (msgArea) MessengerUtils.scrollToBottom(msgArea);
+
+		const primaryUploadUrl = MessengerAppContext.toAbsoluteUrl('/api/files/upload');
+		const fallbackUploadUrl = MessengerAppContext.toAbsoluteUrl('/api/files/upload');
+		const uploadToken = `fileapi${Date.now()}`;
+
+		for (const batch of batches) {
+			try {
+				const uploaded = [];
+				for (const file of batch.files) {
+					const result = await this.#uploadOneFile(
+						file, chatId, primaryUploadUrl, fallbackUploadUrl, uploadToken
+					);
+					uploaded.push(result);
+				}
+				await this.#finalizePhotoAlbumBatch(
+					batch.bubbleCtrl, uploaded, batch.caption, chatId, msgArea, onMessageSent
+				);
+			} catch (e) {
+				batch.bubbleCtrl.setError(e.message || this.#i18n.t('uploadError'));
+			}
+		}
+	}
+
+	async #finalizePhotoAlbumBatch(bubbleCtrl, uploaded, caption, chatId, msgArea, onMessageSent) {
+		const payload = {
+			fileIds: uploaded.map(u => u.fileId),
+			fileNames: uploaded.map(u => u.fileName),
+			fileSizes: uploaded.map(u => u.fileSize),
+			mimeTypes: uploaded.map(u => u.mimeType),
+			caption: (caption || '').trim(),
+			chatId,
+		};
+		await bubbleCtrl.setComplete(MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM, payload);
+		bubbleCtrl.setSentStatus('sending');
+		if (msgArea) MessengerUtils.scrollToBottom(msgArea);
+		const messageText = MessengerCustomMessage.pack(
+			MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM,
+			payload
+		);
+		const localId = bubbleCtrl.localId;
+		const serverMsg = await this.#api.sendMessage(chatId, messageText, localId);
+		if (serverMsg?.id) {
+			bubbleCtrl.setSentStatus(serverMsg.status || 'sent');
+			onMessageSent?.(chatId, localId, serverMsg, bubbleCtrl.el, messageText);
+		}
+	}
+
+	#uploadSingleFile(file, chatId, msgArea, appendBubbleCallback, onMessageSent) {
+		const fileId = FileUploader.generateGUID();
 		let bubbleCtrl = null;
 		let bubbleCreated = false;
 
 		const ensureBubble = () => {
-			if (bubbleCreated || !capturedFile) return;
+			if (bubbleCreated || !file) return;
 			bubbleCreated = true;
-			bubbleCtrl = this.#bubbleFactory.create(capturedFile);
+			bubbleCtrl = this.#bubbleFactory.create(file);
 			bubbleCtrl.setMsgArea(msgArea);
 			bubbleCtrl.el._uploadCtrl = bubbleCtrl;
 			appendBubbleCallback(bubbleCtrl.el);
@@ -7141,65 +7830,10 @@ class MessengerFileHandler {
 		const primaryUploadUrl = MessengerAppContext.toAbsoluteUrl('/api/files/upload');
 		const fallbackUploadUrl = MessengerAppContext.toAbsoluteUrl('/api/files/upload');
 		const uploadToken = `fileapi${Date.now()}`;
-		let selectedFile = null;
 		let fallbackStarted = false;
 
-		const buildOptions = (url, uploadFile) => {
-			const opts = {
-				url,
-				headers: {
-					'BPMCSRF': this.#getBpmCsrf()
-				},
-				chunkSize: 0,
-				data: {
-					[uploadToken]: '',
-					fileId: () => fileId,
-					totalFileLength: (file) => {
-						capturedFile = file;
-						return file.size;
-					},
-					mimeType: (file) => {
-						capturedFile = file;
-						return file.type;
-					},
-					fileName: (file) => {
-						capturedFile = file;
-						return file.name;
-					},
-					columnName: 'Data',
-					parentColumnName: 'SupraChat',
-					parentColumnValue: chatId,
-					additionalParams: null,
-					entitySchemaName: 'SupraFileChatMessage',
-				},
-			};
-
-			if (uploadFile) {
-				opts.file = uploadFile;
-				return opts;
-			}
-
-			if (isCamera) {
-				opts.openCamera = true;
-			} else {
-				opts.openFilePicker = true;
-			}
-
-			return opts;
-		};
-
-		const startUpload = (opts) => {
-			const task = FileUploader.upload(opts);
-
-			task.on('selected', (files) => {
-				selectedFile = (files && files.length > 0) ? files[0] : null;
-				if (selectedFile) {
-					capturedFile = selectedFile;
-					ensureBubble();
-					if (bubbleCtrl) bubbleCtrl.setMsgArea(msgArea);
-				}
-			});
-
+		const startUpload = (url) => {
+			const task = FileUploader.upload(this.#buildUploadOptions(url, file, fileId, chatId, uploadToken));
 			task.on('progress', (e) => {
 				ensureBubble();
 				if (bubbleCtrl) {
@@ -7207,32 +7841,30 @@ class MessengerFileHandler {
 					bubbleCtrl.setProgress(e.percent);
 				}
 			});
-
 			task.on('complete', async (error) => {
 				ensureBubble();
 				if (error) {
-					if (error.httpStatus === 404 && !fallbackStarted && selectedFile) {
+					if (error.httpStatus === 404 && !fallbackStarted) {
 						fallbackStarted = true;
-						startUpload(buildOptions(fallbackUploadUrl, selectedFile));
+						startUpload(fallbackUploadUrl);
 						return;
 					}
 					if (bubbleCtrl) bubbleCtrl.setError(error.message || this.#i18n.t('uploadError'));
 					return;
 				}
-				const file = capturedFile;
 				const isImage = file?.type?.startsWith('image/');
-				const contentType = isImage ?
-					MessengerCustomMessage.CONTENT_TYPES.IMAGE :
-					MessengerCustomMessage.CONTENT_TYPES.FILE;
+				const contentType = isImage
+					? MessengerCustomMessage.CONTENT_TYPES.IMAGE
+					: MessengerCustomMessage.CONTENT_TYPES.FILE;
 				const payload = {
 					fileId,
 					fileName: file?.name ?? '',
 					fileSize: file?.size ?? 0,
 					mimeType: file?.type ?? '',
-					chatId
+					chatId,
 				};
 				if (bubbleCtrl) {
-					bubbleCtrl.setComplete(contentType, payload);
+					await bubbleCtrl.setComplete(contentType, payload);
 					bubbleCtrl.setSentStatus('sending');
 				}
 				if (msgArea) MessengerUtils.scrollToBottom(msgArea);
@@ -7242,9 +7874,7 @@ class MessengerFileHandler {
 					const serverMsg = await this.#api.sendMessage(chatId, messageText, localId);
 					if (serverMsg?.id && bubbleCtrl) {
 						bubbleCtrl.setSentStatus(serverMsg.status || 'sent');
-						if (bubbleCtrl.el) {
-							onMessageSent?.(chatId, localId, serverMsg, bubbleCtrl.el, messageText);
-						}
+						onMessageSent?.(chatId, localId, serverMsg, bubbleCtrl.el, messageText);
 					}
 				} catch (e) {
 					if (bubbleCtrl) bubbleCtrl.setError(e.message || this.#i18n.t('uploadError'));
@@ -7252,7 +7882,8 @@ class MessengerFileHandler {
 			});
 		};
 
-		startUpload(buildOptions(primaryUploadUrl, null));
+		ensureBubble();
+		startUpload(primaryUploadUrl);
 	}
 }
 
@@ -7386,6 +8017,104 @@ class MessengerThemeManager {
 			g: parseInt(hex.slice(2, 4), 16),
 			b: parseInt(hex.slice(4, 6), 16),
 		};
+	}
+
+	static rgbToHex(rgb) {
+		if (!rgb) return null;
+		const clamp = (v) => Math.max(0, Math.min(255, Math.round(v)));
+		return `#${[rgb.r, rgb.g, rgb.b].map((v) => clamp(v).toString(16).padStart(2, '0')).join('')}`;
+	}
+
+	static mixRgb(a, b, t) {
+		return {
+			r: a.r + (b.r - a.r) * t,
+			g: a.g + (b.g - a.g) * t,
+			b: a.b + (b.b - a.b) * t,
+		};
+	}
+
+	static relativeLuminance(rgb) {
+		if (!rgb) return 0;
+		const ch = [rgb.r, rgb.g, rgb.b].map((v) => {
+			v /= 255;
+			return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+		});
+		return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+	}
+
+	static contrastRatio(rgbA, rgbB) {
+		const la = MessengerThemeManager.relativeLuminance(rgbA);
+		const lb = MessengerThemeManager.relativeLuminance(rgbB);
+		const lighter = Math.max(la, lb);
+		const darker = Math.min(la, lb);
+		return (lighter + 0.05) / (darker + 0.05);
+	}
+
+	static colorDistance(rgbA, rgbB) {
+		if (!rgbA || !rgbB) return 0;
+		const dr = rgbA.r - rgbB.r;
+		const dg = rgbA.g - rgbB.g;
+		const db = rgbA.b - rgbB.b;
+		return Math.sqrt(dr * dr + dg * dg + db * db);
+	}
+
+	static resolveBubbleLinkColor(bubbleBgHex, bubbleTextHex, accentHex) {
+		const bg = MessengerThemeManager.parseHexColor(bubbleBgHex);
+		if (!bg) return accentHex || '#2688eb';
+		const text = MessengerThemeManager.parseHexColor(bubbleTextHex);
+		const accent = MessengerThemeManager.parseHexColor(accentHex);
+		const isDarkBg = MessengerThemeManager.relativeLuminance(bg) < 0.45;
+		const candidates = [];
+
+		if (isDarkBg) {
+			candidates.push(
+				{ r: 255, g: 232, b: 120 },
+				{ r: 140, g: 235, b: 255 },
+				{ r: 255, g: 200, b: 220 },
+				{ r: 200, g: 255, b: 180 },
+			);
+			if (text) candidates.push(text);
+			if (accent) {
+				candidates.push(MessengerThemeManager.mixRgb(accent, { r: 255, g: 255, b: 255 }, 0.55));
+				candidates.push(MessengerThemeManager.mixRgb(accent, { r: 255, g: 255, b: 0 }, 0.35));
+			}
+		} else if (accent) {
+			candidates.push(accent);
+			candidates.push(MessengerThemeManager.mixRgb(accent, { r: 0, g: 0, b: 0 }, 0.25));
+			candidates.push(
+				{ r: 0, g: 102, b: 204 },
+				{ r: 180, g: 0, b: 90 },
+				{ r: 0, g: 130, b: 110 },
+			);
+			if (text && MessengerThemeManager.relativeLuminance(text) < 0.4) {
+				candidates.push(text);
+			}
+		} else {
+			candidates.push(
+				{ r: 0, g: 102, b: 204 },
+				{ r: 180, g: 0, b: 90 },
+			);
+		}
+
+		let best = null;
+		let bestScore = -1;
+		for (const cand of candidates) {
+			if (!cand) continue;
+			const contrast = MessengerThemeManager.contrastRatio(cand, bg);
+			const dist = MessengerThemeManager.colorDistance(cand, bg);
+			if (contrast < 4.5 || dist < 48) continue;
+			const textDist = text ? MessengerThemeManager.colorDistance(cand, text) : 40;
+			const score = contrast * 2 + dist / 50 + Math.min(textDist / 30, 2);
+			if (score > bestScore) {
+				bestScore = score;
+				best = cand;
+			}
+		}
+
+		if (!best) {
+			best = isDarkBg ? { r: 255, g: 232, b: 120 } : { r: 0, g: 90, b: 200 };
+		}
+		return MessengerThemeManager.rgbToHex(best);
 	}
 
 	static isThemeDark(theme) {
@@ -7676,8 +8405,10 @@ class MessengerThemeManager {
 			'--m-chat-bg': t.chatBg,
 			'--m-my-bubble-bg': t.myBubbleBg,
 			'--m-my-bubble-text': t.myBubbleText,
+			'--m-my-bubble-link': MessengerThemeManager.resolveBubbleLinkColor(t.myBubbleBg, t.myBubbleText, t.accent),
 			'--m-other-bubble-bg': t.otherBubbleBg,
 			'--m-other-bubble-text': t.otherBubbleText,
+			'--m-other-bubble-link': MessengerThemeManager.resolveBubbleLinkColor(t.otherBubbleBg, t.otherBubbleText, t.accent),
 			'--m-accent': t.accent,
 			'--m-input-bg': t.inputBg,
 			'--m-input-field-bg': t.inputFieldBg,
@@ -7870,6 +8601,7 @@ class MessengerCustomMessage {
 	static CONTENT_TYPES = {
 		FILE: 'file',
 		IMAGE: 'image',
+		PHOTO_ALBUM: 'photo_album',
 		DATE_SEPARATOR: 'date_separator',
 		SYSTEM_EVENT: 'system_event',
 	};
@@ -7897,8 +8629,85 @@ class MessengerCustomMessage {
 	}
 	static extractImagePayload(text) {
 		const parsed = MessengerCustomMessage.parse(text);
-		if (!parsed || parsed.contentType !== MessengerCustomMessage.CONTENT_TYPES.IMAGE) return null;
-		return parsed.payload?.fileId ? parsed.payload : null;
+		if (!parsed) return null;
+		if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.IMAGE) {
+			return parsed.payload?.fileId ? parsed.payload : null;
+		}
+		if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+			const firstId = parsed.payload?.fileIds?.[0];
+			if (!firstId) return null;
+			return {
+				fileId: firstId,
+				fileName: parsed.payload.fileNames?.[0] || '',
+				caption: parsed.payload.caption || '',
+			};
+		}
+		return null;
+	}
+
+	static #normalizeForwardImageUrl(u) {
+		if (!u || u.startsWith('blob:') || u.startsWith('data:')) return u || '';
+		try {
+			const p = new URL(u, window.location.origin);
+			return p.pathname + p.search;
+		} catch {
+			return u;
+		}
+	}
+
+	static hasPhotoCaption(text) {
+		const parsed = MessengerCustomMessage.parse(text);
+		if (!parsed || parsed.contentType !== MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) return false;
+		return !!(parsed.payload?.caption || '').trim();
+	}
+
+	static buildForwardPlainText(msg, { imageUrl = null, includeCaption = true } = {}) {
+		if (!msg?.text) return imageUrl ? null : '';
+		const parsed = MessengerCustomMessage.parse(msg.text);
+		if (!imageUrl) {
+			if (parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM && !includeCaption) {
+				return MessengerCustomMessage.pack(MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM, {
+					fileIds: parsed.payload?.fileIds || [],
+					fileNames: parsed.payload?.fileNames || [],
+					caption: '',
+				});
+			}
+			return msg.text;
+		}
+		if (!parsed) return null;
+		if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.IMAGE) {
+			return msg.text;
+		}
+		if (parsed.contentType !== MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+			return null;
+		}
+		const targetKey = MessengerCustomMessage.#normalizeForwardImageUrl(imageUrl);
+		const ids = parsed.payload?.fileIds || [];
+		const names = parsed.payload?.fileNames || [];
+		const caption = (parsed.payload?.caption || '').trim();
+		for (let i = 0; i < ids.length; i++) {
+			const fileId = ids[i];
+			if (!fileId) continue;
+			const fileUrl = MessengerFileService.getFileUrl(fileId);
+			if (fileUrl === imageUrl || MessengerCustomMessage.#normalizeForwardImageUrl(fileUrl) === targetKey) {
+				if (includeCaption && caption) {
+					return MessengerCustomMessage.pack(MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM, {
+						fileIds: [fileId],
+						fileNames: [names[i] || ''],
+						caption,
+					});
+				}
+				return MessengerCustomMessage.pack(MessengerCustomMessage.CONTENT_TYPES.IMAGE, {
+					fileId,
+					fileName: names[i] || '',
+				});
+			}
+		}
+		return null;
+	}
+
+	static buildForwardTextForImageUrl(msg, imageUrl) {
+		return MessengerCustomMessage.buildForwardPlainText(msg, { imageUrl, includeCaption: false });
 	}
 	static toPreview(text) {
 		if (!text) return '';
@@ -7909,6 +8718,12 @@ class MessengerCustomMessage {
 		if (parsed) {
 			if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.IMAGE)
 				return '🖼 ' + (parsed.payload.fileName || 'Изображение');
+			if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+				const cap = (parsed.payload.caption || '').trim();
+				if (cap) return cap;
+				const n = parsed.payload.fileIds?.length || 0;
+				return n > 1 ? `🖼 ${n}` : '🖼';
+			}
 			if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.SYSTEM_EVENT)
 				return '';
 			return '📎 ' + (parsed.payload.fileName || 'File');
@@ -7952,6 +8767,25 @@ class MessengerCustomMessage {
 		const parsed = MessengerCustomMessage.parse(msg?.text);
 		return parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.SYSTEM_EVENT;
 	}
+	static getEditableText(msg) {
+		if (!msg?.text) return '';
+		const parsed = MessengerCustomMessage.parse(msg.text);
+		if (parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+			return parsed.payload?.caption || '';
+		}
+		return msg.text;
+	}
+	static buildEditedText(msg, draftText) {
+		const parsed = MessengerCustomMessage.parse(msg?.text);
+		if (parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+			return MessengerCustomMessage.pack(MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM, {
+				fileIds: parsed.payload?.fileIds || [],
+				fileNames: parsed.payload?.fileNames || [],
+				caption: (draftText ?? '').trim(),
+			});
+		}
+		return (draftText ?? '').trim();
+	}
 	static isEditableMessage(msg) {
 		if (!msg || msg.deletedForEveryone || !msg.isOwn) return false;
 		if (msg._locked) return false;
@@ -7961,7 +8795,10 @@ class MessengerCustomMessage {
 			if (SupraCrypto.isEncrypted(text)) return false;
 			if (text === SupraCrypto.LOCKED_PREVIEW || text === SupraCrypto.LOCKED_OTHER) return false;
 		}
-		return !MessengerCustomMessage.isCustom(text);
+		if (MessengerCustomMessage.isCustom(text)) {
+			return MessengerCustomMessage.hasPhotoCaption(text);
+		}
+		return true;
 	}
 	static hasCopyableText(msg) {
 		if (!msg?.text) return false;
@@ -7971,7 +8808,10 @@ class MessengerCustomMessage {
 			if (SupraCrypto.isEncrypted(text)) return false;
 			if (text === SupraCrypto.LOCKED_PREVIEW || text === SupraCrypto.LOCKED_OTHER) return false;
 		}
-		return !MessengerCustomMessage.isCustom(text);
+		if (MessengerCustomMessage.isCustom(text)) {
+			return MessengerCustomMessage.hasPhotoCaption(text);
+		}
+		return true;
 	}
 }
 
@@ -7984,13 +8824,12 @@ function buildQuotePreviewContent({ utils, cache, previewText, locked, lockedLab
 	}
 	const imagePayload = MessengerCustomMessage.extractImagePayload(prev);
 	if (imagePayload) {
-		const wrap = utils.mk('div', 'mc-msg-quote-preview mc-msg-quote-preview--image');
+		const wrap = utils.mk('div', 'mc-msg-quote-preview mc-msg-quote-preview--image mc-image-slot mc-image-slot--pending');
 		const img = document.createElement('img');
-		img.className = 'mc-msg-quote-thumb';
+		img.className = 'mc-msg-quote-thumb mc-image-slot--pending';
 		img.alt = imagePayload.fileName || '';
 		const url = MessengerFileService.getFileUrl(imagePayload.fileId);
-		if (cache) cache.applyThumbnailSrc(img, url);
-		else img.src = url;
+		if (cache) cache.applyThumbnailSrc(img, url, null, 120);
 		wrap.appendChild(img);
 		return wrap;
 	}
@@ -8005,12 +8844,17 @@ function buildQuotePreviewContent({ utils, cache, previewText, locked, lockedLab
 function resolveReplyTextPreview(msg) {
 	const raw = (msg?.text || '').replace(/\s+/g, ' ').trim();
 	if (!raw) return '';
+	const parsed = MessengerCustomMessage.parse(raw);
+	if (parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+		const cap = (parsed.payload?.caption || '').trim();
+		if (cap) return cap.length > 120 ? cap.slice(0, 120) + '…' : cap;
+	}
 	if (MessengerCustomMessage.extractImagePayload(raw)) return raw;
 	if (MessengerCustomMessage.isCustom(raw)) return MessengerCustomMessage.toPreview(raw);
 	return raw.length > 120 ? raw.slice(0, 120) + '…' : raw;
 }
 
-/** Долгое нажатие (мобильный вид); короткий тап не перехватывается. */
+/** Долгое нажатие (тач на мобильном виде); короткий тап и мышь не перехватываются. */
 function bindLongPressAction(el, onLongPress) {
 	if (!el || typeof onLongPress !== 'function' || !isMobileSheetMenu()) return;
 	let pressTimer = null;
@@ -8029,6 +8873,7 @@ function bindLongPressAction(el, onLongPress) {
 
 	el.addEventListener('pointerdown', (e) => {
 		if (e.button !== 0) return;
+		if (!isTouchPointerType(e.pointerType)) return;
 		suppressNextClick = false;
 		startX = e.clientX;
 		startY = e.clientY;
@@ -8132,7 +8977,84 @@ class MessengerImageViewer {
 	static #displaySrcMap = null;
 	static #cacheRef = null;
 	static #iconsRef = null;
+	static #i18nRef = null;
 	static #swipeStart = null;
+	static #actionHost = null;
+	static #tempDisplayUrls = [];
+
+	static setActionHost(host) {
+		MessengerImageViewer.#actionHost = host || null;
+	}
+
+	static #revokeTempDisplayUrls() {
+		for (const u of MessengerImageViewer.#tempDisplayUrls) {
+			try { URL.revokeObjectURL(u); } catch (_) {}
+		}
+		MessengerImageViewer.#tempDisplayUrls = [];
+	}
+
+	static #rememberTempUrl(url) {
+		if (url?.startsWith('blob:')) MessengerImageViewer.#tempDisplayUrls.push(url);
+	}
+
+	static #currentOriginalUrl() {
+		const gallery = MessengerImageViewer.#gallery;
+		if (!gallery.length) return null;
+		const i = MessengerImageViewer.#galleryIndex;
+		return gallery[((i % gallery.length) + gallery.length) % gallery.length];
+	}
+
+	static #fileNameFromUrl(url) {
+		if (!url) return 'image.jpg';
+		try {
+			const path = new URL(url, window.location.origin).pathname;
+			const base = path.split('/').pop();
+			if (base) return decodeURIComponent(base);
+		} catch (_) {}
+		return 'image.jpg';
+	}
+
+	static #resolveDownloadFileName(url) {
+		const host = MessengerImageViewer.#actionHost;
+		if (host?.findMessage && host?.getFileName) {
+			const msg = host.findMessage(url);
+			if (msg) return host.getFileName(url, msg);
+		}
+		return MessengerImageViewer.#fileNameFromUrl(url);
+	}
+
+	static async #downloadOriginal(url) {
+		if (!url) return;
+		const fileName = MessengerImageViewer.#resolveDownloadFileName(url);
+		const response = await fetch(url, { credentials: 'same-origin' });
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		const blob = await response.blob();
+		const obj = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = obj;
+		a.download = fileName;
+		a.rel = 'noopener';
+		document.body.appendChild(a);
+		a.click();
+		a.remove();
+		URL.revokeObjectURL(obj);
+	}
+
+	static async #blobToFhdObjectUrl(src) {
+		const response = await fetch(src);
+		const blob = await response.blob();
+		return MessengerCache.blobToDisplayObjectUrl(blob, MESSENGER_VIEWER_FHD_MAX);
+	}
+
+	static #mkToolBtn(className, html, title) {
+		const btn = document.createElement('button');
+		btn.type = 'button';
+		btn.className = className;
+		btn.innerHTML = html;
+		if (title) btn.title = title;
+		btn.setAttribute('aria-label', title || '');
+		return btn;
+	}
 
 	static #touch = {
 		scale: 1,
@@ -8304,14 +9226,16 @@ class MessengerImageViewer {
 	static #collectGallery(msgArea) {
 		if (!msgArea) return [];
 		const urls = [];
-		msgArea.querySelectorAll('.mc-msg-row[data-msg-id] .mc-bubble-image').forEach((img) => {
-			const url = img.dataset.viewerUrl || img.src;
+		const addUrl = (url) => {
 			if (url && !urls.includes(url)) urls.push(url);
+		};
+		msgArea.querySelectorAll('.mc-msg-row[data-msg-id] .mc-bubble-image, .mc-msg-row[data-msg-id] .mc-photo-collage-item').forEach((img) => {
+			addUrl(img.dataset.viewerUrl || img.src);
 		});
 		return urls;
 	}
 
-	static openForChat({ src, displaySrc = null, icons, cache = null, msgArea = null } = {}) {
+	static openForChat({ src, displaySrc = null, icons, cache = null, msgArea = null, i18n = null } = {}) {
 		const gallery = MessengerImageViewer.#collectGallery(msgArea);
 		const primary = src || displaySrc;
 		if (primary && !gallery.includes(primary)) gallery.unshift(primary);
@@ -8324,6 +9248,7 @@ class MessengerImageViewer {
 			gallery,
 			index,
 			displaySrcByUrl,
+			i18n,
 		});
 	}
 
@@ -8331,6 +9256,7 @@ class MessengerImageViewer {
 		MessengerImageViewer.close(false);
 		MessengerImageViewer.#resetTouch();
 		MessengerImageViewer.#swipeStart = null;
+		MessengerImageViewer.#revokeTempDisplayUrls();
 
 		const gallery = options.gallery?.length ? options.gallery.slice() : [src];
 		let index = typeof options.index === 'number' ? options.index : gallery.indexOf(src);
@@ -8340,6 +9266,7 @@ class MessengerImageViewer {
 		MessengerImageViewer.#displaySrcMap = options.displaySrcByUrl || null;
 		MessengerImageViewer.#cacheRef = cache;
 		MessengerImageViewer.#iconsRef = icons;
+		MessengerImageViewer.#i18nRef = options.i18n || null;
 
 		const overlay = document.createElement('div');
 		overlay.className = 'mc-img-viewer';
@@ -8347,31 +9274,76 @@ class MessengerImageViewer {
 		const backdrop = document.createElement('div');
 		backdrop.className = 'mc-img-viewer-backdrop';
 
-		const closeBtn = document.createElement('button');
-		closeBtn.type = 'button';
-		closeBtn.className = 'mc-img-viewer-close';
-		closeBtn.innerHTML = icons.closeBig();
+		const t = (key, fallback) => MessengerImageViewer.#i18nRef?.t(key) || fallback;
+		const toolbar = document.createElement('div');
+		toolbar.className = 'mc-img-viewer-toolbar';
+
+		const host = MessengerImageViewer.#actionHost;
+		let forwardBtn = null;
+		if (host?.forward && host?.findMessage) {
+			forwardBtn = MessengerImageViewer.#mkToolBtn(
+				'mc-img-viewer-tool-btn mc-img-viewer-forward',
+				icons.forward(),
+				t('imageViewerForward', 'Forward')
+			);
+			toolbar.appendChild(forwardBtn);
+		}
+
+		const downloadBtn = MessengerImageViewer.#mkToolBtn(
+			'mc-img-viewer-tool-btn mc-img-viewer-download',
+			icons.download(),
+			t('imageViewerDownload', 'Download')
+		);
+		const closeBtn = MessengerImageViewer.#mkToolBtn(
+			'mc-img-viewer-tool-btn mc-img-viewer-close',
+			icons.closeBig(),
+			t('qrClose', 'Close')
+		);
+		toolbar.append(downloadBtn, closeBtn);
 
 		const img = document.createElement('img');
 		img.className = 'mc-img-viewer-img mc-img-viewer-img--pan';
 
 		overlay.classList.add('mc-img-viewer-overlay--pan');
-		overlay.append(backdrop, closeBtn, img);
+		overlay.append(backdrop, toolbar, img);
 		document.body.appendChild(overlay);
 		MessengerImageViewer.#overlay = overlay;
 		requestAnimationFrame(() => overlay.classList.add('mc-img-viewer--visible'));
 
 		MessengerImageViewer.#loadSlide(img, index);
 
-		const t = MessengerImageViewer.#touch;
+		const touch = MessengerImageViewer.#touch;
 
 		closeBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
 			MessengerImageViewer.requestClose();
 		});
+		downloadBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			const url = MessengerImageViewer.#currentOriginalUrl();
+			MessengerImageViewer.#downloadOriginal(url).catch((err) => {
+				console.warn('[MessengerImageViewer] download failed', err);
+			});
+		});
+		if (forwardBtn) {
+			forwardBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const url = MessengerImageViewer.#currentOriginalUrl();
+				const msg = host.findMessage(url);
+				if (!msg || (host.canForward && !host.canForward(msg))) {
+					MessengerDialog.alert({
+						message: MessengerImageViewer.#i18nRef?.t('forwardNotAllowed') || 'Cannot forward this message',
+					});
+					return;
+				}
+				MessengerImageViewer.requestClose();
+				host.forward(msg, url);
+			});
+		}
+
 		backdrop.addEventListener('click', (e) => {
 			e.stopPropagation();
-			if (!t.didMove) MessengerImageViewer.requestClose();
+			if (!touch.didMove) MessengerImageViewer.requestClose();
 		});
 
 		MessengerImageViewer.#keyHandler = (e) => {
@@ -8401,18 +9373,59 @@ class MessengerImageViewer {
 		MessengerImageViewer.#galleryIndex = i;
 		const url = gallery[i];
 		const displayOverride = MessengerImageViewer.#displaySrcMap?.[url];
-		if (displayOverride) {
-			img.src = displayOverride;
-		}
-		if (displayOverride && displayOverride === url) return;
 		const cache = MessengerImageViewer.#cacheRef;
-		if (cache) {
-			cache.fetchAndCacheImage(url)
-				.then(objUrl => { if (img.isConnected) img.src = objUrl; })
-				.catch(() => { if (img.isConnected) img.src = url; });
-		} else {
-			img.src = url;
-		}
+		const screenMax = getMessengerScreenThumbMax();
+		const apply = (src) => {
+			if (img.isConnected && src) img.src = src;
+		};
+
+		const loadFullRes = (sourceUrl) => {
+			if (!sourceUrl) return;
+			if (sourceUrl.startsWith('blob:') || sourceUrl.startsWith('data:')) {
+				MessengerImageViewer.#blobToFhdObjectUrl(sourceUrl)
+					.then((u) => {
+						MessengerImageViewer.#rememberTempUrl(u);
+						apply(u);
+					})
+					.catch(() => {});
+				return;
+			}
+			if (cache) {
+				cache.fetchAndCacheViewerImage(sourceUrl)
+					.then(apply)
+					.catch(() => apply(sourceUrl));
+			} else {
+				apply(sourceUrl);
+			}
+		};
+
+		const loadScreenPreview = async (sourceUrl) => {
+			if (!sourceUrl) return;
+			if (sourceUrl.startsWith('blob:') || sourceUrl.startsWith('data:')) {
+				const blobSrc = displayOverride || sourceUrl;
+				apply(blobSrc);
+				try {
+					const blob = await fetch(blobSrc).then(r => r.blob());
+					const previewUrl = await MessengerCache.blobToDisplayObjectUrl(blob, screenMax);
+					MessengerImageViewer.#rememberTempUrl(previewUrl);
+					apply(previewUrl);
+				} catch { /* keep blob placeholder */ }
+				return;
+			}
+			if (cache) {
+				try {
+					const preview = await cache.getOrCreateThumbnail(sourceUrl, null, screenMax);
+					apply(preview);
+					return;
+				} catch {
+					if (displayOverride) apply(displayOverride);
+				}
+			} else if (displayOverride) {
+				apply(displayOverride);
+			}
+		};
+
+		loadScreenPreview(url).then(() => loadFullRes(url));
 	}
 
 	static #showRelative(delta, img) {
@@ -8482,6 +9495,7 @@ class MessengerImageViewer {
 		MessengerImageViewer.#galleryIndex = 0;
 		MessengerImageViewer.#displaySrcMap = null;
 		MessengerImageViewer.#swipeStart = null;
+		MessengerImageViewer.#revokeTempDisplayUrls();
 		if (overlay) {
 			overlay.classList.remove('mc-img-viewer--visible');
 			overlay.remove();
@@ -8590,27 +9604,7 @@ class MessengerUtils {
 	formatLastSeenHeader(ts) {
 		const d = ts instanceof Date ? ts : new Date(ts);
 		if (Number.isNaN(d.getTime())) return this.#i18n.t('lastSeenNever');
-		const now = new Date();
-		const diffMs = now.getTime() - d.getTime();
-		if (diffMs < 0) return this.formatTime(d);
-		const diffMin = Math.floor(diffMs / 60000);
-		if (diffMin < 1) return this.#i18n.t('lastSeenJustNow');
-		if (diffMin < 60) return this.#i18n.t('lastSeenMinutesAgo', diffMin);
-		const diffHours = Math.floor(diffMin / 60);
-		if (diffHours === 1) return this.#i18n.t('lastSeenHourAgo');
-		if (diffHours === 2) return this.#i18n.t('lastSeenTwoHoursAgo');
-		const loc = this.#i18n.locale + '-' + this.#i18n.locale.toUpperCase();
-		if (d.toDateString() === now.toDateString()) return this.formatTime(d);
-		const yesterday = new Date(now);
-		yesterday.setDate(now.getDate() - 1);
-		if (d.toDateString() === yesterday.toDateString()) return this.#i18n.t('yesterday');
-		return d.toLocaleString(loc, {
-			day: '2-digit',
-			month: '2-digit',
-			year: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit',
-		});
+		return `${this.#i18n.t('lastSeen')}: ${this.formatListTime(d)}`;
 	}
 	static getDirectChatHeaderSub(chat, presence, i18n, utils, live = true) {
 		if (!chat || chat.type !== 'direct' || !live) return null;
@@ -9406,7 +10400,8 @@ class MessengerCache {
 			console.warn('[MessengerCache] updateMessageStatus error:', err);
 		}
 	}
-	static async #createThumbnailBlob(blob, maxSize = 400) {
+	static async #createThumbnailBlob(blob, maxSize = null, quality = MESSENGER_THUMB_JPEG_QUALITY) {
+		maxSize = maxSize ?? getMessengerScreenThumbMax();
 		return new Promise((resolve) => {
 			const img = new Image();
 			const objUrl = URL.createObjectURL(blob);
@@ -9421,11 +10416,15 @@ class MessengerCache {
 				const canvas = document.createElement('canvas');
 				canvas.width = w; canvas.height = h;
 				canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-				canvas.toBlob(b => resolve(b), 'image/jpeg', 0.82);
+				canvas.toBlob(b => resolve(b), 'image/jpeg', quality);
 			};
 			img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(null); };
 			img.src = objUrl;
 		});
+	}
+	static async blobToDisplayObjectUrl(blob, maxSize = MESSENGER_VIEWER_FHD_MAX) {
+		const thumbBlob = await MessengerCache.#createThumbnailBlob(blob, maxSize);
+		return URL.createObjectURL(thumbBlob || blob);
 	}
 	async getThumbnail(url) {
 		if (this.#thumbURLs.has(url)) return this.#thumbURLs.get(url);
@@ -9454,8 +10453,10 @@ class MessengerCache {
 			});
 		} catch (err) { console.warn('[MessengerCache] saveThumbnail error:', err); }
 	}
-	async getOrCreateThumbnail(url, signal = null) {
-		const cached = await this.getThumbnail(url);
+	async getOrCreateThumbnail(url, signal = null, maxSize = null) {
+		maxSize = maxSize ?? getMessengerScreenThumbMax();
+		const cacheKey = messengerThumbCacheKey(url, maxSize);
+		const cached = await this.getThumbnail(cacheKey);
 		if (cached) return cached;
 		let blob;
 		const cachedFull = await this.getImage(url);
@@ -9476,18 +10477,73 @@ class MessengerCache {
 			} catch {}
 			this.#objectURLs.set(url, URL.createObjectURL(blob));
 		}
-		const thumbBlob = await MessengerCache.#createThumbnailBlob(blob);
-		if (!thumbBlob) return this.#objectURLs.get(url) ?? url;
-		await this.#saveThumbnail(url, thumbBlob);
+		const thumbBlob = await MessengerCache.#createThumbnailBlob(blob, maxSize);
+		if (!thumbBlob) {
+			const full = this.#objectURLs.get(url);
+			if (full) return full;
+			throw new Error('Thumbnail generation failed');
+		}
+		await this.#saveThumbnail(cacheKey, thumbBlob);
 		const thumbURL = URL.createObjectURL(thumbBlob);
-		this.#thumbURLs.set(url, thumbURL);
+		this.#thumbURLs.set(cacheKey, thumbURL);
 		return thumbURL;
 	}
-	applyThumbnailSrc(imgEl, url, signal = null) {
-		if (this.#thumbURLs.has(url)) { imgEl.src = this.#thumbURLs.get(url); return; }
-		this.getOrCreateThumbnail(url, signal)
-			.then(u => { if (imgEl.isConnected) imgEl.src = u; })
-			.catch(err => { if (err?.name !== 'AbortError' && imgEl.isConnected) imgEl.src = url; });
+	applyThumbnailSrc(imgEl, url, signal = null, maxSize = null) {
+		maxSize = maxSize ?? getMessengerScreenThumbMax();
+		const cacheKey = messengerThumbCacheKey(url, maxSize);
+		MessengerImageSlot.markPending(imgEl);
+		if (this.#thumbURLs.has(cacheKey)) {
+			MessengerImageSlot.applySrc(imgEl, this.#thumbURLs.get(cacheKey));
+			return;
+		}
+		this.getOrCreateThumbnail(url, signal, maxSize)
+			.then(u => {
+				if (imgEl.isConnected && u && MessengerImageSlot.isLocalSrc(u)) {
+					MessengerImageSlot.applySrc(imgEl, u);
+				}
+			})
+			.catch(err => {
+				if (err?.name !== 'AbortError' && imgEl.isConnected) MessengerImageSlot.clearSrc(imgEl);
+			});
+	}
+	applyCollageThumbnailSrc(imgEl, url, signal = null) {
+		this.applyThumbnailSrc(imgEl, url, signal);
+	}
+	prefetchMessageImages(text) {
+		try {
+			const parsed = MessengerCustomMessage.parse(text);
+			if (!parsed) return;
+			const ct = parsed.contentType;
+			const p = parsed.payload || {};
+			if (ct === MessengerCustomMessage.CONTENT_TYPES.IMAGE && p.fileId) {
+				void this.getOrCreateThumbnail(MessengerFileService.getFileUrl(p.fileId)).catch(() => {});
+			} else if (ct === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+				for (const fileId of p.fileIds || []) {
+					void this.getOrCreateThumbnail(MessengerFileService.getFileUrl(fileId)).catch(() => {});
+				}
+			}
+		} catch { /* ignore */ }
+	}
+	async adoptLocalPreview(serverUrl, localObjectUrl, maxSize = null) {
+		if (!serverUrl || !localObjectUrl) return null;
+		maxSize = maxSize ?? getMessengerScreenThumbMax();
+		const cacheKey = messengerThumbCacheKey(serverUrl, maxSize);
+		if (this.#thumbURLs.has(cacheKey)) return this.#thumbURLs.get(cacheKey);
+		try {
+			const blob = await fetch(localObjectUrl).then(r => r.blob());
+			const thumbBlob = await MessengerCache.#createThumbnailBlob(blob, maxSize);
+			const storeBlob = thumbBlob || blob;
+			await this.#saveThumbnail(cacheKey, storeBlob);
+			const objectURL = URL.createObjectURL(storeBlob);
+			this.#thumbURLs.set(cacheKey, objectURL);
+			return objectURL;
+		} catch (err) {
+			console.warn('[MessengerCache] adoptLocalPreview error:', err);
+			return null;
+		}
+	}
+	async fetchAndCacheViewerImage(url, signal = null) {
+		return this.getOrCreateThumbnail(url, signal, MESSENGER_VIEWER_FHD_MAX);
 	}
 	async getImage(url) {
 		if (this.#objectURLs.has(url)) return this.#objectURLs.get(url);
@@ -9525,10 +10581,20 @@ class MessengerCache {
 		return objectURL;
 	}
 	applyImageSrc(imgEl, url, signal = null) {
-		if (this.#objectURLs.has(url)) { imgEl.src = this.#objectURLs.get(url); return; }
+		MessengerImageSlot.markPending(imgEl);
+		if (this.#objectURLs.has(url)) {
+			MessengerImageSlot.applySrc(imgEl, this.#objectURLs.get(url));
+			return;
+		}
 		this.fetchAndCacheImage(url, signal)
-			.then(u => { if (imgEl.isConnected) imgEl.src = u; })
-			.catch(err => { if (err?.name !== 'AbortError' && imgEl.isConnected) imgEl.src = url; });
+			.then(u => {
+				if (imgEl.isConnected && u && MessengerImageSlot.isLocalSrc(u)) {
+					MessengerImageSlot.applySrc(imgEl, u);
+				}
+			})
+			.catch(err => {
+				if (err?.name !== 'AbortError' && imgEl.isConnected) MessengerImageSlot.clearSrc(imgEl);
+			});
 	}
 	async removeImage(url) {
 		const ou = this.#objectURLs.get(url);
@@ -9863,9 +10929,15 @@ class MessengerMessageService {
 			}
 			const { storedId, record } = resolved;
 			let imageUrl = null;
-			if (messageType === 'image') {
+			if (messageType === 'image' || messageType === 'photo_album') {
 				const parsed = MessengerCustomMessage.parse(record.text);
-				if (parsed) imageUrl = parsed.url ?? parsed.fileId ?? null;
+				if (parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+					for (const id of parsed.payload?.fileIds || []) {
+						await this.#cache.removeImage(MessengerFileService.getFileUrl(id));
+					}
+				} else if (parsed?.payload?.fileId) {
+					imageUrl = MessengerFileService.getFileUrl(parsed.payload.fileId);
+				}
 			}
 			await this.#cache.deleteMessage(chatId, storedId);
 			if (messageType === 'image' && imageUrl) await this.#cache.removeImage(imageUrl);
@@ -10031,6 +11103,7 @@ class MessengerSidebar {
 		this.#connectionStateMgr = mgr;
 		mgr?.subscribe((state, error) => {
 			this.#updateNetworkIndicator(state, error);
+			this.#renderUserStatus();
 			if (this.#allChatsRef?.length) {
 				this.renderChatList(this.#allChatsRef, this.#lastActiveChat, this.#lastI18n || this.#i18n);
 			}
@@ -10197,6 +11270,11 @@ class MessengerSidebar {
 	#renderUserStatus() {
 		const el = this.el.userStatusEl;
 		if (!el) return;
+		const connState = this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING;
+		if (connState === MessengerConnectionStateManager.STATE_CONNECTING) {
+			el.textContent = this.#i18n.t('connectingToServer');
+			return;
+		}
 		const status = (this.#currentUser?.statusText || '').trim();
 		el.textContent = status;
 	}
@@ -11567,12 +12645,8 @@ class MessengerAppView {
 				return;
 			}
 			if (this.#activeState?.selectionMode) {
+				// Системная «назад» сняла запись mappMsgSelect — только отменяем выбор.
 				this.#panelFactory.exitSelectionForNavigation(this.#activeState);
-				this.#leaveChatUi();
-				if (history.state?.mappChatOpen) {
-					this.#historyLeaveSync = true;
-					try { history.back(); } catch (_) { this.#historyLeaveSync = false; }
-				}
 				messengerConsumePopstate();
 				return;
 			}
@@ -11725,6 +12799,25 @@ class MessengerAppView {
 		return true;
 	}
 
+	#applyCachedPreviewFromLast(chat, last) {
+		if (!last) {
+			chat.lastMessage = '';
+			chat.lastMessageTime = null;
+			return true;
+		}
+		const stored = MessengerChatListPreview.storageText(last);
+		if (stored === null) {
+			chat.lastMessage = '';
+			chat.lastMessageTime = null;
+			return true;
+		}
+		chat.lastMessage = stored;
+		chat.lastMessageTime = last.timestamp instanceof Date
+			? last.timestamp
+			: new Date(last.timestamp);
+		return true;
+	}
+
 	async #runRefreshLastMessagePreviews() {
 		if (!this.#chats?.length) return;
 		if (this.#msgService) {
@@ -11764,11 +12857,12 @@ class MessengerAppView {
 		try {
 			const messages = await this.#cachedMessagesForPreview(chatId);
 			const last = MessengerChatListPreview.pickLastVisibleMessage(messages);
-			if (last && this.#applyCachedPreviewIfBetter(chat, last)) {
-				void this.#api?.decryptChatListPreviews?.([chat]).then(() => {
-					this.#renderChatList();
-				}).catch(() => {});
-				return;
+			this.#applyCachedPreviewFromLast(chat, last);
+			const render = () => this.#renderChatList();
+			if (this.#api?.decryptChatListPreviews) {
+				await this.#api.decryptChatListPreviews([chat]).then(render).catch(render);
+			} else {
+				render();
 			}
 		} catch (e) {
 			console.warn('[MessengerAppView] refreshChatListPreview cache', e);
@@ -12088,6 +13182,7 @@ class MessengerAppView {
 			})()
 			: Promise.resolve();
 		this.#activeState = null;
+		MessengerImageViewer.setActionHost(null);
 		this.#parkPanelEntry(state, chat);
 		return relock.catch(e => {
 			console.warn('[MessengerAppView] relockProtectedMessages', e);
@@ -12115,6 +13210,7 @@ class MessengerAppView {
 		} else {
 			this.#relayoutActivePanel(entry.state);
 		}
+		this.#panelFactory.syncImageViewerActionHost(entry.state);
 		global.ThemeChatBg?.paint?.();
 	}
 
@@ -12125,7 +13221,9 @@ class MessengerAppView {
 		};
 		const onSend = async (chatId, field, msgArea) => {
 			const text = field.value;
-			if (!text?.trim()) return;
+			const state = this.#activeState;
+			const edit = state?.editDraft;
+			if (!edit && !text?.trim()) return;
 			if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) {
 				MessengerDialog.showNotice(
 					this.#i18n.t('offlineSendBlocked'),
@@ -12135,9 +13233,29 @@ class MessengerAppView {
 				);
 				return;
 			}
-			field.value = '';
-			const state = this.#activeState;
 			if (!state) return;
+			if (edit) {
+				const newText = MessengerCustomMessage.buildEditedText(edit.msg, text);
+				if (!newText) return;
+				field.value = '';
+				field.style.height = '';
+				field.rows = 1;
+				try {
+					await this.#api.editMessage(state.chatId, edit.msg.id, newText);
+					this.#panelFactory.clearComposerDraft(state);
+					this.#panelFactory.applyMessageUpdated(state, {
+						messageId: edit.msg.id,
+						text: newText,
+						editedOn: new Date().toISOString(),
+					});
+				} catch (e) {
+					console.warn('[MessengerAppView] editMessage error:', e);
+					field.value = MessengerCustomMessage.getEditableText(edit.msg);
+					field.dispatchEvent(new Event('input'));
+				}
+				return;
+			}
+			field.value = '';
 			const reply = state.replyDraft;
 			let outgoingPrep = { encryptionTier: 'basic' };
 			let resolved = { tier: 'basic' };
@@ -12190,7 +13308,7 @@ class MessengerAppView {
 				replyToSenderName: reply?.senderName || null,
 				replyToTextPreview: reply?.textPreview || null,
 			};
-			this.#panelFactory.clearReplyDraft(state);
+			this.#panelFactory.clearComposerDraft(state);
 			await this.#panelFactory.appendMsg(state, localMsg);
 			await this.#bumpChatPreview(chat.id, localMsg, localMsg.timestamp);
 			try {
@@ -12293,8 +13411,8 @@ class MessengerAppView {
 	}
 
 	#navigateBackFromChat() {
-		if (this.#activeState?.selectionMode) {
-			this.#panelFactory.exitSelectionForNavigation(this.#activeState);
+		if (this.#panelFactory.cancelSelectionMode(this.#activeState)) {
+			return;
 		}
 		if (MessengerUtils.isMobile()) {
 			this.#showChatListMobile();
@@ -13200,7 +14318,7 @@ class MessengerAppView {
 			const currentTs = chat.lastMessageTime
 				? new Date(chat.lastMessageTime).getTime()
 				: 0;
-			if (msgTs >= currentTs) {
+			if (msgTs >= currentTs && !msg.deletedForEveryone) {
 				this.#setChatListPreview(
 					chat, chatId,
 					MessengerChatListPreview.preferPreviewSource(msg, listPreviewSource),
@@ -13243,8 +14361,29 @@ class MessengerAppView {
 		this.#forEachPanelState(chatId, (state) => {
 			this.#panelFactory.applyMessageUpdated(state, payload);
 		});
-		if (payload?.deletedForEveryone) {
-			this.refreshChatListPreview(chatId).catch(() => {});
+		void this.#syncEditedMessage(chatId, payload);
+	}
+
+	async #syncEditedMessage(chatId, payload) {
+		if (!payload?.messageId || !this.#msgService) return;
+		try {
+			if (payload.deletedForEveryone) {
+				await this.refreshChatListPreview(chatId);
+				return;
+			}
+			if (payload.text === undefined) return;
+			const messages = await this.#msgService.getCachedMessages(chatId);
+			const msg = messages.find(m => m.id === payload.messageId || m.serverId === payload.messageId);
+			if (msg) {
+				await this.#msgService.ingestOne(chatId, {
+					...msg,
+					text: payload.text,
+					editedOn: payload.editedOn ? new Date(payload.editedOn) : (msg.editedOn || new Date()),
+				}, this.#api);
+			}
+			await this.refreshChatListPreview(chatId);
+		} catch (e) {
+			console.warn('[MessengerAppView] syncEditedMessage', e);
 		}
 	}
 	applyMessageDeletedForEveryone(chatId, messageId) {
@@ -14395,8 +15534,17 @@ class MessengerApiClient {
 			throw new Error(options.i18n?.t('forwardNotAllowed') || 'Нельзя переслать это сообщение');
 		}
 
-		const plainText = display.text;
-		const forwardFrom = sourceMsg.senderName || display.senderName || '';
+		const includeCaption = options.includeCaption !== false;
+		let plainText = MessengerCustomMessage.buildForwardPlainText(display, {
+			imageUrl: options.imageUrl || null,
+			includeCaption,
+		});
+		if (options.imageUrl && !plainText) {
+			throw new Error(options.i18n?.t('forwardNotAllowed') || 'Нельзя переслать это сообщение');
+		}
+		const forwardFrom = options.showSenderName === false
+			? null
+			: (sourceMsg.senderName || display.senderName || '');
 		const sentChatIds = [];
 
 		for (const targetId of [...new Set(contactIds)]) {
@@ -14433,13 +15581,17 @@ class MessengerApiClient {
 		for (const msg of sourceMsgs || []) {
 			if (msg?.id) byId.set(msg.id, msg);
 		}
+		const includeCaption = options.includeCaption !== false;
 		const ordered = [];
 		for (const messageId of messageIds || []) {
 			const sourceMsg = byId.get(messageId);
 			if (!sourceMsg) continue;
 			const display = await this.decryptMessageForDisplay(sourceMsg, sourceChatId);
 			if (!this.canForwardMessage(display)) continue;
-			ordered.push({ sourceMsg, plainText: display.text });
+			ordered.push({
+				sourceMsg,
+				plainText: MessengerCustomMessage.buildForwardPlainText(display, { includeCaption }),
+			});
 		}
 		if (!ordered.length) {
 			throw new Error(options.i18n?.t('forwardNotAllowed') || 'Нельзя переслать выбранные сообщения');
@@ -14456,7 +15608,9 @@ class MessengerApiClient {
 			}
 			let sentAny = false;
 			for (const { sourceMsg, plainText } of ordered) {
-				const forwardFrom = sourceMsg.senderName || '';
+				const forwardFrom = options.showSenderName === false
+					? null
+					: (sourceMsg.senderName || '');
 				try {
 					await this.sendMessage(targetChatId, plainText, {
 						forwardedFromSenderName: forwardFrom,
@@ -15112,6 +16266,8 @@ class MessengerCustomMessageRenderer {
 		} = parsed;
 		if (contentType === MessengerCustomMessage.CONTENT_TYPES.IMAGE)
 			this.#renderImage(bubble, payload);
+		else if (contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM)
+			this.#renderPhotoAlbum(bubble, payload);
 		else
 			this.#renderFile(bubble, payload);
 	}
@@ -15142,30 +16298,52 @@ class MessengerCustomMessageRenderer {
 	#renderImage(bubble, payload) {
 		bubble.classList.add('mc-image-bubble');
 		const url = MessengerFileService.getFileUrl(payload.fileId);
-		const img = document.createElement('img');
-		img.className = 'mc-bubble-image';
+		const { cell: imgWrap, img } = MessengerImageSlot.createBubbleImageWrap();
 		img.alt = payload.fileName;
 
 		img.dataset.viewerUrl = url;
-		img.addEventListener('click', (e) => {
-			e.stopPropagation();
-			const msgArea = bubble.closest('.mc-messages');
-			MessengerImageViewer.openForChat({
-				src: url,
-				displaySrc: img.src,
-				icons: this.#icons,
-				cache: this.#cache,
-				msgArea,
-			});
-		});
+		const footer = bubble.querySelector('.mc-msg-footer');
+		if (footer) bubble.insertBefore(imgWrap, footer);
+		else bubble.appendChild(imgWrap);
 
 		if (this.#cache) {
 			this.#cache.applyThumbnailSrc(img, url);
-		} else {
-			img.src = url;
 		}
 
-		bubble.appendChild(img);
+		bindChatImageOpen(imgWrap, {
+			icons: this.#icons,
+			cache: this.#cache,
+			i18n: this.#i18n,
+			getMsgArea: () => bubble.closest('.mc-messages'),
+		});
+		bubble.classList.add('mc-bubble--media-no-caption');
+	}
+
+	#renderPhotoAlbum(bubble, payload) {
+		bubble.classList.add('mc-photo-album-bubble');
+		const fileIds = payload.fileIds || [];
+		const items = fileIds.map((fileId, i) => ({
+			fileId,
+			fileName: payload.fileNames?.[i] || '',
+		}));
+		const collage = MessengerPhotoCollage.buildEl(this.#utils, items, {
+			cache: this.#cache,
+			icons: this.#icons,
+			i18n: this.#i18n,
+			msgArea: bubble.closest('.mc-messages'),
+		});
+		const footer = bubble.querySelector('.mc-msg-footer');
+		if (collage) {
+			if (footer) bubble.insertBefore(collage, footer);
+			else bubble.appendChild(collage);
+		}
+		const caption = (payload.caption || '').trim();
+		if (caption) {
+			const capEl = this.#utils.mk('div', 'mc-msg-text mc-photo-album-caption');
+			capEl.innerHTML = renderMessengerMessageHtml(caption);
+			bubble.insertBefore(capEl, footer || null);
+		}
+		syncMediaCaptionFooterLayout(bubble);
 	}
 }
 
@@ -15333,7 +16511,7 @@ class MessengerForwardModal {
 		this.#themeManager = themeManager;
 	}
 
-	open(onSend) {
+	open(onSend, { excludeChatId = null, excludeUserIds = [], hasPhotoCaption = false } = {}) {
 		const selected = new Set();
 		let targets = [];
 		let extraContacts = [];
@@ -15342,12 +16520,26 @@ class MessengerForwardModal {
 		let loading = false;
 		let query = '';
 		let debounceTimer = null;
+		const excludedUserIds = new Set(
+			(Array.isArray(excludeUserIds) ? excludeUserIds : [excludeUserIds])
+				.filter(Boolean)
+				.map(String),
+		);
+		const excludeChat = excludeChatId != null ? String(excludeChatId) : null;
+		const shouldExcludeTarget = (t) => {
+			if (excludeChat && String(t.id) === excludeChat) return true;
+			if (excludedUserIds.has(String(t.id))) return true;
+			if (t.type === 'direct' && t.contactUserId && excludedUserIds.has(String(t.contactUserId))) return true;
+			return false;
+		};
 
 		const overlay = this.#utils.mk('div', 'mapp-modal-overlay');
 		applyMobileFullscreenOverlay(overlay);
 		lockAppScroll();
-		const close = () => { unlockAppScroll(); overlay.remove(); };
-
+		const close = messengerMakeDismissable(() => {
+			unlockAppScroll();
+			overlay.remove();
+		}, null);
 		if (!overlay.classList.contains('mapp-modal-overlay--fullscreen')) {
 			overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 		}
@@ -15356,12 +16548,23 @@ class MessengerForwardModal {
 		this.#themeManager?.applyChatVars?.(modal);
 
 		const header = this.#utils.mk('div', 'mapp-modal-header');
+		const titleRow = this.#utils.mk('div', 'mapp-modal-title-row');
+		if (overlay.classList.contains('mapp-modal-overlay--fullscreen')) {
+			const backBtn = this.#utils.mk('button', 'mapp-settings-header-back');
+			backBtn.type = 'button';
+			backBtn.innerHTML = this.#icons.back();
+			backBtn.title = this.#i18n.t('back');
+			backBtn.setAttribute('aria-label', this.#i18n.t('back'));
+			backBtn.addEventListener('click', () => close());
+			titleRow.appendChild(backBtn);
+		}
 		const title = this.#utils.mk('div', 'mapp-modal-title');
 		title.textContent = this.#i18n.t('forwardTitle');
+		titleRow.appendChild(title);
 		const closeBtn = this.#utils.mk('button', 'mapp-modal-close');
 		closeBtn.innerHTML = '×';
-		closeBtn.addEventListener('click', close);
-		header.append(title, closeBtn);
+		closeBtn.addEventListener('click', () => close());
+		header.append(titleRow, closeBtn);
 
 		const { wrap: searchWrap, input: searchInput } = buildContactSearchBar(
 			this.#icons,
@@ -15369,7 +16572,15 @@ class MessengerForwardModal {
 		);
 		searchWrap.classList.add('mapp-modal-search-wrap');
 
-		const contactsList = this.#utils.mk('div', 'mapp-modal-contacts');
+		const contactsList = this.#utils.mk('div', 'mapp-modal-contacts mapp-modal-contacts--forward');
+		const optionsWrap = this.#utils.mk('div', 'mapp-modal-forward-options');
+		const showSenderField = mkToggleField(this.#i18n.t('forwardShowSenderName'), { checked: true });
+		optionsWrap.appendChild(showSenderField.row);
+		let includeCaptionField = null;
+		if (hasPhotoCaption) {
+			includeCaptionField = mkToggleField(this.#i18n.t('forwardIncludeCaption'), { checked: true });
+			optionsWrap.appendChild(includeCaptionField.row);
+		}
 		const footer = this.#utils.mk('div', 'mapp-modal-footer');
 		const sendBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-primary mapp-modal-footer-btn');
 		sendBtn.textContent = this.#i18n.t('forwardSend');
@@ -15379,7 +16590,8 @@ class MessengerForwardModal {
 		const redraw = () => {
 			contactsList.querySelectorAll('.mapp-modal-contact-item').forEach(item => {
 				const id = item.dataset.contactId;
-				item.classList.toggle('mapp-modal-contact-item--selected', selected.has(id));
+				const check = item.querySelector('.mapp-modal-contact-check');
+				if (check) check.innerHTML = selected.has(id) ? this.#icons.check() : '';
 			});
 			sendBtn.disabled = selected.size === 0;
 		};
@@ -15399,7 +16611,6 @@ class MessengerForwardModal {
 			for (const t of list) {
 				const item = this.#utils.mk('div', 'mapp-modal-contact-item');
 				item.dataset.contactId = t.id;
-				if (selected.has(t.id)) item.classList.add('mapp-modal-contact-item--selected');
 				const av = this.#avatarBuilder.build(t.id, t.name, t.avatar, 40);
 				const nameEl = this.#utils.mk('div', 'mapp-modal-contact-name');
 				nameEl.textContent = t.name;
@@ -15408,7 +16619,9 @@ class MessengerForwardModal {
 					typeIcon.innerHTML = this.#icons.groupUsers();
 					nameEl.prepend(typeIcon);
 				}
-				item.append(av, nameEl);
+				const check = this.#utils.mk('span', 'mapp-modal-contact-check');
+				if (selected.has(t.id)) check.innerHTML = this.#icons.check();
+				item.append(av, nameEl, check);
 				item.addEventListener('click', () => {
 					if (selected.has(t.id)) {
 						selected.delete(t.id);
@@ -15438,6 +16651,7 @@ class MessengerForwardModal {
 			);
 			for (const c of extraContacts) {
 				if (chatContactIds.has(c.id)) continue;
+				if (excludedUserIds.has(String(c.id))) continue;
 				if (q.length >= MessengerSidebar.MIN_SEARCH_LEN &&
 					!(c.name || '').toLowerCase().includes(q)) continue;
 				list.push({ id: c.id, name: c.name, avatar: c.avatar, type: 'contact' });
@@ -15454,13 +16668,15 @@ class MessengerForwardModal {
 			contactsList.appendChild(loadingEl);
 			try {
 				const chats = await this.#api.getChats();
-				targets = chats.map(c => ({
-					id: c.id,
-					name: c.name,
-					avatar: c.avatar,
-					type: c.type,
-					contactUserId: c.contactUserId || null,
-				}));
+				targets = chats
+					.map(c => ({
+						id: c.id,
+						name: c.name,
+						avatar: c.avatar,
+						type: c.type,
+						contactUserId: c.contactUserId || null,
+					}))
+					.filter(t => !shouldExcludeTarget(t));
 				filterTargets();
 			} catch (e) {
 				console.warn('[MessengerForwardModal] load chats', e);
@@ -15511,7 +16727,10 @@ class MessengerForwardModal {
 			if (!selected.size) return;
 			sendBtn.disabled = true;
 			try {
-				await onSend([...selected]);
+				await onSend([...selected], {
+					showSenderName: showSenderField.input.checked,
+					includeCaption: includeCaptionField ? includeCaptionField.input.checked : true,
+				});
 				close();
 			} catch (e) {
 				console.warn('[MessengerForwardModal] send', e);
@@ -15519,11 +16738,216 @@ class MessengerForwardModal {
 			}
 		});
 
-		modal.append(header, searchWrap, contactsList, footer);
+		modal.append(header, searchWrap, contactsList, optionsWrap, footer);
 		overlay.appendChild(modal);
 		document.body.appendChild(overlay);
 		loadChats();
 	}
+}
+
+const MESSAGE_LINK_DOMAIN_LABEL = String.raw`[a-zA-Z0-9\u0400-\u04FF\u0451\u0401_-]+`;
+const MESSAGE_LINK_TLDS = [
+	'com', 'net', 'org', 'edu', 'gov', 'mil', 'int', 'info', 'biz', 'name', 'pro', 'mobi',
+	'ru', 'su', 'ua', 'by', 'kz', 'io', 'me', 'co', 'uk', 'de', 'fr', 'eu', 'us', 'ca', 'au',
+	'jp', 'cn', 'in', 'br', 'mx', 'es', 'it', 'nl', 'pl', 'cz', 'sk', 'tr', 'ch', 'at', 'be',
+	'se', 'no', 'dk', 'fi', 'pt', 'gr', 'ro', 'hu', 'bg', 'hr', 'rs', 'lt', 'lv', 'ee', 'is', 'ie',
+	'sg', 'hk', 'tw', 'kr', 'th', 'vn', 'ph', 'id', 'my', 'za', 'ar', 'cl', 'pe', 've', 'nz',
+	'app', 'dev', 'tech', 'online', 'site', 'store', 'shop', 'blog', 'cloud', 'live', 'work',
+	'team', 'space', 'world', 'today', 'news', 'media', 'video', 'link', 'click', 'top',
+	'xyz', 'club', 'fun', 'page', 'wiki', 'help', 'network', 'digital', 'ai', 'tv', 'fm',
+	'am', 'cc', 'ws', 'ly', 'to', 'gg',
+	'рф', 'рус', 'москва', 'онлайн', 'сайт', 'дети', 'ком', 'орг',
+].join('|');
+
+function peelMessageUrlTrailingPunctuation(raw) {
+	let url = raw;
+	let tail = '';
+	while (url.length > 0) {
+		const last = url[url.length - 1];
+		if (last === ')') {
+			const opens = (url.match(/\(/g) || []).length;
+			const closes = (url.match(/\)/g) || []).length;
+			if (closes > opens) {
+				url = url.slice(0, -1);
+				tail = last + tail;
+				continue;
+			}
+		}
+		if (/[.,;:!?]/.test(last)) {
+			url = url.slice(0, -1);
+			tail = last + tail;
+			continue;
+		}
+		break;
+	}
+	return { url, tail };
+}
+
+function messageUrlToAnchor(displayHtml, hrefRaw) {
+	let href = hrefRaw;
+	if (!/^https?:\/\//i.test(href)) {
+		href = `https://${href}`;
+	}
+	try {
+		const parsed = new URL(href);
+		if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+			return displayHtml;
+		}
+	} catch {
+		return displayHtml;
+	}
+	const safeHref = href
+		.replace(/&/g, '&amp;')
+		.replace(/"/g, '&quot;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;');
+	return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${displayHtml}</a>`;
+}
+
+function linkifyMessagePlainSegment(text) {
+	if (!text) return text;
+	const explicitRe = /https?:\/\/[^\s<]+/gi;
+	const bareRe = new RegExp(
+		String.raw`(?:^|(?<=[\s(]|&gt;))(?<!@)` +
+		String.raw`(?:www\.)?` +
+		String.raw`(?:${MESSAGE_LINK_DOMAIN_LABEL}\.)+` +
+		String.raw`(?:${MESSAGE_LINK_TLDS})` +
+		String.raw`(?:[/?#][^\s<]*)?`,
+		'giu',
+	);
+	const replaceUrl = (match) => {
+		const { url, tail } = peelMessageUrlTrailingPunctuation(match);
+		if (!url) return match;
+		return messageUrlToAnchor(url, url) + tail;
+	};
+	let result = text.replace(explicitRe, replaceUrl);
+	result = result.split(/(<a\b[^>]*>[\s\S]*?<\/a>)/gi).map((part) => {
+		if (/^<a\b/i.test(part)) return part;
+		return part.replace(bareRe, replaceUrl);
+	}).join('');
+	return result;
+}
+
+function linkifyMessageHtml(html) {
+	if (!html) return '';
+	return html.split(/(<[^>]+>)/g).map((part) => {
+		if (part.startsWith('<')) return part;
+		return linkifyMessagePlainSegment(part);
+	}).join('');
+}
+
+function renderMessengerMessageHtml(text) {
+	if (!text) return '';
+	let s = text
+		.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	s = s.replace(/`([^`]+)`/g, '<code class="mc-msg-code">$1</code>');
+	s = s.replace(/\*\*\*(.+?)\*\*\*/gs, '<strong><em>$1</em></strong>');
+	s = s.replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>');
+	s = s.replace(/\*(.+?)\*/gs, '<em>$1</em>');
+	s = s.replace(/~~(.+?)~~/gs, '<del>$1</del>');
+	s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, (match, label, href) => {
+		try {
+			const parsed = new URL(href);
+			if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+				return label;
+			}
+			const safeHref = href
+				.replace(/&/g, '&amp;')
+				.replace(/"/g, '&quot;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;');
+			return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+		} catch (e) {
+			return label;
+		}
+	});
+	s = linkifyMessageHtml(s);
+	s = s.replace(/\n/g, '<br>');
+	return s;
+}
+
+const MESSAGE_LINK_SELECTOR = '.mc-msg-text a[href], .mc-photo-album-caption a[href]';
+
+function normalizeMessageLinkHref(href) {
+	if (!href) return null;
+	let normalized = String(href).trim();
+	if (!/^https?:\/\//i.test(normalized)) {
+		normalized = `https://${normalized}`;
+	}
+	try {
+		const parsed = new URL(normalized);
+		if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+		return parsed.href;
+	} catch {
+		return null;
+	}
+}
+
+function extractMessageLinksFromText(text) {
+	if (!text) return [];
+	const links = [];
+	const seen = new Set();
+	const add = (raw) => {
+		const { url } = peelMessageUrlTrailingPunctuation(String(raw || '').trim());
+		if (!url) return;
+		const normalized = normalizeMessageLinkHref(url);
+		if (!normalized || seen.has(normalized)) return;
+		seen.add(normalized);
+		links.push(normalized);
+	};
+	const explicitRe = /https?:\/\/[^\s]+/gi;
+	let match;
+	while ((match = explicitRe.exec(text)) !== null) add(match[0]);
+	const bareRe = new RegExp(
+		String.raw`(?:^|(?<=[\s(]))(?<!@)` +
+		String.raw`(?:www\.)?` +
+		String.raw`(?:${MESSAGE_LINK_DOMAIN_LABEL}\.)+` +
+		String.raw`(?:${MESSAGE_LINK_TLDS})` +
+		String.raw`(?:[/?#][^\s]*)?`,
+		'giu',
+	);
+	while ((match = bareRe.exec(text)) !== null) add(match[0]);
+	return links;
+}
+
+function collectMessageLinksFromRow(row) {
+	if (!row) return [];
+	const links = [];
+	const seen = new Set();
+	row.querySelectorAll(MESSAGE_LINK_SELECTOR).forEach((anchor) => {
+		const normalized = normalizeMessageLinkHref(anchor.getAttribute('href'));
+		if (!normalized || seen.has(normalized)) return;
+		seen.add(normalized);
+		links.push(normalized);
+	});
+	return links;
+}
+
+function resolveMessageLinks(row, text) {
+	const fromDom = collectMessageLinksFromRow(row);
+	if (fromDom.length) return fromDom;
+	return extractMessageLinksFromText(text);
+}
+
+function formatMessageLinkActionLabel(i18n, href) {
+	const prefix = i18n?.t('msgActionOpenLink') || 'Open link';
+	return `${prefix}: ${href}`;
+}
+
+async function confirmOpenMessageLink(href, { themeManager = null, i18n = null } = {}) {
+	const normalized = normalizeMessageLinkHref(href);
+	if (!normalized) return false;
+	const ok = await MessengerDialog.confirm({
+		title: i18n?.t('msgLinkOpenTitle') || 'Open link?',
+		message: normalized,
+		type: MessengerDialog.TYPE_INFO,
+		confirmLabel: i18n?.t('msgLinkOpenGo') || 'Open',
+		cancelLabel: i18n?.t('cancel') || 'Cancel',
+		themeManager,
+	});
+	if (!ok) return false;
+	window.open(normalized, '_blank', 'noopener,noreferrer');
+	return true;
 }
 
 class MessengerMessageRenderer {
@@ -15543,32 +16967,7 @@ class MessengerMessageRenderer {
 		this.#customRenderer = new MessengerCustomMessageRenderer(utils, icons, i18n, cache);
 	}
 	#renderMarkdown(text) {
-		if (!text) return '';
-		let s = text
-			.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-		s = s.replace(/`([^`]+)`/g, '<code class="mc-msg-code">$1</code>');
-		s = s.replace(/\*\*\*(.+?)\*\*\*/gs, '<strong><em>$1</em></strong>');
-		s = s.replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>');
-		s = s.replace(/\*(.+?)\*/gs, '<em>$1</em>');
-		s = s.replace(/~~(.+?)~~/gs, '<del>$1</del>');
-		s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, (match, label, href) => {
-			try {
-				const parsed = new URL(href);
-				if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-					return label;
-				}
-				const safeHref = href
-					.replace(/&/g, '&amp;')
-					.replace(/"/g, '&quot;')
-					.replace(/</g, '&lt;')
-					.replace(/>/g, '&gt;');
-				return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${label}</a>`;
-			} catch (e) {
-				return label;
-			}
-		});
-		s = s.replace(/\n/g, '<br>');
-		return s;
+		return renderMessengerMessageHtml(text);
 	}
 
 	static SHORT_MSG_MAX_LEN = 25;
@@ -15847,6 +17246,11 @@ class MessengerMessageRenderer {
 		if (oldFwd) oldFwd.remove();
 		const oldText = bubble.querySelector('.mc-msg-text');
 		if (oldText) oldText.remove();
+		bubble.querySelector('.mc-photo-collage')?.remove();
+		bubble.querySelectorAll('.mc-image-slot-wrap, .mc-photo-collage-cell').forEach(el => el.remove());
+		bubble.querySelector('.mc-bubble-image')?.remove();
+		bubble.querySelector('.mc-file-progress-wrap')?.remove();
+		bubble.classList.remove('mc-image-bubble', 'mc-photo-album-bubble', 'mc-file-bubble', 'mc-file-bubble-clickable', 'mc-file-upload-bubble', 'mc-bubble--media-no-caption');
 		if (msg.forwardedFromSenderName) {
 			const fwdEl = this.#utils.mk('div', 'mc-msg-forward-label');
 			const fn = this.#i18n.t('forwardedFrom');
@@ -15868,6 +17272,7 @@ class MessengerMessageRenderer {
 		} else {
 			this.#appendMessageText(bubble, msg);
 		}
+		syncMediaCaptionFooterLayout(bubble);
 		this.#syncTierBadge(bubble, msg, !!entry?.el?.classList?.contains('mc-msg-row--mine'));
 		const footer = bubble.querySelector('.mc-msg-footer');
 		let editedEl = footer?.querySelector('.mc-msg-edited');
@@ -16362,12 +17767,15 @@ class MessengerChatPanel {
 		const backBtn = this.#utils.mk('button', 'mc-back-btn');
 		backBtn.innerHTML = this.#icons.back();
 		backBtn.addEventListener('click', () => {
+			if (MessengerUtils.isMobile() && messengerHistoryHasStackedOverlay()) {
+				try { history.back(); return; } catch (_) {}
+			}
+			if (this.#cancelSelectionMode(panelState)) {
+				return;
+			}
 			if (typeof chatCallbacks.onNavigateBack === 'function') {
 				chatCallbacks.onNavigateBack();
 				return;
-			}
-			if (panelState?.selectionMode) {
-				this.#exitSelectionMode(panelState);
 			}
 			if (MessengerUtils.isMobile()) {
 				if (appEl.root.classList.contains('mapp-show-chat')) {
@@ -16469,9 +17877,26 @@ class MessengerChatPanel {
 			chatId: chat.id,
 			onFileUpload: (type, cId, mArea) => {
 				if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) return;
+				this.exitSelectionForNavigation(panelState);
 				this.#fileHandler.upload(type, cId, mArea, (bubbleEl) => {
 					mArea.appendChild(bubbleEl);
 					mArea.scrollTop = mArea.scrollHeight;
+					if (panelState) {
+						const uploadCtrl = bubbleEl._uploadCtrl;
+						const localId = uploadCtrl?.localId || bubbleEl.dataset.localUploadId || bubbleEl.dataset.msgId;
+						if (localId) {
+							this.#bindUploadRow(panelState, bubbleEl, {
+								id: localId,
+								isOwn: true,
+								deletedForEveryone: false,
+								text: '',
+								timestamp: new Date(),
+								status: 'sending',
+								senderId: panelState.currentUser?.id ?? null,
+								senderName: panelState.currentUser?.name ?? null,
+							});
+						}
+					}
 				}, (chatId, localId, serverMsg, el, packedText) => {
 					if (panelState && chatId === panelState.chatId) {
 						this.attachFileUploadMessage(panelState, localId, serverMsg, el, packedText);
@@ -16508,6 +17933,7 @@ class MessengerChatPanel {
 			stickyDateSep: new MessengerStickyDateSeparator(msgArea, msgWrap),
 			currentUser: chatCallbacks.currentUser || { name: '', colorSeed: '' },
 			replyDraft: null,
+			editDraft: null,
 			replyBar,
 			selectBar,
 			selectionMode: false,
@@ -16580,7 +18006,86 @@ class MessengerChatPanel {
 			}
 		});
 		this.#refreshMessagesStatusForLoad(state, chat.id);
+		this.#syncImageViewerActionHost(state);
 		return state;
+	}
+
+	#findMessageByImageUrl(state, url) {
+		if (!state?.msgArea || !url) return null;
+		const normalizeUrl = (u) => {
+			if (!u || u.startsWith('blob:') || u.startsWith('data:')) return u || '';
+			try {
+				const parsed = new URL(u, window.location.origin);
+				return parsed.pathname + parsed.search;
+			} catch {
+				return u;
+			}
+		};
+		const targetKey = normalizeUrl(url);
+		for (const row of state.msgArea.querySelectorAll('.mc-msg-row[data-msg-id]')) {
+			const msg = row._msgData || state.messages.get(row.dataset.msgId)?.data || null;
+			for (const el of row.querySelectorAll('.mc-bubble-image, .mc-photo-collage-item')) {
+				const candidates = [
+					el.dataset.viewerUrl,
+					el.dataset.fileId ? MessengerFileService.getFileUrl(el.dataset.fileId) : null,
+				];
+				if (el.classList.contains('mc-image-slot--ready') && el.src) {
+					candidates.push(el.src);
+				}
+				for (const candidate of candidates) {
+					if (!candidate) continue;
+					if (candidate === url || normalizeUrl(candidate) === targetKey) {
+						return msg;
+					}
+				}
+			}
+			if (msg?.text) {
+				const parsed = MessengerCustomMessage.parse(msg.text);
+				if (parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.IMAGE) {
+					const fileUrl = MessengerFileService.getFileUrl(parsed.payload?.fileId);
+					if (fileUrl === url || normalizeUrl(fileUrl) === targetKey) return msg;
+				}
+				if (parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+					for (const fileId of parsed.payload?.fileIds || []) {
+						const fileUrl = MessengerFileService.getFileUrl(fileId);
+						if (fileUrl === url || normalizeUrl(fileUrl) === targetKey) return msg;
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	#getImageFileName(msg, url) {
+		const parsed = MessengerCustomMessage.parse(msg?.text);
+		if (!parsed) return 'image.jpg';
+		if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.IMAGE) {
+			return parsed.payload.fileName || 'image.jpg';
+		}
+		if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+			const ids = parsed.payload.fileIds || [];
+			const names = parsed.payload.fileNames || [];
+			const idx = ids.findIndex((id) => MessengerFileService.getFileUrl(id) === url);
+			if (idx >= 0) return names[idx] || `photo-${idx + 1}.jpg`;
+		}
+		return 'image.jpg';
+	}
+
+	#syncImageViewerActionHost(state) {
+		if (!state) {
+			MessengerImageViewer.setActionHost(null);
+			return;
+		}
+		MessengerImageViewer.setActionHost({
+			findMessage: (url) => this.#findMessageByImageUrl(state, url),
+			canForward: (msg) => this.#api.canForwardMessage(msg),
+			forward: (msg, imageUrl) => this.#forwardMessage(state, msg, imageUrl),
+			getFileName: (url, msg) => this.#getImageFileName(msg, url),
+		});
+	}
+
+	syncImageViewerActionHost(state) {
+		this.#syncImageViewerActionHost(state);
 	}
 	#getChatMuteMenuSpec(chat) {
 		const push = (typeof window !== 'undefined') ? window.SupraPush : null;
@@ -16793,14 +18298,17 @@ class MessengerChatPanel {
 	#buildReplyBar() {
 		const bar = this.#utils.mk('div', 'mc-reply-bar');
 		bar.hidden = true;
+		const inner = this.#utils.mk('div', 'mc-reply-bar-inner');
+		const label = this.#utils.mk('div', 'mc-reply-bar-label');
 		const body = this.#utils.mk('div', 'mc-reply-bar-body');
 		const author = this.#utils.mk('div', 'mc-reply-bar-author');
 		const preview = this.#utils.mk('div', 'mc-reply-bar-preview');
 		body.append(author, preview);
+		inner.append(label, body);
 		const closeBtn = this.#utils.mk('button', 'mc-reply-bar-close');
 		closeBtn.type = 'button';
 		closeBtn.innerHTML = '×';
-		bar.append(body, closeBtn);
+		bar.append(inner, closeBtn);
 		return bar;
 	}
 
@@ -16822,7 +18330,7 @@ class MessengerChatPanel {
 	#bindMessageInteractions(state) {
 		if (!state.replyBar || !state.selectBar) return;
 		const closeReply = state.replyBar.querySelector('.mc-reply-bar-close');
-		closeReply?.addEventListener('click', () => this.clearReplyDraft(state));
+		closeReply?.addEventListener('click', () => this.clearComposerDraft(state));
 
 		state.selectBar._cancelBtn.textContent = this.#i18n.t('selectCancel');
 		state.selectBar._actionBtn.textContent = this.#i18n.t('selectAction');
@@ -16833,46 +18341,105 @@ class MessengerChatPanel {
 		});
 	}
 
-	clearReplyDraft(state) {
+	clearComposerDraft(state) {
+		const wasEdit = !!state.editDraft;
 		state.replyDraft = null;
+		state.editDraft = null;
 		if (state.replyBar) state.replyBar.hidden = true;
+		if (wasEdit && state.inputField) {
+			state.inputField.value = '';
+			state.inputField.style.height = '';
+			state.inputField.rows = 1;
+		}
 		state.inputField?.focus();
+	}
+
+	clearReplyDraft(state) {
+		this.clearComposerDraft(state);
+	}
+
+	#fillComposerPreview(state, msg, prevEl, textPreview = null) {
+		if (!prevEl) return;
+		prevEl.replaceChildren();
+		prevEl.classList.remove('mc-reply-bar-preview--image');
+		const previewEl = buildQuotePreviewContent({
+			utils: this.#utils,
+			cache: this.#cache,
+			previewText: textPreview ?? msg.text ?? resolveReplyTextPreview(msg),
+			locked: false,
+		});
+		if (previewEl.classList.contains('mc-msg-quote-preview--image')) {
+			prevEl.classList.add('mc-reply-bar-preview--image');
+			const thumb = previewEl.querySelector('.mc-msg-quote-thumb');
+			if (thumb) {
+				thumb.classList.remove('mc-msg-quote-thumb');
+				thumb.classList.add('mc-reply-bar-thumb');
+				prevEl.appendChild(thumb);
+			}
+		} else {
+			prevEl.textContent = previewEl.textContent;
+		}
+	}
+
+	#updateComposerBar(state, mode, msg, draftMeta = {}) {
+		const bar = state.replyBar;
+		if (!bar) return;
+		const label = bar.querySelector('.mc-reply-bar-label');
+		const author = bar.querySelector('.mc-reply-bar-author');
+		const prev = bar.querySelector('.mc-reply-bar-preview');
+		if (label) {
+			label.textContent = mode === 'edit'
+				? this.#i18n.t('composerEditLabel')
+				: this.#i18n.t('composerQuoteLabel');
+		}
+		if (author) {
+			author.hidden = mode === 'edit';
+			if (mode === 'reply') author.textContent = draftMeta.senderName || msg.senderName || '';
+		}
+		const previewText = mode === 'edit'
+			? MessengerCustomMessage.getEditableText(msg)
+			: draftMeta.textPreview;
+		this.#fillComposerPreview(state, msg, prev, previewText);
+		bar.hidden = false;
 	}
 
 	setReplyDraft(state, msg) {
 		if (!msg || msg.deletedForEveryone) return;
+		const wasEdit = !!state.editDraft;
+		state.editDraft = null;
+		if (wasEdit && state.inputField) {
+			state.inputField.value = '';
+			state.inputField.style.height = '';
+			state.inputField.rows = 1;
+		}
 		const textPreview = resolveReplyTextPreview(msg);
 		state.replyDraft = {
 			messageId: msg.id,
 			senderName: msg.senderName || '',
 			textPreview,
 		};
-		const author = state.replyBar.querySelector('.mc-reply-bar-author');
-		const prev = state.replyBar.querySelector('.mc-reply-bar-preview');
-		if (author) author.textContent = state.replyDraft.senderName;
-		if (prev) {
-			prev.replaceChildren();
-			prev.classList.remove('mc-reply-bar-preview--image');
-			const previewEl = buildQuotePreviewContent({
-				utils: this.#utils,
-				cache: this.#cache,
-				previewText: msg.text || textPreview,
-				locked: false,
-			});
-			if (previewEl.classList.contains('mc-msg-quote-preview--image')) {
-				prev.classList.add('mc-reply-bar-preview--image');
-				const thumb = previewEl.querySelector('.mc-msg-quote-thumb');
-				if (thumb) {
-					thumb.classList.remove('mc-msg-quote-thumb');
-					thumb.classList.add('mc-reply-bar-thumb');
-					prev.appendChild(thumb);
-				}
-			} else {
-				prev.textContent = previewEl.textContent;
-			}
-		}
-		state.replyBar.hidden = false;
+		this.#updateComposerBar(state, 'reply', msg, {
+			senderName: state.replyDraft.senderName,
+			textPreview,
+		});
 		state.inputField?.focus();
+		this.#exitSelectionModeIfActive(state);
+	}
+
+	setEditDraft(state, msg) {
+		if (!msg || !MessengerCustomMessage.isEditableMessage(msg)) return;
+		state.replyDraft = null;
+		state.editDraft = { messageId: msg.id, msg };
+		this.#updateComposerBar(state, 'edit', msg);
+		if (state.inputField) {
+			state.inputField.value = MessengerCustomMessage.getEditableText(msg) || '';
+			state.inputField.style.height = 'auto';
+			if (state.inputField.scrollHeight > 40) {
+				state.inputField.style.height = Math.min(state.inputField.scrollHeight, 120) + 'px';
+			}
+			state.inputField.focus();
+		}
+		this.#exitSelectionModeIfActive(state);
 	}
 
 	#clearPanelMessages(state) {
@@ -17054,17 +18621,29 @@ class MessengerChatPanel {
 		}
 	}
 
+	#bindUploadRow(state, row, msg) {
+		if (!state || !row || !msg?.id) return;
+		row._msgData = msg;
+		this.#bindMessageRowEvents(state, row, msg);
+		if (state.selectionMode) {
+			this.#enableRowSelectionUi(row, state.selectedIds.has(msg.id));
+		}
+	}
+
 	#bindMessageRowEvents(state, row, msg) {
 		if (!row || row.dataset.dateSep || MessengerCustomMessage.isSystemEvent(msg)) return;
+		row._msgData = msg;
+		if (row._msgEventsBound) return;
+		row._msgEventsBound = true;
 		const bubble = row.querySelector('.mc-bubble');
 		if (!bubble) return;
 
-		const openMenu = (e, fromTouch = false) => {
+		const openMenu = (e, { forcePopup = false } = {}) => {
 			if (state.selectionMode) return;
 			e.preventDefault();
 			e.stopPropagation();
 			const currentMsg = this.#resolveRowMessage(state, row, msg);
-			this.#showMessageMenu(e, state, currentMsg, row);
+			this.#showMessageMenu(e, state, currentMsg, row, { forcePopup });
 		};
 
 		row.addEventListener('click', e => {
@@ -17072,34 +18651,59 @@ class MessengerChatPanel {
 			if (e.target.closest('.mc-msg-quote')) return;
 			e.preventDefault();
 			e.stopPropagation();
-			this.#toggleMessageSelection(state, msg.id, row);
+			const currentMsg = this.#resolveRowMessage(state, row, msg);
+			this.#toggleMessageSelection(state, currentMsg.id, row);
+		}, true);
+
+		const interceptMessageLink = (e) => {
+			if (state.selectionMode) return;
+			const link = e.target.closest(MESSAGE_LINK_SELECTOR);
+			if (!link) return;
+			e.preventDefault();
+			e.stopPropagation();
+			void this.#confirmOpenMessageLink(link.getAttribute('href'));
+		};
+		bubble.addEventListener('click', interceptMessageLink, true);
+		bubble.addEventListener('auxclick', (e) => {
+			if (e.button !== 1) return;
+			interceptMessageLink(e);
 		}, true);
 
 		bubble.addEventListener('click', e => {
 			if (state.selectionMode) return;
+			if (!isTouchInteractionEvent(e)) return;
+			if (e.target.closest('.mc-photo-collage-item, .mc-bubble-image')) return;
+			if (e.target.closest(MESSAGE_LINK_SELECTOR)) return;
 			if (isMobileSheetMenu()) {
-				openMenu(e, true);
+				openMenu(e);
 			}
 		});
-		bubble.addEventListener('contextmenu', (e) => {
-			if (isMobileSheetMenu()) {
+		row.addEventListener('contextmenu', (e) => {
+			if (e.target.closest('.mc-msg-quote')) return;
+			if (isTouchInteractionEvent(e)) {
 				e.preventDefault();
 				return;
 			}
-			openMenu(e, false);
+			openMenu(e, { forcePopup: true });
 		});
 
-		bindLongPressAction(bubble, (e) => {
-			if (state.selectionMode || msg.deletedForEveryone) return;
+		bindLongPressAction(row, (e) => {
+			const currentMsg = this.#resolveRowMessage(state, row, msg);
+			if (state.selectionMode || currentMsg.deletedForEveryone) return;
 			e.preventDefault();
 			e.stopPropagation();
-			this.#enterSelectionMode(state, msg.id);
+			this.#enterSelectionMode(state, currentMsg.id);
 		});
-
-		row._msgData = msg;
 	}
 
-	#showMessageMenu(e, state, msg, row = null) {
+	async #confirmOpenMessageLink(href) {
+		await confirmOpenMessageLink(href, {
+			themeManager: this.#themeManager,
+			i18n: this.#i18n,
+		});
+	}
+
+	#showMessageMenu(e, state, msg, row = null, { forcePopup = false } = {}) {
 		const currentMsg = this.#resolveRowMessage(state, row, msg);
 		const sheetItems = this.#buildMessageActionItems(state, [{ msg: currentMsg, row }], { multiSelect: false });
 		if (!sheetItems.length) return;
@@ -17107,6 +18711,7 @@ class MessengerChatPanel {
 			title: currentMsg.senderName || '',
 			row,
 			highlight: true,
+			forcePopup,
 		});
 	}
 
@@ -17144,7 +18749,7 @@ class MessengerChatPanel {
 			}
 			const copyable = msgs.filter(m => MessengerCustomMessage.hasCopyableText(m));
 			if (copyable.length) {
-				push(this.#icons.copy(), 'msgActionCopy', false, () => this.#copySelectedMessagesText(copyable));
+				push(this.#icons.copy(), 'msgActionCopy', false, () => this.#copySelectedMessagesText(copyable, state));
 			}
 			push(this.#icons.trash(), 'msgActionDelete', true, () => this.#deleteSelectedMessages(state));
 			return sheetItems;
@@ -17156,17 +18761,29 @@ class MessengerChatPanel {
 
 		if (!isDeleted) {
 			if (this.#shouldOfferEnterPassword(state, msg, row)) {
-				push(this.#icons.lock(), 'msgActionEnterPassword', false, () => state.onEnterExtraPassword());
+				push(this.#icons.lock(), 'msgActionEnterPassword', false, () => {
+					state.onEnterExtraPassword();
+					this.#exitSelectionModeIfActive(state);
+				});
 			}
 			if (isOwn && MessengerCustomMessage.isEditableMessage(msg)) {
 				push(this.#icons.pencil(), 'msgActionEdit', false, () => this.#editMessage(state, msg));
 			}
 			push(this.#icons.reply(), 'msgActionReply', false, () => this.setReplyDraft(state, msg));
+			for (const href of resolveMessageLinks(row, msg.text)) {
+				sheetItems.push({
+					icon: this.#icons.externalLink(),
+					label: formatMessageLinkActionLabel(this.#i18n, href),
+					danger: false,
+					truncate: true,
+					action: () => this.#confirmOpenMessageLink(href),
+				});
+			}
 			if (this.#api.canForwardMessage(msg)) {
 				push(this.#icons.forward(), 'msgActionForward', false, () => this.#forwardMessage(state, msg));
 			}
 			if (MessengerCustomMessage.hasCopyableText(msg)) {
-				push(this.#icons.copy(), 'msgActionCopy', false, () => this.#copyMessageText(msg));
+				push(this.#icons.copy(), 'msgActionCopy', false, () => this.#copyMessageText(msg, state));
 			}
 			push(this.#icons.select(), 'msgActionSelect', false, () => this.#enterSelectionMode(state, msg.id));
 		}
@@ -17179,10 +18796,10 @@ class MessengerChatPanel {
 		return sheetItems;
 	}
 
-	#presentMessageActionMenu(e, state, sheetItems, { title = '', row = null, highlight = false } = {}) {
+	#presentMessageActionMenu(e, state, sheetItems, { title = '', row = null, highlight = false, forcePopup = false } = {}) {
 		const dismissMenuHighlight = () => MessengerMessageHighlight.clear(state.msgArea);
 
-		if (isMobileSheetMenu()) {
+		if (!forcePopup && isMobileSheetMenu()) {
 			MobileBottomSheetMenu.open({
 				title,
 				items: sheetItems,
@@ -17204,15 +18821,16 @@ class MessengerChatPanel {
 			menu.remove();
 			dismissMenuHighlight();
 		};
-		const addItem = (icon, label, danger, action) => {
+		const addItem = (icon, label, danger, action, { truncate = false } = {}) => {
 			const item = this.#utils.mk('div', 'mapp-context-menu-item');
 			if (danger) item.classList.add('mapp-context-menu-item--danger');
+			if (truncate) item.classList.add('mapp-context-menu-item--truncate');
 			if (icon) {
 				const ic = this.#utils.mk('span', 'mapp-context-menu-item-icon');
 				ic.innerHTML = icon;
 				item.appendChild(ic);
 			}
-			const lbl = this.#utils.mk('span');
+			const lbl = this.#utils.mk('span', 'mapp-context-menu-item-label');
 			lbl.textContent = label;
 			item.appendChild(lbl);
 			item.addEventListener('click', () => { closeMenu(); action(); });
@@ -17243,13 +18861,13 @@ class MessengerChatPanel {
 				subItem.addEventListener('mouseleave', () => subMenu.classList.remove('mapp-context-submenu--open'));
 				menu.appendChild(subItem);
 			} else {
-				addItem(def.icon, def.label, def.danger, def.action);
+				addItem(def.icon, def.label, def.danger, def.action, { truncate: !!def.truncate });
 			}
 		});
 		document.body.appendChild(menu);
 		let x = e.clientX;
 		let y = e.clientY;
-		if (e.currentTarget instanceof HTMLElement) {
+		if (!forcePopup && e.currentTarget instanceof HTMLElement) {
 			const rect = e.currentTarget.getBoundingClientRect();
 			x = rect.left;
 			y = rect.top;
@@ -17281,6 +18899,7 @@ class MessengerChatPanel {
 	}
 
 	async #showMessageInfo(state, msg) {
+		this.#exitSelectionModeIfActive(state);
 		const messageId = msg.serverId || msg.id;
 		if (!messageId || String(messageId).startsWith('local_')) {
 			await MessengerDialog.alert({
@@ -17313,21 +18932,22 @@ class MessengerChatPanel {
 		}
 	}
 
-	async #copyMessageText(msg) {
+	async #copyMessageText(msg, state = null) {
 		if (!MessengerCustomMessage.hasCopyableText(msg)) return;
-		const text = msg.text || '';
+		const text = MessengerCustomMessage.getEditableText(msg) || '';
 		try {
 			await navigator.clipboard.writeText(text);
 		} catch (e) {
 			console.warn('[MessengerChatPanel] copy', e);
 		}
+		this.#exitSelectionModeIfActive(state);
 	}
 
-	async #copySelectedMessagesText(msgs) {
+	async #copySelectedMessagesText(msgs, state = null) {
 		const parts = [];
 		for (const msg of msgs || []) {
 			if (!MessengerCustomMessage.hasCopyableText(msg)) continue;
-			parts.push(msg.text);
+			parts.push(MessengerCustomMessage.getEditableText(msg));
 		}
 		if (!parts.length) return;
 		try {
@@ -17335,72 +18955,21 @@ class MessengerChatPanel {
 		} catch (e) {
 			console.warn('[MessengerChatPanel] copy selected', e);
 		}
+		this.#exitSelectionModeIfActive(state);
 	}
 
-	async #editMessage(state, msg) {
-		const overlay = document.createElement('div');
-		overlay.className = 'mc-dialog-overlay';
-		const dialog = document.createElement('div');
-		dialog.className = 'mc-dialog';
-		this.#themeManager?.applyChatVars?.(dialog);
-		const titleEl = document.createElement('div');
-		titleEl.className = 'mc-dialog-title';
-		titleEl.textContent = this.#i18n.t('editMessageTitle');
-		const field = document.createElement('textarea');
-		field.className = 'mc-edit-msg-field';
-		field.value = msg.text || '';
-		field.rows = 4;
-		const actions = document.createElement('div');
-		actions.className = 'mc-dialog-actions';
-		const cancelBtn = document.createElement('button');
-		cancelBtn.className = 'mc-dialog-btn mc-dialog-btn--cancel';
-		cancelBtn.textContent = this.#i18n.t('cancel');
-		const saveBtn = document.createElement('button');
-		saveBtn.className = 'mc-dialog-btn mc-dialog-btn--confirm';
-		saveBtn.textContent = this.#i18n.t('save');
-		actions.append(cancelBtn, saveBtn);
-		dialog.append(titleEl, field, actions);
-		overlay.appendChild(dialog);
-		document.body.appendChild(overlay);
-		const close = () => overlay.remove();
-		cancelBtn.addEventListener('click', close);
-		overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-		saveBtn.addEventListener('click', async () => {
-			const newText = field.value.trim();
-			if (!newText) return;
-			saveBtn.disabled = true;
-			try {
-				await this.#api.editMessage(state.chatId, msg.id, newText);
-				msg.text = newText;
-				msg.editedOn = new Date();
-				const found = this.#findEntry(state, msg.id);
-				if (found) {
-					found.entry.data.text = newText;
-					found.entry.data.editedOn = msg.editedOn;
-					this.#msgRenderer.updateMsgContent(
-						found.entry,
-						found.entry.data,
-						id => this.#scrollToQuotedMessage(state, id)
-					);
-				}
-				close();
-			} catch (err) {
-				console.warn('[MessengerChatPanel] editMessage', err);
-				saveBtn.disabled = false;
-			}
-		});
+	#editMessage(state, msg) {
+		this.setEditDraft(state, msg);
 	}
 
 	#finishForward(state, targetChatId) {
-		if (state?.selectionMode) {
-			this.#exitSelectionMode(state);
-		}
+		this.#exitSelectionModeIfActive(state);
 		if (targetChatId && typeof state?.onForwardNavigate === 'function') {
 			state.onForwardNavigate(targetChatId);
 		}
 	}
 
-	#forwardMessage(state, msg) {
+	#forwardMessage(state, msg, imageUrl = null) {
 		if (!this.#api.canForwardMessage(msg)) {
 			MessengerDialog.alert({
 				message: this.#i18n.t('forwardNotAllowed'),
@@ -17413,11 +18982,16 @@ class MessengerChatPanel {
 				this.#utils, this.#icons, this.#avatarBuilder, this.#api, this.#i18n, this.#themeManager
 			);
 		}
-		this.#forwardModal.open(async (contactIds) => {
+		this.#exitSelectionModeIfActive(state);
+		const hasPhotoCaption = MessengerCustomMessage.hasPhotoCaption(msg?.text);
+		this.#forwardModal.open(async (contactIds, forwardSettings) => {
 			try {
 				const result = await this.#api.forwardMessage(state.chatId, msg.id, contactIds, msg, {
 					i18n: this.#i18n,
 					themeManager: this.#themeManager,
+					imageUrl: imageUrl || null,
+					showSenderName: forwardSettings?.showSenderName,
+					includeCaption: forwardSettings?.includeCaption,
 				});
 				this.#finishForward(state, result?.sentChatIds?.[0]);
 			} catch (e) {
@@ -17429,6 +19003,10 @@ class MessengerChatPanel {
 				}
 				throw e;
 			}
+		}, {
+			excludeChatId: state.chatId,
+			excludeUserIds: msg.senderId ? [msg.senderId] : [],
+			hasPhotoCaption,
 		});
 	}
 
@@ -17446,7 +19024,9 @@ class MessengerChatPanel {
 				this.#utils, this.#icons, this.#avatarBuilder, this.#api, this.#i18n, this.#themeManager
 			);
 		}
-		this.#forwardModal.open(async (contactIds) => {
+		this.#exitSelectionModeIfActive(state);
+		const hasPhotoCaption = forwardable.some(m => MessengerCustomMessage.hasPhotoCaption(m?.text));
+		this.#forwardModal.open(async (contactIds, forwardSettings) => {
 			try {
 				const result = await this.#api.forwardMessages(
 					state.chatId,
@@ -17456,6 +19036,8 @@ class MessengerChatPanel {
 					{
 						i18n: this.#i18n,
 						themeManager: this.#themeManager,
+						showSenderName: forwardSettings?.showSenderName,
+						includeCaption: forwardSettings?.includeCaption,
 					}
 				);
 				this.#finishForward(state, result?.sentChatIds?.[0]);
@@ -17468,24 +19050,36 @@ class MessengerChatPanel {
 				}
 				throw e;
 			}
+		}, {
+			excludeChatId: state.chatId,
+			excludeUserIds: [...new Set(forwardable.map(m => m.senderId).filter(Boolean))],
+			hasPhotoCaption,
 		});
+	}
+
+	async #confirmDeleteOwnMessages() {
+		const result = await MessengerDialog.confirmWithCheckbox({
+			title: this.#i18n.t('deleteMessageTitle'),
+			message: this.#i18n.t('deleteMessageMsg'),
+			type: MessengerDialog.TYPE_DANGER,
+			confirmLabel: this.#i18n.t('confirm'),
+			cancelLabel: this.#i18n.t('cancel'),
+			checkboxLabel: this.#i18n.t('deleteForEveryone'),
+			checkboxChecked: MessengerChatPreferences.getDeleteForEveryone(),
+			themeManager: this.#themeManager,
+		});
+		if (!result?.confirmed) return null;
+		MessengerChatPreferences.setDeleteForEveryone(!!result.checked);
+		return !!result.checked;
 	}
 
 	async #deleteMessage(state, msg) {
 		const isOwn = !!msg.isOwn;
 		let deleteForEveryone = false;
 		if (isOwn) {
-			const result = await MessengerDialog.confirmWithCheckbox({
-				title: this.#i18n.t('deleteMessageTitle'),
-				message: this.#i18n.t('deleteMessageMsg'),
-				type: MessengerDialog.TYPE_DANGER,
-				confirmLabel: this.#i18n.t('confirm'),
-				cancelLabel: this.#i18n.t('cancel'),
-				checkboxLabel: this.#i18n.t('deleteForEveryone'),
-				themeManager: this.#themeManager,
-			});
-			if (!result?.confirmed) return;
-			deleteForEveryone = !!result.checked;
+			const choice = await this.#confirmDeleteOwnMessages();
+			if (choice === null) return;
+			deleteForEveryone = choice;
 		} else {
 			const confirmed = await MessengerDialog.confirm({
 				title: this.#i18n.t('deleteMessageTitle'),
@@ -17506,6 +19100,7 @@ class MessengerChatPanel {
 				await this.#msgService.deleteMessage(state.chatId, msg.id);
 				this.deleteMessage(state, msg.id, msg.id);
 			}
+			this.#exitSelectionModeIfActive(state);
 		} catch (e) {
 			console.warn('[MessengerChatPanel] deleteMessage', e);
 		}
@@ -17571,6 +19166,10 @@ class MessengerChatPanel {
 		});
 	}
 
+	#exitSelectionModeIfActive(state) {
+		if (state?.selectionMode) this.#exitSelectionMode(state);
+	}
+
 	#syncSelectionHistoryPop(state) {
 		if (!state?.selectionHistorySync) return false;
 		state.selectionHistorySync = false;
@@ -17616,22 +19215,31 @@ class MessengerChatPanel {
 	}
 
 	async #deleteSelectedMessages(state) {
-		const ids = [...state.selectedIds];
-		if (!ids.length) return;
-		const confirmed = await MessengerDialog.confirm({
-			title: this.#i18n.t('deleteMessageTitle'),
-			message: this.#i18n.t('deleteForMe'),
-			type: MessengerDialog.TYPE_DANGER,
-			confirmLabel: this.#i18n.t('confirm'),
-			cancelLabel: this.#i18n.t('cancel'),
-			themeManager: this.#themeManager,
-		});
-		if (!confirmed) return;
-		for (const id of ids) {
+		const entries = this.#getSelectedMessageEntries(state);
+		if (!entries.length) return;
+		const allOwn = entries.every(({ msg }) => !!msg.isOwn);
+		let deleteForEveryone = false;
+		if (allOwn) {
+			const choice = await this.#confirmDeleteOwnMessages();
+			if (choice === null) return;
+			deleteForEveryone = choice;
+		} else {
+			const confirmed = await MessengerDialog.confirm({
+				title: this.#i18n.t('deleteMessageTitle'),
+				message: this.#i18n.t('deleteForMe'),
+				type: MessengerDialog.TYPE_DANGER,
+				confirmLabel: this.#i18n.t('confirm'),
+				cancelLabel: this.#i18n.t('cancel'),
+				themeManager: this.#themeManager,
+			});
+			if (!confirmed) return;
+		}
+		for (const { msg } of entries) {
 			try {
-				await this.#api.deleteMessage(state.chatId, id, false);
-				await this.#msgService.deleteMessage(state.chatId, id);
-				this.deleteMessage(state, id, id);
+				const forEveryone = deleteForEveryone && !!msg.isOwn;
+				await this.#api.deleteMessage(state.chatId, msg.id, forEveryone);
+				await this.#msgService.deleteMessage(state.chatId, msg.id);
+				this.deleteMessage(state, msg.id, msg.id);
 			} catch (e) {
 				console.warn('[MessengerChatPanel] bulk delete', e);
 			}
@@ -18103,6 +19711,16 @@ class MessengerChatPanel {
 		state.renderedIds.add(serverMsg.id);
 		state.messages.set(serverMsg.id, { data: msg, el });
 		el._msgData = msg;
+		this.#bindMessageRowEvents(state, el, msg);
+		const imgWrap = el.querySelector('.mc-image-slot-wrap');
+		if (imgWrap) {
+			bindChatImageOpen(imgWrap, {
+				icons: this.#icons,
+				cache: this.#cache,
+				i18n: this.#i18n,
+				getMsgArea: () => state.msgArea,
+			});
+		}
 		try {
 			await this.#msgService.confirmOptimistic(state.chatId, localId, msg);
 		} catch (err) {
@@ -18213,7 +19831,10 @@ class MessengerChatPanel {
 		const el =
 			state.msgArea.querySelector(`[data-msg-id="${storedId}"]`) ||
 			state.msgArea.querySelector(`[data-msg-id="${originalId}"]`);
-		if (!el) return;
+		if (!el) {
+			state.onChatPreviewRefresh?.();
+			return;
+		}
 		const dateSeparatorEl = el.previousElementSibling;
 		el.remove();
 		if (dateSeparatorEl?.dataset.dateSep === '1') {
@@ -18229,6 +19850,7 @@ class MessengerChatPanel {
 		}
 		if (state.unreadCount > 0) state.unreadCount = Math.max(0, state.unreadCount - 1);
 		state.stickyDateSep?.reobserve();
+		state.onChatPreviewRefresh?.();
 	}
 	destroyPanel(state) {
 		if (state?.selectionMode) this.#exitSelectionMode(state);
@@ -18875,6 +20497,15 @@ class MessengerChatView {
 		this.#renderedIds.add(serverMsg.id);
 		this.#messages.set(serverMsg.id, { data: msg, el });
 		el._msgData = msg;
+		const imgWrap = el.querySelector('.mc-image-slot-wrap');
+		if (imgWrap) {
+			bindChatImageOpen(imgWrap, {
+				icons: this.#icons,
+				cache: this.#cache,
+				i18n: this.#i18n,
+				getMsgArea: () => this.el.messages,
+			});
+		}
 		el._uploadCtrl?.setSentStatus?.(msg.status || 'sent');
 		try {
 			await this.#msgService.confirmOptimistic(this.#chatMeta.id, localId, msg);
@@ -19863,6 +21494,7 @@ class Messenger {
 					if (this.#mode === Messenger.MODE_APP) {
 						try {
 							await this.#msgService.ingestOne(body.chatId, msg);
+							this.#cache.prefetchMessageImages(msg.text);
 						} catch (e) {
 							console.warn('[Messenger] cache realtime message', e);
 						}
@@ -19877,6 +21509,7 @@ class Messenger {
 					} else if (this.#chatView.chatMeta?.id === body.chatId) {
 						try {
 							await this.#msgService.ingestOne(body.chatId, msg);
+							this.#cache.prefetchMessageImages(msg.text);
 						} catch (e) {
 							console.warn('[Messenger] cache realtime message', e);
 						}
@@ -19991,8 +21624,13 @@ class Messenger {
 			case 'SupraPresenceUpdate': {
 				const { userId, status } = body;
 				if (userId && status) {
+					const prev = this.#presence?.get(userId);
 					this.#presence?.update(userId, status);
-					if (status === 'offline' && this.#mode === Messenger.MODE_APP) {
+					if (
+						status === 'offline'
+						&& this.#mode === Messenger.MODE_APP
+						&& (prev === 'online' || prev === 'idle')
+					) {
 						this.#appView.touchContactLastSeen(userId);
 					}
 				}
@@ -20125,6 +21763,7 @@ if (typeof window !== 'undefined') {
 	// Глобальный обработчик «назад»: закрывает верхний оверлей/диалог раньше всех
 	// остальных слушателей (чтобы не было выхода в список чатов).
 	window.addEventListener('popstate', () => { messengerHandleOverlayPopstate(); });
+	bindPrimaryPointerTracking();
 	document.addEventListener('contextmenu', e => {
 		if (e.target.closest('.mc-msg-text, .mapp-selectable-text, input, textarea, select')) return;
 		e.preventDefault();

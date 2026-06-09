@@ -129,7 +129,15 @@
   </div>
   <script src="/avatar-upload.js"></script>
   <script>
-    const token = location.pathname.split('/').pop();
+    function getInviteToken() {
+      const path = location.pathname;
+      const plus = path.match(/^\/\+([^/]+)$/);
+      if (plus) return plus[1];
+      const legacy = path.match(/^\/register\/([^/]+)$/);
+      if (legacy) return legacy[1];
+      return path.split('/').pop();
+    }
+    const token = getInviteToken();
 
     (async () => {
       if (window.AppBranding) await AppBranding.loadAppearance();
