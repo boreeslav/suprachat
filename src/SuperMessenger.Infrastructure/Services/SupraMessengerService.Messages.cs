@@ -148,6 +148,29 @@ public sealed partial class SupraMessengerService
                 var otherId = parts.FirstOrDefault(p => p.UserId != user.Id)?.UserId;
                 if (otherId.HasValue)
                 {
+                    var otherUser = await _store.GetUserByIdAsync(otherId.Value, ct);
+                    var isBotChat = IsBotUser(otherUser);
+                    var senderIsBot = IsBotUser(user);
+
+                    if (isBotChat || senderIsBot)
+                    {
+                        if (IsEncryptedPayload(text) || string.Equals(encryptionTier, "protected", StringComparison.OrdinalIgnoreCase))
+                            return (new SupraSendMessageResponse { success = false, error = "Сообщения боту не шифруются" }, null);
+                    }
+
+                    if (senderIsBot && otherId.HasValue)
+                    {
+                        if (!await IsBotUserActiveForAsync(user.Id, otherId.Value, ct))
+                        {
+                            return (new SupraSendMessageResponse
+                            {
+                                success = true,
+                                messageId = Guid.NewGuid().ToString(),
+                                status = "sent",
+                            }, null);
+                        }
+                    }
+
                     if (!await CanWriteAsync(user.Id, otherId.Value, ct))
                         return (new SupraSendMessageResponse { success = false, error = "Пользователь ограничил входящие сообщения" }, null);
                     if (await IsDirectPairBlockedAsync(user.Id, otherId.Value, ct))
@@ -185,6 +208,10 @@ public sealed partial class SupraMessengerService
             var msgGuid = Guid.NewGuid();
             var now = DateTime.UtcNow;
             var displayName = chat != null && IsChannelChat(chat) ? chat.Name : user.DisplayName;
+            var isPlaintextChat = chat != null && (
+                IsChannelChat(chat) ||
+                (string.Equals(chat.Type, "direct", StringComparison.OrdinalIgnoreCase) &&
+                 await IsDirectBotChatAsync(chatGuid, ct)));
             var record = new SupraChatMessageRecord
             {
                 Id = msgGuid,
@@ -198,7 +225,7 @@ public sealed partial class SupraMessengerService
                 ReplyToSenderName = replySender,
                 ReplyToTextPreview = replyPreview,
                 ForwardedFromSenderName = fwdName,
-                EncryptionTier = chat != null && IsChannelChat(chat) ? "basic" : NormalizeEncryptionTier(encryptionTier),
+                EncryptionTier = isPlaintextChat ? "basic" : NormalizeEncryptionTier(encryptionTier),
                 ClientLocalId = normalizedLocalId,
             };
             await _store.SaveMessageAsync(record, ct);

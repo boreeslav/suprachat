@@ -59,6 +59,9 @@ public sealed partial class SupraMessengerService
             string? contactUserId = null;
             string? contactStatusText = null;
             DateTime? contactLastSeenAt = null;
+            bool isBotContact = false;
+            string? botSlug = null;
+            bool botEngaged = false;
             if (string.Equals(chat.Type, "direct", StringComparison.OrdinalIgnoreCase))
             {
                 participantsByChat.TryGetValue(chatId, out var parts);
@@ -69,7 +72,14 @@ public sealed partial class SupraMessengerService
                     avatar = AvatarUrl(other);
                     contactUserId = other.Id.ToString();
                     contactStatusText = other.StatusText ?? "";
-                    if (await CanSeeOnlineStatusAsync(userId, other.Id, ct))
+                    if (IsBotUser(other))
+                    {
+                        isBotContact = true;
+                        var bot = await _store.GetBotByUserIdAsync(other.Id, ct);
+                        botSlug = bot?.Slug;
+                        botEngaged = await IsBotChatEngagedAsync(userId, other.Id, chatId, ct);
+                    }
+                    else if (await CanSeeOnlineStatusAsync(userId, other.Id, ct))
                         contactLastSeenAt = other.LastSeenAt;
                 }
             }
@@ -109,6 +119,9 @@ public sealed partial class SupraMessengerService
                 requiresCustomGroupPassword = chat.RequiresCustomGroupPassword,
                 hasGroupAutoKey = memberKey != null,
                 channelSlug = IsChannelChat(chat) ? chat.Slug : null,
+                isBotContact = isBotContact,
+                botSlug = botSlug,
+                botEngaged = botEngaged,
                 isAdmin = isAdmin,
                 isGroupCreator = isGroupCreator,
             });

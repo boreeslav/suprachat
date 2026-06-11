@@ -15,6 +15,9 @@ public sealed class SupraChatDto
     public bool requiresCustomGroupPassword { get; set; }
     public bool hasGroupAutoKey { get; set; }
     public string? channelSlug { get; set; }
+    public bool isBotContact { get; set; }
+    public string? botSlug { get; set; }
+    public bool botEngaged { get; set; }
     public bool isAdmin { get; set; }
     public bool isGroupCreator { get; set; }
 }
@@ -24,6 +27,8 @@ public sealed class SupraContactDto
     public string id { get; set; } = "";
     public string name { get; set; } = "";
     public string? avatar { get; set; }
+    public bool isBot { get; set; }
+    public string? login { get; set; }
 }
 
 public sealed class SupraCurrentUserDto
@@ -185,6 +190,9 @@ public sealed class SupraCreateChatResponse
     public bool success { get; set; }
     public string? chatId { get; set; }
     public string? chatName { get; set; }
+    public bool isBotContact { get; set; }
+    public string? botSlug { get; set; }
+    public bool botEngaged { get; set; }
     public string? error { get; set; }
 }
 
@@ -313,6 +321,9 @@ public sealed class SupraWsNewChatPayload
     public string chatName { get; set; } = "";
     public string chatType { get; set; } = "";
     public string? chatAvatar { get; set; }
+    public string? contactUserId { get; set; }
+    public bool isBotContact { get; set; }
+    public string? botSlug { get; set; }
 }
 
 public sealed class SupraWsUserActivityPayload
@@ -636,4 +647,107 @@ public sealed class SupraPublicChannelMessagesAroundResult
     public bool hasMoreBefore { get; set; }
     public bool hasMoreAfter { get; set; }
     public List<SupraPublicChannelMessageDto> messages { get; set; } = [];
+}
+
+public sealed class SupraBotMemberDto
+{
+    public string id { get; set; } = "";
+    public string name { get; set; } = "";
+    public string login { get; set; } = "";
+    public string? avatar { get; set; }
+}
+
+public sealed class SupraGetBotInfoResponse
+{
+    public bool success { get; set; }
+    public string? botUserId { get; set; }
+    public string? name { get; set; }
+    public string? slug { get; set; }
+    public string? description { get; set; }
+    public string? avatar { get; set; }
+    public string? ownerUserId { get; set; }
+    public bool canEdit { get; set; }
+    public bool isOwner { get; set; }
+    public int userCount { get; set; }
+    public bool hasToken { get; set; }
+    public bool isDeleted { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraGetMyBotsResponse
+{
+    public bool success { get; set; }
+    public List<SupraBotListItemDto> bots { get; set; } = [];
+    public string? error { get; set; }
+}
+
+public sealed class SupraBotListItemDto
+{
+    public string botUserId { get; set; } = "";
+    public string name { get; set; } = "";
+    public string slug { get; set; } = "";
+    public string? avatar { get; set; }
+    public int userCount { get; set; }
+    public bool isDeleted { get; set; }
+    public DateTime? deletedAt { get; set; }
+}
+
+public sealed class SupraGetBotUsersResponse
+{
+    public bool success { get; set; }
+    public List<SupraBotMemberDto> users { get; set; } = [];
+    public bool hasMore { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraCreateBotResponse
+{
+    public bool success { get; set; }
+    public string? botUserId { get; set; }
+    public string? chatId { get; set; }
+    public string? slug { get; set; }
+    public string? name { get; set; }
+    public string? avatar { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraUpdateBotResponse
+{
+    public bool success { get; set; }
+    public string? name { get; set; }
+    public string? slug { get; set; }
+    public string? description { get; set; }
+    public string? avatar { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraGetBotLinkPreviewResponse
+{
+    public bool success { get; set; }
+    public string? botUserId { get; set; }
+    public string? name { get; set; }
+    public string? slug { get; set; }
+    public string? description { get; set; }
+    public string? avatar { get; set; }
+    public bool isStarted { get; set; }
+    public string? chatId { get; set; }
+    public int userCount { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraGenerateBotTokenResponse
+{
+    public bool success { get; set; }
+    public string? token { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraWsBotUpdatedPayload
+{
+    public string type { get; set; } = "SupraBotUpdated";
+    public string botUserId { get; set; } = "";
+    public string botName { get; set; } = "";
+    public string? botAvatar { get; set; }
+    public string? slug { get; set; }
+    public string? description { get; set; }
 }

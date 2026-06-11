@@ -4,6 +4,7 @@ public enum UserType
 {
     User = 0,
     Admin = 1,
+    Bot = 2,
 }
 
 public sealed class UserRecord

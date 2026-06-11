@@ -186,6 +186,36 @@ public sealed class SupraMessengerController : ControllerBase
                 ct),
             "AddChannelMember" => await HandleAddChannelMember(user, data, ct),
             "RemoveChannelMember" => await HandleRemoveChannelMember(user, data, ct),
+            "CreateBot" => await HandleCreateBot(user, data, ct),
+            "GetMyBots" => await _messenger.GetMyBotsAsync(user.Id, ct),
+            "GetBotInfo" => await _messenger.GetBotInfoAsync(
+                user.Id,
+                GetString(data, "botUserId") ?? "",
+                ct),
+            "UpdateBot" => await HandleUpdateBot(user, data, ct),
+            "GetBotLinkPreview" => await _messenger.GetBotLinkPreviewAsync(
+                user.Id,
+                GetString(data, "slug") ?? "",
+                ct),
+            "StartBot" => await HandleStartBot(user, data, ct),
+            "TransferBotOwnership" => await _messenger.TransferBotOwnershipAsync(
+                user,
+                GetString(data, "botUserId") ?? "",
+                GetString(data, "newOwnerUserId") ?? "",
+                ct),
+            "DeleteBot" => await HandleDeleteBot(user, data, ct),
+            "RestoreBot" => await HandleRestoreBot(user, data, ct),
+            "GetBotUsers" => await _messenger.GetBotUsersAsync(
+                user.Id,
+                GetString(data, "botUserId") ?? "",
+                GetInt(data, "page", 1),
+                GetInt(data, "pageSize", 10),
+                GetString(data, "query") ?? "",
+                ct),
+            "GenerateBotToken" => await _messenger.GenerateBotTokenAsync(
+                user,
+                GetString(data, "botUserId") ?? "",
+                ct),
             _ => new { success = false, error = $"Unknown method: {methodName}" },
         };
 
@@ -891,6 +921,80 @@ public sealed class SupraMessengerController : ControllerBase
         var participants = await _messenger.GetAllParticipantUserIdsAsync(chatId, ct);
         foreach (var uid in participants)
             await _realtime.SendToUserAsync(uid, payload, ct);
+    }
+
+    private async Task<object> HandleCreateBot(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var (response, notify) = await _messenger.CreateBotAsync(
+            user,
+            GetString(data, "name") ?? "",
+            GetString(data, "slug") ?? "",
+            ct);
+        if (notify != null && response.success)
+            await _realtime.SendToUserAsync(user.Id, notify, ct);
+        return response;
+    }
+
+    private async Task<object> HandleUpdateBot(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var botUserId = GetString(data, "botUserId") ?? "";
+        var (result, updated) = await _messenger.UpdateBotAsync(
+            user,
+            botUserId,
+            GetString(data, "name"),
+            GetString(data, "slug"),
+            data.TryGetProperty("description", out _) ? GetString(data, "description") : null,
+            ct);
+        if (result.success && updated != null && Guid.TryParse(botUserId, out var bg))
+            await BroadcastBotUpdatedAsync(bg, ct);
+        return result;
+    }
+
+    private async Task<object> HandleStartBot(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var (response, notify, startMessage) = await _messenger.StartBotAsync(
+            user,
+            GetString(data, "slug") ?? "",
+            ct);
+        if (notify != null && response.success)
+            await _realtime.SendToUserAsync(user.Id, notify, ct);
+        if (startMessage != null && response.success &&
+            Guid.TryParse(startMessage.chatId, out var chatId))
+            await BroadcastToAllChatParticipantsAsync(chatId, startMessage, ct);
+        return response;
+    }
+
+    private async Task<object> HandleDeleteBot(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        return await _messenger.DeleteBotAsync(user, GetString(data, "botUserId") ?? "", ct);
+    }
+
+    private async Task<object> HandleRestoreBot(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var botUserId = GetString(data, "botUserId") ?? "";
+        var result = await _messenger.RestoreBotAsync(user, botUserId, ct);
+        if (result.success && Guid.TryParse(botUserId, out var bg))
+            await BroadcastBotUpdatedAsync(bg, ct);
+        return result;
+    }
+
+    async Task BroadcastBotUpdatedAsync(Guid botUserId, CancellationToken ct)
+    {
+        var payload = await _messenger.GetBotUpdatedPayloadAsync(botUserId, ct);
+        if (payload == null) return;
+        var bot = await _store.GetBotByUserIdAsync(botUserId, ct);
+        if (bot == null) return;
+        await _realtime.SendToUserAsync(bot.OwnerUserId, payload, ct);
+        var allChats = await _store.GetChatsAsync(ct);
+        var allParts = await _store.GetAllParticipantsAsync(ct);
+        foreach (var chat in allChats.Where(c =>
+                     string.Equals(c.Type, "direct", StringComparison.OrdinalIgnoreCase)))
+        {
+            var parts = allParts.Where(p => p.ChatId == chat.Id).ToList();
+            if (!parts.Any(p => p.UserId == botUserId)) continue;
+            foreach (var p in parts.Where(p => p.UserId != botUserId))
+                await _realtime.SendToUserAsync(p.UserId, payload, ct);
+        }
     }
 
     private static int GetInt(JsonElement data, string name, int defaultValue)

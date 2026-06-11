@@ -92,4 +92,14 @@ public interface IDataStore
     Task SaveLoginChangeAsync(LoginChangeRecord record, CancellationToken ct = default);
     Task<IReadOnlyList<LoginChangeRecord>> GetLoginChangesForUsersAsync(
         IEnumerable<Guid> userIds, DateTime since, CancellationToken ct = default);
+
+    Task<IReadOnlyList<BotRecord>> GetBotsAsync(CancellationToken ct = default);
+    Task<BotRecord?> GetBotByIdAsync(Guid botId, CancellationToken ct = default);
+    Task<BotRecord?> GetBotByUserIdAsync(Guid botUserId, CancellationToken ct = default);
+    Task<BotRecord?> GetBotBySlugAsync(string slug, CancellationToken ct = default);
+    Task<bool> IsBotSlugTakenAsync(string slug, Guid? excludeBotId = null, CancellationToken ct = default);
+    Task SaveBotAsync(BotRecord bot, CancellationToken ct = default);
+
+    Task<bool> HasBotEngagementAsync(Guid userId, Guid botUserId, CancellationToken ct = default);
+    Task SaveBotEngagementAsync(BotEngagementRecord engagement, CancellationToken ct = default);
 }

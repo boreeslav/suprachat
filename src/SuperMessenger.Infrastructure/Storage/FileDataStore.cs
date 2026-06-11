@@ -20,6 +20,8 @@ public sealed class FileDataStore : IDataStore
     private readonly JsonFileCollectionStore<SupraMessageReadReceiptRecord> _messageReadReceipts;
     private readonly JsonFileCollectionStore<SupraChatMemberKeyRecord> _chatMemberKeys;
     private readonly JsonFileCollectionStore<LoginChangeRecord> _loginChanges;
+    private readonly JsonFileCollectionStore<BotRecord> _bots;
+    private readonly JsonFileCollectionStore<BotEngagementRecord> _botEngagements;
 
     public FileDataStore(string dataRoot)
     {
@@ -39,6 +41,8 @@ public sealed class FileDataStore : IDataStore
         _chatRestrictions = new(Path.Combine(dataRoot, "chat-restrictions.json"));
         _chatMemberKeys = new(Path.Combine(dataRoot, "chat-member-keys.json"));
         _loginChanges = new(Path.Combine(dataRoot, "login-changes.json"));
+        _bots = new(Path.Combine(dataRoot, "bots.json"));
+        _botEngagements = new(Path.Combine(dataRoot, "bot-engagements.json"));
     }
 
     public async Task<IReadOnlyList<UserRecord>> GetUsersAsync(CancellationToken ct = default)
@@ -517,5 +521,55 @@ public sealed class FileDataStore : IDataStore
             .Where(c => ids.Contains(c.UserId) && c.ChangedOn >= since)
             .OrderBy(c => c.ChangedOn)
             .ToList();
+    }
+
+    public async Task<IReadOnlyList<BotRecord>> GetBotsAsync(CancellationToken ct = default)
+        => await _bots.ReadAllAsync(ct);
+
+    public async Task<BotRecord?> GetBotByIdAsync(Guid botId, CancellationToken ct = default)
+        => (await _bots.ReadAllAsync(ct)).FirstOrDefault(b => b.Id == botId);
+
+    public async Task<BotRecord?> GetBotByUserIdAsync(Guid botUserId, CancellationToken ct = default)
+        => (await _bots.ReadAllAsync(ct)).FirstOrDefault(b => b.BotUserId == botUserId);
+
+    public async Task<BotRecord?> GetBotBySlugAsync(string slug, CancellationToken ct = default)
+    {
+        var norm = (slug ?? "").Trim();
+        if (norm.Length < 4) return null;
+        return (await _bots.ReadAllAsync(ct)).FirstOrDefault(b =>
+            b.DeletedOn == null &&
+            string.Equals(b.Slug, norm, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<bool> IsBotSlugTakenAsync(string slug, Guid? excludeBotId = null, CancellationToken ct = default)
+    {
+        var norm = (slug ?? "").Trim();
+        if (norm.Length < 4) return false;
+        return (await _bots.ReadAllAsync(ct)).Any(b =>
+            b.DeletedOn == null &&
+            string.Equals(b.Slug, norm, StringComparison.OrdinalIgnoreCase) &&
+            (excludeBotId == null || b.Id != excludeBotId));
+    }
+
+    public async Task SaveBotAsync(BotRecord bot, CancellationToken ct = default)
+    {
+        var list = await _bots.ReadAllAsync(ct);
+        var idx = list.FindIndex(b => b.Id == bot.Id);
+        if (idx >= 0) list[idx] = bot;
+        else list.Add(bot);
+        await _bots.WriteAllAsync(list, ct);
+    }
+
+    public async Task<bool> HasBotEngagementAsync(Guid userId, Guid botUserId, CancellationToken ct = default)
+        => (await _botEngagements.ReadAllAsync(ct)).Any(e =>
+            e.UserId == userId && e.BotUserId == botUserId);
+
+    public async Task SaveBotEngagementAsync(BotEngagementRecord engagement, CancellationToken ct = default)
+    {
+        var list = await _botEngagements.ReadAllAsync(ct);
+        if (list.Any(e => e.UserId == engagement.UserId && e.BotUserId == engagement.BotUserId))
+            return;
+        list.Add(engagement);
+        await _botEngagements.WriteAllAsync(list, ct);
     }
 }
