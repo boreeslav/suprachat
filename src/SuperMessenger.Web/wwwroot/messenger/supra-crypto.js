@@ -11,6 +11,8 @@ class SupraCrypto {
 	static RSA_KEYPAIR_SEED = 'supra-rsa-keypair-v1';
 	static PBKDF2_ITERATIONS = 310000;
 	static MASTER_KEY_CACHE_PREFIX = 'supra-mk-cache:';
+	static PRIVATE_KEY_CACHE_PREFIX = 'supra-pk-cache:';
+	static CHAT_KEY_CACHE_PREFIX = 'supra-ck-cache:';
 	static LOCKED_PREVIEW = '🔒 Сообщение';
 	static LOCKED_OTHER = '🔒 Не удалось расшифровать. Укажите доп. пароль в меню «Шифрование».';
 	static SUBTLE_UNAVAILABLE_MSG =
@@ -21,6 +23,7 @@ class SupraCrypto {
 	#userId = null;
 	#unlockPassword = null;
 	#encryptionSaltB64 = null;
+	#verifierB64 = null;
 	#localDataKey = null;
 	#chatKeys = new Map();
 	#customPasswords = new Map();
@@ -137,10 +140,12 @@ class SupraCrypto {
 		this.#userId = null;
 		this.#unlockPassword = null;
 		this.#encryptionSaltB64 = null;
+		this.#verifierB64 = null;
 		this.#localDataKey = null;
 		this.#chatKeys.clear();
 		this.#customPasswords.clear();
 		this.#sessionSendBasicOnly.clear();
+		SupraCrypto.#releaseRsaWorker();
 	}
 
 	static isEncrypted(text) {
@@ -340,16 +345,73 @@ class SupraCrypto {
 
 	static clearMasterKeyCache(userId) {
 		try {
-			const prefix = userId
+			const mkPrefix = userId
 				? `${SupraCrypto.MASTER_KEY_CACHE_PREFIX}${SupraCrypto.normalizeUserId(userId)}:`
 				: SupraCrypto.MASTER_KEY_CACHE_PREFIX;
+			const pkPrefix = userId
+				? `${SupraCrypto.PRIVATE_KEY_CACHE_PREFIX}${SupraCrypto.normalizeUserId(userId)}:`
+				: SupraCrypto.PRIVATE_KEY_CACHE_PREFIX;
+			const ckPrefix = userId
+				? `${SupraCrypto.CHAT_KEY_CACHE_PREFIX}${SupraCrypto.normalizeUserId(userId)}:`
+				: SupraCrypto.CHAT_KEY_CACHE_PREFIX;
 			const toRemove = [];
 			for (let i = 0; i < sessionStorage.length; i++) {
 				const k = sessionStorage.key(i);
-				if (k?.startsWith(prefix)) toRemove.push(k);
+				if (k?.startsWith(mkPrefix) || k?.startsWith(pkPrefix) || k?.startsWith(ckPrefix)) {
+					toRemove.push(k);
+				}
 			}
 			toRemove.forEach((k) => sessionStorage.removeItem(k));
 		} catch (_) { /* ignore */ }
+	}
+
+	static #privateKeyCacheStorageKey(userId, verifierB64) {
+		const v = String(verifierB64 || '').slice(0, 32);
+		return `${SupraCrypto.PRIVATE_KEY_CACHE_PREFIX}${SupraCrypto.normalizeUserId(userId)}:${v}`;
+	}
+
+	static async #loadCachedPrivateKey(userId, verifierB64, masterKey) {
+		try {
+			const b64 = sessionStorage.getItem(
+				SupraCrypto.#privateKeyCacheStorageKey(userId, verifierB64)
+			);
+			if (!b64) return null;
+			const bytes = SupraCrypto.#ub64(b64);
+			const iv = bytes.slice(0, 12);
+			const ct = bytes.slice(12);
+			const pkcs8 = await SupraCrypto.#subtle().decrypt({ name: 'AES-GCM', iv }, masterKey, ct);
+			return SupraCrypto.#subtle().importKey(
+				'pkcs8',
+				pkcs8,
+				{ name: 'RSA-OAEP', hash: 'SHA-256' },
+				false,
+				['decrypt']
+			);
+		} catch (_) {
+			return null;
+		}
+	}
+
+	static async #saveCachedPrivateKey(userId, verifierB64, masterKey, privateKey) {
+		try {
+			const pkcs8 = await SupraCrypto.#subtle().exportKey('pkcs8', privateKey);
+			const iv = SupraCrypto.randomBytes(12);
+			const ct = await SupraCrypto.#subtle().encrypt(
+				{ name: 'AES-GCM', iv },
+				masterKey,
+				pkcs8
+			);
+			sessionStorage.setItem(
+				SupraCrypto.#privateKeyCacheStorageKey(userId, verifierB64),
+				SupraCrypto.#b64(SupraCrypto.#concat(iv, new Uint8Array(ct)))
+			);
+		} catch (_) { /* ignore */ }
+	}
+
+	static yieldToMain() {
+		return new Promise((resolve) => {
+			requestAnimationFrame(() => requestAnimationFrame(resolve));
+		});
 	}
 
 	async initSession(masterPassword, userId, saltB64, verifierB64) {
@@ -365,19 +427,79 @@ class SupraCrypto {
 			if (expected !== verifierB64) throw new Error('Неверный мастер-пароль');
 			await SupraCrypto.#saveCachedMasterKey(userId, verifierB64, masterKey);
 		}
-		const privateKey = await SupraCrypto.#unlockPrivateKey(
-			userId,
-			masterKey,
-			masterPassword,
-			saltB64
-		);
+		let privateKey = await SupraCrypto.#loadCachedPrivateKey(userId, verifierB64, masterKey);
+		if (privateKey) {
+			if (typeof globalThis !== 'undefined' && globalThis.__bootMark) {
+				globalThis.__bootMark('private-key-cache-hit');
+			}
+		} else {
+			privateKey = await SupraCrypto.#unlockPrivateKey(
+				userId,
+				masterKey,
+				masterPassword,
+				saltB64
+			);
+			await SupraCrypto.#saveCachedPrivateKey(userId, verifierB64, masterKey, privateKey);
+		}
 		this.#masterKey = masterKey;
 		this.#privateKey = privateKey;
 		this.#userId = userId;
 		this.#unlockPassword = masterPassword;
 		this.#encryptionSaltB64 = saltB64;
+		this.#verifierB64 = verifierB64;
 		this.#localDataKey = null;
 		await this.loadCustomPasswordsFromStorage();
+		void SupraCrypto.#initRsaWorker(privateKey);
+	}
+
+	#chatKeyCacheStorageKey(chatId, tier) {
+		const v = String(this.#verifierB64 || '').slice(0, 32);
+		return `${SupraCrypto.CHAT_KEY_CACHE_PREFIX}${SupraCrypto.normalizeUserId(this.#userId)}:${v}:${tier}:${chatId}`;
+	}
+
+	async #loadCachedChatKey(chatId, tier) {
+		if (!this.#masterKey || !this.#userId || !chatId) return null;
+		try {
+			const b64 = sessionStorage.getItem(this.#chatKeyCacheStorageKey(chatId, tier));
+			if (!b64) return null;
+			const bytes = SupraCrypto.#ub64(b64);
+			const iv = bytes.slice(0, 12);
+			const ct = bytes.slice(12);
+			const raw = await SupraCrypto.#subtle().decrypt({ name: 'AES-GCM', iv }, this.#masterKey, ct);
+			return SupraCrypto.#subtle().importKey(
+				'raw',
+				raw,
+				{ name: 'AES-GCM' },
+				tier === 'auto',
+				['encrypt', 'decrypt']
+			);
+		} catch (_) {
+			return null;
+		}
+	}
+
+	async #saveCachedChatKey(chatId, tier, key) {
+		if (!this.#masterKey || !this.#userId || !chatId || !key) return;
+		try {
+			const raw = await SupraCrypto.#subtle().exportKey('raw', key);
+			const iv = SupraCrypto.randomBytes(12);
+			const ct = await SupraCrypto.#subtle().encrypt(
+				{ name: 'AES-GCM', iv },
+				this.#masterKey,
+				raw
+			);
+			sessionStorage.setItem(
+				this.#chatKeyCacheStorageKey(chatId, tier),
+				SupraCrypto.#b64(SupraCrypto.#concat(iv, new Uint8Array(ct)))
+			);
+		} catch (_) { /* ignore */ }
+	}
+
+	#clearCachedChatKey(chatId, tier) {
+		if (!this.#userId || !chatId) return;
+		try {
+			sessionStorage.removeItem(this.#chatKeyCacheStorageKey(chatId, tier));
+		} catch (_) { /* ignore */ }
 	}
 
 	/** Дозагружает RSA public key на сервер, если есть salt/verifier, но ключ не сохранён. */
@@ -564,6 +686,8 @@ class SupraCrypto {
 
 	async unwrapGroupAutoPassword(wrappedB64) {
 		if (!this.#privateKey) throw new Error('Сессия шифрования не разблокирована');
+		const fromWorker = await SupraCrypto.#unwrapRsaInWorker(wrappedB64);
+		if (fromWorker != null) return fromWorker;
 		const plain = await SupraCrypto.#subtle().decrypt(
 			{ name: 'RSA-OAEP' },
 			this.#privateKey,
@@ -581,6 +705,11 @@ class SupraCrypto {
 		if (!chatId || !this.#masterKey) return null;
 		const ck = this.#cacheKey(chatId, 'auto');
 		if (this.#chatKeys.has(ck)) return this.#chatKeys.get(ck);
+		const sessionCached = await this.#loadCachedChatKey(chatId, 'auto');
+		if (sessionCached) {
+			this.#chatKeys.set(ck, sessionCached);
+			return sessionCached;
+		}
 
 		const type = (chat.type || '').toLowerCase();
 		if (type !== 'direct' && type !== 'group' && type !== 'public_group') return null;
@@ -600,6 +729,7 @@ class SupraCrypto {
 		const autoPassword = await this.unwrapGroupAutoPassword(wrapped);
 		const key = await SupraCrypto.#deriveGroupAutoKey(autoPassword, chatId);
 		this.#chatKeys.set(ck, key);
+		void this.#saveCachedChatKey(chatId, 'auto', key);
 		return key;
 	}
 
@@ -608,12 +738,18 @@ class SupraCrypto {
 		if (!chatId || !this.getCustomPassword(chatId)) return null;
 		const ck = this.#cacheKey(chatId, 'protected');
 		if (this.#chatKeys.has(ck)) return this.#chatKeys.get(ck);
+		const sessionCached = await this.#loadCachedChatKey(chatId, 'protected');
+		if (sessionCached) {
+			this.#chatKeys.set(ck, sessionCached);
+			return sessionCached;
+		}
 
 		const autoKey = await this.getAutoChatKey(chat, options);
 		if (!autoKey) return null;
 		const custom = this.getCustomPassword(chatId);
 		const key = await SupraCrypto.#combineCustomKey(autoKey, custom, chatId);
 		this.#chatKeys.set(ck, key);
+		void this.#saveCachedChatKey(chatId, 'protected', key);
 		return key;
 	}
 
@@ -628,6 +764,8 @@ class SupraCrypto {
 	invalidateChatKey(chatId) {
 		this.#chatKeys.delete(this.#cacheKey(chatId, 'auto'));
 		this.#chatKeys.delete(this.#cacheKey(chatId, 'protected'));
+		this.#clearCachedChatKey(chatId, 'auto');
+		this.#clearCachedChatKey(chatId, 'protected');
 	}
 
 	async encryptText(plaintext, chatKey) {
@@ -676,32 +814,120 @@ class SupraCrypto {
 	}
 
 	static async #deriveMasterKey(password, salt, userId) {
-		const saltB64 = typeof salt === 'string' ? salt : SupraCrypto.#b64(salt);
-		const worker = SupraCrypto.#ensurePbkdfWorker();
-		if (worker) {
-			try {
-				if (typeof globalThis !== 'undefined' && globalThis.__bootMark) {
-					globalThis.__bootMark('pbkdf-worker-start');
-				}
-				const key = await SupraCrypto.#deriveMasterKeyInWorker(worker, password, saltB64, userId);
-				if (typeof globalThis !== 'undefined' && globalThis.__bootMark) {
-					globalThis.__bootMark('pbkdf-worker-done');
-				}
-				return key;
-			} catch (e) {
-				console.warn('[SupraCrypto] PBKDF worker failed, fallback to main thread', e);
-			}
-		}
+		const saltBytes = typeof salt === 'string' ? SupraCrypto.#ub64(salt) : salt;
 		if (typeof globalThis !== 'undefined' && globalThis.__bootMark) {
-			globalThis.__bootMark('pbkdf-main-thread');
+			globalThis.__bootMark('pbkdf-start');
 		}
-		return SupraCrypto.#deriveMasterKeyMainThread(password, salt, userId);
+		const bits = await SupraCrypto.#derivePbkdf2Bits(
+			password,
+			SupraCrypto.#concat(saltBytes, new TextEncoder().encode(userId)),
+			SupraCrypto.PBKDF2_ITERATIONS,
+			256
+		);
+		if (typeof globalThis !== 'undefined' && globalThis.__bootMark) {
+			globalThis.__bootMark('pbkdf-done');
+		}
+		return SupraCrypto.#subtle().importKey(
+			'raw',
+			bits,
+			{ name: 'AES-GCM' },
+			false,
+			['encrypt', 'decrypt']
+		);
 	}
 
 	static #pbkdfWorker = null;
 	static #pbkdfWorkerBroken = false;
 	static #pbkdfReqId = 0;
 	static #pbkdfInflight = new Map();
+	static #rsaWorker = null;
+	static #rsaWorkerBroken = false;
+	static #rsaWorkerReady = false;
+	static #rsaReqId = 0;
+	static #rsaInflight = new Map();
+
+	static prewarmPbkdfWorker() {
+		SupraCrypto.#ensurePbkdfWorker();
+	}
+
+	static #releaseRsaWorker() {
+		SupraCrypto.#rsaWorkerReady = false;
+		if (SupraCrypto.#rsaWorker) {
+			try { SupraCrypto.#rsaWorker.terminate(); } catch (_) { /* ignore */ }
+			SupraCrypto.#rsaWorker = null;
+		}
+		for (const pending of SupraCrypto.#rsaInflight.values()) {
+			pending.reject(new Error('rsa worker released'));
+		}
+		SupraCrypto.#rsaInflight.clear();
+	}
+
+	static #ensureRsaWorker() {
+		if (SupraCrypto.#rsaWorkerBroken || typeof Worker === 'undefined') return null;
+		if (SupraCrypto.#rsaWorker) return SupraCrypto.#rsaWorker;
+		try {
+			const w = new Worker('/messenger/supra-crypto-rsa-worker.js');
+			w.onmessage = (ev) => {
+				const { reqId, text, ok, error } = ev.data || {};
+				const pending = SupraCrypto.#rsaInflight.get(reqId);
+				if (!pending) return;
+				SupraCrypto.#rsaInflight.delete(reqId);
+				if (error) pending.reject(new Error(error));
+				else if (ok) pending.resolve(true);
+				else pending.resolve(text);
+			};
+			w.onerror = () => {
+				SupraCrypto.#rsaWorkerBroken = true;
+				SupraCrypto.#rsaWorkerReady = false;
+				try { w.terminate(); } catch (_) { /* ignore */ }
+				SupraCrypto.#rsaWorker = null;
+			};
+			SupraCrypto.#rsaWorker = w;
+			return w;
+		} catch (_) {
+			SupraCrypto.#rsaWorkerBroken = true;
+			return null;
+		}
+	}
+
+	static async #initRsaWorker(privateKey) {
+		SupraCrypto.#releaseRsaWorker();
+		const worker = SupraCrypto.#ensureRsaWorker();
+		if (!worker || !privateKey) return false;
+		try {
+			const pkcs8 = await SupraCrypto.#subtle().exportKey('pkcs8', privateKey);
+			const reqId = ++SupraCrypto.#rsaReqId;
+			await new Promise((resolve, reject) => {
+				SupraCrypto.#rsaInflight.set(reqId, {
+					resolve: (v) => (v === true ? resolve() : reject(new Error('rsa init failed'))),
+					reject,
+				});
+				worker.postMessage({ kind: 'init', reqId, pkcs8 }, [pkcs8]);
+			});
+			SupraCrypto.#rsaWorkerReady = true;
+			return true;
+		} catch (e) {
+			console.warn('[SupraCrypto] RSA worker init failed', e);
+			SupraCrypto.#rsaWorkerReady = false;
+			return false;
+		}
+	}
+
+	static async #unwrapRsaInWorker(wrappedB64) {
+		if (!SupraCrypto.#rsaWorkerReady) return null;
+		const worker = SupraCrypto.#ensureRsaWorker();
+		if (!worker) return null;
+		const reqId = ++SupraCrypto.#rsaReqId;
+		try {
+			return await new Promise((resolve, reject) => {
+				SupraCrypto.#rsaInflight.set(reqId, { resolve, reject });
+				worker.postMessage({ kind: 'unwrap', reqId, wrappedB64 });
+			});
+		} catch (e) {
+			console.warn('[SupraCrypto] RSA worker unwrap failed', e);
+			return null;
+		}
+	}
 
 	static #ensurePbkdfWorker() {
 		if (SupraCrypto.#pbkdfWorkerBroken || typeof Worker === 'undefined') return null;
@@ -729,37 +955,27 @@ class SupraCrypto {
 		}
 	}
 
-	static #deriveMasterKeyInWorker(worker, password, saltB64, userId) {
+	static #derivePbkdf2BitsInWorker(password, saltBytes, iterations, bitLength) {
+		const worker = SupraCrypto.#ensurePbkdfWorker();
+		if (!worker) return null;
 		const reqId = ++SupraCrypto.#pbkdfReqId;
 		return new Promise((resolve, reject) => {
 			SupraCrypto.#pbkdfInflight.set(reqId, {
-				resolve: async (bits) => {
-					try {
-						const key = await SupraCrypto.#subtle().importKey(
-							'raw',
-							bits,
-							{ name: 'AES-GCM' },
-							false,
-							['encrypt', 'decrypt']
-						);
-						resolve(key);
-					} catch (e) {
-						reject(e);
-					}
-				},
+				resolve: (bits) => resolve(bits instanceof Uint8Array ? bits : new Uint8Array(bits)),
 				reject,
 			});
 			worker.postMessage({
+				kind: 'deriveBits',
 				reqId,
 				password,
-				saltB64,
-				userId,
-				iterations: SupraCrypto.PBKDF2_ITERATIONS,
+				saltB64: SupraCrypto.#b64(saltBytes),
+				iterations,
+				bits: bitLength,
 			});
 		});
 	}
 
-	static async #deriveMasterKeyMainThread(password, salt, userId) {
+	static async #derivePbkdf2BitsMainThread(password, saltBytes, iterations, bitLength) {
 		const baseKey = await SupraCrypto.#subtle().importKey(
 			'raw',
 			new TextEncoder().encode(password),
@@ -770,32 +986,41 @@ class SupraCrypto {
 		const bits = await SupraCrypto.#subtle().deriveBits(
 			{
 				name: 'PBKDF2',
-				salt: SupraCrypto.#concat(salt, new TextEncoder().encode(userId)),
-				iterations: SupraCrypto.PBKDF2_ITERATIONS,
+				salt: saltBytes,
+				iterations,
 				hash: 'SHA-256',
 			},
 			baseKey,
-			256
+			bitLength
 		);
-		return SupraCrypto.#subtle().importKey('raw', bits, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+		return new Uint8Array(bits);
+	}
+
+	static async #derivePbkdf2Bits(password, saltBytes, iterations, bitLength) {
+		const worker = SupraCrypto.#ensurePbkdfWorker();
+		if (worker) {
+			try {
+				return await SupraCrypto.#derivePbkdf2BitsInWorker(
+					password,
+					saltBytes,
+					iterations,
+					bitLength
+				);
+			} catch (e) {
+				console.warn('[SupraCrypto] PBKDF worker failed, fallback to main thread', e);
+			}
+		}
+		if (typeof globalThis !== 'undefined' && globalThis.__bootMark) {
+			globalThis.__bootMark('pbkdf-main-thread');
+		}
+		return SupraCrypto.#derivePbkdf2BitsMainThread(password, saltBytes, iterations, bitLength);
 	}
 
 	static async #deriveGroupAutoKey(autoPassword, chatId) {
-		const baseKey = await SupraCrypto.#subtle().importKey(
-			'raw',
-			new TextEncoder().encode(autoPassword),
-			'PBKDF2',
-			false,
-			['deriveBits']
-		);
-		const bits = await SupraCrypto.#subtle().deriveBits(
-			{
-				name: 'PBKDF2',
-				salt: new TextEncoder().encode(`group-auto|${chatId}`),
-				iterations: 120000,
-				hash: 'SHA-256',
-			},
-			baseKey,
+		const bits = await SupraCrypto.#derivePbkdf2Bits(
+			autoPassword,
+			new TextEncoder().encode(`group-auto|${chatId}`),
+			120000,
 			256
 		);
 		return SupraCrypto.#subtle().importKey('raw', bits, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt']);
@@ -812,24 +1037,12 @@ class SupraCrypto {
 	}
 
 	static async #deriveCustomBytes(customPassword, chatId) {
-		const baseKey = await SupraCrypto.#subtle().importKey(
-			'raw',
-			new TextEncoder().encode(customPassword),
-			'PBKDF2',
-			false,
-			['deriveBits']
-		);
-		const bits = await SupraCrypto.#subtle().deriveBits(
-			{
-				name: 'PBKDF2',
-				salt: new TextEncoder().encode(`group-custom|${chatId}`),
-				iterations: 120000,
-				hash: 'SHA-256',
-			},
-			baseKey,
+		return SupraCrypto.#derivePbkdf2Bits(
+			customPassword,
+			new TextEncoder().encode(`group-custom|${chatId}`),
+			120000,
 			256
 		);
-		return new Uint8Array(bits);
 	}
 
 	static async #makeVerifier(masterKey) {
@@ -885,29 +1098,17 @@ class SupraCrypto {
 	}
 
 	static async #deriveRsaSeedBytes(masterPassword, salt, userId) {
-		const baseKey = await SupraCrypto.#subtle().importKey(
-			'raw',
-			new TextEncoder().encode(masterPassword),
-			'PBKDF2',
-			false,
-			['deriveBits']
-		);
 		const rsaSalt = SupraCrypto.#concat(
 			salt,
 			new TextEncoder().encode(SupraCrypto.RSA_KEYPAIR_SEED),
 			new TextEncoder().encode(String(userId))
 		);
-		const bits = await SupraCrypto.#subtle().deriveBits(
-			{
-				name: 'PBKDF2',
-				salt: rsaSalt,
-				iterations: SupraCrypto.PBKDF2_ITERATIONS,
-				hash: 'SHA-256',
-			},
-			baseKey,
+		return SupraCrypto.#derivePbkdf2Bits(
+			masterPassword,
+			rsaSalt,
+			SupraCrypto.PBKDF2_ITERATIONS,
 			512
 		);
-		return new Uint8Array(bits);
 	}
 
 	static async #generateIdentityKeyPair(masterPassword, salt, userId) {
@@ -1016,4 +1217,10 @@ class SupraCrypto {
 }
 
 global.SupraCrypto = SupraCrypto;
+
+if (typeof requestIdleCallback === 'function') {
+	requestIdleCallback(() => SupraCrypto.prewarmPbkdfWorker(), { timeout: 500 });
+} else {
+	setTimeout(() => SupraCrypto.prewarmPbkdfWorker(), 0);
+}
 })(typeof window !== 'undefined' ? window : globalThis);

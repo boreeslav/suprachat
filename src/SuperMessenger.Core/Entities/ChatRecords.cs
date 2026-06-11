@@ -15,6 +15,8 @@ public sealed class SupraChatRecord
     public string? Slug { get; set; }
     /// <summary>Описание канала.</summary>
     public string? Description { get; set; }
+    /// <summary>Мягкое удаление канала (UTC). Только для Type=channel.</summary>
+    public DateTime? DeletedOn { get; set; }
 }
 
 public sealed class SupraChatParticipantRecord
@@ -90,5 +92,9 @@ public sealed class SupraFileRecord
     public string MimeType { get; set; } = "";
     public long Size { get; set; }
     public string StoragePath { get; set; } = "";
+    /// <summary>JPEG-превью для чата (сжатое, без EXIF).</summary>
+    public string? PreviewPath { get; set; }
+    /// <summary>JPEG среднего качества для просмотра (без EXIF).</summary>
+    public string? MediumPath { get; set; }
     public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
 }

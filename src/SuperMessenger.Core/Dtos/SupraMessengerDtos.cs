@@ -541,6 +541,8 @@ public sealed class SupraGetChannelInfoResponse
     public bool isSubscribed { get; set; }
     public string? myRole { get; set; }
     public int subscriberCount { get; set; }
+    public bool isDeleted { get; set; }
+    public bool canRestore { get; set; }
     public string? error { get; set; }
 }
 
@@ -559,6 +561,16 @@ public sealed class SupraChannelListItemDto
     public string? avatar { get; set; }
     public string myRole { get; set; } = "";
     public int subscriberCount { get; set; }
+    public bool isDeleted { get; set; }
+    public DateTime? deletedAt { get; set; }
+}
+
+public sealed class SupraGetChannelSubscribersResponse
+{
+    public bool success { get; set; }
+    public List<SupraChannelMemberDto> subscribers { get; set; } = [];
+    public bool hasMore { get; set; }
+    public string? error { get; set; }
 }
 
 public sealed class SupraCreateChannelResponse

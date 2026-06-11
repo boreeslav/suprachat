@@ -8,6 +8,7 @@ public sealed partial class SupraMessengerService
 {
     public const int ChannelLocalMessageLimit = 50;
     public const int PublicChannelMessageLimit = 50;
+    public static readonly TimeSpan ChannelRestoreWindow = TimeSpan.FromDays(7);
 
     static readonly Regex ChannelSlugRegex = new(@"^[a-zA-Z0-9_]{4,32}$", RegexOptions.Compiled);
 
@@ -16,6 +17,12 @@ public sealed partial class SupraMessengerService
 
     static string? ChannelAvatarUrl(SupraChatRecord? chat) =>
         IsChannelChat(chat!) ? AvatarUrlHelper.ForGroup(chat) : null;
+
+    static bool IsChannelDeleted(SupraChatRecord chat) => chat.DeletedOn != null;
+
+    static bool CanRestoreChannel(SupraChatRecord chat) =>
+        chat.DeletedOn != null &&
+        DateTime.UtcNow - chat.DeletedOn.Value <= ChannelRestoreWindow;
 
     static string ResolveParticipantRole(SupraChatParticipantRecord p, SupraChatRecord chat)
     {
@@ -61,6 +68,8 @@ public sealed partial class SupraMessengerService
         var chat = await _store.GetChatByIdAsync(chatGuid, ct);
         if (chat == null || !IsChannelChat(chat))
             return (null, null, "Это не канал");
+        if (IsChannelDeleted(chat))
+            return (null, null, "Канал удалён");
         var me = (await _store.GetParticipantsByChatAsync(chatGuid, ct))
             .FirstOrDefault(p => p.UserId == userId);
         if (me == null)
@@ -164,6 +173,9 @@ public sealed partial class SupraMessengerService
                 var subCount = allParts.Count(x =>
                     x.ChatId == chat.Id &&
                     ResolveParticipantRole(x, chat) == ChannelRoles.Subscriber);
+                var deleted = IsChannelDeleted(chat);
+                if (deleted && !CanRestoreChannel(chat))
+                    continue;
                 channels.Add(new SupraChannelListItemDto
                 {
                     chatId = chat.Id.ToString(),
@@ -172,13 +184,18 @@ public sealed partial class SupraMessengerService
                     avatar = ChannelAvatarUrl(chat),
                     myRole = role,
                     subscriberCount = subCount,
+                    isDeleted = deleted,
+                    deletedAt = chat.DeletedOn,
                 });
             }
 
             return new SupraGetMyChannelsResponse
             {
                 success = true,
-                channels = channels.OrderBy(c => c.name).ToList(),
+                channels = channels
+                    .OrderBy(c => c.isDeleted)
+                    .ThenBy(c => c.name)
+                    .ToList(),
             };
         }
         catch (Exception ex)
@@ -187,16 +204,36 @@ public sealed partial class SupraMessengerService
         }
     }
 
+    async Task<(SupraChatRecord? chat, SupraChatParticipantRecord? me, string? error)> GetChannelAccessIncludingDeletedAsync(
+        Guid userId, string chatId, CancellationToken ct)
+    {
+        if (!Guid.TryParse(chatId, out var chatGuid))
+            return (null, null, "Некорректный chatId");
+        if (!await _store.IsParticipantAsync(chatGuid, userId, ct))
+            return (null, null, "Нет доступа");
+        var chat = await _store.GetChatByIdAsync(chatGuid, ct);
+        if (chat == null || !IsChannelChat(chat))
+            return (null, null, "Это не канал");
+        var me = (await _store.GetParticipantsByChatAsync(chatGuid, ct))
+            .FirstOrDefault(p => p.UserId == userId);
+        if (me == null)
+            return (null, null, "Нет доступа");
+        return (chat, me, null);
+    }
+
     public async Task<SupraGetChannelInfoResponse> GetChannelInfoAsync(
         Guid userId, string chatId, CancellationToken ct = default)
     {
         try
         {
-            var (chat, me, error) = await GetChannelAccessAsync(userId, chatId, ct);
+            var (chat, me, error) = await GetChannelAccessIncludingDeletedAsync(userId, chatId, ct);
             if (error != null)
                 return new SupraGetChannelInfoResponse { success = false, error = error };
 
+            var deleted = IsChannelDeleted(chat!);
             var myRole = ResolveParticipantRole(me!, chat!);
+            if (deleted && myRole != ChannelRoles.Owner)
+                return new SupraGetChannelInfoResponse { success = false, error = "Канал удалён" };
             var members = await BuildChannelMemberDtosAsync(chat!, ct);
             var allParts = await _store.GetParticipantsByChatAsync(chat!.Id, ct);
             var subCount = allParts.Count(p => ResolveParticipantRole(p, chat) == ChannelRoles.Subscriber);
@@ -219,11 +256,191 @@ public sealed partial class SupraMessengerService
                 isSubscribed = true,
                 myRole = myRole,
                 subscriberCount = subCount,
+                isDeleted = deleted,
+                canRestore = deleted && CanRestoreChannel(chat) && myRole == ChannelRoles.Owner,
             };
         }
         catch (Exception ex)
         {
             return new SupraGetChannelInfoResponse { success = false, error = ex.Message };
+        }
+    }
+
+    public async Task<SupraGetChannelSubscribersResponse> GetChannelSubscribersAsync(
+        Guid userId, string chatId, int page, int pageSize, string? query, CancellationToken ct = default)
+    {
+        try
+        {
+            var (chat, me, error) = await GetChannelAccessAsync(userId, chatId, ct);
+            if (error != null)
+                return new SupraGetChannelSubscribersResponse { success = false, error = error };
+
+            var myRole = ResolveParticipantRole(me!, chat!);
+            if (!ChannelRoles.CanManageMembers(myRole))
+                return new SupraGetChannelSubscribersResponse { success = false, error = "Недостаточно прав" };
+
+            var q = (query ?? "").Trim();
+            var users = await _store.GetUsersAsync(ct);
+            var subscribers = (await _store.GetParticipantsByChatAsync(chat!.Id, ct))
+                .Where(p => ResolveParticipantRole(p, chat) == ChannelRoles.Subscriber)
+                .Select(p =>
+                {
+                    var u = users.FirstOrDefault(x => x.Id == p.UserId);
+                    return new SupraChannelMemberDto
+                    {
+                        id = p.UserId.ToString(),
+                        name = u?.DisplayName ?? "",
+                        login = u?.Login ?? "",
+                        avatar = AvatarUrl(u),
+                        role = ChannelRoles.Subscriber,
+                    };
+                })
+                .Where(m =>
+                    q.Length == 0 ||
+                    (m.name?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (m.login?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
+                .OrderBy(m => m.name)
+                .ToList();
+
+            var safePage = Math.Max(1, page);
+            var safeSize = Math.Clamp(pageSize, 1, 50);
+            var skip = (safePage - 1) * safeSize;
+            var slice = subscribers.Skip(skip).Take(safeSize + 1).ToList();
+            var hasMore = slice.Count > safeSize;
+            if (hasMore) slice.RemoveAt(slice.Count - 1);
+
+            return new SupraGetChannelSubscribersResponse
+            {
+                success = true,
+                subscribers = slice,
+                hasMore = hasMore,
+            };
+        }
+        catch (Exception ex)
+        {
+            return new SupraGetChannelSubscribersResponse { success = false, error = ex.Message };
+        }
+    }
+
+    public async Task<SupraSimpleResponse> AddChannelMemberAsync(
+        UserRecord user, string chatId, string memberUserId, string role, CancellationToken ct = default)
+    {
+        try
+        {
+            var (chat, me, error) = await GetChannelAccessAsync(user.Id, chatId, ct);
+            if (error != null)
+                return new SupraSimpleResponse { success = false, error = error };
+
+            var myRole = ResolveParticipantRole(me!, chat!);
+            if (!ChannelRoles.CanManageMembers(myRole))
+                return new SupraSimpleResponse { success = false, error = "Недостаточно прав" };
+
+            if (!Guid.TryParse(memberUserId, out var memberGuid))
+                return new SupraSimpleResponse { success = false, error = "Некорректный userId" };
+
+            var roleNorm = (role ?? "").Trim().ToLowerInvariant();
+            if (roleNorm is not (ChannelRoles.Admin or ChannelRoles.Author))
+                return new SupraSimpleResponse { success = false, error = "Недопустимая роль" };
+
+            var parts = await _store.GetParticipantsByChatAsync(chat!.Id, ct);
+            var target = parts.FirstOrDefault(p => p.UserId == memberGuid);
+            if (target != null)
+            {
+                var targetRole = ResolveParticipantRole(target, chat);
+                if (targetRole == ChannelRoles.Owner)
+                    return new SupraSimpleResponse { success = false, error = "Нельзя изменить роль владельца" };
+                target.Role = roleNorm;
+                target.IsAdmin = roleNorm == ChannelRoles.Admin;
+                await _store.SaveParticipantAsync(target, ct);
+                return new SupraSimpleResponse { success = true };
+            }
+
+            await _store.SaveParticipantAsync(new SupraChatParticipantRecord
+            {
+                Id = Guid.NewGuid(),
+                ChatId = chat.Id,
+                UserId = memberGuid,
+                Role = roleNorm,
+                IsAdmin = roleNorm == ChannelRoles.Admin,
+            }, ct);
+            return new SupraSimpleResponse { success = true };
+        }
+        catch (Exception ex)
+        {
+            return new SupraSimpleResponse { success = false, error = ex.Message };
+        }
+    }
+
+    public async Task<SupraSimpleResponse> RemoveChannelMemberAsync(
+        UserRecord user, string chatId, string memberUserId, CancellationToken ct = default)
+    {
+        try
+        {
+            var (chat, me, error) = await GetChannelAccessAsync(user.Id, chatId, ct);
+            if (error != null)
+                return new SupraSimpleResponse { success = false, error = error };
+
+            var myRole = ResolveParticipantRole(me!, chat!);
+            if (!ChannelRoles.CanManageMembers(myRole))
+                return new SupraSimpleResponse { success = false, error = "Недостаточно прав" };
+
+            if (!Guid.TryParse(memberUserId, out var memberGuid))
+                return new SupraSimpleResponse { success = false, error = "Некорректный userId" };
+
+            if (memberGuid == user.Id)
+                return new SupraSimpleResponse { success = false, error = "Нельзя удалить себя" };
+
+            var target = (await _store.GetParticipantsByChatAsync(chat!.Id, ct))
+                .FirstOrDefault(p => p.UserId == memberGuid);
+            if (target == null)
+                return new SupraSimpleResponse { success = false, error = "Участник не найден" };
+
+            var targetRole = ResolveParticipantRole(target, chat);
+            if (targetRole == ChannelRoles.Owner)
+                return new SupraSimpleResponse { success = false, error = "Нельзя удалить владельца" };
+
+            if (targetRole is ChannelRoles.Admin or ChannelRoles.Author)
+            {
+                target.Role = ChannelRoles.Subscriber;
+                target.IsAdmin = false;
+                await _store.SaveParticipantAsync(target, ct);
+                return new SupraSimpleResponse { success = true };
+            }
+
+            return new SupraSimpleResponse { success = false, error = "Участник не в списке администраторов" };
+        }
+        catch (Exception ex)
+        {
+            return new SupraSimpleResponse { success = false, error = ex.Message };
+        }
+    }
+
+    public async Task<SupraSimpleResponse> RestoreChannelAsync(
+        UserRecord user, string chatId, CancellationToken ct = default)
+    {
+        try
+        {
+            var (chat, me, error) = await GetChannelAccessIncludingDeletedAsync(user.Id, chatId, ct);
+            if (error != null)
+                return new SupraSimpleResponse { success = false, error = error };
+
+            var myRole = ResolveParticipantRole(me!, chat!);
+            if (myRole != ChannelRoles.Owner)
+                return new SupraSimpleResponse { success = false, error = "Только владелец может восстановить канал" };
+
+            if (!IsChannelDeleted(chat!))
+                return new SupraSimpleResponse { success = false, error = "Канал не удалён" };
+
+            if (!CanRestoreChannel(chat))
+                return new SupraSimpleResponse { success = false, error = "Срок восстановления истёк" };
+
+            chat.DeletedOn = null;
+            await _store.SaveChatAsync(chat, ct);
+            return new SupraSimpleResponse { success = true };
+        }
+        catch (Exception ex)
+        {
+            return new SupraSimpleResponse { success = false, error = ex.Message };
         }
     }
 
@@ -330,7 +547,15 @@ public sealed partial class SupraMessengerService
         {
             var chat = await _store.GetChannelBySlugAsync(slug, ct);
             if (chat == null)
+            {
+                var deletedChat = (await _store.GetChatsAsync(ct)).FirstOrDefault(c =>
+                    string.Equals(c.Type, "channel", StringComparison.OrdinalIgnoreCase) &&
+                    c.Slug != null &&
+                    string.Equals(c.Slug, slug.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (deletedChat != null && IsChannelDeleted(deletedChat))
+                    return new SupraGetChannelLinkPreviewResponse { success = false, error = "Канал удалён" };
                 return new SupraGetChannelLinkPreviewResponse { success = false, error = "Канал не найден" };
+            }
 
             var isSubscribed = await _store.IsParticipantAsync(chat.Id, userId, ct);
             var allParts = await _store.GetParticipantsByChatAsync(chat.Id, ct);
@@ -366,6 +591,8 @@ public sealed partial class SupraMessengerService
             var chat = await _store.GetChatByIdAsync(chatGuid, ct);
             if (chat == null || !IsChannelChat(chat))
                 return (new SupraCreateChatResponse { success = false, error = "Канал не найден" }, null);
+            if (IsChannelDeleted(chat))
+                return (new SupraCreateChatResponse { success = false, error = "Канал удалён" }, null);
 
             if (await _store.IsParticipantAsync(chatGuid, user.Id, ct))
                 return (new SupraCreateChatResponse { success = true, chatId = chatGuid.ToString(), chatName = chat.Name }, null);
@@ -513,11 +740,8 @@ public sealed partial class SupraMessengerService
             if (myRole != ChannelRoles.Owner)
                 return new SupraSimpleResponse { success = false, error = "Только владелец может удалить канал" };
 
-            var parts = await _store.GetParticipantsByChatAsync(chat!.Id, ct);
-            foreach (var p in parts)
-                await _store.DeleteParticipantAsync(chat.Id, p.UserId, ct);
-            await _store.DeleteMessagesByChatAsync(chat.Id, ct);
-            await _store.DeleteChatAsync(chat.Id, ct);
+            chat!.DeletedOn = DateTime.UtcNow;
+            await _store.SaveChatAsync(chat, ct);
             return new SupraSimpleResponse { success = true };
         }
         catch (Exception ex)
@@ -612,7 +836,7 @@ public sealed partial class SupraMessengerService
     public async Task<bool> CanUserPostToChannelAsync(Guid userId, Guid chatId, CancellationToken ct)
     {
         var chat = await _store.GetChatByIdAsync(chatId, ct);
-        if (chat == null || !IsChannelChat(chat)) return false;
+        if (chat == null || !IsChannelChat(chat) || IsChannelDeleted(chat)) return false;
         var me = (await _store.GetParticipantsByChatAsync(chatId, ct))
             .FirstOrDefault(p => p.UserId == userId);
         if (me == null) return false;

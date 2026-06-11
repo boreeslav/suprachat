@@ -70,42 +70,39 @@
 		offlineBlobUrl = null;
 	}
 
-	const stableBgHeights = new WeakMap();
-
-	function captureStableBgHeight(wrap) {
-		const root = wrap?.closest?.('.mc-root');
-		if (!root) return;
-		const headerH = root.querySelector(':scope > .mc-header')?.offsetHeight || 0;
-		const h = Math.max(0, root.clientHeight - headerH);
-		if (h <= 0) return;
-		const w = typeof window !== 'undefined' ? window.innerWidth : 0;
-		const prev = stableBgHeights.get(root);
-		if (!prev || prev.w !== w) {
-			stableBgHeights.set(root, { w, h });
-			wrap.style.setProperty('--sm-chat-bg-stable-h', `${h}px`);
-		} else if (!wrap.style.getPropertyValue('--sm-chat-bg-stable-h')) {
-			wrap.style.setProperty('--sm-chat-bg-stable-h', `${prev.h}px`);
-		}
-	}
-
 	function ensureWrapLayer(wrap) {
 		if (!wrap?.classList?.contains('mc-messages-wrap')) return;
-		wrap.classList.remove('sm-chat-wallpaper');
-		const show = ThemeChatBg.enabled && ThemeChatBg.displayUrl;
+		wrap.classList.remove('sm-chat-wallpaper', 'mc-messages-wrap--theme-bg');
+		const displayUrl = ThemeChatBg.enabled && ThemeChatBg.displayUrl ? ThemeChatBg.displayUrl : '';
+		const show = !!displayUrl;
 		let layer = wrap.querySelector(':scope > .mc-theme-bg-layer');
+		const msg = wrap.querySelector(':scope > .mc-messages');
 		if (!show) {
 			layer?.remove();
-			wrap.style.removeProperty('--sm-chat-bg-stable-h');
+			if (msg) {
+				msg.style.position = '';
+				msg.style.zIndex = '';
+				msg.style.background = '';
+			}
 			return;
 		}
 		if (!layer) {
 			layer = document.createElement('div');
 			layer.className = 'mc-theme-bg-layer';
 			layer.setAttribute('aria-hidden', 'true');
+			const bgImg = document.createElement('img');
+			bgImg.className = 'mc-theme-bg-img';
+			bgImg.alt = '';
+			bgImg.decoding = 'async';
+			bgImg.draggable = false;
+			layer.appendChild(bgImg);
 			wrap.insertBefore(layer, wrap.firstChild);
 		}
-		captureStableBgHeight(wrap);
-		const msg = wrap.querySelector(':scope > .mc-messages');
+		const bgImg = layer.querySelector('.mc-theme-bg-img');
+		if (bgImg) {
+			const abs = absoluteThemeBgUrl(displayUrl);
+			if (bgImg.src !== abs) bgImg.src = abs;
+		}
 		if (msg) {
 			msg.style.position = 'relative';
 			msg.style.zIndex = '1';

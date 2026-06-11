@@ -122,6 +122,31 @@ class MessengerI18n {
 			channelJoinTitle: 'Канал',
 			channelForwardFrom: (name) => `Канал ${name}`,
 			channelEmptyList: 'У вас пока нет каналов',
+			channelAdd: 'Добавить канал',
+			channelSave: 'Сохранить',
+			channelSettings: 'Настройки',
+			channelSettingsTitle: 'Настройки канала',
+			channelSubscribers: 'Список подписчиков',
+			channelStaff: 'Администраторы и авторы',
+			channelAddAdmin: 'Добавить администратора',
+			channelChangeSlug: 'Сменить',
+			channelChangeSlugTitle: 'Ссылка канала',
+			channelSelectRole: 'Выберите роль для участника',
+			channelRolePickAuthor: 'Автор',
+			channelRolePickAdmin: 'Администратор',
+			channelRemoveStaff: 'Удалить из списка',
+			channelRemoveStaffConfirm: (name) => `Удалить ${name} из списка администраторов и авторов?`,
+			channelDeleteCheckbox: 'Я понимаю, что канал будет удалён',
+			channelDeleted: 'Удалён',
+			channelRestore: 'Восстановить канал',
+			channelRestoreConfirm: 'Восстановить канал?',
+			channelTransferBtn: 'Передать канал',
+			channelTransferQuestion: 'Вы хотите полностью передать канал участнику?',
+			channelTransferConfirm: (name) => `Я согласен полностью и навсегда передать канал пользователю ${name}`,
+			channelTransferPickAdmin: 'Выберите администратора',
+			channelLinkCopied: 'Ссылка скопирована',
+			channelNickCopied: 'Ник скопирован',
+			channelSubscribersEmpty: 'Нет подписчиков',
 			qrClose: 'Закрыть',
 			qrLibMissing: 'Библиотека QR не загружена',
 			invitationsTab: 'Приглашения',
@@ -555,6 +580,31 @@ class MessengerI18n {
 			channelJoinTitle: 'Channel',
 			channelForwardFrom: (name) => `Channel ${name}`,
 			channelEmptyList: 'You have no channels yet',
+			channelAdd: 'Add channel',
+			channelSave: 'Save',
+			channelSettings: 'Settings',
+			channelSettingsTitle: 'Channel settings',
+			channelSubscribers: 'Subscribers',
+			channelStaff: 'Administrators and authors',
+			channelAddAdmin: 'Add administrator',
+			channelChangeSlug: 'Change',
+			channelChangeSlugTitle: 'Channel link',
+			channelSelectRole: 'Choose a role for the member',
+			channelRolePickAuthor: 'Author',
+			channelRolePickAdmin: 'Administrator',
+			channelRemoveStaff: 'Remove from list',
+			channelRemoveStaffConfirm: (name) => `Remove ${name} from administrators and authors?`,
+			channelDeleteCheckbox: 'I understand the channel will be deleted',
+			channelDeleted: 'Deleted',
+			channelRestore: 'Restore channel',
+			channelRestoreConfirm: 'Restore this channel?',
+			channelTransferBtn: 'Transfer channel',
+			channelTransferQuestion: 'Do you want to fully transfer the channel to a member?',
+			channelTransferConfirm: (name) => `I agree to permanently transfer the channel to ${name}`,
+			channelTransferPickAdmin: 'Choose an administrator',
+			channelLinkCopied: 'Link copied',
+			channelNickCopied: 'Nickname copied',
+			channelSubscribersEmpty: 'No subscribers',
 			qrClose: 'Close',
 			qrLibMissing: 'QR library not loaded',
 			invitationsTab: 'Invitations',
@@ -1152,9 +1202,66 @@ class MessengerAppContext {
 
 class MessengerFileService {
 	static FILE_SCHEMA_ID = '5aecdf25-d1ab-46bf-9baa-ad45f9a367e2';
+	static FILE_ID_RE = /\/api\/files\/(?:channel-public\/)?([0-9a-f-]{36})/i;
 
 	static getFileUrl(fileId) {
 		return MessengerAppContext.toAbsoluteUrl(`/api/files/${fileId}`);
+	}
+
+	static getPreviewUrl(fileId, channelPublic = false) {
+		const path = channelPublic
+			? `/api/files/channel-public/${fileId}/preview`
+			: `/api/files/${fileId}/preview`;
+		return MessengerAppContext.toAbsoluteUrl(path);
+	}
+
+	static getMediumUrl(fileId, channelPublic = false) {
+		const path = channelPublic
+			? `/api/files/channel-public/${fileId}/medium`
+			: `/api/files/${fileId}/medium`;
+		return MessengerAppContext.toAbsoluteUrl(path);
+	}
+
+	static getOriginalUrl(fileId, channelPublic = false) {
+		if (channelPublic) {
+			return MessengerAppContext.toAbsoluteUrl(`/api/files/channel-public/${fileId}`);
+		}
+		return this.getFileUrl(fileId);
+	}
+
+	static fileIdFromUrl(url) {
+		if (!url || typeof url !== 'string') return null;
+		try {
+			const u = new URL(url, window.location.origin);
+			const m = u.pathname.match(MessengerFileService.FILE_ID_RE);
+			return m ? m[1] : null;
+		} catch {
+			return null;
+		}
+	}
+
+	static isChannelPublicUrl(url) {
+		if (!url) return false;
+		try {
+			return new URL(url, window.location.origin).pathname.includes('/channel-public/');
+		} catch {
+			return false;
+		}
+	}
+
+	static toPreviewUrl(url) {
+		const id = this.fileIdFromUrl(url);
+		return id ? this.getPreviewUrl(id, this.isChannelPublicUrl(url)) : url;
+	}
+
+	static toMediumUrl(url) {
+		const id = this.fileIdFromUrl(url);
+		return id ? this.getMediumUrl(id, this.isChannelPublicUrl(url)) : url;
+	}
+
+	static toOriginalUrl(url) {
+		const id = this.fileIdFromUrl(url);
+		return id ? this.getOriginalUrl(id, this.isChannelPublicUrl(url)) : url;
 	}
 }
 
@@ -1350,6 +1457,7 @@ class MessengerDialog {
 			cancelLabel = 'Cancel',
 			checkboxLabel = '',
 			checkboxChecked = false,
+			requireCheckbox = false,
 			themeManager = null,
 		} = options;
 
@@ -1392,8 +1500,74 @@ class MessengerDialog {
 			overlay.appendChild(dialog);
 			document.body.appendChild(overlay);
 
+			const syncConfirm = () => {
+				confirmBtn.disabled = requireCheckbox && !chkInput.checked;
+			};
+			syncConfirm();
+			chkInput.addEventListener('change', syncConfirm);
+
 			const close = messengerMakeDismissable((result) => { overlay.remove(); resolve(result); }, null);
-			confirmBtn.addEventListener('click', () => close({ confirmed: true, checked: chkInput.checked }));
+			confirmBtn.addEventListener('click', () => {
+				if (requireCheckbox && !chkInput.checked) return;
+				close({ confirmed: true, checked: chkInput.checked });
+			});
+			cancelBtn.addEventListener('click', () => close(null));
+			overlay.addEventListener('click', (e) => { if (e.target === overlay) close(null); });
+			document.addEventListener('keydown', function handler(e) {
+				if (e.key === 'Escape') { document.removeEventListener('keydown', handler); close(null); }
+			});
+		});
+	}
+
+	static choiceVertical(options = {}) {
+		const {
+			title = '',
+			message = '',
+			choices = [],
+			cancelLabel = 'Cancel',
+			themeManager = null,
+		} = options;
+
+		return new Promise((resolve) => {
+			const overlay = document.createElement('div');
+			overlay.className = 'mc-dialog-overlay';
+			const dialog = document.createElement('div');
+			dialog.className = 'mc-dialog';
+			if (themeManager) themeManager.applyChatVars(dialog);
+
+			if (title) {
+				const titleEl = document.createElement('div');
+				titleEl.className = 'mc-dialog-title';
+				titleEl.textContent = title;
+				dialog.appendChild(titleEl);
+			}
+			if (message) {
+				const msgEl = document.createElement('div');
+				msgEl.className = 'mc-dialog-message';
+				msgEl.textContent = message;
+				dialog.appendChild(msgEl);
+			}
+
+			const actions = document.createElement('div');
+			actions.className = 'mc-dialog-actions mc-dialog-actions--vertical';
+			choices.forEach((choice) => {
+				const btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = `mc-dialog-btn ${choice.danger ? 'mc-dialog-btn--danger' : 'mc-dialog-btn--confirm'}`;
+				btn.textContent = choice.label || '';
+				btn.addEventListener('click', () => close(choice.id));
+				actions.appendChild(btn);
+			});
+			const cancelBtn = document.createElement('button');
+			cancelBtn.type = 'button';
+			cancelBtn.className = 'mc-dialog-btn mc-dialog-btn--cancel';
+			cancelBtn.textContent = cancelLabel;
+			actions.appendChild(cancelBtn);
+			dialog.appendChild(actions);
+			overlay.appendChild(dialog);
+			document.body.appendChild(overlay);
+
+			const close = messengerMakeDismissable((result) => { overlay.remove(); resolve(result); }, null);
 			cancelBtn.addEventListener('click', () => close(null));
 			overlay.addEventListener('click', (e) => { if (e.target === overlay) close(null); });
 			document.addEventListener('keydown', function handler(e) {
@@ -2584,8 +2758,9 @@ function messengerCloseTopOverlayFromPopstate() {
  * Возвращает функцию close(result), которую нужно вызывать вместо ручного удаления.
  * На десктопе history не используется (закрытие обычное, по кнопкам/Esc/клику).
  */
-function messengerMakeDismissable(dismiss, cancelValue) {
+function messengerMakeDismissable(dismiss, cancelValue, opts = {}) {
 	const useHistory = (typeof MessengerUtils !== 'undefined') && MessengerUtils.isMobile();
+	const attachHistory = opts.attachHistory === true;
 	let active = true;
 	let pendingResult = cancelValue;
 	let historyPushed = false;
@@ -2607,8 +2782,12 @@ function messengerMakeDismissable(dismiss, cancelValue) {
 	close.immediate = (result = cancelValue) => finish(result, false);
 	if (useHistory) {
 		messengerRegisterOverlay(closer);
-		history.pushState({ mappOverlay: true }, '');
-		historyPushed = true;
+		if (attachHistory && history.state?.mappOverlay) {
+			historyPushed = true;
+		} else {
+			history.pushState({ mappOverlay: true }, '');
+			historyPushed = true;
+		}
 	}
 	return close;
 }
@@ -2825,6 +3004,28 @@ async function compressImageFile(file, maxSize = AVATAR_MAX_DIMENSION, quality =
 	});
 }
 
+/** Удаляет EXIF/геометки и прочие метаданные перед загрузкой на сервер (без изменения разрешения). */
+async function stripImageMetadataForUpload(file) {
+	if (!file?.type?.startsWith('image/')) return file;
+	try {
+		const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+		const canvas = document.createElement('canvas');
+		canvas.width = bitmap.width;
+		canvas.height = bitmap.height;
+		canvas.getContext('2d').drawImage(bitmap, 0, 0);
+		bitmap.close();
+		return await new Promise((resolve) => {
+			canvas.toBlob((blob) => {
+				if (!blob) { resolve(file); return; }
+				const baseName = (file.name || 'photo').replace(/\.[^.]+$/, '') || 'photo';
+				resolve(new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' }));
+			}, 'image/jpeg', 0.92);
+		});
+	} catch {
+		return compressImageFile(file, 65536, 0.92);
+	}
+}
+
 const MESSENGER_VIEWER_FHD_MAX = 1920;
 const MESSENGER_PREVIEW_JPEG_QUALITY = 0.88;
 const MESSENGER_THUMB_JPEG_QUALITY = 0.9;
@@ -2926,8 +3127,39 @@ const MessengerImageSlot = {
 		img.removeAttribute('src');
 		this.markPending(img);
 	},
+	applyDirectSrc(img, urls) {
+		if (!img) return;
+		const list = (Array.isArray(urls) ? urls : [urls]).filter(Boolean);
+		if (!list.length) {
+			this.clearSrc(img);
+			return;
+		}
+		this.markPending(img);
+		let i = 0;
+		const tryNext = () => {
+			if (i >= list.length) {
+				this.clearSrc(img);
+				return;
+			}
+			const url = list[i++];
+			const onLoad = () => this.markReady(img);
+			const onError = () => tryNext();
+			img.addEventListener('load', onLoad, { once: true });
+			img.addEventListener('error', onError, { once: true });
+			img.src = url;
+			if (img.complete) {
+				if (img.naturalWidth > 0) onLoad();
+				else tryNext();
+			}
+		};
+		tryNext();
+	},
 	applySrc(img, url) {
-		if (!img || !url || !this.isLocalSrc(url)) return;
+		if (!img || !url) return;
+		if (!this.isLocalSrc(url)) {
+			this.applyDirectSrc(img, url);
+			return;
+		}
 		this.markPending(img);
 		const onLoad = () => this.markReady(img);
 		const onError = () => this.clearSrc(img);
@@ -4945,6 +5177,7 @@ class MessengerUserProfileModal {
 	#popHandler = null;
 	#navDepth = 0;
 	#closing = false;
+	#channelsReloadFn = null;
 
 	constructor(utils, icons, i18n, themeManager, menuBuilder, avatarBuilder, onClearCache, onClearAll) {
 		this.#utils = utils;
@@ -4955,6 +5188,10 @@ class MessengerUserProfileModal {
 		this.#avatarBuilder = avatarBuilder;
 		this.#onClearCache = onClearCache;
 		this.#onClearAll = onClearAll;
+	}
+
+	refreshChannels() {
+		this.#channelsReloadFn?.();
 	}
 
 	async open(targetRootEl, user, callbacks = {}) {
@@ -5132,25 +5369,13 @@ class MessengerUserProfileModal {
 		channelsScroll.className = 'mapp-profile-tab-scroll mapp-profile-form-page';
 		const channelsCard = mkUiCard(this.#i18n.t('channelsTab'));
 		const channelsListEl = document.createElement('div');
-		channelsListEl.className = 'mapp-invites-list';
+		channelsListEl.className = 'mapp-channel-settings-list';
 		const channelsMsg = mkStatusMsg();
-		const chNameInput = document.createElement('input');
-		chNameInput.type = 'text';
-		applyStandardFieldInput(chNameInput);
-		const chSlugInput = document.createElement('input');
-		chSlugInput.type = 'text';
-		applyStandardFieldInput(chSlugInput);
-		const chCreateBtn = document.createElement('button');
-		chCreateBtn.type = 'button';
-		chCreateBtn.className = 'mapp-btn mapp-btn-primary mapp-btn-block mapp-btn-settings-wide';
-		chCreateBtn.textContent = this.#i18n.t('channelCreate');
-		channelsCard.append(
-			mkProfileField(this.#i18n.t('channelNameLabel'), chNameInput),
-			mkProfileField(this.#i18n.t('channelSlugLabel'), chSlugInput),
-			channelsListEl,
-			channelsMsg,
-			chCreateBtn,
-		);
+		const chAddBtn = document.createElement('button');
+		chAddBtn.type = 'button';
+		chAddBtn.className = 'mapp-btn mapp-btn-primary mapp-btn-block mapp-btn-settings-wide';
+		chAddBtn.textContent = this.#i18n.t('channelAdd');
+		channelsCard.append(chAddBtn, channelsListEl, channelsMsg);
 		channelsScroll.appendChild(channelsCard);
 		channelsPanel.appendChild(channelsScroll);
 		viewsEl.appendChild(channelsPanel);
@@ -5182,9 +5407,57 @@ class MessengerUserProfileModal {
 				items.forEach(ch => {
 					const row = document.createElement('button');
 					row.type = 'button';
-					row.className = 'mapp-sheet-item mapp-sheet-item--btn';
-					row.textContent = `${ch.name} (@${ch.slug})`;
-					row.addEventListener('click', () => {
+					row.className = 'mapp-channel-settings-row';
+					if (ch.isDeleted) row.classList.add('mapp-channel-settings-row--deleted');
+					const avatarHost = document.createElement('div');
+					avatarHost.className = 'mapp-channel-settings-row-avatar';
+					avatarHost.appendChild(
+						this.#avatarBuilder.build(ch.chatId, ch.name, ch.avatar, 40),
+					);
+					const meta = document.createElement('div');
+					meta.className = 'mapp-channel-settings-row-meta';
+					const nameEl = document.createElement('div');
+					nameEl.className = 'mapp-chat-item-name';
+					nameEl.textContent = ch.name || '';
+					const slugEl = document.createElement('div');
+					slugEl.className = 'mapp-chat-item-preview';
+					slugEl.textContent = '@' + (ch.slug || '');
+					meta.append(nameEl, slugEl);
+					row.append(avatarHost, meta);
+					if (ch.isDeleted) {
+						const badge = document.createElement('span');
+						badge.className = 'mapp-channel-settings-deleted-badge';
+						badge.textContent = this.#i18n.t('channelDeleted');
+						row.appendChild(badge);
+					}
+					row.addEventListener('click', async () => {
+						if (ch.isDeleted) {
+							const ok = await MessengerDialog.confirm({
+								title: this.#i18n.t('channelRestore'),
+								message: this.#i18n.t('channelRestoreConfirm'),
+								type: MessengerDialog.TYPE_INFO,
+								confirmLabel: this.#i18n.t('channelRestore'),
+								cancelLabel: this.#i18n.t('cancel'),
+								themeManager: this.#themeManager,
+							});
+							if (!ok) return;
+							try {
+								const r = await messengerRpc('RestoreChannel', { chatId: ch.chatId });
+								if (!r?.success) throw new Error(r?.error);
+								showStatus(channelsMsg, this.#i18n.t('saved'), true);
+								await loadChannels();
+								callbacks.onManageChannel?.({
+									id: ch.chatId,
+									name: ch.name,
+									type: 'channel',
+									channelSlug: ch.slug,
+									avatar: ch.avatar,
+								});
+							} catch (e) {
+								showStatus(channelsMsg, e.message || 'Error', false);
+							}
+							return;
+						}
 						callbacks.onManageChannel?.({
 							id: ch.chatId,
 							name: ch.name,
@@ -5200,29 +5473,10 @@ class MessengerUserProfileModal {
 			}
 		};
 
-		chCreateBtn.addEventListener('click', async () => {
-			chCreateBtn.disabled = true;
-			try {
-				const r = await messengerRpc('CreateChannel', {
-					name: chNameInput.value.trim(),
-					slug: chSlugInput.value.trim(),
-				});
-				if (!r?.success) throw new Error(r?.error || 'Create failed');
-				chNameInput.value = '';
-				chSlugInput.value = '';
-				showStatus(channelsMsg, this.#i18n.t('saved'), true);
-				await loadChannels();
-				callbacks.onManageChannel?.({
-					id: r.chatId,
-					name: r.name,
-					type: 'channel',
-					channelSlug: r.slug,
-				});
-			} catch (e) {
-				showStatus(channelsMsg, e.message || 'Error', false);
-			} finally {
-				chCreateBtn.disabled = false;
-			}
+		this.#channelsReloadFn = loadChannels;
+
+		chAddBtn.addEventListener('click', () => {
+			callbacks.onCreateChannel?.();
 		});
 
 		const formatInviteExpiry = (iso) => {
@@ -6891,6 +7145,7 @@ class MessengerChannelProfileModal {
 	#avatarBuilder;
 	#api;
 	#closeOverlay = null;
+	#backHandler = null;
 
 	constructor(utils, icons, i18n, themeManager, menuBuilder, avatarBuilder, api) {
 		this.#utils = utils;
@@ -6904,6 +7159,7 @@ class MessengerChannelProfileModal {
 
 	async open(targetRootEl, chat, callbacks = {}) {
 		this.close();
+		if (!chat?.id) return;
 		let info;
 		try {
 			info = await this.#api.getChannelInfo(chat.id);
@@ -6917,151 +7173,793 @@ class MessengerChannelProfileModal {
 			});
 			return;
 		}
+		await this.#renderPanel(chat, info, 'edit', callbacks);
+	}
 
-		const canEdit = !!info.canEdit;
-		const canEditSlug = !!info.canEditSlug;
-		const content = this.#utils.mk('div', 'mapp-group-profile-content');
+	async openCreate(targetRootEl, callbacks = {}) {
+		this.close();
+		const info = {
+			success: true,
+			name: '',
+			slug: '',
+			description: '',
+			avatar: null,
+			members: [],
+			canEdit: true,
+			canEditSlug: true,
+			canManageMembers: true,
+			isOwner: true,
+			subscriberCount: 0,
+		};
+		await this.#renderPanel({ id: null, name: '', type: 'channel' }, info, 'create', callbacks);
+	}
+
+	#setupPanelHeader(panel, titleText) {
+		const headerEl = panel.querySelector('.mc-panel-window-header');
+		const closeBtn = headerEl?.querySelector('.mc-panel-window-close');
+		if (closeBtn) closeBtn.remove();
+		let titleRow = headerEl?.querySelector('.mc-panel-window-title-row');
+		const titleEl = headerEl?.querySelector('.mc-panel-window-title');
+		if (!titleRow && headerEl && titleEl) {
+			titleRow = document.createElement('div');
+			titleRow.className = 'mc-panel-window-title-row';
+			titleEl.replaceWith(titleRow);
+			titleRow.appendChild(titleEl);
+		}
+		if (titleEl) titleEl.textContent = titleText;
+		if (titleRow) {
+			const backBtn = document.createElement('button');
+			backBtn.type = 'button';
+			backBtn.className = 'mapp-settings-header-back';
+			backBtn.innerHTML = this.#icons.back();
+			backBtn.title = this.#i18n.t('back');
+			backBtn.setAttribute('aria-label', this.#i18n.t('back'));
+			backBtn.addEventListener('click', () => this.#handleBack());
+			titleRow.prepend(backBtn);
+		}
+	}
+
+	#handleBack() {
+		if (this.#backHandler) {
+			this.close({ clearBack: false });
+			return;
+		}
+		this.close();
+	}
+
+	#mkSlugDisplayWrap(slug, canEdit, onEdit) {
+		const wrap = document.createElement('div');
+		wrap.className = 'mapp-profile-login-change-wrap';
+		const row = document.createElement('div');
+		row.className = 'mapp-profile-login-display-row';
+		const display = document.createElement('div');
+		display.className = 'mapp-profile-login-display mapp-selectable-text';
+		display.textContent = '@' + (slug || '');
+		row.appendChild(display);
+		if (canEdit) {
+			const btn = document.createElement('button');
+			btn.type = 'button';
+			btn.className = 'mapp-btn mapp-btn-secondary mapp-profile-login-change-btn';
+			btn.textContent = this.#i18n.t('channelChangeSlug');
+			btn.addEventListener('click', onEdit);
+			row.appendChild(btn);
+		}
+		wrap.appendChild(row);
+		return { wrap, display };
+	}
+
+	async #openSlugChangeModal(currentSlug, onSave) {
+		lockAppScroll();
+		const overlay = document.createElement('div');
+		overlay.className = 'mapp-modal-overlay';
+		const closeModal = messengerMakeDismissable(() => {
+			unlockAppScroll();
+			overlay.remove();
+		}, null);
+		const modal = document.createElement('div');
+		modal.className = 'mapp-modal mapp-change-login-modal';
+		this.#themeManager.applyChatVars(modal);
+		this.#themeManager.applyAppVars(modal);
+		const header = document.createElement('div');
+		header.className = 'mapp-modal-header';
+		const title = document.createElement('div');
+		title.className = 'mapp-modal-title';
+		title.textContent = this.#i18n.t('channelChangeSlugTitle');
+		const closeBtn = document.createElement('button');
+		closeBtn.type = 'button';
+		closeBtn.className = 'mapp-modal-close';
+		closeBtn.innerHTML = '×';
+		closeBtn.addEventListener('click', () => closeModal());
+		header.append(title, closeBtn);
+		const body = document.createElement('div');
+		body.className = 'mapp-modal-body mapp-change-login-modal-body';
+		const slugInput = document.createElement('input');
+		slugInput.type = 'text';
+		slugInput.className = 'mapp-profile-field-input';
+		slugInput.value = currentSlug || '';
+		slugInput.spellcheck = false;
+		const hint = document.createElement('div');
+		hint.className = 'mapp-input-hint';
+		hint.textContent = this.#i18n.t('channelSlugHint');
+		const modalMsg = document.createElement('div');
+		modalMsg.className = 'mapp-profile-status-msg';
+		modalMsg.hidden = true;
+		body.append(slugInput, hint, modalMsg);
+		const footer = document.createElement('div');
+		footer.className = 'mapp-modal-footer';
+		const cancelBtn = document.createElement('button');
+		cancelBtn.type = 'button';
+		cancelBtn.className = 'mapp-btn mapp-btn-secondary mapp-modal-footer-btn';
+		cancelBtn.textContent = this.#i18n.t('cancel');
+		cancelBtn.addEventListener('click', () => closeModal());
+		const submitBtn = document.createElement('button');
+		submitBtn.type = 'button';
+		submitBtn.className = 'mapp-btn mapp-btn-primary mapp-modal-footer-btn';
+		submitBtn.textContent = this.#i18n.t('channelSave');
+		submitBtn.addEventListener('click', async () => {
+			const next = slugInput.value.trim();
+			if (!next) return;
+			try {
+				await onSave(next);
+				closeModal();
+			} catch (e) {
+				modalMsg.hidden = false;
+				MessengerUtils.setStatusTone(modalMsg, false);
+				modalMsg.textContent = e.message || 'Error';
+			}
+		});
+		footer.append(cancelBtn, submitBtn);
+		modal.append(header, body, footer);
+		overlay.appendChild(modal);
+		overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+		document.body.appendChild(overlay);
+		slugInput.focus();
+		slugInput.select();
+	}
+
+	#openSubscribersModal(chatId) {
+		lockAppScroll();
+		const overlay = this.#utils.mk('div', 'mapp-modal-overlay');
+		applyMobileFullscreenOverlay(overlay);
+		const close = messengerMakeDismissable(() => {
+			unlockAppScroll();
+			overlay.remove();
+		}, null);
+		if (!overlay.classList.contains('mapp-modal-overlay--fullscreen')) {
+			overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+		}
+		const modal = this.#utils.mk('div', 'mapp-modal');
+		this.#themeManager.applyChatVars(modal);
+		this.#themeManager.applyAppVars(modal);
+		const modalHeader = this.#utils.mk('div', 'mapp-modal-header');
+		const titleRow = this.#utils.mk('div', 'mapp-modal-title-row');
+		if (overlay.classList.contains('mapp-modal-overlay--fullscreen')) {
+			const backBtn = this.#utils.mk('button', 'mapp-settings-header-back');
+			backBtn.type = 'button';
+			backBtn.innerHTML = this.#icons.back();
+			backBtn.addEventListener('click', () => close());
+			titleRow.appendChild(backBtn);
+		}
+		const modalTitle = this.#utils.mk('div', 'mapp-modal-title');
+		modalTitle.textContent = this.#i18n.t('channelSubscribers');
+		titleRow.appendChild(modalTitle);
+		const closeBtn = this.#utils.mk('button', 'mapp-modal-close');
+		closeBtn.innerHTML = '×';
+		closeBtn.addEventListener('click', () => close());
+		modalHeader.append(titleRow, closeBtn);
+		const { wrap: searchWrap, input: searchInput } = buildContactSearchBar(
+			this.#icons,
+			this.#i18n.t('searchContacts'),
+		);
+		searchWrap.classList.add('mapp-modal-search-wrap');
+		const contactsList = this.#utils.mk('div', 'mapp-modal-contacts');
+		const bottomLoader = this.#utils.mk('div', 'mapp-modal-bottom-loader');
+		bottomLoader.hidden = true;
+		bottomLoader.appendChild(this.#utils.mk('div', 'mc-loader-spinner'));
+		modal.append(modalHeader, searchWrap, contactsList, bottomLoader);
+		overlay.appendChild(modal);
+		document.body.appendChild(overlay);
+
+		let page = 1;
+		let hasMore = true;
+		let loading = false;
+		let query = '';
+		let debounceTimer = null;
+
+		const renderBatch = async (append) => {
+			if (loading) return;
+			loading = true;
+			bottomLoader.hidden = !append;
+			try {
+				const data = await this.#api.getChannelSubscribers(chatId, page, 10, query);
+				if (!data?.success) throw new Error(data?.error);
+				if (!append) contactsList.innerHTML = '';
+				const items = data.subscribers || [];
+				if (!items.length && page === 1) {
+					const empty = this.#utils.mk('div', 'mapp-list-empty');
+					empty.textContent = this.#i18n.t('channelSubscribersEmpty');
+					contactsList.appendChild(empty);
+					hasMore = false;
+					return;
+				}
+				items.forEach((c) => {
+					const row = this.#utils.mk('div', 'mapp-modal-contact-item');
+					row.appendChild(this.#avatarBuilder.build(c.id, c.name, c.avatar, 44));
+					const nameEl = this.#utils.mk('div', 'mapp-modal-contact-name');
+					nameEl.textContent = c.name || c.login;
+					row.appendChild(nameEl);
+					row.addEventListener('click', async () => {
+						const nick = '@' + (c.login || '');
+						try { await navigator.clipboard.writeText(nick); } catch (_) { /* ignore */ }
+						MessengerDialog.showNotice(
+							this.#i18n.t('channelNickCopied'),
+							this.#i18n.t('confirm'),
+							null,
+							this.#themeManager,
+						);
+					});
+					contactsList.appendChild(row);
+				});
+				hasMore = !!data.hasMore;
+				if (hasMore) page += 1;
+			} catch (e) {
+				if (!append) {
+					contactsList.innerHTML = '';
+					const err = this.#utils.mk('div', 'mapp-list-empty');
+					err.textContent = e.message || 'Error';
+					contactsList.appendChild(err);
+				}
+			} finally {
+				loading = false;
+				bottomLoader.hidden = true;
+			}
+		};
+
+		searchInput.addEventListener('input', () => {
+			clearTimeout(debounceTimer);
+			debounceTimer = setTimeout(() => {
+				const q = searchInput.value.trim();
+				if (q.length > 0 && q.length < MessengerSidebar.MIN_SEARCH_LEN) {
+					contactsList.innerHTML = '';
+					const hint = this.#utils.mk('div', 'mapp-list-empty');
+					hint.textContent = this.#i18n.t('searchMinChars');
+					contactsList.appendChild(hint);
+					return;
+				}
+				query = q;
+				page = 1;
+				hasMore = true;
+				renderBatch(false);
+			}, 300);
+		});
+		contactsList.addEventListener('scroll', () => {
+			const { scrollTop, scrollHeight, clientHeight } = contactsList;
+			if (scrollHeight - scrollTop - clientHeight < 60 && hasMore && !loading) renderBatch(true);
+		});
+		renderBatch(false);
+	}
+
+	async #openContactPicker() {
+		return new Promise((resolve) => {
+			lockAppScroll();
+			const overlay = this.#utils.mk('div', 'mapp-modal-overlay');
+			applyMobileFullscreenOverlay(overlay);
+			let settled = false;
+			const finish = (contact) => {
+				if (settled) return;
+				settled = true;
+				if (close.immediate) close.immediate();
+				unlockAppScroll();
+				overlay.remove();
+				resolve(contact ?? null);
+			};
+			const close = messengerMakeDismissable(() => finish(null), null);
+			if (!overlay.classList.contains('mapp-modal-overlay--fullscreen')) {
+				overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+			}
+			const modal = this.#utils.mk('div', 'mapp-modal');
+			this.#themeManager.applyChatVars(modal);
+			this.#themeManager.applyAppVars(modal);
+			const modalHeader = this.#utils.mk('div', 'mapp-modal-header');
+			const titleRow = this.#utils.mk('div', 'mapp-modal-title-row');
+			const modalTitle = this.#utils.mk('div', 'mapp-modal-title');
+			modalTitle.textContent = this.#i18n.t('channelAddAdmin');
+			titleRow.appendChild(modalTitle);
+			const closeBtn = this.#utils.mk('button', 'mapp-modal-close');
+			closeBtn.innerHTML = '×';
+			closeBtn.addEventListener('click', () => close());
+			modalHeader.append(titleRow, closeBtn);
+			const { wrap: searchWrap, input: searchInput } = buildContactSearchBar(
+				this.#icons,
+				this.#i18n.t('searchContacts'),
+			);
+			searchWrap.classList.add('mapp-modal-search-wrap');
+			const contactsList = this.#utils.mk('div', 'mapp-modal-contacts');
+			modal.append(modalHeader, searchWrap, contactsList);
+			overlay.appendChild(modal);
+			document.body.appendChild(overlay);
+
+			let debounceTimer = null;
+			const loadContacts = async () => {
+				const q = searchInput.value.trim();
+				if (q.length > 0 && q.length < MessengerSidebar.MIN_SEARCH_LEN) {
+					contactsList.innerHTML = '';
+					const hint = this.#utils.mk('div', 'mapp-list-empty');
+					hint.textContent = this.#i18n.t('searchMinChars');
+					contactsList.appendChild(hint);
+					return;
+				}
+				try {
+					const batch = await this.#api.getAllContacts(1, 50, q);
+					contactsList.innerHTML = '';
+					if (!batch?.length) {
+						const empty = this.#utils.mk('div', 'mapp-list-empty');
+						empty.textContent = q ? this.#i18n.t('noContacts') : this.#i18n.t('searchContactsHint');
+						contactsList.appendChild(empty);
+						return;
+					}
+					batch.forEach((c) => {
+						const row = this.#utils.mk('div', 'mapp-modal-contact-item');
+						row.appendChild(this.#avatarBuilder.build(c.id, c.name, c.avatar, 44));
+						const nameEl = this.#utils.mk('div', 'mapp-modal-contact-name');
+						nameEl.textContent = c.name || c.login;
+						row.appendChild(nameEl);
+						row.addEventListener('click', () => finish(c));
+						contactsList.appendChild(row);
+					});
+				} catch (e) {
+					contactsList.innerHTML = '';
+					const err = this.#utils.mk('div', 'mapp-list-empty');
+					err.textContent = e.message || 'Error';
+					contactsList.appendChild(err);
+				}
+			};
+			searchInput.addEventListener('input', () => {
+				clearTimeout(debounceTimer);
+				debounceTimer = setTimeout(loadContacts, 300);
+			});
+			loadContacts();
+		});
+	}
+
+	#renderStaffList(listEl, members, canManage, chatId, onRefresh) {
+		listEl.innerHTML = '';
+		(members || []).forEach((member) => {
+			const row = this.#utils.mk('div', 'mapp-group-member-row');
+			row.appendChild(this.#avatarBuilder.build(member.id, member.name, member.avatar, 36));
+			const meta = this.#utils.mk('div', 'mapp-group-member-meta');
+			const nameEl = this.#utils.mk('div', 'mapp-chat-item-name');
+			nameEl.textContent = member.name || member.login;
+			const loginEl = this.#utils.mk('div', 'mapp-chat-item-preview');
+			loginEl.textContent = '@' + (member.login || '');
+			const badges = this.#utils.mk('div', 'mapp-group-member-badges');
+			if (member.isOwner) {
+				const b = this.#utils.mk('span', 'mapp-group-member-badge');
+				b.textContent = this.#i18n.t('channelRoleOwner');
+				badges.appendChild(b);
+			}
+			meta.append(nameEl, loginEl, badges);
+			row.appendChild(meta);
+			if (!member.isOwner) {
+				const actions = this.#utils.mk('div', 'mapp-group-member-actions');
+				const role = String(member.role || '').toLowerCase();
+				if (role === 'admin' || role === 'author') {
+					const roleBtn = this.#utils.mk('button', 'mapp-group-member-icon-btn mapp-group-member-icon-btn--display');
+					roleBtn.type = 'button';
+					roleBtn.disabled = true;
+					roleBtn.tabIndex = -1;
+					roleBtn.innerHTML = role === 'admin' ? this.#icons.shieldBadge() : this.#icons.pencil();
+					roleBtn.title = role === 'admin'
+						? this.#i18n.t('channelRoleAdmin')
+						: this.#i18n.t('channelRoleAuthor');
+					actions.appendChild(roleBtn);
+				}
+				if (canManage) {
+					const removeBtn = this.#utils.mk('button', 'mapp-group-member-icon-btn mapp-group-member-icon-btn--danger');
+					removeBtn.type = 'button';
+					removeBtn.innerHTML = this.#icons.close();
+					removeBtn.title = this.#i18n.t('channelRemoveStaff');
+					removeBtn.addEventListener('click', async () => {
+						const ok = await MessengerDialog.confirm({
+							title: this.#i18n.t('channelRemoveStaff'),
+							message: this.#i18n.t('channelRemoveStaffConfirm', member.name || member.login),
+							type: MessengerDialog.TYPE_DANGER,
+							confirmLabel: this.#i18n.t('confirm'),
+							cancelLabel: this.#i18n.t('cancel'),
+							themeManager: this.#themeManager,
+						});
+						if (!ok) return;
+						try {
+							await this.#api.removeChannelMember(chatId, member.id);
+							await onRefresh();
+						} catch (e) {
+							console.warn('[ChannelProfile] removeMember', e);
+						}
+					});
+					actions.appendChild(removeBtn);
+				}
+				row.appendChild(actions);
+			}
+			listEl.appendChild(row);
+		});
+	}
+
+	async #renderPanel(chat, info, mode, callbacks) {
+		this.#backHandler = typeof callbacks.onBack === 'function' ? callbacks.onBack : null;
+		const isCreate = mode === 'create';
+		const canEdit = isCreate || !!info.canEdit;
+		const canEditSlug = isCreate || !!info.canEditSlug;
+		const canManage = isCreate || !!info.canManageMembers;
+		const isOwner = isCreate || !!info.isOwner;
+
+		const content = this.#utils.mk('div', 'mapp-group-profile-content mapp-channel-profile-content');
 		const statusEl = this.#utils.mk('div', 'mapp-profile-status-text');
 		statusEl.hidden = true;
 
-		const head = this.#utils.mk('div', 'mapp-profile-head');
-		const avatarSlot = this.#utils.mk('div', 'mapp-profile-head-avatar');
-		let pendingPhoto = null;
+		const hub = this.#utils.mk('div', 'mapp-channel-profile-hub');
+		const avatarSlot = this.#utils.mk('div', 'mapp-settings-hub-avatar mapp-profile-head-avatar');
 		let avatarPreviewUrl = null;
-		const applyAvatar = async (file) => {
-			if (!file || !canEdit) return;
-			pendingPhoto = await compressImageFile(file, 512);
-			if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
-			avatarPreviewUrl = URL.createObjectURL(pendingPhoto);
+		let pendingPhotoFile = null;
+		let savedSlug = (info.slug || chat.channelSlug || '').trim();
+		let savedName = (info.name || chat.name || '').trim();
+
+		const rebuildAvatar = (url, label) => {
 			avatarSlot.innerHTML = '';
-			avatarSlot.appendChild(this.#avatarBuilder.build(chat.id, info.name || chat.name, avatarPreviewUrl, 56));
-			await this.#api.uploadChannelAvatar(chat.id, pendingPhoto);
-			callbacks.onUpdated?.({ id: chat.id, avatar: avatarPreviewUrl });
+			avatarSlot.appendChild(
+				this.#avatarBuilder.build(chat.id || 'new-channel', label || savedName, url, PROFILE_SETTINGS_AVATAR_SIZE),
+			);
 		};
-		avatarSlot.appendChild(this.#avatarBuilder.build(chat.id, info.name || chat.name, info.avatar || chat.avatar, 56));
+		rebuildAvatar(info.avatar || chat.avatar, savedName);
+
+		const getAvatarSrc = () => avatarPreviewUrl || info.avatar || chat.avatar || null;
+		const hasPhoto = () => !!getAvatarSrc();
+
+		const pickAvatar = () => openAvatarSourcePicker({
+			i18n: this.#i18n,
+			themeManager: this.#themeManager,
+			icons: this.#icons,
+			cropOutputSize: 512,
+			onPick: async (file) => {
+				if (!file || !canEdit) return;
+				const compressed = await compressImageFile(file, 512);
+				pendingPhotoFile = compressed;
+				if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+				avatarPreviewUrl = URL.createObjectURL(compressed);
+				rebuildAvatar(avatarPreviewUrl, savedName);
+				if (!isCreate && chat.id) {
+					await this.#api.uploadChannelAvatar(chat.id, compressed);
+					callbacks.onUpdated?.({ id: chat.id, avatar: avatarPreviewUrl });
+				}
+			},
+		});
+
 		if (canEdit) {
 			avatarSlot.classList.add('mapp-profile-head-avatar--editable');
-			avatarSlot.addEventListener('click', () => openAvatarSourcePicker({
-				i18n: this.#i18n, themeManager: this.#themeManager, icons: this.#icons,
-				cropOutputSize: 512, onPick: applyAvatar,
-			}));
+			avatarSlot.addEventListener('click', () => {
+				if (hasPhoto()) {
+					openProfileAvatarFullscreen(getAvatarSrc(), {
+						i18n: this.#i18n,
+						themeManager: this.#themeManager,
+						icons: this.#icons,
+						onEdit: pickAvatar,
+					});
+				} else {
+					pickAvatar();
+				}
+			});
 		}
+		hub.appendChild(avatarSlot);
+		content.appendChild(hub);
 
-		const headText = this.#utils.mk('div', 'mapp-profile-head-text');
+		const formCard = mkUiCard('');
+		const slugDisplay = this.#mkSlugDisplayWrap(savedSlug, canEditSlug, () => {
+			this.#openSlugChangeModal(savedSlug, async (nextSlug) => {
+				if (isCreate) {
+					savedSlug = nextSlug;
+					slugDisplay.display.textContent = '@' + nextSlug;
+					return;
+				}
+				const r = await this.#api.updateChannel(chat.id, { slug: nextSlug });
+				if (!r?.success) throw new Error(r?.error);
+				savedSlug = r.slug || nextSlug;
+				slugDisplay.display.textContent = '@' + savedSlug;
+				callbacks.onUpdated?.({ id: chat.id, channelSlug: savedSlug });
+			});
+		});
+		formCard.appendChild(mkProfileField(this.#i18n.t('channelSlugLabel'), slugDisplay.wrap));
+
 		const nameInput = document.createElement('input');
 		nameInput.type = 'text';
 		applyStandardFieldInput(nameInput);
-		nameInput.value = info.name || '';
+		nameInput.value = savedName;
 		nameInput.disabled = !canEdit;
-		headText.appendChild(mkProfileField(this.#i18n.t('channelNameLabel'), nameInput));
-
-		const slugInput = document.createElement('input');
-		slugInput.type = 'text';
-		applyStandardFieldInput(slugInput);
-		slugInput.value = info.slug || '';
-		slugInput.disabled = !canEditSlug;
-		const slugHint = this.#utils.mk('div', 'mapp-input-hint');
-		slugHint.textContent = this.#i18n.t('channelSlugHint');
-		headText.append(mkProfileField(this.#i18n.t('channelSlugLabel'), slugInput), slugHint);
+		formCard.appendChild(mkProfileField(this.#i18n.t('channelNameLabel'), nameInput));
 
 		const descInput = document.createElement('textarea');
 		applyStandardFieldInput(descInput);
 		descInput.value = info.description || '';
 		descInput.disabled = !canEdit;
 		descInput.rows = 3;
-		headText.appendChild(mkProfileField(this.#i18n.t('channelDescriptionLabel'), descInput));
-		head.append(avatarSlot, headText);
-		content.appendChild(head);
+		formCard.appendChild(mkProfileField(this.#i18n.t('channelDescriptionLabel'), descInput));
+		content.appendChild(formCard);
 
 		let saveTimer = null;
-		const persist = () => {
-			clearTimeout(saveTimer);
-			saveTimer = setTimeout(async () => {
-				try {
-					const r = await this.#api.updateChannel(chat.id, {
-						name: nameInput.value.trim(),
-						slug: slugInput.value.trim(),
-						description: descInput.value.trim(),
-					});
-					if (!r?.success) throw new Error(r?.error);
-					callbacks.onUpdated?.({ id: chat.id, name: r.name, channelSlug: r.slug });
-					statusEl.hidden = false;
-					MessengerUtils.setStatusTone(statusEl, true);
-					statusEl.textContent = this.#i18n.t('saved');
-				} catch (e) {
-					statusEl.hidden = false;
-					MessengerUtils.setStatusTone(statusEl, false);
-					statusEl.textContent = e.message || this.#i18n.t('channelSaveError');
-				}
-			}, 600);
+		const showStatus = (text, ok) => {
+			statusEl.hidden = false;
+			MessengerUtils.setStatusTone(statusEl, ok);
+			statusEl.textContent = text;
 		};
-		if (canEdit) {
-			nameInput.addEventListener('input', persist);
-			descInput.addEventListener('input', persist);
+		const persistFields = async () => {
+			if (isCreate || !canEdit) return;
+			try {
+				const r = await this.#api.updateChannel(chat.id, {
+					name: nameInput.value.trim(),
+					description: descInput.value.trim(),
+				});
+				if (!r?.success) throw new Error(r?.error);
+				savedName = r.name || nameInput.value.trim();
+				callbacks.onUpdated?.({ id: chat.id, name: savedName });
+				showStatus(this.#i18n.t('saved'), true);
+			} catch (e) {
+				showStatus(e.message || this.#i18n.t('channelSaveError'), false);
+			}
+		};
+		if (canEdit && !isCreate) {
+			nameInput.addEventListener('input', () => {
+				clearTimeout(saveTimer);
+				saveTimer = setTimeout(persistFields, 600);
+			});
+			descInput.addEventListener('input', () => {
+				clearTimeout(saveTimer);
+				saveTimer = setTimeout(persistFields, 600);
+			});
 		}
-		if (canEditSlug) slugInput.addEventListener('change', persist);
 
-		const linkCard = mkUiCard(this.#i18n.t('channelShare'));
-		const channelLink = buildChannelProfileUrl(info.slug || chat.channelSlug);
-		if (channelLink) {
-			const linkRow = this.#utils.mk('div', 'mapp-profile-link-row');
-			const linkEl = document.createElement('a');
-			linkEl.href = channelLink;
-			linkEl.target = '_blank';
-			linkEl.rel = 'noopener';
-			linkEl.textContent = channelLink.replace(/^https?:\/\//, '');
-			linkRow.appendChild(linkEl);
-			linkCard.appendChild(linkRow);
+		if (!isCreate && canManage) {
+			const subsBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-secondary mapp-btn-block mapp-btn-settings-wide');
+			subsBtn.type = 'button';
+			const subsLabel = info.subscriberCount != null
+				? `${this.#i18n.t('channelSubscribers')} (${info.subscriberCount})`
+				: this.#i18n.t('channelSubscribers');
+			subsBtn.textContent = subsLabel;
+			subsBtn.addEventListener('click', () => this.#openSubscribersModal(chat.id));
+			content.appendChild(subsBtn);
+
+			const staffCard = mkUiCard(this.#i18n.t('channelStaff'));
+			const staffList = this.#utils.mk('div', 'mapp-group-members-list');
+			staffCard.appendChild(staffList);
+			content.appendChild(staffCard);
+
+			const refreshStaff = async () => {
+				const fresh = await this.#api.getChannelInfo(chat.id);
+				if (fresh?.success) {
+					info.members = fresh.members;
+					this.#renderStaffList(staffList, fresh.members, canManage, chat.id, refreshStaff);
+				}
+			};
+			this.#renderStaffList(staffList, info.members, canManage, chat.id, refreshStaff);
+
+			const addAdminBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-secondary mapp-btn-block mapp-btn-settings-wide');
+			addAdminBtn.type = 'button';
+			addAdminBtn.textContent = this.#i18n.t('channelAddAdmin');
+			addAdminBtn.addEventListener('click', async () => {
+				const contact = await this.#openContactPicker();
+				if (!contact) return;
+				const roleChoice = await MessengerDialog.choiceVertical({
+					title: this.#i18n.t('channelSelectRole'),
+					message: contact.name || contact.login,
+					choices: [
+						{ id: 'author', label: this.#i18n.t('channelRolePickAuthor') },
+						{ id: 'admin', label: this.#i18n.t('channelRolePickAdmin') },
+					],
+					cancelLabel: this.#i18n.t('cancel'),
+					themeManager: this.#themeManager,
+				});
+				if (!roleChoice) return;
+				try {
+					await this.#api.addChannelMember(chat.id, contact.id, roleChoice);
+					await refreshStaff();
+				} catch (e) {
+					await MessengerDialog.alert({
+						title: this.#i18n.t('channelSaveError'),
+						message: e.message || '',
+						type: MessengerDialog.TYPE_DANGER,
+						themeManager: this.#themeManager,
+					});
+				}
+			});
+			content.appendChild(addAdminBtn);
 		}
-		content.appendChild(linkCard);
 
-		if (info.isOwner) {
-			const dangerCard = mkUiCard('');
-			const delBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-danger mapp-btn-block');
+		if (!isCreate && isOwner) {
+			const transferBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-secondary mapp-btn-block mapp-btn-settings-wide');
+			transferBtn.type = 'button';
+			transferBtn.textContent = this.#i18n.t('channelTransferBtn');
+			transferBtn.addEventListener('click', async () => {
+				const proceed = await MessengerDialog.confirm({
+					title: this.#i18n.t('channelTransferBtn'),
+					message: this.#i18n.t('channelTransferQuestion'),
+					type: MessengerDialog.TYPE_WARNING,
+					confirmLabel: this.#i18n.t('confirm'),
+					cancelLabel: this.#i18n.t('cancel'),
+					themeManager: this.#themeManager,
+				});
+				if (!proceed) return;
+				const admins = (info.members || []).filter((m) => {
+					const r = String(m.role || '').toLowerCase();
+					return r === 'admin' && !m.isOwner;
+				});
+				if (!admins.length) {
+					await MessengerDialog.alert({
+						title: this.#i18n.t('channelTransferBtn'),
+						message: this.#i18n.t('channelTransferPickAdmin'),
+						themeManager: this.#themeManager,
+					});
+					return;
+				}
+				const pickedMember = await new Promise((resolve) => {
+					lockAppScroll();
+					const overlay = this.#utils.mk('div', 'mapp-modal-overlay');
+					let settled = false;
+					const finish = (member) => {
+						if (settled) return;
+						settled = true;
+						if (closeModal.immediate) closeModal.immediate();
+						unlockAppScroll();
+						overlay.remove();
+						resolve(member ?? null);
+					};
+					const closeModal = messengerMakeDismissable(() => finish(null), null);
+					const modal = this.#utils.mk('div', 'mapp-modal');
+					this.#themeManager.applyChatVars(modal);
+					this.#themeManager.applyAppVars(modal);
+					const modalHeader = this.#utils.mk('div', 'mapp-modal-header');
+					const modalTitle = this.#utils.mk('div', 'mapp-modal-title');
+					modalTitle.textContent = this.#i18n.t('channelTransferPickAdmin');
+					const closeBtn = this.#utils.mk('button', 'mapp-modal-close');
+					closeBtn.innerHTML = '×';
+					closeBtn.addEventListener('click', () => closeModal());
+					modalHeader.append(modalTitle, closeBtn);
+					const contactsList = this.#utils.mk('div', 'mapp-modal-contacts');
+					admins.forEach((m) => {
+						const row = this.#utils.mk('div', 'mapp-modal-contact-item');
+						row.appendChild(this.#avatarBuilder.build(m.id, m.name, m.avatar, 44));
+						const nameEl = this.#utils.mk('div', 'mapp-modal-contact-name');
+						nameEl.textContent = m.name || m.login;
+						row.appendChild(nameEl);
+						row.addEventListener('click', () => finish(m));
+						contactsList.appendChild(row);
+					});
+					modal.append(modalHeader, contactsList);
+					overlay.appendChild(modal);
+					document.body.appendChild(overlay);
+				});
+				if (!pickedMember) return;
+				const confirmed = await MessengerDialog.confirmWithCheckbox({
+					title: this.#i18n.t('channelTransferBtn'),
+					message: this.#i18n.t('channelTransferConfirm', pickedMember.name || pickedMember.login),
+					type: MessengerDialog.TYPE_WARNING,
+					confirmLabel: this.#i18n.t('confirm'),
+					cancelLabel: this.#i18n.t('cancel'),
+					checkboxLabel: this.#i18n.t('channelTransferConfirm', pickedMember.name || pickedMember.login),
+					requireCheckbox: true,
+					themeManager: this.#themeManager,
+				});
+				if (!confirmed?.confirmed || !confirmed.checked) return;
+				try {
+					await this.#api.transferChannelOwnership(chat.id, pickedMember.id);
+					this.close();
+					callbacks.onTransferred?.(chat.id);
+				} catch (e) {
+					await MessengerDialog.alert({
+						title: this.#i18n.t('channelTransferBtn'),
+						message: e.message || '',
+						type: MessengerDialog.TYPE_DANGER,
+						themeManager: this.#themeManager,
+					});
+				}
+			});
+			content.appendChild(transferBtn);
+
+			const delBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-danger mapp-btn-block mapp-btn-settings-wide');
 			delBtn.type = 'button';
 			delBtn.textContent = this.#i18n.t('channelDelete');
 			delBtn.addEventListener('click', async () => {
-				const ok = await MessengerDialog.confirm({
+				const result = await MessengerDialog.confirmWithCheckbox({
 					title: this.#i18n.t('channelDelete'),
 					message: this.#i18n.t('channelDeleteConfirm'),
+					type: MessengerDialog.TYPE_DANGER,
+					confirmLabel: this.#i18n.t('confirm'),
+					cancelLabel: this.#i18n.t('cancel'),
+					checkboxLabel: this.#i18n.t('channelDeleteCheckbox'),
+					requireCheckbox: true,
 					themeManager: this.#themeManager,
 				});
-				if (!ok) return;
-				await this.#api.deleteChannel(chat.id);
-				this.close();
-				callbacks.onDeleted?.(chat.id);
+				if (!result?.confirmed || !result.checked) return;
+				try {
+					await this.#api.deleteChannel(chat.id);
+					this.close();
+					callbacks.onDeleted?.(chat.id);
+				} catch (e) {
+					await MessengerDialog.alert({
+						title: this.#i18n.t('channelDelete'),
+						message: e.message || '',
+						type: MessengerDialog.TYPE_DANGER,
+						themeManager: this.#themeManager,
+					});
+				}
 			});
-			dangerCard.appendChild(delBtn);
-			content.appendChild(dangerCard);
+			content.appendChild(delBtn);
+		}
+
+		if (isCreate) {
+			const saveBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-primary mapp-btn-block mapp-btn-settings-wide');
+			saveBtn.type = 'button';
+			saveBtn.textContent = this.#i18n.t('channelSave');
+			saveBtn.addEventListener('click', async () => {
+				saveBtn.disabled = true;
+				try {
+					const r = await this.#api.createChannel(nameInput.value.trim(), savedSlug);
+					if (!r?.success) throw new Error(r?.error);
+					if (descInput.value.trim() && r.chatId) {
+						await this.#api.updateChannel(r.chatId, { description: descInput.value.trim() });
+					}
+					if (pendingPhotoFile && r.chatId) {
+						await this.#api.uploadChannelAvatar(r.chatId, pendingPhotoFile);
+					}
+					this.close();
+					callbacks.onCreated?.({
+						id: r.chatId,
+						name: r.name,
+						type: 'channel',
+						channelSlug: r.slug,
+					});
+				} catch (e) {
+					showStatus(e.message || this.#i18n.t('channelSaveError'), false);
+				} finally {
+					saveBtn.disabled = false;
+				}
+			});
+			content.appendChild(saveBtn);
 		}
 
 		content.appendChild(statusEl);
+		const scrollWrap = this.#utils.mk('div', 'mapp-group-profile-scroll');
+		scrollWrap.appendChild(content);
+		const panelContent = this.#utils.mk('div', 'mapp-profile-window-content');
+		panelContent.appendChild(scrollWrap);
+
 		const panel = this.#menuBuilder.buildWindow(
-			info.name || chat.name,
-			content,
-			() => this.close(),
-			{
-				profileLink: channelLink,
-				qrTitle: this.#i18n.t('qrChannelTitle'),
-				icons: this.#icons,
-				i18n: this.#i18n,
-				themeManager: this.#themeManager,
-			},
+			this.#i18n.t('channelSettingsTitle'),
+			panelContent,
+			() => this.#handleBack(),
 		);
-		panel.classList.add('mc-panel-window--profile', 'mc-panel-window--group-profile');
+		this.#setupPanelHeader(panel, this.#i18n.t('channelSettingsTitle'));
+		panel.classList.add('mc-panel-window--profile', 'mc-panel-window--group-profile', 'mc-panel-window--channel-profile');
 		this.#themeManager.applyChatVars(panel);
 		this.#themeManager.applyAppVars(panel);
 		this.#closeOverlay = this.#menuBuilder.openInOverlay(panel);
 		lockAppScroll();
-		this.#dismiss = messengerMakeDismissable(() => {
+		this.#dismiss = messengerMakeDismissable((_result, fromPopstate) => {
 			if (this.#closeOverlay) { this.#closeOverlay(); this.#closeOverlay = null; }
 			unlockAppScroll();
 			this.#dismiss = null;
+			if (fromPopstate && this.#backHandler) {
+				const handler = this.#backHandler;
+				this.#backHandler = null;
+				handler();
+			}
 		}, null);
 	}
 
-	close() {
-		if (this.#dismiss) { this.#dismiss(); return; }
+	close(options = {}) {
+		const immediate = options.immediate === true;
+		if (options.clearBack !== false) this.#backHandler = null;
+		if (this.#dismiss) {
+			if (immediate && this.#dismiss.immediate) this.#dismiss.immediate();
+			else this.#dismiss();
+			return;
+		}
 		if (this.#closeOverlay) { this.#closeOverlay(); this.#closeOverlay = null; }
 		unlockAppScroll();
 	}
@@ -8009,7 +8907,6 @@ class MessengerFileUploadBubble {
 		const row = this.#utils.mk('div', 'mc-msg-row mc-msg-row--mine mc-file-upload-row');
 		const localId = this.#utils.localMessageId();
 		row.dataset.localUploadId = localId;
-		row.dataset.msgId = localId;
 
 		const bubble = this.#utils.mk('div', 'mc-bubble mc-photo-album-bubble mc-file-upload-bubble');
 		const icons = this.#icons;
@@ -8161,8 +9058,14 @@ class MessengerFileHandler {
 		const fileId = FileUploader.generateGUID();
 		let fallbackStarted = false;
 		return new Promise((resolve, reject) => {
-			const run = (url) => {
-				const task = FileUploader.upload(this.#buildUploadOptions(url, file, fileId, chatId, uploadToken));
+			const run = async (url) => {
+				let uploadFile = file;
+				if (file?.type?.startsWith('image/')) {
+					try {
+						uploadFile = await stripImageMetadataForUpload(file);
+					} catch { /* отправляем как есть */ }
+				}
+				const task = FileUploader.upload(this.#buildUploadOptions(url, uploadFile, fileId, chatId, uploadToken));
 				task.on('complete', (error) => {
 					if (error) {
 						if (error.httpStatus === 404 && !fallbackStarted) {
@@ -8176,8 +9079,8 @@ class MessengerFileHandler {
 					resolve({
 						fileId,
 						fileName: file.name,
-						fileSize: file.size,
-						mimeType: file.type,
+						fileSize: uploadFile.size,
+						mimeType: uploadFile.type,
 					});
 				});
 			};
@@ -8270,6 +9173,7 @@ class MessengerFileHandler {
 			MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM,
 			payload
 		);
+		bubbleCtrl.el._pendingPackedText = messageText;
 		const localId = bubbleCtrl.localId;
 		const serverMsg = await this.#api.sendMessage(chatId, messageText, localId);
 		if (serverMsg?.id) {
@@ -8298,8 +9202,14 @@ class MessengerFileHandler {
 		const uploadToken = `fileapi${Date.now()}`;
 		let fallbackStarted = false;
 
-		const startUpload = (url) => {
-			const task = FileUploader.upload(this.#buildUploadOptions(url, file, fileId, chatId, uploadToken));
+		const startUpload = async (url) => {
+			let uploadFile = file;
+			if (file?.type?.startsWith('image/')) {
+				try {
+					uploadFile = await stripImageMetadataForUpload(file);
+				} catch { /* отправляем как есть */ }
+			}
+			const task = FileUploader.upload(this.#buildUploadOptions(url, uploadFile, fileId, chatId, uploadToken));
 			task.on('progress', (e) => {
 				ensureBubble();
 				if (bubbleCtrl) {
@@ -8325,8 +9235,8 @@ class MessengerFileHandler {
 				const payload = {
 					fileId,
 					fileName: file?.name ?? '',
-					fileSize: file?.size ?? 0,
-					mimeType: file?.type ?? '',
+					fileSize: uploadFile?.size ?? 0,
+					mimeType: uploadFile?.type ?? '',
 					chatId,
 				};
 				if (bubbleCtrl) {
@@ -8335,6 +9245,7 @@ class MessengerFileHandler {
 				}
 				if (msgArea) MessengerUtils.scrollToBottom(msgArea);
 				const messageText = MessengerCustomMessage.pack(contentType, payload);
+				if (bubbleCtrl?.el) bubbleCtrl.el._pendingPackedText = messageText;
 				const localId = bubbleCtrl?.localId ?? this.#utils.localMessageId();
 				try {
 					const serverMsg = await this.#api.sendMessage(chatId, messageText, localId);
@@ -9509,8 +10420,9 @@ class MessengerImageViewer {
 
 	static async #downloadOriginal(url) {
 		if (!url) return;
+		const originalUrl = MessengerFileService.toOriginalUrl(url);
 		const fileName = MessengerImageViewer.#resolveDownloadFileName(url);
-		const response = await fetch(url, { credentials: 'same-origin' });
+		const response = await fetch(originalUrl, { credentials: 'same-origin' });
 		if (!response.ok) throw new Error(`HTTP ${response.status}`);
 		const blob = await response.blob();
 		const obj = URL.createObjectURL(blob);
@@ -9877,9 +10789,9 @@ class MessengerImageViewer {
 			if (cache) {
 				cache.fetchAndCacheViewerImage(sourceUrl)
 					.then(apply)
-					.catch(() => apply(sourceUrl));
+					.catch(() => apply(MessengerFileService.toMediumUrl(sourceUrl)));
 			} else {
-				apply(sourceUrl);
+				apply(MessengerFileService.toMediumUrl(sourceUrl));
 			}
 		};
 
@@ -10266,6 +11178,36 @@ class MessengerUtils {
 
 	static isLocalMessageId(id) {
 		return typeof id === 'string' && id.startsWith('local_');
+	}
+
+	/** Строка загрузки файла/фото, ещё не привязанная к server message id. */
+	static findPendingFileUploadRow(msgArea, { packedText = null, localId = null } = {}) {
+		if (!msgArea) return null;
+		const rows = [...msgArea.querySelectorAll('.mc-file-upload-row[data-local-upload-id]')];
+		const pending = rows.filter((row) => {
+			const rowLocal = row.dataset.localUploadId;
+			const rowMsgId = row.dataset.msgId;
+			return !rowMsgId
+				|| rowMsgId === rowLocal
+				|| MessengerUtils.isLocalMessageId(rowMsgId);
+		});
+		if (!pending.length) return null;
+		const normText = (packedText ?? '').trim();
+		if (normText) {
+			for (const row of pending) {
+				const rowText = (
+					row._pendingPackedText
+					|| row._msgData?.text
+					|| ''
+				).trim();
+				if (rowText && rowText === normText) return row;
+			}
+		}
+		if (localId) {
+			const byId = pending.find((row) => row.dataset.localUploadId === localId);
+			if (byId) return byId;
+		}
+		return pending.length === 1 ? pending[0] : null;
 	}
 
 	/** Убирает дубли (local_* + серверный id / serverId) после сбоев синхронизации. */
@@ -11050,31 +11992,51 @@ class MessengerCache {
 	}
 	async getOrCreateThumbnail(url, signal = null, maxSize = null) {
 		maxSize = maxSize ?? getMessengerScreenThumbMax();
-		const cacheKey = messengerThumbCacheKey(url, maxSize);
+		const sourceUrl = MessengerImageSlot.isLocalSrc(url)
+			? url
+			: MessengerFileService.toOriginalUrl(url);
+		const cacheKey = messengerThumbCacheKey(sourceUrl, maxSize);
 		const cached = await this.getThumbnail(cacheKey);
 		if (cached) return cached;
+
+		if (MessengerImageSlot.isLocalSrc(url)) {
+			const blob = await fetch(url, { signal }).then(r => r.blob());
+			const thumbBlob = await MessengerCache.#createThumbnailBlob(blob, maxSize);
+			if (!thumbBlob) throw new Error('Thumbnail generation failed');
+			await this.#saveThumbnail(cacheKey, thumbBlob);
+			const thumbURL = URL.createObjectURL(thumbBlob);
+			this.#thumbURLs.set(cacheKey, thumbURL);
+			return thumbURL;
+		}
+
+		const previewUrl = MessengerFileService.toPreviewUrl(sourceUrl);
+		try {
+			const previewDisplay = await this.fetchAndCacheImage(previewUrl, signal);
+			if (previewDisplay) return previewDisplay;
+		} catch { /* client-side fallback below */ }
+
 		let blob;
-		const cachedFull = await this.getImage(url);
+		const cachedFull = await this.getImage(sourceUrl);
 		if (cachedFull) {
 			blob = await (await fetch(cachedFull)).blob();
 		} else {
-			const response = await fetch(url, { credentials: 'same-origin', signal });
+			const response = await fetch(sourceUrl, { credentials: 'same-origin', signal });
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
 			blob = await response.blob();
 			try {
 				const db = await this.#getDB();
 				await new Promise((resolve, reject) => {
 					const tx = db.transaction(MessengerCache.STORE_IMAGES, 'readwrite');
-					tx.objectStore(MessengerCache.STORE_IMAGES).put({ url, blob });
+					tx.objectStore(MessengerCache.STORE_IMAGES).put({ url: sourceUrl, blob });
 					tx.oncomplete = () => resolve();
 					tx.onerror = (e) => reject(e.target.error);
 				});
-			} catch {}
-			this.#objectURLs.set(url, URL.createObjectURL(blob));
+			} catch { /* best-effort */ }
+			this.#objectURLs.set(sourceUrl, URL.createObjectURL(blob));
 		}
 		const thumbBlob = await MessengerCache.#createThumbnailBlob(blob, maxSize);
 		if (!thumbBlob) {
-			const full = this.#objectURLs.get(url);
+			const full = this.#objectURLs.get(sourceUrl);
 			if (full) return full;
 			throw new Error('Thumbnail generation failed');
 		}
@@ -11084,25 +12046,36 @@ class MessengerCache {
 		return thumbURL;
 	}
 	applyThumbnailSrc(imgEl, url, signal = null, maxSize = null) {
+		if (MessengerImageSlot.isLocalSrc(url)) {
+			MessengerImageSlot.applySrc(imgEl, url);
+			return;
+		}
 		maxSize = maxSize ?? getMessengerScreenThumbMax();
-		const cacheKey = messengerThumbCacheKey(url, maxSize);
+		const sourceUrl = MessengerFileService.toOriginalUrl(url);
+		const cacheKey = messengerThumbCacheKey(sourceUrl, maxSize);
 		MessengerImageSlot.markPending(imgEl);
 		if (this.#thumbURLs.has(cacheKey)) {
 			MessengerImageSlot.applySrc(imgEl, this.#thumbURLs.get(cacheKey));
+			this.prefetchMedium(url, signal);
 			return;
 		}
 		this.getOrCreateThumbnail(url, signal, maxSize)
 			.then(u => {
-				if (imgEl.isConnected && u && MessengerImageSlot.isLocalSrc(u)) {
+				if (imgEl.isConnected && u) {
 					MessengerImageSlot.applySrc(imgEl, u);
+					this.prefetchMedium(url, signal);
 				}
 			})
 			.catch(err => {
-				if (err?.name !== 'AbortError' && imgEl.isConnected) MessengerImageSlot.clearSrc(imgEl);
+				if (err?.name === 'AbortError' || !imgEl.isConnected) return;
+				MessengerImageSlot.applyDirectSrc(imgEl, [
+					MessengerFileService.toPreviewUrl(url),
+					sourceUrl,
+				]);
 			});
 	}
-	applyCollageThumbnailSrc(imgEl, url, signal = null) {
-		this.applyThumbnailSrc(imgEl, url, signal);
+	applyCollageThumbnailSrc(imgEl, originalUrl, signal = null) {
+		this.applyThumbnailSrc(imgEl, originalUrl, signal);
 	}
 	prefetchMessageImages(text) {
 		try {
@@ -11111,10 +12084,14 @@ class MessengerCache {
 			const ct = parsed.contentType;
 			const p = parsed.payload || {};
 			if (ct === MessengerCustomMessage.CONTENT_TYPES.IMAGE && p.fileId) {
-				void this.getOrCreateThumbnail(MessengerFileService.getFileUrl(p.fileId)).catch(() => {});
+				const url = MessengerFileService.getFileUrl(p.fileId);
+				void this.getOrCreateThumbnail(url).catch(() => {});
+				this.prefetchMedium(url);
 			} else if (ct === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
 				for (const fileId of p.fileIds || []) {
-					void this.getOrCreateThumbnail(MessengerFileService.getFileUrl(fileId)).catch(() => {});
+					const url = MessengerFileService.getFileUrl(fileId);
+					void this.getOrCreateThumbnail(url).catch(() => {});
+					this.prefetchMedium(url);
 				}
 			}
 		} catch { /* ignore */ }
@@ -11131,14 +12108,24 @@ class MessengerCache {
 			await this.#saveThumbnail(cacheKey, storeBlob);
 			const objectURL = URL.createObjectURL(storeBlob);
 			this.#thumbURLs.set(cacheKey, objectURL);
+			this.prefetchMedium(serverUrl);
 			return objectURL;
 		} catch (err) {
 			console.warn('[MessengerCache] adoptLocalPreview error:', err);
 			return null;
 		}
 	}
-	async fetchAndCacheViewerImage(url, signal = null) {
-		return this.getOrCreateThumbnail(url, signal, MESSENGER_VIEWER_FHD_MAX);
+	prefetchMedium(originalUrl, signal = null) {
+		if (!originalUrl || MessengerImageSlot.isLocalSrc(originalUrl)) return;
+		const mediumUrl = MessengerFileService.toMediumUrl(originalUrl);
+		void this.fetchAndCacheImage(mediumUrl, signal).catch(() => {});
+	}
+	async fetchAndCacheViewerImage(originalUrl, signal = null) {
+		if (MessengerImageSlot.isLocalSrc(originalUrl)) {
+			return this.getOrCreateThumbnail(originalUrl, signal, MESSENGER_VIEWER_FHD_MAX);
+		}
+		const mediumUrl = MessengerFileService.toMediumUrl(originalUrl);
+		return this.fetchAndCacheImage(mediumUrl, signal);
 	}
 
 	static #avatarStorageKey(url) {
@@ -11289,15 +12276,26 @@ class MessengerCache {
 		}
 		this.fetchAndCacheImage(url, signal)
 			.then(u => {
-				if (imgEl.isConnected && u && MessengerImageSlot.isLocalSrc(u)) {
-					MessengerImageSlot.applySrc(imgEl, u);
-				}
+				if (imgEl.isConnected && u) MessengerImageSlot.applySrc(imgEl, u);
 			})
 			.catch(err => {
 				if (err?.name !== 'AbortError' && imgEl.isConnected) MessengerImageSlot.clearSrc(imgEl);
 			});
 	}
-	async removeImage(url) {
+	async removeImage(originalUrl) {
+		const fileId = MessengerFileService.fileIdFromUrl(originalUrl);
+		const urls = fileId
+			? [
+				MessengerFileService.getPreviewUrl(fileId, MessengerFileService.isChannelPublicUrl(originalUrl)),
+				MessengerFileService.getMediumUrl(fileId, MessengerFileService.isChannelPublicUrl(originalUrl)),
+				MessengerFileService.getOriginalUrl(fileId, MessengerFileService.isChannelPublicUrl(originalUrl)),
+			]
+			: [originalUrl];
+		for (const url of urls) {
+			await this.#removeCachedUrl(url);
+		}
+	}
+	async #removeCachedUrl(url) {
 		const ou = this.#objectURLs.get(url);
 		if (ou) { URL.revokeObjectURL(ou); this.#objectURLs.delete(url); }
 		const tu = this.#thumbURLs.get(url);
@@ -11782,16 +12780,13 @@ class MessengerSidebar {
 	#allChats = [];
 	#lastActiveChat = null;
 	#lastI18n = null;
-	#folderSwipeLock = false;
-	#folderSlideNeighbor = null;
-	#folderSlideTargetId = null;
-	#folderSlideMode = null;
-	#folderSlideWidth = 0;
-	#folderSlideX = 0;
+	#folderTabPos = [];
+	#folderSliderAnimateNext = false;
+	#folderTrackAnimating = false;
 	static MIN_SEARCH_LEN = 4;
 	static FOLDER_SWIPE_MAX_WIDTH = 1199;
-	static FOLDER_SWIPE_MIN_PX = 56;
-	static FOLDER_SWIPE_COMMIT_RATIO = 0.28;
+	static FOLDER_SWIPE_SNAP_RATIO = 0.2;
+	static FOLDER_SWIPE_VELOCITY_TH = 0.3;
 
 	el = {};
 
@@ -11955,6 +12950,13 @@ class MessengerSidebar {
 
 		const foldersBar = this.#utils.mk('div', 'mapp-folders-bar');
 		foldersBar.hidden = true;
+		const foldersBarTrack = this.#utils.mk('div', 'mapp-folders-bar-track');
+		const folderSlider = this.#utils.mk('div', 'mapp-folder-slider');
+		const folderTabLabelsWhite = this.#utils.mk('div', 'mapp-folder-tab-labels-white');
+		folderTabLabelsWhite.hidden = true;
+		foldersBarTrack.appendChild(folderSlider);
+		foldersBarTrack.appendChild(folderTabLabelsWhite);
+		foldersBar.appendChild(foldersBarTrack);
 		foldersBar.addEventListener('wheel', e => {
 			if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
 				foldersBar.scrollLeft += e.deltaY;
@@ -11978,6 +12980,9 @@ class MessengerSidebar {
 			searchToggleBtn,
 			searchRow,
 			foldersBar,
+			foldersBarTrack,
+			folderSlider,
+			folderTabLabelsWhite,
 			userAvatarWrap,
 			userNameEl,
 			userStatusEl,
@@ -11998,6 +13003,20 @@ class MessengerSidebar {
 		Object.assign(this.el, { sidebarMain });
 		this.el._onChatSelect = onChatSelect;
 		this.#bindFolderSwipe();
+		window.addEventListener('resize', () => {
+			this.#syncFolderTabClipMode();
+			this.#calcFolderTabPositions();
+			this.#syncFolderTabLabelWidths();
+			if (this.#isFolderSliderLayout()) {
+				this.#folderSliderSnap(this.#folderIndex(this.#activeFolderId), false);
+			}
+			if (this.#useFolderCarousel()) {
+				this.#goToFolderIndex(this.#folderIndex(this.#activeFolderId), false, {
+					notify: false,
+					scrollTab: false,
+				});
+			}
+		});
 		return sidebar;
 	}
 
@@ -12105,7 +13124,7 @@ class MessengerSidebar {
 		this.#folders = (folders || []).filter(f => !f.isArchive);
 		this.#archiveFolderId = (folders || []).find(f => f.isArchive)?.id || null;
 		this.#folderMembers = members || [];
-		this.#renderFoldersBar();
+		this.#renderFoldersBar(true);
 	}
 
 	getArchiveFolderId() { return this.#archiveFolderId; }
@@ -12138,6 +13157,25 @@ class MessengerSidebar {
 		return window.innerWidth <= MessengerSidebar.FOLDER_SWIPE_MAX_WIDTH;
 	}
 
+	#isDesktopFolderColumn() {
+		const root = this.el.foldersBar?.closest('.mapp-root');
+		return !!root?.classList.contains('mapp-desktop') && window.innerWidth >= 1200;
+	}
+
+	#isFolderSliderLayout() {
+		return this.#isFolderSwipeLayout() && !this.#isDesktopFolderColumn();
+	}
+
+	#useFolderCarousel() {
+		return this.#isFolderSwipeLayout() &&
+			!this.#searchMode &&
+			this.#folderNavIds().length > 1;
+	}
+
+	usesFolderCarousel() {
+		return this.#useFolderCarousel();
+	}
+
 	// Swipe/tab order: «Все чаты» → пользовательские папки (архив только из настроек).
 	#folderNavIds() {
 		const ids = [null];
@@ -12145,258 +13183,310 @@ class MessengerSidebar {
 		return ids;
 	}
 
-	#releaseOrphanFolderSwipeLock() {
-		if (this.#folderSwipeLock && !this.#folderSlideMode && !this.#folderSlideNeighbor) {
-			this.#folderSwipeLock = false;
-		}
+	#folderIndex(folderId) {
+		const ids = this.#folderNavIds();
+		let idx = ids.indexOf(folderId);
+		if (idx < 0 && (folderId === null || folderId === undefined)) idx = 0;
+		return idx;
 	}
 
-	#selectFolder(folderId, { instant = false, fromUser = false } = {}) {
-		this.#releaseOrphanFolderSwipeLock();
-		if (fromUser && this.#folderSwipeLock) {
-			this.#resetFolderSwipe();
-		}
-		const currentIdx = this.#folderIndex(this.#activeFolderId);
-		const targetIdx = this.#folderIndex(folderId);
-		if (targetIdx >= 0 && targetIdx === currentIdx) return;
-		if (this.#folderSwipeLock) return;
-
-		if (instant || this.#searchMode || !this.#lastI18n ||
-			this.#folderNavIds().length <= 1 || targetIdx < 0 || currentIdx < 0) {
-			this.#applyFolderInstant(folderId);
-			return;
-		}
-
-		const direction = targetIdx > currentIdx ? 1 : -1;
-		if (!this.#beginFolderSlide(folderId, direction)) {
-			this.#applyFolderInstant(folderId);
-			return;
-		}
-
-		// Highlight the target tab right away; renderChatList is locked out
-		// while the slide runs, so the visible panel won't be rebuilt mid-animation.
-		// Do not scroll the tab bar here — scrollIntoView used to shift the whole sidebar.
-		this.#activeFolderId = folderId;
-		this.#renderFoldersBar();
-		this.#settleFolderSlide(true);
+	#getFolderTabButtons() {
+		const track = this.el.foldersBarTrack;
+		if (!track) return [];
+		return Array.from(track.querySelectorAll('.mapp-folder-tab'));
 	}
 
-	#applyFolderInstant(folderId) {
-		this.#resetFolderSwipe();
-		this.#activeFolderId = folderId;
-		this.#renderFoldersBar();
-		this.#scrollActiveFolderTabIntoView();
-		if (typeof this.#onFolderSelect === 'function') this.#onFolderSelect(folderId);
-	}
-
-	// Positions both panels for the given live-panel offset (in px).
-	// The live panel rides the track; the neighbor is an absolute overlay that
-	// sits one screen-width away on the incoming side, so neither the track
-	// width nor the surrounding layout ever changes during a slide.
-	#setFolderSlideOffset(offset) {
-		const track = this.el.chatListTrack;
-		this.#folderSlideX = offset;
-		if (track) track.style.transform = `translate3d(${offset}px, 0, 0)`;
-		const neighbor = this.#folderSlideNeighbor;
-		if (neighbor && this.#folderSlideMode) {
-			const nOff = offset + (this.#folderSlideMode === 'next'
-				? this.#folderSlideWidth
-				: -this.#folderSlideWidth);
-			neighbor.style.transform = `translate3d(${nOff}px, 0, 0)`;
-		}
+	#calcFolderTabPositions() {
+		this.#folderTabPos = this.#getFolderTabButtons().map(btn => ({
+			left: btn.offsetLeft,
+			width: btn.offsetWidth,
+		}));
 	}
 
 	#getFolderSlideWidth() {
 		return this.el.chatList?.clientWidth || window.innerWidth;
 	}
 
-	// Builds the neighbor overlay and pins both panels at the base offset
-	// without any transition, ready for a finger drag or click animation.
-	#beginFolderSlide(targetFolderId, direction) {
-		if (!this.#lastI18n) return false;
-		const track = this.el.chatListTrack;
-		const viewport = this.el.chatList;
-		const live = this.el.chatListPanel;
-		if (!track || !viewport || !live) return false;
+	#folderSliderRaw(left, width) {
+		const slider = this.el.folderSlider;
+		if (!slider || !this.#isFolderSliderLayout()) return;
+		slider.classList.remove('snap');
+		this.el.folderTabLabelsWhite?.classList.remove('snap');
+		slider.style.left = `${left}px`;
+		slider.style.width = `${width}px`;
+		this.#updateFolderClip(left, width);
+	}
 
+	#folderSliderSnap(index, animated = true) {
+		const slider = this.el.folderSlider;
+		const labelsWhite = this.el.folderTabLabelsWhite;
+		if (!slider || !this.#isFolderSliderLayout()) return;
+		const pos = this.#folderTabPos[index];
+		if (!pos) {
+			slider.style.width = '0px';
+			if (labelsWhite) labelsWhite.style.clipPath = 'inset(0 100% 0 0 round 20px)';
+			return;
+		}
+		if (animated) {
+			slider.classList.add('snap');
+			labelsWhite?.classList.add('snap');
+		} else {
+			slider.classList.remove('snap');
+			labelsWhite?.classList.remove('snap');
+		}
+		slider.style.left = `${pos.left}px`;
+		slider.style.width = `${pos.width}px`;
+		this.#updateFolderClip(pos.left, pos.width);
+	}
+
+	#updateFolderClip(sliderLeft, sliderWidth) {
+		const labelsWhite = this.el.folderTabLabelsWhite;
+		const track = this.el.foldersBarTrack;
+		if (!labelsWhite || !track || !this.#isFolderSliderLayout()) return;
+		const totalWidth = track.offsetWidth;
+		const clipLeft = Math.max(0, sliderLeft);
+		const clipRight = Math.max(0, totalWidth - (sliderLeft + sliderWidth));
+		labelsWhite.style.clipPath =
+			`inset(0px ${clipRight}px 0px ${clipLeft}px round 20px)`;
+	}
+
+	#syncFolderTabClipMode() {
+		const track = this.el.foldersBarTrack;
+		if (!track) return;
+		const useClip = this.#isFolderSliderLayout();
+		track.classList.toggle('mapp-folders-bar-track--clip', useClip);
+		if (this.el.folderTabLabelsWhite) this.el.folderTabLabelsWhite.hidden = !useClip;
+		if (useClip) this.#syncFolderTabLabelsWhite();
+	}
+
+	#buildFolderTabLblFromBtn(btn) {
+		const lbl = this.#utils.mk('div', 'mapp-folder-tab-lbl');
+		const raw = btn.dataset.folderId ?? '';
+		const ic = this.#utils.mk('span', 'mapp-folder-tab-icon');
+		if (!raw) {
+			renderFolderIcon(ic, null, this.#icons, { active: true });
+		} else {
+			const folder = this.#folders.find(f => String(f.id) === raw);
+			renderFolderIcon(ic, folder?.icon, this.#icons, { active: true });
+		}
+		lbl.appendChild(ic);
+		const labelEl = btn.querySelector('.mapp-folder-tab-label');
+		const l = this.#utils.mk('span', 'mapp-folder-tab-label');
+		l.textContent = labelEl?.textContent || '';
+		lbl.appendChild(l);
+		const badgeEl = btn.querySelector('.mapp-folder-tab-badge');
+		if (badgeEl) {
+			const b = this.#utils.mk('span', 'mapp-folder-tab-badge');
+			b.textContent = badgeEl.textContent;
+			lbl.appendChild(b);
+		}
+		return lbl;
+	}
+
+	#syncFolderTabLabelWidths() {
+		const labelsWhite = this.el.folderTabLabelsWhite;
+		if (!labelsWhite || labelsWhite.hidden) return;
+		const btns = this.#getFolderTabButtons();
+		const lbls = labelsWhite.querySelectorAll('.mapp-folder-tab-lbl');
+		btns.forEach((btn, i) => {
+			if (lbls[i]) lbls[i].style.width = `${btn.offsetWidth}px`;
+		});
+	}
+
+	#syncFolderTabLabelsWhite() {
+		const labelsWhite = this.el.folderTabLabelsWhite;
+		if (!labelsWhite || !this.#isFolderSliderLayout()) return;
+		labelsWhite.innerHTML = '';
+		this.#getFolderTabButtons().forEach(btn => {
+			labelsWhite.appendChild(this.#buildFolderTabLblFromBtn(btn));
+		});
+		requestAnimationFrame(() => this.#syncFolderTabLabelWidths());
+	}
+
+	// progress: −1 … +1 (−1 = prev tab, +1 = next tab)
+	#folderSliderByProgress(fromIndex, progress) {
+		if (!this.#isFolderSliderLayout()) return;
+		const tabs = this.#getFolderTabButtons();
+		const clamped = Math.max(-1, Math.min(1, progress));
+		const dir = clamped > 0 ? 1 : -1;
+		const targetIndex = Math.max(0, Math.min(tabs.length - 1, fromIndex + dir));
+		const t = Math.abs(clamped);
+		const from = this.#folderTabPos[fromIndex];
+		const to = this.#folderTabPos[targetIndex];
+		if (!from || !to) return;
+		const left = from.left + (to.left - from.left) * t;
+		const width = from.width + (to.width - from.width) * t;
+		this.#folderSliderRaw(left, width);
+	}
+
+	#folderTrackRaw(offsetPx) {
+		const track = this.el.chatListTrack;
+		if (!track) return;
+		track.classList.remove('mapp-chat-list-track--snap');
+		track.classList.add('mapp-chat-list-track--dragging');
+		track.style.transform = `translate3d(${-offsetPx}px, 0, 0)`;
+	}
+
+	#clearFolderTrackAnimating() {
+		this.#folderTrackAnimating = false;
+	}
+
+	#folderTrackSnap(index, animated = true) {
+		const track = this.el.chatListTrack;
+		if (!track) return;
 		const width = this.#getFolderSlideWidth();
-		if (width <= 0) return false;
-
-		// Drop any stale neighbor overlay from a previous slide.
-		viewport.querySelectorAll('.mapp-chat-list-neighbor').forEach(p => p.remove());
-
-		this.#folderSlideWidth = width;
-		this.#folderSlideTargetId = targetFolderId;
-		this.#folderSlideMode = direction === 1 ? 'next' : 'prev';
-		this.#folderSwipeLock = true;
-
-		const neighbor = this.#utils.mk('div', 'mapp-chat-list-panel mapp-chat-list-neighbor');
-		neighbor.style.transition = 'none';
-		this.#renderPanelContent(
-			neighbor,
-			targetFolderId,
-			this.#allChatsRef,
-			this.#lastActiveChat,
-			this.#lastI18n
-		);
-		this.#folderSlideNeighbor = neighbor;
-		viewport.appendChild(neighbor);
-
-		// Disable the live track transition and place both panels at the base
-		// offset (live centered, neighbor just off-screen on the incoming side).
-		track.classList.add('mapp-chat-list-track--dragging');
-		this.#setFolderSlideOffset(0);
-		void viewport.offsetWidth; // commit base position synchronously
-		return true;
-	}
-
-	// Live finger tracking: dx is movement since the gesture locked horizontal.
-	#dragFolderSlide(dx) {
-		if (!this.#folderSlideMode) return;
-		const width = this.#folderSlideWidth;
-		let offset = dx;
-		if (this.#folderSlideMode === 'next') {
-			if (offset > 0) offset = 0;
-			if (offset < -width) offset = -width;
-		} else {
-			if (offset < 0) offset = 0;
-			if (offset > width) offset = width;
-		}
-		this.#setFolderSlideOffset(offset);
-	}
-
-	// Animates both panels to their final resting place, then swaps or reverts.
-	#settleFolderSlide(commit) {
-		const track = this.el.chatListTrack;
-		if (!track || !this.#folderSlideMode) {
-			this.#resetFolderSwipe();
-			return;
-		}
-		const width = this.#folderSlideWidth;
-		const finalOffset = commit
-			? (this.#folderSlideMode === 'next' ? -width : width)
-			: 0;
-
-		let finished = false;
-		const finish = () => {
-			if (finished) return;
-			finished = true;
-			track.removeEventListener('transitionend', onEnd);
-			clearTimeout(fallback);
-			try {
-				if (commit) this.#commitFolderSlide();
-				else this.#cancelFolderSlide();
-			} catch (e) {
-				console.warn('[MessengerSidebar] folder slide finish', e);
-				this.#clearFolderSlideState();
-			}
-		};
-
-		// Already at the resting position: finalize on the next frame, no animation.
-		if (Math.abs(this.#folderSlideX - finalOffset) < 0.5) {
-			requestAnimationFrame(finish);
-			return;
-		}
-
-		// Re-enable transitions for both the live track and the neighbor overlay.
-		track.classList.remove('mapp-chat-list-track--dragging');
-		if (this.#folderSlideNeighbor) this.#folderSlideNeighbor.style.transition = '';
-
-		const onEnd = (e) => {
-			if (e.target !== track || e.propertyName !== 'transform') return;
-			finish();
-		};
-		track.addEventListener('transitionend', onEnd);
-		// Safety net in case transitionend doesn't fire.
-		const fallback = setTimeout(finish, 360);
-		requestAnimationFrame(() => this.#setFolderSlideOffset(finalOffset));
-	}
-
-	// Finalizes a committed slide: repaint the live panel with the target folder,
-	// snap it back to center and drop the overlay — all with transitions disabled,
-	// so the swap is invisible (no second animation, no panel shift).
-	#commitFolderSlide() {
-		const track = this.el.chatListTrack;
-		const live = this.el.chatListPanel;
-		const targetId = this.#folderSlideTargetId;
-		if (!track || !live) {
-			this.#cancelFolderSlide();
-			return;
-		}
-
-		track.classList.add('mapp-chat-list-track--dragging');
-		this.#activeFolderId = targetId;
-		this.#renderPanelContent(
-			live,
-			targetId,
-			this.#allChatsRef,
-			this.#lastActiveChat,
-			this.#lastI18n
-		);
-		this.#folderSlideMode = null; // stop offsetting the soon-removed neighbor
-		this.#setFolderSlideOffset(0);
-		this.#removeFolderNeighbor();
-		void track.offsetWidth;
-		track.classList.remove('mapp-chat-list-track--dragging');
-
-		this.#clearFolderSlideState();
-		this.#renderFoldersBar();
-		this.#scrollActiveFolderTabIntoView();
-		if (typeof this.#onFolderSelect === 'function') {
-			this.#onFolderSelect(this.#activeFolderId);
-		}
-	}
-
-	// Reverts an aborted slide: snap the live panel back to center and drop the
-	// overlay without a visible animation.
-	#cancelFolderSlide() {
-		const track = this.el.chatListTrack;
-		if (track) {
-			track.classList.add('mapp-chat-list-track--dragging');
-			this.#folderSlideMode = null;
-			this.#setFolderSlideOffset(0);
-			this.#removeFolderNeighbor();
-			void track.offsetWidth;
+		const offset = index * width;
+		if (animated) {
 			track.classList.remove('mapp-chat-list-track--dragging');
+			track.classList.add('mapp-chat-list-track--snap');
+			this.#folderTrackAnimating = true;
+			const onDone = (e) => {
+				if (e.target !== track || e.propertyName !== 'transform') return;
+				track.removeEventListener('transitionend', onDone);
+				clearTimeout(fallbackTimer);
+				this.#clearFolderTrackAnimating();
+			};
+			track.addEventListener('transitionend', onDone);
+			const fallbackTimer = setTimeout(() => {
+				track.removeEventListener('transitionend', onDone);
+				this.#clearFolderTrackAnimating();
+			}, 400);
 		} else {
-			this.#removeFolderNeighbor();
+			track.classList.remove('mapp-chat-list-track--snap');
+			track.classList.add('mapp-chat-list-track--dragging');
+			this.#clearFolderTrackAnimating();
 		}
-		this.#clearFolderSlideState();
+		track.style.transform = `translate3d(${-offset}px, 0, 0)`;
 	}
 
-	#removeFolderNeighbor() {
-		const neighbor = this.#folderSlideNeighbor;
-		if (neighbor?.isConnected) neighbor.remove();
-		// Safety net: drop any stray overlays left behind.
-		this.el.chatList?.querySelectorAll('.mapp-chat-list-neighbor').forEach(p => p.remove());
-		this.#folderSlideNeighbor = null;
+	#setFolderTabActive(index) {
+		const buttons = this.#getFolderTabButtons();
+		const clipMode = this.#isFolderSliderLayout();
+		buttons.forEach((btn, i) => {
+			const isActive = i === index;
+			btn.classList.toggle('mapp-folder-tab--active', isActive);
+			const icon = btn.querySelector('.mapp-folder-tab-icon');
+			if (!icon) return;
+			const raw = btn.dataset.folderId ?? '';
+			const iconActive = clipMode ? false : isActive;
+			if (!raw) {
+				renderFolderIcon(icon, null, this.#icons, { active: iconActive });
+				return;
+			}
+			const folder = this.#folders.find(f => String(f.id) === raw);
+			if (folder) renderFolderIcon(icon, folder.icon, this.#icons, { active: iconActive });
+		});
+		if (clipMode) this.#syncFolderTabLabelsWhite();
 	}
 
-	#clearFolderSlideState() {
-		this.#removeFolderNeighbor();
-		this.#folderSlideTargetId = null;
-		this.#folderSlideMode = null;
-		this.#folderSlideWidth = 0;
-		this.#folderSlideX = 0;
-		this.#folderSwipeLock = false;
+	#ensureSingleChatPanel() {
 		const track = this.el.chatListTrack;
-		if (track) track.style.transform = '';
+		if (!track) return;
+		track.style.transform = '';
+		track.classList.remove('mapp-chat-list-track--snap', 'mapp-chat-list-track--dragging');
+		track.querySelectorAll('.mapp-chat-list-neighbor').forEach(el => el.remove());
+		const panels = Array.from(track.querySelectorAll(':scope > .mapp-chat-list-panel'));
+		for (let i = panels.length - 1; i > 0; i--) panels[i].remove();
+		if (!panels.length) {
+			const panel = this.#utils.mk('div', 'mapp-chat-list-panel');
+			track.appendChild(panel);
+			this.el.chatListPanel = panel;
+		} else {
+			this.el.chatListPanel = panels[0];
+		}
 	}
 
-	// Instantly tear down any in-progress slide (no animation).
-	#resetFolderSwipe() {
-		if (!this.#folderSlideMode && !this.#folderSlideNeighbor) {
-			this.#folderSwipeLock = false;
+	#ensureFolderPanels(count) {
+		const track = this.el.chatListTrack;
+		if (!track) return [];
+		track.querySelectorAll('.mapp-chat-list-neighbor').forEach(el => el.remove());
+		const ids = this.#folderNavIds();
+		let panels = Array.from(track.querySelectorAll(':scope > .mapp-chat-list-panel'));
+		while (panels.length < count) {
+			const panel = this.#utils.mk('div', 'mapp-chat-list-panel');
+			track.appendChild(panel);
+			panels.push(panel);
+		}
+		while (panels.length > count) {
+			panels.pop()?.remove();
+		}
+		ids.forEach((id, i) => {
+			if (panels[i]) panels[i].dataset.folderId = id ?? '';
+		});
+		this.el.chatListPanel = panels[this.#folderIndex(this.#activeFolderId)] || panels[0];
+		return panels;
+	}
+
+	#syncFolderCarouselPanels(chats, activeChat, i18n, opts = {}) {
+		const ids = this.#folderNavIds();
+		const panels = this.#ensureFolderPanels(ids.length);
+		ids.forEach((folderId, i) => {
+			this.#renderPanelContent(panels[i], folderId, chats, activeChat, i18n, opts);
+		});
+	}
+
+	#goToFolderIndex(index, animated = true, { notify = true, scrollTab = true } = {}) {
+		const ids = this.#folderNavIds();
+		const i = Math.max(0, Math.min(ids.length - 1, index));
+		const prevId = this.#activeFolderId;
+		const folderId = ids[i];
+		this.#activeFolderId = folderId;
+		this.#setFolderTabActive(i);
+
+		if (this.#useFolderCarousel()) {
+			if (animated) {
+				this.#folderSliderSnap(i, true);
+				this.#folderTrackSnap(i, true);
+			} else {
+				this.#folderSliderSnap(i, false);
+				this.#folderTrackSnap(i, false);
+			}
+			this.el.chatListPanel = this.#ensureFolderPanels(ids.length)[i] || this.el.chatListPanel;
+		} else if (this.#isFolderSliderLayout()) {
+			this.#folderSliderSnap(i, animated);
+		}
+
+		if (notify && folderId !== prevId && typeof this.#onFolderSelect === 'function') {
+			this.#onFolderSelect(folderId);
+		}
+		if (scrollTab) this.#scrollActiveFolderTabIntoView();
+	}
+
+	#selectFolder(folderId, { instant = false } = {}) {
+		const currentIdx = this.#folderIndex(this.#activeFolderId);
+		const targetIdx = this.#folderIndex(folderId);
+		if (targetIdx >= 0 && targetIdx === currentIdx) return;
+
+		if (instant || this.#searchMode || !this.#lastI18n ||
+			!this.#useFolderCarousel() || targetIdx < 0 || currentIdx < 0) {
+			this.#applyFolderInstant(folderId);
 			return;
 		}
-		this.#cancelFolderSlide();
+		this.#goToFolderIndex(targetIdx, true);
 	}
 
-	#folderIndex(folderId) {
-		const ids = this.#folderNavIds();
-		let idx = ids.indexOf(folderId);
-		if (idx < 0 && (folderId === null || folderId === undefined)) idx = 0;
-		return idx;
+	#applyFolderInstant(folderId) {
+		const prevId = this.#activeFolderId;
+		this.#activeFolderId = folderId;
+		this.#folderSliderAnimateNext = false;
+		this.#renderFoldersBar();
+		const idx = this.#folderIndex(folderId);
+		if (this.#useFolderCarousel()) {
+			this.#goToFolderIndex(idx, false, { notify: folderId !== prevId });
+		} else if (this.#lastI18n && this.el.chatListPanel) {
+			this.#ensureSingleChatPanel();
+			this.#renderPanelContent(
+				this.el.chatListPanel,
+				folderId,
+				this.#allChatsRef,
+				this.#lastActiveChat,
+				this.#lastI18n
+			);
+			if (folderId !== prevId && typeof this.#onFolderSelect === 'function') {
+				this.#onFolderSelect(folderId);
+			}
+		}
+		this.#scrollActiveFolderTabIntoView();
 	}
 
 	// Scroll only inside the folders bar — never scrollIntoView on ancestors
@@ -12451,146 +13541,132 @@ class MessengerSidebar {
 		this.#selectFolder(ids[next]);
 	}
 
-	#folderSwipeCommitThreshold() {
-		return Math.max(
-			MessengerSidebar.FOLDER_SWIPE_MIN_PX,
-			this.#folderSlideWidth * MessengerSidebar.FOLDER_SWIPE_COMMIT_RATIO
-		);
-	}
-
-	#folderSwipeShouldCommit(offsetPx) {
-		if (!this.#folderSlideMode) return false;
-		const threshold = this.#folderSwipeCommitThreshold();
-		return this.#folderSlideMode === 'next'
-			? offsetPx <= -threshold
-			: offsetPx >= threshold;
-	}
-
-	#folderSwipeFingerDragActive(track, horizontal) {
-		return horizontal || (
-			!!this.#folderSlideMode &&
-			!!track?.classList.contains('mapp-chat-list-track--dragging')
-		);
-	}
-
 	#bindFolderSwipe() {
 		const viewport = this.el.chatList;
 		const track = this.el.chatListTrack;
 		if (!viewport || !track || viewport.dataset.folderSwipeBound) return;
 		viewport.dataset.folderSwipeBound = '1';
 
-		let startX = 0;       // raw gesture start
-		let startY = 0;
-		let dragStartX = 0;   // x at the moment the gesture locked horizontal
-		let lastDx = 0;
-		let tracking = false; // a touch is being followed (not yet decided)
-		let horizontal = false; // a horizontal slide is active
-		let activeTouchId = null;
+		const SNAP_RATIO = MessengerSidebar.FOLDER_SWIPE_SNAP_RATIO;
+		const VELOCITY_TH = MessengerSidebar.FOLDER_SWIPE_VELOCITY_TH;
 
-		const canStartSwipe = () => {
-			if (!this.#isFolderSwipeLayout()) return false;
-			if (this.#searchMode) return false;
-			this.#releaseOrphanFolderSwipeLock();
-			if (this.#folderSwipeLock) return false;
-			if (this.#folderIndex(this.#activeFolderId) < 0) return false;
-			return this.#folderNavIds().length > 1;
+		let touch = {
+			active: false,
+			startX: 0,
+			startY: 0,
+			lastX: 0,
+			lastTime: 0,
+			velocity: 0,
+			isHoriz: null,
+			baseOffset: 0,
+			gestureIndex: 0,
+		};
+		let mouseDown = false;
+
+		const pageW = () => this.#getFolderSlideWidth();
+		const tabCount = () => this.#folderNavIds().length;
+		const canSwipe = () => this.#useFolderCarousel();
+
+		const onStart = (clientX, clientY) => {
+			touch.active = true;
+			touch.startX = clientX;
+			touch.startY = clientY;
+			touch.lastX = clientX;
+			touch.lastTime = performance.now();
+			touch.velocity = 0;
+			touch.isHoriz = null;
+			touch.gestureIndex = this.#folderIndex(this.#activeFolderId);
+			touch.baseOffset = touch.gestureIndex * pageW();
+
+			track.classList.remove('mapp-chat-list-track--snap');
+			this.el.folderSlider?.classList.remove('snap');
+			this.el.folderTabLabelsWhite?.classList.remove('snap');
 		};
 
-		const fingerDragActive = () => this.#folderSwipeFingerDragActive(track, horizontal);
+		const onMove = (clientX, clientY) => {
+			if (!touch.active) return false;
 
-		const activeTouch = (e) => {
-			if (activeTouchId == null) return e.touches[0] ?? null;
-			for (let i = 0; i < e.touches.length; i++) {
-				if (e.touches[i].identifier === activeTouchId) return e.touches[i];
+			const dx = clientX - touch.startX;
+			const dy = clientY - touch.startY;
+
+			if (touch.isHoriz === null && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+				touch.isHoriz = Math.abs(dx) > Math.abs(dy);
 			}
-			return null;
+			if (!touch.isHoriz) return false;
+
+			const now = performance.now();
+			const dt = now - touch.lastTime;
+			if (dt > 0) touch.velocity = (clientX - touch.lastX) / dt;
+			touch.lastX = clientX;
+			touch.lastTime = now;
+
+			const width = pageW();
+			let offset = touch.baseOffset - dx;
+			const maxOffset = (tabCount() - 1) * width;
+			if (offset < 0) offset = offset * 0.25;
+			if (offset > maxOffset) offset = maxOffset + (offset - maxOffset) * 0.25;
+
+			this.#folderTrackRaw(offset);
+			this.#folderSliderByProgress(touch.gestureIndex, -dx / width);
+			return true;
 		};
 
-		const activeTouchEnded = (e) => {
-			if (activeTouchId == null) return true;
-			for (let i = 0; i < e.changedTouches.length; i++) {
-				if (e.changedTouches[i].identifier === activeTouchId) return true;
-			}
-			return false;
-		};
+		const onEnd = () => {
+			if (!touch.active) return;
+			touch.active = false;
+			if (!touch.isHoriz) return;
 
-		const settleFingerDrag = () => {
-			horizontal = false;
-			tracking = false;
-			activeTouchId = null;
-			if (!this.#folderSlideMode) return;
-			this.#settleFolderSlide(this.#folderSwipeShouldCommit(this.#folderSlideX));
+			const width = pageW();
+			const dx = touch.lastX - touch.startX;
+			const idx = touch.gestureIndex;
+			const isFlik = Math.abs(touch.velocity) > VELOCITY_TH;
+			const isEnough = Math.abs(dx) > width * SNAP_RATIO;
+
+			let nextIndex = idx;
+			if ((isFlik || isEnough) && dx < 0 && idx < tabCount() - 1) nextIndex = idx + 1;
+			else if ((isFlik || isEnough) && dx > 0 && idx > 0) nextIndex = idx - 1;
+
+			this.#goToFolderIndex(nextIndex, true, { notify: nextIndex !== idx });
 		};
 
 		viewport.addEventListener('touchstart', (e) => {
-			if (e.touches.length !== 1 || !canStartSwipe()) {
-				// A second finger or a scroll while dragging must not drop the in-progress slide.
-				if (!fingerDragActive()) tracking = false;
-				return;
-			}
-			activeTouchId = e.touches[0].identifier;
-			startX = e.touches[0].clientX;
-			startY = e.touches[0].clientY;
-			tracking = true;
-			horizontal = false;
-			lastDx = 0;
+			if (e.touches.length !== 1 || !canSwipe()) return;
+			onStart(e.touches[0].clientX, e.touches[0].clientY);
 		}, { passive: true });
 
 		viewport.addEventListener('touchmove', (e) => {
-			if (!tracking && !fingerDragActive()) return;
-			const touch = activeTouch(e);
-			if (!touch) return;
-			if (!tracking && fingerDragActive()) tracking = true;
-
-			const x = touch.clientX;
-			const dx = x - startX;
-			const dy = touch.clientY - startY;
-
-			if (!horizontal) {
-				// Wait until the gesture has a clear direction.
-				if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-				if (Math.abs(dx) <= Math.abs(dy)) { tracking = false; return; }
-
-				const direction = dx < 0 ? 1 : -1;
-				const idx = this.#folderIndex(this.#activeFolderId);
-				if (idx < 0) { tracking = false; return; }
-				const ids = this.#folderNavIds();
-				const nextIdx = idx + direction;
-				if (nextIdx < 0 || nextIdx >= ids.length) { tracking = false; return; }
-				if (!this.#beginFolderSlide(ids[nextIdx], direction)) { tracking = false; return; }
-
-				// Start tracking the finger from here so there is no jump.
-				dragStartX = x;
-				horizontal = true;
-			}
-
-			e.preventDefault();
-			lastDx = x - dragStartX;
-			this.#dragFolderSlide(lastDx);
+			if (!touch.active) return;
+			const horiz = onMove(e.touches[0].clientX, e.touches[0].clientY);
+			if (horiz || touch.isHoriz === true) e.preventDefault();
 		}, { passive: false });
 
-		viewport.addEventListener('touchcancel', (e) => {
-			if (fingerDragActive() && (activeTouchEnded(e) || e.touches.length === 0)) {
-				settleFingerDrag();
-				return;
-			}
-			if (!fingerDragActive()) {
-				tracking = false;
-				horizontal = false;
-				activeTouchId = null;
-			}
-		}, { passive: true });
-
 		viewport.addEventListener('touchend', (e) => {
-			if (fingerDragActive() && (activeTouchEnded(e) || e.touches.length === 0)) {
-				settleFingerDrag();
-				return;
-			}
-			if (!fingerDragActive()) {
-				tracking = false;
-				activeTouchId = null;
-			}
-		}, { passive: true });
+			if (!touch.active) return;
+			onEnd();
+		});
+
+		viewport.addEventListener('touchcancel', () => {
+			if (!touch.active) return;
+			onEnd();
+		});
+
+		viewport.addEventListener('mousedown', (e) => {
+			if (e.button !== 0 || !canSwipe()) return;
+			e.preventDefault();
+			mouseDown = true;
+			onStart(e.clientX, e.clientY);
+		});
+
+		window.addEventListener('mousemove', (e) => {
+			if (!mouseDown) return;
+			onMove(e.clientX, e.clientY);
+		});
+
+		window.addEventListener('mouseup', () => {
+			if (!mouseDown) return;
+			mouseDown = false;
+			onEnd();
+		});
 	}
 
 	#collapseSearch() {
@@ -12634,16 +13710,62 @@ class MessengerSidebar {
 		return btn;
 	}
 
-	#renderFoldersBar() {
+	#updateFolderTabBadges() {
+		const clipMode = this.#isFolderSliderLayout();
+		this.#getFolderTabButtons().forEach(btn => {
+			const raw = btn.dataset.folderId ?? '';
+			const folderId = raw === '' ? null : raw;
+			let unread = 0;
+			if (folderId == null) {
+				unread = (this.#allChatsRef || [])
+					.filter(c => !this.#archivedChatIds().has(c.id))
+					.reduce((s, c) => s + (c.unreadCount || 0), 0);
+			} else {
+				unread = this.#folderUnreadCount(folderId);
+			}
+			let badge = btn.querySelector('.mapp-folder-tab-badge');
+			if (unread > 0) {
+				if (!badge) {
+					badge = this.#utils.mk('span', 'mapp-folder-tab-badge');
+					btn.appendChild(badge);
+				}
+				badge.textContent = unread > 99 ? '99+' : String(unread);
+			} else if (badge) {
+				badge.remove();
+			}
+		});
+		if (clipMode) this.#syncFolderTabLabelsWhite();
+	}
+
+	#renderFoldersBar(forceRecreate = false) {
 		const bar = this.el.foldersBar;
-		if (!bar) return;
-		bar.innerHTML = '';
+		const track = this.el.foldersBarTrack;
+		if (!bar || !track) return;
 		const visibleFolders = this.#folders.filter(f => !f.isArchive);
+		const expectedCount = 1 + visibleFolders.length;
+		const existing = this.#getFolderTabButtons();
+
 		if (!visibleFolders.length) {
 			bar.hidden = true;
 			return;
 		}
 		bar.hidden = false;
+
+		if (!forceRecreate && existing.length === expectedCount) {
+			this.#syncFolderTabClipMode();
+			this.#updateFolderTabBadges();
+			this.#setFolderTabActive(this.#folderIndex(this.#activeFolderId));
+			requestAnimationFrame(() => {
+				this.#calcFolderTabPositions();
+				this.#syncFolderTabLabelWidths();
+				if (this.#isFolderSliderLayout()) {
+					this.#folderSliderSnap(this.#folderIndex(this.#activeFolderId), false);
+				}
+			});
+			return;
+		}
+
+		track.querySelectorAll('.mapp-folder-tab').forEach(el => el.remove());
 
 		const allBtn = this.#utils.mk('button', 'mapp-folder-tab');
 		const allLbl = this.#utils.mk('span', 'mapp-folder-tab-label');
@@ -12660,10 +13782,22 @@ class MessengerSidebar {
 		allBtn.dataset.folderId = '';
 		if (!this.#activeFolderId) allBtn.classList.add('mapp-folder-tab--active');
 		allBtn.addEventListener('click', () => this.#selectFolder(null, { fromUser: true }));
-		bar.appendChild(allBtn);
+		track.appendChild(allBtn);
 
 		visibleFolders.forEach(folder => {
-			bar.appendChild(this.#renderFolderTab(folder));
+			track.appendChild(this.#renderFolderTab(folder));
+		});
+
+		this.#syncFolderTabClipMode();
+
+		const animated = this.#folderSliderAnimateNext;
+		this.#folderSliderAnimateNext = false;
+		requestAnimationFrame(() => {
+			this.#calcFolderTabPositions();
+			this.#syncFolderTabLabelWidths();
+			if (this.#isFolderSliderLayout()) {
+				this.#folderSliderSnap(this.#folderIndex(this.#activeFolderId), animated);
+			}
 		});
 	}
 
@@ -12678,7 +13812,7 @@ class MessengerSidebar {
 			this.el.searchInput.focus();
 		}
 		if (this.el.searchClearBtn) this.el.searchClearBtn.hidden = false;
-		this.#resetFolderSwipe();
+		this.#ensureSingleChatPanel();
 		if (this.el.chatListPanel) {
 			this.el.chatListPanel.innerHTML = '';
 			const hint = this.#utils.mk('div', 'mapp-list-empty');
@@ -12745,13 +13879,29 @@ class MessengerSidebar {
 	}
 
 	renderChatList(chats, activeChat, i18n, opts = {}) {
-		if (!this.el.chatListPanel) return;
+		if (!this.el.chatListTrack) return;
 		this.#allChatsRef = chats;
 		this.#lastActiveChat = activeChat;
 		this.#lastI18n = i18n;
 		this.#renderFoldersBar();
 		if (this.#searchMode) return;
-		if (this.#folderSwipeLock) return;
+
+		if (this.#useFolderCarousel()) {
+			this.#syncFolderCarouselPanels(chats, activeChat, i18n, opts);
+			if (this.#folderTrackAnimating) {
+				const ids = this.#folderNavIds();
+				const panels = this.#ensureFolderPanels(ids.length);
+				this.el.chatListPanel = panels[this.#folderIndex(this.#activeFolderId)] || panels[0];
+			} else {
+				this.#goToFolderIndex(this.#folderIndex(this.#activeFolderId), false, {
+					notify: false,
+					scrollTab: false,
+				});
+			}
+			return;
+		}
+
+		this.#ensureSingleChatPanel();
 		this.#renderPanelContent(
 			this.el.chatListPanel,
 			this.#activeFolderId,
@@ -13080,11 +14230,17 @@ class MessengerAppView {
 	#chatsBootLoading = false;
 	#previewDecryptScheduled = false;
 	#previewDecryptPending = false;
+	#previewDecryptQueue = [];
+	#previewScrollBound = false;
+	#previewCacheSyncScheduled = false;
 	#pendingMarkRead = new Set();
 	#markReadSyncTimer = new Map();
 	#syncInFlight = null;
 	#lastSyncAt = 0;
 	static SYNC_DEBOUNCE_MS = 2500;
+	static BOOT_SYNC_MESSAGE_LIMIT = 15;
+	static PREVIEW_BOOT_BATCH = 6;
+	static PREVIEW_SCROLL_BATCH = 3;
 	/** @type {Map<string, { state: object, chat: object, stale: boolean }>} */
 	#panelPool = new Map();
 	#panelPoolOrder = [];
@@ -13219,8 +14375,9 @@ class MessengerAppView {
 				}
 				return;
 			}
-			const uploadRow = this.#activeState.msgArea?.querySelector(
-				'.mc-file-upload-row[data-local-upload-id]:not([data-msg-id])'
+			const uploadRow = MessengerUtils.findPendingFileUploadRow(
+				this.#activeState.msgArea,
+				{ packedText: msg.text }
 			);
 			if (uploadRow && msg.isOwn) {
 				await this.#panelFactory.attachFileUploadMessage(
@@ -13252,7 +14409,6 @@ class MessengerAppView {
 			const pending = [...this.#activeState.messages.values()].find((e) => {
 				const d = e.data;
 				if (!d?.isOwn || d.serverId) return false;
-				if (MessengerUtils.isLocalMessageId(d.id)) return true;
 				const localText = (d.text ?? '').trim();
 				return !!(msgText && localText && localText === msgText);
 			});
@@ -13373,8 +14529,10 @@ class MessengerAppView {
 		this.#sidebar.setOnFilter((q) => this.#filterChats(q));
 		this.#sidebar.setChatPreviewFormatter((chat) => this.#formatChatListPreview(chat));
 		this.#sidebar.setOnFolderSelect(() => {
-			this.#filterChats(this.#sidebar.el._filterQuery || '');
 			this.#persistNavState();
+			if (!this.#sidebar.usesFolderCarousel()) {
+				this.#filterChats(this.#sidebar.el._filterQuery || '');
+			}
 		});
 		this.#sidebar.setOnChatAction(async (action, chat, extra) => {
 			if (action === 'showProfile') await this.#showContactProfile(chat);
@@ -13399,8 +14557,10 @@ class MessengerAppView {
 					},
 					onCreateFolder: () => this.promptCreateFolder(null),
 					onManageChannel: (chat) => {
-						this.#profileModal.close();
-						this.#showChannelProfile(chat);
+						this.#showChannelProfile(chat, { origin: 'settings' });
+					},
+					onCreateChannel: () => {
+						this.#createChannelProfile({ origin: 'settings' });
 					},
 					onLogout: async () => {
 						window.AppBootLog?.clear?.();
@@ -13617,7 +14777,7 @@ class MessengerAppView {
 		if (urls.length) this.#prefetchAvatars(urls);
 	}
 
-	scheduleRefreshLastMessagePreviews() {
+	scheduleRefreshLastMessagePreviews(options = {}) {
 		if (this.#previewDecryptScheduled) {
 			this.#previewDecryptPending = true;
 			return;
@@ -13625,17 +14785,146 @@ class MessengerAppView {
 		this.#previewDecryptScheduled = true;
 		const run = () => {
 			this.#previewDecryptScheduled = false;
-			void this.#runRefreshLastMessagePreviews().finally(() => {
+			const task = options.full
+				? this.#runRefreshLastMessagePreviews()
+				: this.#runProgressivePreviewDecrypt(options);
+			void task.finally(() => {
 				if (this.#previewDecryptPending) {
 					this.#previewDecryptPending = false;
-					this.scheduleRefreshLastMessagePreviews();
+					this.scheduleRefreshLastMessagePreviews(options);
 				}
 			});
 		};
 		if (typeof requestIdleCallback === 'function') {
-			requestIdleCallback(run, { timeout: 1500 });
+			requestIdleCallback(run, { timeout: options.immediate ? 500 : 3000 });
 		} else {
-			setTimeout(run, 50);
+			setTimeout(run, options.immediate ? 50 : 100);
+		}
+	}
+
+	#encryptedPreviewChats() {
+		return (this.#chats || []).filter((c) => {
+			const raw = c?.lastMessage;
+			return raw && SupraCrypto.isEncrypted(raw);
+		});
+	}
+
+	#visibleChatListIds() {
+		const viewport = this.el.chatList;
+		if (!viewport) {
+			return new Set(this.#chats.slice(0, MessengerAppView.PREVIEW_BOOT_BATCH).map((c) => c.id));
+		}
+		const ids = new Set();
+		const vr = viewport.getBoundingClientRect();
+		const pad = Math.max(vr.height, 320);
+		viewport.querySelectorAll('.mapp-chat-item[data-chat-id]').forEach((el) => {
+			const r = el.getBoundingClientRect();
+			if (r.bottom >= vr.top - pad * 0.25 && r.top <= vr.bottom + pad * 0.5) {
+				ids.add(el.dataset.chatId);
+			}
+		});
+		if (!ids.size) {
+			return new Set(this.#chats.slice(0, MessengerAppView.PREVIEW_BOOT_BATCH).map((c) => c.id));
+		}
+		return ids;
+	}
+
+	#ensurePreviewScrollListener() {
+		if (this.#previewScrollBound || !this.el.chatList) return;
+		this.#previewScrollBound = true;
+		let scrollTimer = null;
+		this.el.chatList.addEventListener('scroll', () => {
+			clearTimeout(scrollTimer);
+			scrollTimer = setTimeout(() => { void this.#decryptNextPreviewBatch(); }, 180);
+		}, { passive: true });
+	}
+
+	async #decryptNextPreviewBatch() {
+		if (!this.#previewDecryptQueue.length || !this.#api?.decryptChatListPreviews) return;
+		const batchIds = new Set(
+			this.#previewDecryptQueue.splice(0, MessengerAppView.PREVIEW_SCROLL_BATCH)
+		);
+		const batch = this.#chats.filter((c) => batchIds.has(c.id));
+		if (!batch.length) return;
+		await this.#api.decryptChatListPreviews(batch);
+		this.#renderChatList();
+		if (this.#previewDecryptQueue.length) {
+			await (SupraCrypto?.yieldToMain?.() ?? Promise.resolve());
+			if (typeof requestIdleCallback === 'function') {
+				requestIdleCallback(() => { void this.#decryptNextPreviewBatch(); }, { timeout: 2500 });
+			} else {
+				setTimeout(() => { void this.#decryptNextPreviewBatch(); }, 120);
+			}
+		} else {
+			this.#schedulePreviewCacheSync();
+		}
+	}
+
+	#schedulePreviewCacheSync() {
+		if (this.#previewCacheSyncScheduled) return;
+		this.#previewCacheSyncScheduled = true;
+		const run = () => {
+			this.#previewCacheSyncScheduled = false;
+			void this.#syncPreviewsFromMessageCache();
+		};
+		if (typeof requestIdleCallback === 'function') {
+			requestIdleCallback(run, { timeout: 10000 });
+		} else {
+			setTimeout(run, 2000);
+		}
+	}
+
+	async #syncPreviewsFromMessageCache() {
+		if (!this.#chats?.length || !this.#msgService) return;
+		const yieldMain = () => (SupraCrypto?.yieldToMain?.() ?? Promise.resolve());
+		let changed = false;
+		for (const c of this.#chats) {
+			try {
+				const messages = await this.#cachedMessagesForPreview(c.id);
+				const last = MessengerChatListPreview.pickLastVisibleMessage(messages);
+				if (last && this.#applyCachedPreviewIfBetter(c, last)) changed = true;
+			} catch (e) {
+				console.warn('[MessengerAppView] syncPreviewsFromMessageCache', c.id, e);
+			}
+			await yieldMain();
+		}
+		if (changed) this.#renderChatList();
+	}
+
+	async #runProgressivePreviewDecrypt(options = {}) {
+		const encrypted = this.#encryptedPreviewChats();
+		if (!encrypted.length) {
+			this.#schedulePreviewCacheSync();
+			return;
+		}
+		const visibleIds = this.#visibleChatListIds();
+		const bootLimit = MessengerAppView.PREVIEW_BOOT_BATCH;
+		const priority = encrypted.filter((c) => visibleIds.has(c.id));
+		const rest = encrypted.filter((c) => !visibleIds.has(c.id));
+		const firstBatch = [];
+		const seen = new Set();
+		for (const c of [...priority, ...rest]) {
+			if (firstBatch.length >= bootLimit) break;
+			if (seen.has(c.id)) continue;
+			seen.add(c.id);
+			firstBatch.push(c);
+		}
+		if (firstBatch.length && this.#api?.decryptChatListPreviews) {
+			await this.#api.decryptChatListPreviews(firstBatch);
+			this.#renderChatList();
+		}
+		this.#previewDecryptQueue = encrypted
+			.filter((c) => !seen.has(c.id))
+			.map((c) => c.id);
+		this.#ensurePreviewScrollListener();
+		if (!this.#previewDecryptQueue.length) {
+			this.#schedulePreviewCacheSync();
+		} else if (options.drainQueue) {
+			while (this.#previewDecryptQueue.length) {
+				await this.#decryptNextPreviewBatch();
+			}
+		} else if (typeof requestIdleCallback === 'function') {
+			requestIdleCallback(() => { void this.#decryptNextPreviewBatch(); }, { timeout: 5000 });
 		}
 	}
 
@@ -13693,27 +14982,22 @@ class MessengerAppView {
 	}
 
 	async #runRefreshLastMessagePreviews() {
-		if (!this.#chats?.length) return;
-		if (this.#msgService) {
-			await Promise.all(this.#chats.map(async (c) => {
-				try {
-					const messages = await this.#cachedMessagesForPreview(c.id);
-					const last = MessengerChatListPreview.pickLastVisibleMessage(messages);
-					if (!last) return;
-					this.#applyCachedPreviewIfBetter(c, last);
-				} catch (e) {
-					console.warn('[MessengerAppView] refreshLastMessagePreviews', c.id, e);
-				}
-			}));
+		await this.#syncPreviewsFromMessageCache();
+		const encrypted = this.#encryptedPreviewChats();
+		if (encrypted.length && this.#api?.decryptChatListPreviews) {
+			await this.#api.decryptChatListPreviews(encrypted);
 		}
-		if (this.#api?.decryptChatListPreviews) {
-			await this.#api.decryptChatListPreviews(this.#chats);
-		}
+		this.#previewDecryptQueue = [];
 		this.#renderChatList();
 	}
 
 	async refreshLastMessagePreviews() {
 		await this.#runRefreshLastMessagePreviews();
+	}
+
+	/** Полная перерасшифровка превью (например после смены пароля чата). */
+	forceRefreshLastMessagePreviews() {
+		this.scheduleRefreshLastMessagePreviews({ full: true, immediate: true });
 	}
 
 	async #setChatListPreview(chat, chatId, previewSrc, timestamp) {
@@ -14812,17 +16096,32 @@ class MessengerAppView {
 		});
 	}
 
-	async #showChannelProfile(chat) {
+	async #showChannelProfile(chat, { origin = 'chat', onBack = null } = {}) {
 		if (!this.#channelProfileModal || !chat?.id) return;
 		await this.#channelProfileModal.open(this.el.root, chat, {
 			onUpdated: (meta) => this.updateChatMeta(chat.id, meta),
 			onDeleted: async (chatId) => {
-				await this.removeChat(chatId, { showMobileList: true, clearCache: true });
+				await this.removeChat(chatId, {
+					showMobileList: origin === 'chat',
+					clearCache: true,
+				});
+				if (origin === 'settings') this.#profileModal?.refreshChannels?.();
+			},
+			onBack,
+		});
+	}
+
+	async #createChannelProfile({ origin = 'settings' } = {}) {
+		if (!this.#channelProfileModal) return;
+		await this.#channelProfileModal.openCreate(this.el.root, {
+			onCreated: async (newChat) => {
+				if (newChat?.id) this.#onChatCreated(newChat);
+				if (origin === 'settings') this.#profileModal?.refreshChannels?.();
 			},
 		});
 	}
 
-	async #openChannelAboutModal(chat) {
+	async #openChannelAboutModal(chat, { attachHistory = false } = {}) {
 		if (!chat?.id) return;
 		let info = {
 			name: chat.name,
@@ -14830,28 +16129,29 @@ class MessengerAppView {
 			slug: chat.channelSlug,
 			description: '',
 			subscriberCount: null,
+			isOwner: false,
 		};
 		try {
-			if (chat.channelSlug) {
-				const p = await this.#api.getChannelLinkPreview(chat.channelSlug);
-				if (p?.success) {
+			const p = await this.#api.getChannelInfo(chat.id);
+			if (p?.success) {
+				info = {
+					name: p.name || info.name,
+					avatar: p.avatar ?? info.avatar,
+					slug: p.slug || info.slug,
+					description: p.description || '',
+					subscriberCount: p.subscriberCount,
+					isOwner: !!p.isOwner,
+				};
+			} else if (chat.channelSlug) {
+				const preview = await this.#api.getChannelLinkPreview(chat.channelSlug);
+				if (preview?.success) {
 					info = {
-						name: p.name || info.name,
-						avatar: p.avatar ?? info.avatar,
-						slug: p.slug || info.slug,
-						description: p.description || '',
-						subscriberCount: p.subscriberCount,
-					};
-				}
-			} else {
-				const p = await this.#api.getChannelInfo(chat.id);
-				if (p?.success) {
-					info = {
-						name: p.name || info.name,
-						avatar: p.avatar ?? info.avatar,
-						slug: p.slug || info.slug,
-						description: p.description || '',
-						subscriberCount: p.subscriberCount,
+						name: preview.name || info.name,
+						avatar: preview.avatar ?? info.avatar,
+						slug: preview.slug || info.slug,
+						description: preview.description || '',
+						subscriberCount: preview.subscriberCount,
+						isOwner: false,
 					};
 				}
 			}
@@ -14861,29 +16161,68 @@ class MessengerAppView {
 
 		lockAppScroll();
 		const overlay = this.#utils.mk('div', 'mapp-modal-overlay');
-		const close = () => { unlockAppScroll(); overlay.remove(); };
+		applyMobileFullscreenOverlay(overlay);
+		const close = messengerMakeDismissable(() => {
+			unlockAppScroll();
+			overlay.remove();
+		}, null, { attachHistory });
+		if (!overlay.classList.contains('mapp-modal-overlay--fullscreen')) {
+			overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+		}
 		const modal = this.#utils.mk('div', 'mapp-modal mapp-contact-profile-modal');
 		this.#themeManager.applyChatVars(modal);
 		this.#themeManager.applyAppVars(modal);
 		const header = this.#utils.mk('div', 'mapp-modal-header');
+		const titleRow = this.#utils.mk('div', 'mapp-modal-title-row');
+		if (overlay.classList.contains('mapp-modal-overlay--fullscreen')) {
+			const backBtn = this.#utils.mk('button', 'mapp-settings-header-back');
+			backBtn.type = 'button';
+			backBtn.innerHTML = this.#icons.back();
+			backBtn.title = this.#i18n.t('back');
+			backBtn.setAttribute('aria-label', this.#i18n.t('back'));
+			backBtn.addEventListener('click', () => close());
+			titleRow.appendChild(backBtn);
+		}
+		const link = info.slug ? buildChannelProfileUrl(info.slug) : null;
+		if (link) {
+			const qrBtn = createProfileQrButton({
+				link,
+				qrTitle: this.#i18n.t('qrChannelTitle'),
+				icons: this.#icons,
+				i18n: this.#i18n,
+				themeManager: this.#themeManager,
+				className: 'mapp-modal-qr-btn',
+			});
+			if (qrBtn) titleRow.appendChild(qrBtn);
+		}
 		const title = this.#utils.mk('div', 'mapp-modal-title');
 		title.textContent = this.#i18n.t('channelAbout');
+		titleRow.appendChild(title);
 		const closeBtn = this.#utils.mk('button', 'mapp-modal-close');
 		closeBtn.innerHTML = '×';
-		closeBtn.addEventListener('click', close);
-		header.append(title, closeBtn);
-		overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+		closeBtn.addEventListener('click', () => close());
+		header.append(titleRow, closeBtn);
 
 		const body = this.#utils.mk('div', 'mapp-contact-profile-body');
 		const avatarWrap = this.#utils.mk('div', 'mapp-contact-profile-avatar-wrap');
+		const avatarUrl = info.avatar || chat.avatar || null;
 		avatarWrap.appendChild(this.#avatarBuilder.build(
-			chat.id, info.name || chat.name, info.avatar || chat.avatar || null, 72
+			chat.id, info.name || chat.name, avatarUrl, 72
 		));
-		const nameEl = this.#utils.mk('div', 'mapp-contact-profile-name');
+		if (avatarUrl) {
+			avatarWrap.classList.add('mapp-contact-profile-avatar-wrap--photo');
+			avatarWrap.addEventListener('click', () => MessengerImageViewer.open(avatarUrl, this.#icons));
+		}
+		const nameEl = this.#utils.mk('div', 'mapp-contact-profile-name mapp-selectable-text');
 		nameEl.textContent = info.name || chat.name || '';
 		body.append(avatarWrap, nameEl);
+		if (info.slug) {
+			const slugEl = this.#utils.mk('div', 'mapp-contact-profile-login mapp-selectable-text');
+			slugEl.textContent = '@' + info.slug;
+			body.appendChild(slugEl);
+		}
 		if (info.description) {
-			const desc = this.#utils.mk('div', 'mapp-input-hint');
+			const desc = this.#utils.mk('div', 'mapp-contact-profile-about mapp-selectable-text');
 			desc.textContent = info.description;
 			body.appendChild(desc);
 		}
@@ -14892,33 +16231,36 @@ class MessengerAppView {
 			subs.textContent = `${info.subscriberCount} ${this.#i18n.t('channelRoleSubscriber').toLowerCase()}`;
 			body.appendChild(subs);
 		}
-		const link = info.slug ? buildChannelProfileUrl(info.slug) : null;
 		if (link) {
-			const linkRow = this.#utils.mk('div', 'mapp-profile-link-row mapp-selectable-text');
+			const linkRow = this.#utils.mk('div', 'mapp-profile-link-row mapp-selectable-text mapp-profile-link-row--copy');
 			linkRow.textContent = link.replace(/^https?:\/\//, '');
+			linkRow.title = this.#i18n.t('invitationsCopy');
+			linkRow.addEventListener('click', async () => {
+				try { await navigator.clipboard.writeText(link); } catch (_) { /* ignore */ }
+				MessengerDialog.showNotice(
+					this.#i18n.t('channelLinkCopied'),
+					this.#i18n.t('confirm'),
+					null,
+					this.#themeManager,
+				);
+			});
 			body.appendChild(linkRow);
-			const actions = this.#utils.mk('div', 'mapp-modal-actions');
-			const qrBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-secondary mapp-btn-block');
-			qrBtn.type = 'button';
-			qrBtn.textContent = this.#i18n.t('invitationsQr');
-			qrBtn.addEventListener('click', () => {
-				MessengerQrDialog.show({
-					link,
-					title: this.#i18n.t('qrChannelTitle'),
-					i18n: this.#i18n,
-					themeManager: this.#themeManager,
+		}
+
+		if (info.isOwner) {
+			const footer = this.#utils.mk('div', 'mapp-modal-footer');
+			const settingsBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-primary mapp-modal-footer-btn');
+			settingsBtn.type = 'button';
+			settingsBtn.textContent = this.#i18n.t('channelSettings');
+			settingsBtn.addEventListener('click', () => {
+				if (close.immediate) close.immediate();
+				else close();
+				this.#showChannelProfile(chat, {
+					onBack: () => this.#openChannelAboutModal(chat, { attachHistory: true }),
 				});
 			});
-			const copyBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-primary mapp-btn-block');
-			copyBtn.type = 'button';
-			copyBtn.textContent = this.#i18n.t('invitationsCopy');
-			copyBtn.addEventListener('click', async () => {
-				try {
-					await navigator.clipboard.writeText(link);
-				} catch (_) { /* ignore */ }
-			});
-			actions.append(qrBtn, copyBtn);
-			modal.append(header, body, actions);
+			footer.appendChild(settingsBtn);
+			modal.append(header, body, footer);
 		} else {
 			modal.append(header, body);
 		}
@@ -16871,23 +18213,28 @@ class MessengerApiClient {
 
 	async decryptChatListPreviews(chats) {
 		if (!this.#crypto || !chats?.length) return chats;
-		await Promise.all(chats.map(async (chat) => {
+		for (const chat of chats) {
 			try {
 				const raw = chat?.lastMessage;
-				if (!raw || !SupraCrypto.isEncrypted(raw)) return;
+				if (!raw || !SupraCrypto.isEncrypted(raw)) continue;
 				const prevPreview = chat.lastMessage;
 				const prevReadable = prevPreview
 					&& prevPreview !== SupraCrypto.LOCKED_PREVIEW
 					&& prevPreview !== SupraCrypto.LOCKED_OTHER
 					&& !MessengerChatListPreview.isLockedStorage(prevPreview);
-				await this.ensureChatEncryptionKeys(chat, { distribute: false });
+				const chatId = chat.id;
+				const hasKey = chat.hasGroupAutoKey || this.#chatKeyStatus.get(chatId)?.hasKey;
+				if (!hasKey) {
+					await this.ensureChatEncryptionKeys(chat, { distribute: false });
+				}
 				const decrypted = await this.#decryptChatPreviewLastMessage(chat);
-				if (decrypted === SupraCrypto.LOCKED_PREVIEW && prevReadable) return;
+				if (decrypted === SupraCrypto.LOCKED_PREVIEW && prevReadable) continue;
 				chat.lastMessage = decrypted;
 			} catch (e) {
 				console.warn('[MessengerApiClient] decryptChatListPreviews', chat.id, e);
 			}
-		}));
+			await (SupraCrypto?.yieldToMain?.() ?? Promise.resolve());
+		}
 		return chats;
 	}
 
@@ -17632,6 +18979,22 @@ class MessengerApiClient {
 
 	async deleteChannel(chatId) {
 		return this.call('DeleteChannel', { chatId });
+	}
+
+	async restoreChannel(chatId) {
+		return this.call('RestoreChannel', { chatId });
+	}
+
+	async getChannelSubscribers(chatId, page = 1, pageSize = 10, query = '') {
+		return this.call('GetChannelSubscribers', { chatId, page, pageSize, query });
+	}
+
+	async addChannelMember(chatId, memberUserId, role) {
+		return this.call('AddChannelMember', { chatId, memberUserId, role });
+	}
+
+	async removeChannelMember(chatId, memberUserId) {
+		return this.call('RemoveChannelMember', { chatId, memberUserId });
 	}
 
 	async decryptRealtimeMessage(chatId, msg) {
@@ -20965,6 +22328,8 @@ class MessengerChatPanel {
 	#bindUploadRow(state, row, msg) {
 		if (!state || !row || !msg?.id) return;
 		row._msgData = msg;
+		state.messages.set(msg.id, { data: msg, el: row });
+		state.renderedIds.add(msg.id);
 		this.#bindMessageRowEvents(state, row, msg);
 		if (state.selectionMode) {
 			this.#enableRowSelectionUi(row, state.selectedIds.has(msg.id));
@@ -22227,6 +23592,7 @@ class MessengerChatPanel {
 	}
 	async attachFileUploadMessage(state, localId, serverMsg, el, packedText) {
 		if (!serverMsg?.id || !el || !state) return;
+		if (el.dataset.msgId === serverMsg.id) return;
 		const ts = serverMsg.timestamp instanceof Date
 			? serverMsg.timestamp.getTime()
 			: new Date(serverMsg.timestamp).getTime();
@@ -22246,6 +23612,8 @@ class MessengerChatPanel {
 			encryptionTier: serverMsg.encryptionTier || 'basic',
 		};
 		state.renderedIds.add(serverMsg.id);
+		state.messages.delete(localId);
+		state.renderedIds.delete(localId);
 		state.messages.set(serverMsg.id, { data: msg, el });
 		el._msgData = msg;
 		this.#bindMessageRowEvents(state, el, msg);
@@ -22937,8 +24305,9 @@ class MessengerChatView {
 		if (this.#renderedIds.has(msg.id) || this.el.messages?.querySelector(`[data-msg-id="${msg.id}"]`)) {
 			return;
 		}
-		const uploadRow = this.el.messages?.querySelector(
-			'.mc-file-upload-row[data-local-upload-id]:not([data-msg-id])'
+		const uploadRow = MessengerUtils.findPendingFileUploadRow(
+			this.el.messages,
+			{ packedText: msg.text }
 		);
 		if (uploadRow && msg.isOwn) {
 			await this.#attachFileUploadMessage(
@@ -22956,7 +24325,6 @@ class MessengerChatView {
 		const pending = [...this.#messages.values()].find((e) => {
 			const d = e.data;
 			if (!d?.isOwn || d.serverId) return false;
-			if (MessengerUtils.isLocalMessageId(d.id)) return true;
 			const localText = (d.text ?? '').trim();
 			return !!(msgText && localText && localText === msgText);
 		});
@@ -23023,6 +24391,7 @@ class MessengerChatView {
 	}
 	async #attachFileUploadMessage(localId, serverMsg, el, packedText) {
 		if (!serverMsg?.id || !el) return;
+		if (el.dataset.msgId === serverMsg.id) return;
 		const ts = serverMsg.timestamp instanceof Date
 			? serverMsg.timestamp.getTime()
 			: new Date(serverMsg.timestamp).getTime();
@@ -23042,6 +24411,8 @@ class MessengerChatView {
 			encryptionTier: serverMsg.encryptionTier || 'basic',
 		};
 		this.#renderedIds.add(serverMsg.id);
+		this.#messages.delete(localId);
+		this.#renderedIds.delete(localId);
 		this.#messages.set(serverMsg.id, { data: msg, el });
 		el._msgData = msg;
 		const imgWrap = el.querySelector('.mc-image-slot-wrap');
@@ -23758,33 +25129,40 @@ class Messenger {
 			const cached = MessengerOfflineStore.loadChats(userId);
 			this.#appView.applyCachedChatsIfEmpty(cached);
 		}
-		try {
-			const result = await this.#appView.requestSyncBundle(this.#msgService, this.#api, {
-				reconcileActive: false,
-				force: true,
-			});
-			if (userId && result?.chats?.length) {
-				MessengerOfflineStore.saveChats(userId, result.chats);
-			}
-			if (bootMark) bootMark('init-chats-loaded', { count: result?.chats?.length ?? 0 });
-			if (bootMark) bootMark('init-data-ready');
-		} catch (e) {
-			console.warn('[Messenger] requestSync boot', e);
+		this.#markChatsLoaded();
+		const runSync = async () => {
 			try {
-				const chats = await this.#api.getChats();
-				if (userId) MessengerOfflineStore.saveChats(userId, chats);
-				this.#appView.setChats(chats);
-			} catch (fallbackErr) {
-				console.warn('[Messenger] getChats fallback', fallbackErr);
-				const cached = userId ? MessengerOfflineStore.loadChats(userId) : null;
-				if (cached?.length) {
-					this.#appView.setChats(cached);
-				} else {
-					this.#appView.setChatsBootLoading(false);
+				const result = await this.#appView.requestSyncBundle(this.#msgService, this.#api, {
+					reconcileActive: false,
+					force: true,
+					messageLimit: MessengerAppView.BOOT_SYNC_MESSAGE_LIMIT,
+				});
+				if (userId && result?.chats?.length) {
+					MessengerOfflineStore.saveChats(userId, result.chats);
+				}
+				if (bootMark) bootMark('init-chats-loaded', { count: result?.chats?.length ?? 0 });
+				if (bootMark) bootMark('init-data-ready');
+			} catch (e) {
+				console.warn('[Messenger] requestSync boot', e);
+				try {
+					const chats = await this.#api.getChats();
+					if (userId) MessengerOfflineStore.saveChats(userId, chats);
+					this.#appView.setChats(chats);
+				} catch (fallbackErr) {
+					console.warn('[Messenger] getChats fallback', fallbackErr);
+					const cached = userId ? MessengerOfflineStore.loadChats(userId) : null;
+					if (cached?.length) {
+						this.#appView.setChats(cached);
+					} else {
+						this.#appView.setChatsBootLoading(false);
+					}
 				}
 			}
-		} finally {
-			this.#markChatsLoaded();
+		};
+		if (typeof requestIdleCallback === 'function') {
+			requestIdleCallback(() => { void runSync(); }, { timeout: 2500 });
+		} else {
+			setTimeout(() => { void runSync(); }, 50);
 		}
 	}
 
@@ -23827,11 +25205,18 @@ class Messenger {
 		if (bootMark) bootMark('init-shell-ready');
 		void this.#refreshBootUser(bootUser);
 		void this.#loadBootChats(bootMark);
-		this.#msgService.reconcileOnStartup(
-			this.#api,
-			(result) => this.#onReconcileResult(result),
-			this.#options.reconcileAgeMs ?? 10000
-		).catch(e => console.warn('[Messenger] reconcileOnStartup error:', e));
+		const reconcileStartup = () => {
+			this.#msgService.reconcileOnStartup(
+				this.#api,
+				(result) => this.#onReconcileResult(result),
+				this.#options.reconcileAgeMs ?? 10000
+			).catch(e => console.warn('[Messenger] reconcileOnStartup error:', e));
+		};
+		if (typeof requestIdleCallback === 'function') {
+			requestIdleCallback(reconcileStartup, { timeout: 5000 });
+		} else {
+			setTimeout(reconcileStartup, 2000);
+		}
 		if (/^\/@[^/?#]+/i.test(window.location.pathname)) {
 			void (async () => {
 				try {
@@ -24316,7 +25701,7 @@ class Messenger {
 		this.#api.setCrypto(crypto);
 		this.#cache.setCryptoGetter(() => crypto);
 		if (this.#mode === Messenger.MODE_APP && this.#appView) {
-			this.#appView.scheduleRefreshLastMessagePreviews();
+			this.#appView.scheduleRefreshLastMessagePreviews({ immediate: true });
 		}
 	}
 	destroy() {

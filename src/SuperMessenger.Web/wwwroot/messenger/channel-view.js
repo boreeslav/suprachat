@@ -50,6 +50,28 @@
 		return `/api/files/channel-public/${encodeURIComponent(fileId)}`;
 	}
 
+	function channelPreviewUrl(fileId) {
+		return `/api/files/channel-public/${encodeURIComponent(fileId)}/preview`;
+	}
+
+	function channelMediumUrl(fileId) {
+		return `/api/files/channel-public/${encodeURIComponent(fileId)}/medium`;
+	}
+
+	function fileIdFromChannelUrl(url) {
+		if (!url) return null;
+		const m = String(url).match(/\/api\/files\/channel-public\/([^/?#]+)/i);
+		return m ? decodeURIComponent(m[1]) : null;
+	}
+
+	function prefetchChannelMedium(originalUrl) {
+		const fileId = fileIdFromChannelUrl(originalUrl);
+		if (!fileId) return;
+		const img = new Image();
+		img.decoding = 'async';
+		img.src = channelMediumUrl(fileId);
+	}
+
 	function parseCustomMessage(text) {
 		if (!text || !text.includes(`<${MC_TAG}`)) return null;
 		const re = new RegExp(
@@ -94,8 +116,9 @@
 		img.loading = 'lazy';
 		img.decoding = 'async';
 		img.dataset.viewerUrl = channelFileUrl(fileId);
-		img.src = channelFileUrl(fileId);
+		img.src = channelPreviewUrl(fileId);
 		bindImageLoad(img);
+		prefetchChannelMedium(channelFileUrl(fileId));
 		wrap.appendChild(img);
 		return wrap;
 	}
@@ -116,8 +139,9 @@
 			img.loading = 'lazy';
 			img.decoding = 'async';
 			img.dataset.viewerUrl = channelFileUrl(fileId);
-			img.src = channelFileUrl(fileId);
+			img.src = channelPreviewUrl(fileId);
 			bindImageLoad(img);
+			prefetchChannelMedium(channelFileUrl(fileId));
 			cell.appendChild(img);
 			collage.appendChild(cell);
 		}
@@ -306,9 +330,19 @@
 		},
 
 		_show() {
-			const url = this._gallery[this._index];
-			if (!url || !this._img) return;
-			this._img.src = url;
+			const originalUrl = this._gallery[this._index];
+			if (!originalUrl || !this._img) return;
+			const fileId = fileIdFromChannelUrl(originalUrl);
+			const previewUrl = fileId ? channelPreviewUrl(fileId) : originalUrl;
+			const mediumUrl = fileId ? channelMediumUrl(fileId) : originalUrl;
+			this._img.src = previewUrl;
+			const mediumImg = new Image();
+			mediumImg.onload = () => {
+				if (this._gallery[this._index] === originalUrl && this._img) {
+					this._img.src = mediumUrl;
+				}
+			};
+			mediumImg.src = mediumUrl;
 			const multi = this._gallery.length > 1;
 			this._counter.textContent = multi ? `${this._index + 1} / ${this._gallery.length}` : '';
 			this._prev.disabled = !multi || this._index <= 0;

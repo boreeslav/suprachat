@@ -113,6 +113,7 @@ public sealed class FileDataStore : IDataStore
         if (norm.Length < 4) return null;
         return (await _chats.ReadAllAsync(ct)).FirstOrDefault(c =>
             string.Equals(c.Type, "channel", StringComparison.OrdinalIgnoreCase) &&
+            c.DeletedOn == null &&
             c.Slug != null &&
             string.Equals(c.Slug, norm, StringComparison.OrdinalIgnoreCase));
     }
