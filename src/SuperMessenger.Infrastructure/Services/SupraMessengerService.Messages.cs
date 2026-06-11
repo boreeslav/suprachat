@@ -202,6 +202,7 @@ public sealed partial class SupraMessengerService
                 ClientLocalId = normalizedLocalId,
             };
             await _store.SaveMessageAsync(record, ct);
+            await _files.SyncMessageAttachmentsAsync(msgGuid, chatGuid, record.Text, ct);
 
             var payload = MapNewMessagePayload(record, chat != null && IsChannelChat(chat) ? null : user);
             if (chat != null && IsChannelChat(chat))
@@ -515,6 +516,7 @@ public sealed partial class SupraMessengerService
             message.Text = text.Trim();
             message.EditedOn = DateTime.UtcNow;
             await _store.UpdateMessageAsync(message, ct);
+            await _files.SyncMessageAttachmentsAsync(message.Id, chatGuid, message.Text, ct);
 
             var payload = new SupraWsMessageUpdatedPayload
             {
@@ -561,6 +563,7 @@ public sealed partial class SupraMessengerService
                 message.DeletedForEveryone = true;
                 message.Text = "";
                 await _store.UpdateMessageAsync(message, ct);
+                await _files.ReleaseMessageAttachmentsAsync(msgGuid, ct);
 
                 var payload = new SupraWsDeleteMessagePayload
                 {

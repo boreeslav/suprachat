@@ -8,8 +8,13 @@ namespace SuperMessenger.Infrastructure.Services;
 public sealed partial class SupraMessengerService
 {
     private readonly IDataStore _store;
+    private readonly ChatFileService _files;
 
-    public SupraMessengerService(IDataStore store) => _store = store;
+    public SupraMessengerService(IDataStore store, ChatFileService files)
+    {
+        _store = store;
+        _files = files;
+    }
 
     private static string? AvatarUrl(UserRecord? user) => AvatarUrlHelper.ForUser(user);
 
@@ -596,11 +601,13 @@ public sealed partial class SupraMessengerService
 
             if (alsoDeleteForOther)
             {
+                await _files.ReleaseChatAttachmentsAsync(chatGuid, ct);
                 await _store.DeleteMessagesByChatAsync(chatGuid, ct);
             }
             else
             {
                 // For now clear all messages; full per-user deletion would require schema changes
+                await _files.ReleaseChatAttachmentsAsync(chatGuid, ct);
                 await _store.DeleteMessagesByChatAsync(chatGuid, ct);
             }
             return new SupraSimpleResponse { success = true };
@@ -635,6 +642,7 @@ public sealed partial class SupraMessengerService
 
             if (remaining.Count == 0)
             {
+                await _files.ReleaseChatAttachmentsAsync(chatGuid, ct);
                 await _store.DeleteChatAsync(chatGuid, ct);
                 return (new SupraSimpleResponse { success = true }, true, []);
             }

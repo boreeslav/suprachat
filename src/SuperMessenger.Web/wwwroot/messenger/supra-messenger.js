@@ -12677,27 +12677,15 @@ class MessengerMessageService {
 		if (byServerId) return { storedId: byServerId.id, record: byServerId };
 		return null;
 	}
-	async deleteMessage(chatId, messageId, messageType) {
+	async deleteMessage(chatId, messageId) {
 		try {
 			const resolved = await this.#resolveStoredRecord(chatId, messageId);
 			if (!resolved) {
 				console.warn('[MessengerMessageService] deleteMessage: запись не найдена', { chatId, messageId });
 				return { storedId: null, originalId: messageId };
 			}
-			const { storedId, record } = resolved;
-			let imageUrl = null;
-			if (messageType === 'image' || messageType === 'photo_album') {
-				const parsed = MessengerCustomMessage.parse(record.text);
-				if (parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
-					for (const id of parsed.payload?.fileIds || []) {
-						await this.#cache.removeImage(MessengerFileService.getFileUrl(id));
-					}
-				} else if (parsed?.payload?.fileId) {
-					imageUrl = MessengerFileService.getFileUrl(parsed.payload.fileId);
-				}
-			}
+			const { storedId } = resolved;
 			await this.#cache.deleteMessage(chatId, storedId);
-			if (messageType === 'image' && imageUrl) await this.#cache.removeImage(imageUrl);
 			this.#knownSeparators.delete(chatId);
 			return { storedId, originalId: messageId };
 		} catch (err) {

@@ -21,11 +21,15 @@ builder.Services.AddDataProtection()
     .SetApplicationName("SuperMessenger");
 
 builder.Services.AddSingleton<IDataStore>(_ => new FileDataStore(dataRoot));
+var filesRoot = builder.Configuration["Data:FilesPath"] ?? Path.Combine(dataRoot, "uploads");
+Directory.CreateDirectory(filesRoot);
+builder.Services.AddSingleton(sp => new ChatFileService(sp.GetRequiredService<IDataStore>()));
 builder.Services.AddSingleton<ChatImageProcessingService>();
 builder.Services.AddSingleton<AppAppearanceService>(_ => new AppAppearanceService(dataRoot));
 builder.Services.AddSingleton<AppBuildInfoService>();
 builder.Services.AddSingleton<IndexShellRenderer>();
 builder.Services.AddSingleton<SupraMessengerService>();
+builder.Services.AddHostedService<ChatFileReferenceBootstrap>();
 builder.Services.AddSingleton<MessengerSyncService>();
 builder.Services.AddSingleton<SupraEncryptionService>();
 builder.Services.AddSingleton<RealtimeNotifier>();

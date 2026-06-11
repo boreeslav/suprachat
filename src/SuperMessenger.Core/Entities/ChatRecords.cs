@@ -83,6 +83,14 @@ public sealed class SupraChatFolderMemberRecord
     public Guid ChatId { get; set; }
 }
 
+/// <summary>Ссылка сообщения на прикреплённый файл (для доступа при пересылке и сборки осиротевших файлов).</summary>
+public sealed class SupraMessageFileReferenceRecord
+{
+    public Guid MessageId { get; set; }
+    public Guid ChatId { get; set; }
+    public Guid FileId { get; set; }
+}
+
 public sealed class SupraFileRecord
 {
     public Guid Id { get; set; }
