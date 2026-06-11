@@ -2867,6 +2867,23 @@ function messengerHistoryHasStackedOverlay() {
 	);
 }
 
+/** Запись в history, чтобы системная «назад» на списке чатов не закрывала PWA. */
+function messengerEnsureRootHistoryGuard() {
+	if (typeof MessengerUtils === 'undefined' || !MessengerUtils.isMobile()) return;
+	if (history.state?.mappChatOpen) return;
+	if (messengerHistoryHasStackedOverlay()) return;
+	if (history.state?.mappRoot) return;
+	history.pushState({ mappRoot: true }, '');
+}
+
+function messengerTrapRootBackIfNeeded() {
+	if (typeof MessengerUtils === 'undefined' || !MessengerUtils.isMobile()) return false;
+	if (messengerHistoryHasStackedOverlay()) return false;
+	history.pushState({ mappRoot: true }, '');
+	messengerConsumePopstate();
+	return true;
+}
+
 let messengerPopstateConsumed = false;
 function messengerConsumePopstate() {
 	messengerPopstateConsumed = true;
@@ -15572,11 +15589,15 @@ class MessengerAppView {
 				messengerConsumePopstate();
 				return;
 			}
-			if (!this.el.root?.classList.contains('mapp-show-chat')) return;
 			if (messengerHistoryHasStackedOverlay()) return;
-			this.#showChatListMobile();
+			if (this.el.root?.classList.contains('mapp-show-chat')) {
+				this.#showChatListMobile();
+				return;
+			}
+			messengerTrapRootBackIfNeeded();
 		};
 		window.addEventListener('popstate', this.#mobilePopstateHandler);
+		messengerEnsureRootHistoryGuard();
 	}
 	#isPhonePortrait() {
 		if (!MessengerUtils.isMobile()) {
@@ -15648,6 +15669,7 @@ class MessengerAppView {
 	#showChatListMobile() {
 		this.#leaveChatUi();
 		this.#syncHistoryAfterLeaveChat();
+		messengerEnsureRootHistoryGuard();
 	}
 
 	#setEmptyPlaceholderVisible(visible) {
@@ -16360,7 +16382,9 @@ class MessengerAppView {
 			this.el.root?.classList.remove('mapp-show-chat');
 			this.#showBottomNavigationBar();
 			if (history.state?.mappChatOpen) {
-				history.replaceState(null, '', window.location.pathname + window.location.search);
+				history.replaceState({ mappRoot: true }, '', window.location.pathname + window.location.search);
+			} else {
+				messengerEnsureRootHistoryGuard();
 			}
 		}
 		this.#renderChatList();
