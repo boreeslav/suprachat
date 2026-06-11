@@ -1265,6 +1265,19 @@ class MessengerFileService {
 	}
 }
 
+function messengerChannelUsesPublicFiles(state) {
+	return !!(state?.isChannelChat && state?.channelSlug && state?.channelMeta && !state.channelMeta.isSubscribed);
+}
+
+function messengerPublicChannelAvatarUrl(avatar, chatId) {
+	if (!avatar || !chatId) return avatar;
+	if (avatar.includes('group-avatar-public')) return avatar;
+	if (avatar.includes('/api/files/group-avatar/')) {
+		return `/api/files/group-avatar-public/${chatId}`;
+	}
+	return avatar;
+}
+
 class MessengerTokenWatcher {
 	#onChange;
 	#intervalMs;
@@ -8521,7 +8534,7 @@ function syncMediaCaptionFooterLayout(bubble) {
 const MessengerPhotoCollage = {
 	MAX_PHOTOS: 6,
 
-	buildEl(utils, items, { cache = null, icons = null, msgArea = null, i18n = null, onItemClick = null } = {}) {
+	buildEl(utils, items, { cache = null, icons = null, msgArea = null, i18n = null, onItemClick = null, channelPublic = false } = {}) {
 		const count = Math.min(items.length, this.MAX_PHOTOS);
 		if (!count) return null;
 		const collage = utils.mk('div', `mc-photo-collage mc-photo-collage--count-${count}`);
@@ -8533,7 +8546,7 @@ const MessengerPhotoCollage = {
 			img.decoding = 'async';
 			const displaySrc = item.objectUrl || item.src || null;
 			const viewerUrl = item.viewerUrl || (item.fileId
-				? MessengerFileService.getFileUrl(item.fileId)
+				? MessengerFileService.getOriginalUrl(item.fileId, channelPublic)
 				: null);
 			if (item.fileId) img.dataset.fileId = item.fileId;
 			if (viewerUrl) img.dataset.viewerUrl = viewerUrl;
@@ -15772,6 +15785,14 @@ class MessengerAppView {
 			onChatPreviewRefresh: () => {
 				this.refreshChatListPreview(chat.id).catch(() => {});
 			},
+			onChannelAvatarUpdate: (avatar) => {
+				if (!avatar) return;
+				const normalized = messengerPublicChannelAvatarUrl(avatar, chat.id);
+				const stored = this.#chats.find(c => c.id === chat.id);
+				if (stored) stored.avatar = normalized;
+				if (this.#activeChat?.id === chat.id) this.#activeChat.avatar = normalized;
+				this.#renderChatList();
+			},
 			onForwardNavigate: (chatId) => this.#openChatById(chatId),
 			onDeepLinkNavigate: (href) => this.#navigateDeepLink(href),
 			onNavigateBack: () => this.#navigateBackFromChat(),
@@ -16526,14 +16547,15 @@ class MessengerAppView {
 		}
 		const localChannel = this.#findChannelBySlug(slug);
 		if (localChannel) {
+			const localSubscribed = localChannel.channelPreview?.isSubscribed !== false;
 			await this.openChannelBySlug(slug, {
 				success: true,
 				chatId: localChannel.id,
 				name: localChannel.name || '',
 				slug: localChannel.channelSlug || slug,
-				avatar: localChannel.avatar || null,
+				avatar: messengerPublicChannelAvatarUrl(localChannel.avatar || null, localChannel.id),
 				description: localChannel.channelPreview?.description || '',
-				isSubscribed: localChannel.channelPreview?.isSubscribed !== false,
+				isSubscribed: localSubscribed,
 			}, { messageId });
 			normalizeAppUrl();
 			return true;
@@ -16930,11 +16952,12 @@ class MessengerAppView {
 				};
 			}
 			if (!p?.success) return;
+			const avatarUrl = messengerPublicChannelAvatarUrl(p.avatar || null, p.chatId);
 			const chatPayload = {
 				id: p.chatId,
 				name: p.name || '',
 				type: 'channel',
-				avatar: p.avatar || null,
+				avatar: avatarUrl,
 				channelSlug: p.slug || slug,
 				deepLinkMessageId: messageId || null,
 				channelPreview: {
@@ -19498,20 +19521,20 @@ class MessengerCustomMessageRenderer {
 		this.#cache = cache;
 	}
 
-	render(bubble, parsed) {
+	render(bubble, parsed, { channelPublic = false } = {}) {
 		const {
 			contentType,
 			payload
 		} = parsed;
 		if (contentType === MessengerCustomMessage.CONTENT_TYPES.IMAGE)
-			this.#renderImage(bubble, payload);
+			this.#renderImage(bubble, payload, channelPublic);
 		else if (contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM)
-			this.#renderPhotoAlbum(bubble, payload);
+			this.#renderPhotoAlbum(bubble, payload, channelPublic);
 		else
-			this.#renderFile(bubble, payload);
+			this.#renderFile(bubble, payload, channelPublic);
 	}
 
-	#renderFile(bubble, payload) {
+	#renderFile(bubble, payload, channelPublic = false) {
 		bubble.classList.add('mc-file-bubble', 'mc-file-bubble-clickable');
 		const header = this.#utils.mk('div', 'mc-file-bubble-header');
 		const iconEl = this.#utils.mk('div', 'mc-file-bubble-icon');
@@ -19527,16 +19550,16 @@ class MessengerCustomMessageRenderer {
 		bubble.addEventListener('click', (e) => {
 			if (e.target.closest('.mc-msg-footer')) return;
 			const a = document.createElement('a');
-			a.href = MessengerFileService.getFileUrl(payload.fileId);
+			a.href = MessengerFileService.getOriginalUrl(payload.fileId, channelPublic);
 			a.download = payload.fileName;
 			a.target = '_blank';
 			a.click();
 		});
 	}
 
-	#renderImage(bubble, payload) {
+	#renderImage(bubble, payload, channelPublic = false) {
 		bubble.classList.add('mc-image-bubble');
-		const url = MessengerFileService.getFileUrl(payload.fileId);
+		const url = MessengerFileService.getOriginalUrl(payload.fileId, channelPublic);
 		const { cell: imgWrap, img } = MessengerImageSlot.createBubbleImageWrap();
 		img.alt = payload.fileName;
 
@@ -19558,7 +19581,7 @@ class MessengerCustomMessageRenderer {
 		bubble.classList.add('mc-bubble--media-no-caption');
 	}
 
-	#renderPhotoAlbum(bubble, payload) {
+	#renderPhotoAlbum(bubble, payload, channelPublic = false) {
 		bubble.classList.add('mc-photo-album-bubble');
 		const fileIds = payload.fileIds || [];
 		const items = fileIds.map((fileId, i) => ({
@@ -19570,6 +19593,7 @@ class MessengerCustomMessageRenderer {
 			icons: this.#icons,
 			i18n: this.#i18n,
 			msgArea: bubble.closest('.mc-messages'),
+			channelPublic,
 		});
 		const footer = bubble.querySelector('.mc-msg-footer');
 		if (collage) {
@@ -20275,10 +20299,10 @@ class MessengerMessageRenderer {
 		return msg?.text || this.#i18n.t('msgLocked') || SupraCrypto.LOCKED_PREVIEW;
 	}
 
-	#appendMessageText(bubble, msg) {
+	#appendMessageText(bubble, msg, { channelPublic = false } = {}) {
 		const parsed = MessengerCustomMessage.parse(msg.text);
 		if (parsed) {
-			this.#customRenderer.render(bubble, parsed);
+			this.#customRenderer.render(bubble, parsed, { channelPublic });
 			return;
 		}
 		const textEl = this.#utils.mk('div', 'mc-msg-text');
@@ -20426,7 +20450,8 @@ class MessengerMessageRenderer {
 		return quote;
 	}
 
-	createMsgEl(msg, currentUser, avatarCache, onAvatarClick, onQuoteClick = null, showMessageAvatars = true) {
+	createMsgEl(msg, currentUser, avatarCache, onAvatarClick, onQuoteClick = null, showMessageAvatars = true, renderOpts = null) {
+		const channelPublic = !!renderOpts?.channelPublic;
 		const isMine = !!msg.isOwn;
 		const isDeleted = !!msg.deletedForEveryone;
 		const row = this.#utils.mk('div', `mc-msg-row ${isMine ? 'mc-msg-row--mine' : 'mc-msg-row--other'}`);
@@ -20472,7 +20497,7 @@ class MessengerMessageRenderer {
 			textEl.textContent = this.#i18n.t('messageDeleted');
 			bubble.appendChild(textEl);
 		} else {
-			this.#appendMessageText(bubble, msg);
+			this.#appendMessageText(bubble, msg, { channelPublic });
 		}
 		const footer = this.#utils.mk('div', 'mc-msg-footer');
 		if (msg.editedOn && !isDeleted) {
@@ -20499,7 +20524,8 @@ class MessengerMessageRenderer {
 		return row;
 	}
 
-	updateMsgContent(entry, msg, onQuoteClick = null) {
+	updateMsgContent(entry, msg, onQuoteClick = null, renderOpts = null) {
+		const channelPublic = !!renderOpts?.channelPublic;
 		if (!entry?.el) return;
 		const bubble = entry.el.querySelector('.mc-bubble');
 		if (!bubble) return;
@@ -20533,7 +20559,7 @@ class MessengerMessageRenderer {
 			const footer = bubble.querySelector('.mc-msg-footer');
 			bubble.insertBefore(textEl, footer);
 		} else {
-			this.#appendMessageText(bubble, msg);
+			this.#appendMessageText(bubble, msg, { channelPublic });
 		}
 		syncMediaCaptionFooterLayout(bubble);
 		this.#syncTierBadge(bubble, msg, !!entry?.el?.classList?.contains('mc-msg-row--mine'));
@@ -20839,6 +20865,10 @@ class MessengerChatPanel {
 	}
 	setPresenceManager(presence) { this.#presence = presence; }
 	setConnectionStateManager(mgr) { this.#connectionStateMgr = mgr; }
+
+	#msgRenderOpts(state) {
+		return { channelPublic: messengerChannelUsesPublicFiles(state) };
+	}
 
 	#formatActivityText(activities, i18n) {
 		if (!activities?.length) return '';
@@ -21468,6 +21498,9 @@ class MessengerChatPanel {
 			onChatPreviewRefresh: typeof chatCallbacks.onChatPreviewRefresh === 'function'
 				? chatCallbacks.onChatPreviewRefresh
 				: null,
+			onChannelAvatarUpdate: typeof chatCallbacks.onChannelAvatarUpdate === 'function'
+				? chatCallbacks.onChannelAvatarUpdate
+				: null,
 			onForwardNavigate: typeof chatCallbacks.onForwardNavigate === 'function'
 				? chatCallbacks.onForwardNavigate
 				: null,
@@ -21527,6 +21560,7 @@ class MessengerChatPanel {
 
 	#findMessageByImageUrl(state, url) {
 		if (!state?.msgArea || !url) return null;
+		const channelPublic = messengerChannelUsesPublicFiles(state);
 		const normalizeUrl = (u) => {
 			if (!u || u.startsWith('blob:') || u.startsWith('data:')) return u || '';
 			try {
@@ -21542,7 +21576,7 @@ class MessengerChatPanel {
 			for (const el of row.querySelectorAll('.mc-bubble-image, .mc-photo-collage-item')) {
 				const candidates = [
 					el.dataset.viewerUrl,
-					el.dataset.fileId ? MessengerFileService.getFileUrl(el.dataset.fileId) : null,
+					el.dataset.fileId ? MessengerFileService.getOriginalUrl(el.dataset.fileId, channelPublic) : null,
 				];
 				if (el.classList.contains('mc-image-slot--ready') && el.src) {
 					candidates.push(el.src);
@@ -21557,12 +21591,12 @@ class MessengerChatPanel {
 			if (msg?.text) {
 				const parsed = MessengerCustomMessage.parse(msg.text);
 				if (parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.IMAGE) {
-					const fileUrl = MessengerFileService.getFileUrl(parsed.payload?.fileId);
+					const fileUrl = MessengerFileService.getOriginalUrl(parsed.payload?.fileId, channelPublic);
 					if (fileUrl === url || normalizeUrl(fileUrl) === targetKey) return msg;
 				}
 				if (parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
 					for (const fileId of parsed.payload?.fileIds || []) {
-						const fileUrl = MessengerFileService.getFileUrl(fileId);
+						const fileUrl = MessengerFileService.getOriginalUrl(fileId, channelPublic);
 						if (fileUrl === url || normalizeUrl(fileUrl) === targetKey) return msg;
 					}
 				}
@@ -21571,7 +21605,7 @@ class MessengerChatPanel {
 		return null;
 	}
 
-	#getImageFileName(msg, url) {
+	#getImageFileName(msg, url, channelPublic = false) {
 		const parsed = MessengerCustomMessage.parse(msg?.text);
 		if (!parsed) return 'image.jpg';
 		if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.IMAGE) {
@@ -21580,7 +21614,7 @@ class MessengerChatPanel {
 		if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
 			const ids = parsed.payload.fileIds || [];
 			const names = parsed.payload.fileNames || [];
-			const idx = ids.findIndex((id) => MessengerFileService.getFileUrl(id) === url);
+			const idx = ids.findIndex((id) => MessengerFileService.getOriginalUrl(id, channelPublic) === url);
 			if (idx >= 0) return names[idx] || `photo-${idx + 1}.jpg`;
 		}
 		return 'image.jpg';
@@ -21591,11 +21625,12 @@ class MessengerChatPanel {
 			MessengerImageViewer.setActionHost(null);
 			return;
 		}
+		const channelPublic = messengerChannelUsesPublicFiles(state);
 		MessengerImageViewer.setActionHost({
 			findMessage: (url) => this.#findMessageByImageUrl(state, url),
 			canForward: (msg) => this.#api.canForwardMessage(msg),
 			forward: (msg, imageUrl) => this.#forwardMessage(state, msg, imageUrl),
-			getFileName: (url, msg) => this.#getImageFileName(msg, url),
+			getFileName: (url, msg) => this.#getImageFileName(msg, url, channelPublic),
 		});
 	}
 
@@ -23043,7 +23078,8 @@ class MessengerChatPanel {
 		this.#msgRenderer.updateMsgContent(
 			found.entry,
 			data,
-			id => this.#scrollToQuotedMessage(state, id)
+			id => this.#scrollToQuotedMessage(state, id),
+			this.#msgRenderOpts(state)
 		);
 	}
 
@@ -23096,7 +23132,8 @@ class MessengerChatPanel {
 					state.avatarCache,
 					state.onAvatarClick,
 					id => this.#scrollToQuotedMessage(state, id),
-					state.isGroupChat
+					state.isGroupChat,
+					this.#msgRenderOpts(state)
 				);
 				this.#bindMessageRowEvents(state, el, msg);
 				state.messages.set(msg.id, { data: msg, el });
@@ -23234,7 +23271,8 @@ class MessengerChatPanel {
 						this.#msgRenderer.updateMsgContent(
 							entry,
 							fresh,
-							id => this.#scrollToQuotedMessage(state, id)
+							id => this.#scrollToQuotedMessage(state, id),
+							this.#msgRenderOpts(state)
 						);
 					}
 				} else if (el) {
@@ -23281,7 +23319,8 @@ class MessengerChatPanel {
 					state.avatarCache,
 					state.onAvatarClick,
 					id => this.#scrollToQuotedMessage(state, id),
-					state.isGroupChat
+					state.isGroupChat,
+					this.#msgRenderOpts(state)
 				);
 				this.#bindMessageRowEvents(state, el, msg);
 				state.messages.set(msg.id, { data: msg, el });
@@ -23424,6 +23463,10 @@ class MessengerChatPanel {
 		}
 	}
 
+	#applyPublicChannelMetaFromResponse(state, data) {
+		if (data?.avatar) state.onChannelAvatarUpdate?.(data.avatar);
+	}
+
 	async #fetchPublicChannelMessageAnchor(chatId, state) {
 		const messageId = state.pendingAnchorMessageId;
 		state.pendingAnchorMessageId = null;
@@ -23441,6 +23484,7 @@ class MessengerChatPanel {
 				await this.#fetchPublicChannelMessages(chatId, state);
 				return;
 			}
+			this.#applyPublicChannelMetaFromResponse(state, data);
 			const all = this.#mapPublicChannelMessages(data, chatId);
 			this.#hideMessagesStatus(state);
 			this.#applyQuoteWindow(state, all, messageId, !!data.hasMoreBefore, !!data.hasMoreAfter);
@@ -23466,6 +23510,7 @@ class MessengerChatPanel {
 				}
 				return;
 			}
+			this.#applyPublicChannelMetaFromResponse(state, data);
 			const msgs = (data.messages || []).map(m => ({
 				id: m.id,
 				chatId,
@@ -23664,7 +23709,8 @@ class MessengerChatPanel {
 				this.#msgRenderer.updateMsgContent(
 					entry,
 					entry.data,
-					id => this.#scrollToQuotedMessage(state, id)
+					id => this.#scrollToQuotedMessage(state, id),
+					this.#msgRenderOpts(state)
 				);
 				entry.el._msgData = entry.data;
 			}
