@@ -1131,7 +1131,6 @@
 }
 
 .mc-photo-collage--count-3 .mc-photo-collage-cell:nth-child(3) {
-	--mc-cr-tr: var(--mc-media-r-tr);
 	--mc-cr-br: var(--mc-media-r-br);
 }
 
@@ -1153,7 +1152,6 @@
 }
 
 .mc-photo-collage--count-4 .mc-photo-collage-cell:nth-child(4) {
-	--mc-cr-tr: var(--mc-media-r-tr);
 	--mc-cr-br: var(--mc-media-r-br);
 }
 
@@ -1166,7 +1164,7 @@
 .mc-photo-collage--count-5 .mc-photo-collage-cell:nth-child(2) { grid-column: 4 / 7; --mc-cr-tr: var(--mc-media-r-tr); }
 .mc-photo-collage--count-5 .mc-photo-collage-cell:nth-child(3) { grid-column: 1 / 3; --mc-cr-bl: var(--mc-media-r-bl); }
 .mc-photo-collage--count-5 .mc-photo-collage-cell:nth-child(4) { grid-column: 3 / 5; }
-.mc-photo-collage--count-5 .mc-photo-collage-cell:nth-child(5) { grid-column: 5 / 7; --mc-cr-tr: var(--mc-media-r-tr); --mc-cr-br: var(--mc-media-r-br); }
+.mc-photo-collage--count-5 .mc-photo-collage-cell:nth-child(5) { grid-column: 5 / 7; --mc-cr-br: var(--mc-media-r-br); }
 
 .mc-photo-collage--count-6 {
 	grid-template-columns: 1fr 1fr 1fr;
@@ -1186,7 +1184,6 @@
 }
 
 .mc-photo-collage--count-6 .mc-photo-collage-cell:nth-child(6) {
-	--mc-cr-tr: var(--mc-media-r-tr);
 	--mc-cr-br: var(--mc-media-r-br);
 }
 
