@@ -150,7 +150,7 @@ public sealed partial class SupraMessengerService
             }
 
             var users = (await _store.GetUsersAsync(ct))
-                .Where(u => u.IsActive && u.Id != userId && u.Type != UserType.Admin)
+                .Where(u => u.IsActive && u.Id != userId && u.Type != UserType.Admin && u.Type != UserType.Bot)
                 .Where(u =>
                     (u.SearchableByLogin && u.Login.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
                     (u.SearchableByName && u.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase)));
@@ -162,10 +162,16 @@ public sealed partial class SupraMessengerService
                     filtered.Add(u);
             }
 
+            foreach (var bot in await FindBotsMatchingSearchAsync(userId, query, ct))
+            {
+                if (filtered.All(u => u.Id != bot.Id))
+                    filtered.Add(bot);
+            }
+
             var list = filtered.OrderBy(u => u.DisplayName)
                 .Skip((page - 1) * rowCount)
                 .Take(rowCount)
-                .Select(u => new SupraContactDto { id = u.Id.ToString(), name = u.DisplayName, avatar = AvatarUrl(u) })
+                .Select(u => MapContactDto(u, AvatarUrl(u)))
                 .ToList();
 
             return new SupraGetContactsResponse
@@ -242,6 +248,13 @@ public sealed partial class SupraMessengerService
             if (target == null)
                 return (new SupraCreateChatResponse { success = false, error = "Контакт не найден" }, null);
 
+            if (IsBotUser(target))
+            {
+                var bot = await _store.GetBotByUserIdAsync(targetId, ct);
+                if (bot == null || IsBotDeleted(bot))
+                    return (new SupraCreateChatResponse { success = false, error = "Бот недоступен" }, null);
+            }
+
             if (await HasUserBlockAsync(targetId, user.Id, ct))
                 return (new SupraCreateChatResponse { success = false, error = "Пользователь вас заблокировал" }, null);
 
@@ -259,12 +272,22 @@ public sealed partial class SupraMessengerService
                     continue;
                 var parts = await _store.GetParticipantsByChatAsync(p.ChatId, ct);
                 if (parts.Any(x => x.UserId == targetId))
+                {
+                    var existingBotEngaged = IsBotUser(target)
+                        ? await IsBotChatEngagedAsync(user.Id, targetId, p.ChatId, ct)
+                        : false;
                     return (new SupraCreateChatResponse
                     {
                         success = true,
                         chatId = p.ChatId.ToString(),
                         chatName = target.DisplayName,
+                        isBotContact = IsBotUser(target),
+                        botSlug = IsBotUser(target)
+                            ? (await _store.GetBotByUserIdAsync(targetId, ct))?.Slug
+                            : null,
+                        botEngaged = existingBotEngaged,
                     }, null);
+                }
             }
 
             var chatGuid = Guid.NewGuid();
@@ -287,11 +310,18 @@ public sealed partial class SupraMessengerService
                 UserId = targetId,
             }, ct);
 
+            string? botSlug = null;
+            if (IsBotUser(target))
+                botSlug = (await _store.GetBotByUserIdAsync(targetId, ct))?.Slug;
+
             return (new SupraCreateChatResponse
             {
                 success = true,
                 chatId = chatGuid.ToString(),
                 chatName = target.DisplayName,
+                isBotContact = IsBotUser(target),
+                botSlug = botSlug,
+                botEngaged = false,
             }, new SupraWsNewChatPayload
             {
                 chatId = chatGuid.ToString(),
@@ -554,9 +584,26 @@ public sealed partial class SupraMessengerService
             }
             else if (!string.IsNullOrEmpty(query) && query.Length >= 4)
             {
-                users = users.Where(u =>
-                    (u.SearchableByLogin && u.Login.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
-                    (u.SearchableByName && u.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase)));
+                var regularUsers = users
+                    .Where(u => u.Type != UserType.Bot)
+                    .Where(u =>
+                        (u.SearchableByLogin && u.Login.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                        (u.SearchableByName && u.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase)));
+
+                var searchMatches = new List<UserRecord>();
+                foreach (var u in regularUsers)
+                {
+                    if (await IsUserVisibleInContactsAsync(userId, u.Id, ct))
+                        searchMatches.Add(u);
+                }
+
+                foreach (var bot in await FindBotsMatchingSearchAsync(userId, query, ct))
+                {
+                    if (searchMatches.All(u => u.Id != bot.Id))
+                        searchMatches.Add(bot);
+                }
+
+                users = searchMatches;
             }
             else if (!string.IsNullOrEmpty(query))
             {
@@ -578,7 +625,7 @@ public sealed partial class SupraMessengerService
             var list = visible.OrderBy(u => u.DisplayName)
                 .Skip((page - 1) * rowCount)
                 .Take(rowCount)
-                .Select(u => new SupraContactDto { id = u.Id.ToString(), name = u.DisplayName, avatar = AvatarUrl(u) })
+                .Select(u => MapContactDto(u, AvatarUrl(u)))
                 .ToList();
 
             return new SupraGetContactsResponse { success = true, contacts = list, page = page, rowCount = rowCount };
