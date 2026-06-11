@@ -568,7 +568,9 @@ public sealed partial class SupraMessengerService
                 name = chat.Name,
                 slug = chat.Slug,
                 description = chat.Description ?? "",
-                avatar = ChannelAvatarUrl(chat),
+                avatar = isSubscribed
+                    ? ChannelAvatarUrl(chat)
+                    : (string.IsNullOrEmpty(chat.AvatarPath) ? null : $"/api/files/group-avatar-public/{chat.Id}"),
                 isSubscribed = isSubscribed,
                 canSubscribe = !isSubscribed,
                 subscriberCount = subCount,
