@@ -89,6 +89,39 @@ class MessengerI18n {
 			profileTitle: 'Профиль',
 			qrProfileTitle: 'QR-код профиля',
 			qrGroupTitle: 'QR-код группы',
+			qrChannelTitle: 'QR-код канала',
+			channelsTab: 'Каналы',
+			channelCreate: 'Создать канал',
+			channelNameLabel: 'Название канала',
+			channelSlugLabel: 'Ссылка канала',
+			channelSlugHint: 'Латиница, цифры и _, от 4 символов. Адрес: /@ссылка',
+			channelDescriptionLabel: 'Описание',
+			channelSubscribe: 'Подписаться',
+			channelUnsubscribe: 'Отписаться',
+			channelEnableNotifications: 'Вкл. уведомления',
+			channelDisableNotifications: 'Выкл. уведомления',
+			channelAbout: 'О канале',
+			channelLeave: 'Покинуть канал',
+			channelLeaveTitle: 'Покинуть канал?',
+			channelLeaveMsg: 'Вы отпишетесь от канала и перестанете получать сообщения.',
+			channelLeaveAdminMsg: 'Администраторы не могут покинуть канал. Передайте канал или удалите его в разделе «Управление».',
+			channelManage: 'Управление',
+			channelShareMenu: 'Поделиться',
+			channelShare: 'Поделиться каналом',
+			channelShareMessage: 'Поделиться',
+			channelCopyMessageLink: 'Копировать ссылку на сообщение',
+			channelMessageLinkCopied: 'Ссылка скопирована',
+			channelRoleOwner: 'Владелец',
+			channelRoleAdmin: 'Администратор',
+			channelRoleAuthor: 'Автор',
+			channelRoleSubscriber: 'Подписчик',
+			channelTransfer: 'Передать канал',
+			channelDelete: 'Удалить канал',
+			channelDeleteConfirm: 'Удалить канал безвозвратно?',
+			channelSaveError: 'Ошибка сохранения канала',
+			channelJoinTitle: 'Канал',
+			channelForwardFrom: (name) => `Канал ${name}`,
+			channelEmptyList: 'У вас пока нет каналов',
 			qrClose: 'Закрыть',
 			qrLibMissing: 'Библиотека QR не загружена',
 			invitationsTab: 'Приглашения',
@@ -213,8 +246,8 @@ class MessengerI18n {
 			networkOffline: 'Нет соединения',
 			networkOfflineMsg: 'Нет связи с сервером. История доступна офлайн; отправка сообщений возобновится после подключения.',
 			connectingToServer: 'Подключение к серверу...',
-			offlineSendPlaceholder: 'Ожидание подключения к серверу…',
-			offlineSendBlocked: 'Отправка недоступна без соединения с сервером.',
+			offlineSendBlocked: 'Нет соединения с сервером',
+			close: 'Закрыть',
 			confirm: 'Подтвердить',
 			cancel: 'Отмена',
 			back: 'Назад',
@@ -314,6 +347,7 @@ class MessengerI18n {
 				direct: 'личный чат',
 				group: 'группа',
 				public_group: 'публичная группа',
+				channel: 'канал',
 			},
 			sectionLabels: {
 				direct: 'Личные сообщения',
@@ -326,6 +360,7 @@ class MessengerI18n {
 				sendingFile: (name) => `${name} отправляет файл`,
 				sendingImage: (name) => `${name} отправляет изображение`,
 			},
+			typingShort: 'печатает',
 			activityLabelMany: (count) => `${count} человека пишут`,
 			msgActionEdit: 'Редактировать',
 			msgActionReply: 'Ответить',
@@ -487,6 +522,39 @@ class MessengerI18n {
 			profileTitle: 'Profile',
 			qrProfileTitle: 'Profile QR code',
 			qrGroupTitle: 'Group QR code',
+			qrChannelTitle: 'Channel QR code',
+			channelsTab: 'Channels',
+			channelCreate: 'Create channel',
+			channelNameLabel: 'Channel name',
+			channelSlugLabel: 'Channel link',
+			channelSlugHint: 'Latin letters, digits and _, min 4 chars. URL: /@link',
+			channelDescriptionLabel: 'Description',
+			channelSubscribe: 'Subscribe',
+			channelUnsubscribe: 'Unsubscribe',
+			channelEnableNotifications: 'Enable notifications',
+			channelDisableNotifications: 'Disable notifications',
+			channelAbout: 'About channel',
+			channelLeave: 'Leave channel',
+			channelLeaveTitle: 'Leave channel?',
+			channelLeaveMsg: 'You will unsubscribe and stop receiving messages from this channel.',
+			channelLeaveAdminMsg: 'Administrators cannot leave the channel. Transfer or delete it in Management.',
+			channelManage: 'Manage',
+			channelShareMenu: 'Share',
+			channelShare: 'Share channel',
+			channelShareMessage: 'Share',
+			channelCopyMessageLink: 'Copy message link',
+			channelMessageLinkCopied: 'Link copied',
+			channelRoleOwner: 'Owner',
+			channelRoleAdmin: 'Administrator',
+			channelRoleAuthor: 'Author',
+			channelRoleSubscriber: 'Subscriber',
+			channelTransfer: 'Transfer channel',
+			channelDelete: 'Delete channel',
+			channelDeleteConfirm: 'Delete channel permanently?',
+			channelSaveError: 'Failed to save channel',
+			channelJoinTitle: 'Channel',
+			channelForwardFrom: (name) => `Channel ${name}`,
+			channelEmptyList: 'You have no channels yet',
 			qrClose: 'Close',
 			qrLibMissing: 'QR library not loaded',
 			invitationsTab: 'Invitations',
@@ -611,8 +679,8 @@ class MessengerI18n {
 			networkOffline: 'No connection',
 			networkOfflineMsg: 'No server connection. History is available offline; sending resumes when connected.',
 			connectingToServer: 'Connecting to server...',
-			offlineSendPlaceholder: 'Waiting for server connection…',
-			offlineSendBlocked: 'Sending is unavailable without a server connection.',
+			offlineSendBlocked: 'No connection to the server',
+			close: 'Close',
 			confirm: 'Confirm',
 			cancel: 'Cancel',
 			back: 'Back',
@@ -706,6 +774,7 @@ class MessengerI18n {
 				direct: 'direct message',
 				group: 'group',
 				public_group: 'public group',
+				channel: 'channel',
 			},
 			sectionLabels: {
 				direct: 'Direct Messages',
@@ -718,6 +787,7 @@ class MessengerI18n {
 				sendingFile: (name) => `${name} is sending a file`,
 				sendingImage: (name) => `${name} is sending an image`,
 			},
+			typingShort: 'typing',
 			activityLabelMany: (count) => `${count} people are typing`,
 			msgActionEdit: 'Edit',
 			msgActionReply: 'Reply',
@@ -2364,6 +2434,105 @@ function buildGroupProfileUrl(chatId) {
 	return id ? `${messengerDisplayOrigin()}/@${encodeURIComponent(id)}` : null;
 }
 
+function buildChannelProfileUrl(slug) {
+	const s = String(slug || '').trim();
+	return s ? `${messengerDisplayOrigin()}/@${encodeURIComponent(s)}` : null;
+}
+
+function buildChannelMessageUrl(slug, messageId) {
+	const base = buildChannelProfileUrl(slug);
+	if (!base || !messageId) return base;
+	return `${base}?m=${encodeURIComponent(messageId)}`;
+}
+
+function messengerLinkHostsMatch(href) {
+	try {
+		const parsed = new URL(href);
+		const linkHost = idnHostnameToUnicode(parsed.hostname).toLowerCase();
+		const appHost = idnHostnameToUnicode(new URL(messengerOrigin()).hostname).toLowerCase();
+		return linkHost === appHost;
+	} catch {
+		return false;
+	}
+}
+
+function parseMessengerDeepLink(href) {
+	const normalized = normalizeMessageLinkHref(href);
+	if (!normalized || !messengerLinkHostsMatch(normalized)) return null;
+	try {
+		const parsed = new URL(normalized);
+		const pathMatch = parsed.pathname.match(/^\/@([^/]+)$/i);
+		if (!pathMatch) return null;
+		const slug = decodeURIComponent(pathMatch[1]);
+		const messageId = (parsed.searchParams.get('m') || '').trim() || null;
+		if (isGroupChatId(slug)) {
+			return { type: 'group', chatId: slug, messageId: null };
+		}
+		return { type: 'slug', slug, messageId };
+	} catch {
+		return null;
+	}
+}
+
+function isMessengerInternalLink(href) {
+	return !!parseMessengerDeepLink(href);
+}
+
+function openExternalLink(href) {
+	const normalized = normalizeMessageLinkHref(href);
+	if (!normalized) return false;
+	const anchor = document.createElement('a');
+	anchor.href = normalized;
+	anchor.target = '_blank';
+	anchor.rel = 'noopener noreferrer';
+	anchor.style.display = 'none';
+	document.body.appendChild(anchor);
+	anchor.click();
+	anchor.remove();
+	return true;
+}
+
+function isChannelType(type) {
+	return type === 'channel';
+}
+
+function channelRoleCanPost(role) {
+	const r = String(role || '').toLowerCase();
+	return r === 'owner' || r === 'admin' || r === 'author';
+}
+
+function channelMetaCanPost(meta) {
+	if (!meta) return false;
+	if (meta.canPost) return true;
+	return channelRoleCanPost(meta.myRole);
+}
+
+function fillTypingIndicator(el, i18n) {
+	if (!el) return;
+	el.replaceChildren();
+	const dots = document.createElement('span');
+	dots.className = 'mc-activity-dots';
+	dots.innerHTML = '<span></span><span></span><span></span>';
+	const text = document.createElement('span');
+	text.className = 'mc-typing-inline-text';
+	text.textContent = i18n.t('typingShort');
+	el.append(dots, text);
+}
+
+function isChatNotificationMuted(chatId) {
+	const push = typeof globalThis !== 'undefined' ? globalThis.SupraPush : null;
+	if (!push?.shouldNotify) return false;
+	return !push.shouldNotify(chatId);
+}
+
+function formatChannelHeaderDescription(description) {
+	const raw = String(description || '').trim();
+	if (!raw) return '';
+	const nlIdx = raw.search(/\r?\n/);
+	if (nlIdx !== -1 && nlIdx < 25) return raw.slice(0, nlIdx);
+	return raw.slice(0, 25);
+}
+
 let activeProfileAvatarClose = null;
 
 function messengerHistoryHasStackedOverlay() {
@@ -2435,6 +2604,7 @@ function messengerMakeDismissable(dismiss, cancelValue) {
 		}
 		finish(result, false);
 	};
+	close.immediate = (result = cancelValue) => finish(result, false);
 	if (useHistory) {
 		messengerRegisterOverlay(closer);
 		history.pushState({ mappOverlay: true }, '');
@@ -3413,12 +3583,15 @@ function bindTapAction(el, handler, { stopPropagation = false } = {}) {
 function bindChatHeaderProfileClick(hitEl, chat, callbacks) {
 	if (!hitEl || !chat || !callbacks) return;
 	const isGroup = chat.type === 'group' || chat.type === 'public_group';
+	const isChannel = isChannelType(chat.type);
 	const canOpen = (isGroup && callbacks.onShowGroupProfile)
+		|| (isChannel && (callbacks.onChannelAbout || callbacks.onShowChannelProfile))
 		|| (chat.type === 'direct' && callbacks.onShowProfile);
 	if (!canOpen) return;
 	hitEl.classList.add('mc-cursor-pointer', 'mapp-sidebar-user--interactive');
 	bindTapAction(hitEl, () => {
 		if (isGroup) callbacks.onShowGroupProfile?.(chat);
+		else if (isChannel) (callbacks.onChannelAbout || callbacks.onShowChannelProfile)?.(chat);
 		else callbacks.onShowProfile?.(chat);
 	}, { stopPropagation: true });
 }
@@ -4827,6 +5000,7 @@ class MessengerUserProfileModal {
 		const pwdPanel = mkView('password');
 		const privacyPanel = mkView('privacy');
 		const invitesPanel = mkView('invites');
+		const channelsPanel = mkView('channels');
 		const chatSettingsPanel = mkView('chatSettings');
 		const foldersPanel = mkView('folders');
 		const aboutPanel = mkView('about');
@@ -4848,6 +5022,7 @@ class MessengerUserProfileModal {
 			password: this.#i18n.t('securityTab'),
 			privacy: this.#i18n.t('privacy'),
 			invites: this.#i18n.t('invitationsTab'),
+			channels: this.#i18n.t('channelsTab'),
 			chatSettings: this.#i18n.t('appearanceTab'),
 			folders: this.#i18n.t('foldersTab'),
 			about: this.#i18n.t('aboutAppTab'),
@@ -4856,7 +5031,7 @@ class MessengerUserProfileModal {
 		};
 
 		const allViews = [
-			homeView, accountView, pwdPanel, privacyPanel, invitesPanel,
+			homeView, accountView, pwdPanel, privacyPanel, invitesPanel, channelsPanel,
 			chatSettingsPanel, foldersPanel, aboutPanel, helpPanel, settingsPanel,
 		];
 
@@ -4864,6 +5039,7 @@ class MessengerUserProfileModal {
 			currentView = viewId;
 			allViews.forEach(v => { v.hidden = v.dataset.view !== viewId; });
 			if (viewId === 'invites') loadInvitations();
+			if (viewId === 'channels') loadChannels();
 		};
 
 		const mkStatusMsg = () => {
@@ -4951,6 +5127,103 @@ class MessengerUserProfileModal {
 		invitesScroll.appendChild(invitesCard);
 		invitesPanel.appendChild(invitesScroll);
 		viewsEl.appendChild(invitesPanel);
+
+		const channelsScroll = document.createElement('div');
+		channelsScroll.className = 'mapp-profile-tab-scroll mapp-profile-form-page';
+		const channelsCard = mkUiCard(this.#i18n.t('channelsTab'));
+		const channelsListEl = document.createElement('div');
+		channelsListEl.className = 'mapp-invites-list';
+		const channelsMsg = mkStatusMsg();
+		const chNameInput = document.createElement('input');
+		chNameInput.type = 'text';
+		applyStandardFieldInput(chNameInput);
+		const chSlugInput = document.createElement('input');
+		chSlugInput.type = 'text';
+		applyStandardFieldInput(chSlugInput);
+		const chCreateBtn = document.createElement('button');
+		chCreateBtn.type = 'button';
+		chCreateBtn.className = 'mapp-btn mapp-btn-primary mapp-btn-block mapp-btn-settings-wide';
+		chCreateBtn.textContent = this.#i18n.t('channelCreate');
+		channelsCard.append(
+			mkProfileField(this.#i18n.t('channelNameLabel'), chNameInput),
+			mkProfileField(this.#i18n.t('channelSlugLabel'), chSlugInput),
+			channelsListEl,
+			channelsMsg,
+			chCreateBtn,
+		);
+		channelsScroll.appendChild(channelsCard);
+		channelsPanel.appendChild(channelsScroll);
+		viewsEl.appendChild(channelsPanel);
+
+		const messengerRpc = async (method, payload = {}) => {
+			const r = await fetch(`/api/messenger/${method}`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'same-origin',
+				body: JSON.stringify(payload),
+			});
+			const j = await r.json();
+			const key = `${method}Result`;
+			return typeof j[key] === 'string' ? JSON.parse(j[key]) : j[key];
+		};
+
+		const loadChannels = async () => {
+			try {
+				const data = await messengerRpc('GetMyChannels');
+				channelsListEl.innerHTML = '';
+				const items = data?.channels || [];
+				if (!items.length) {
+					const empty = document.createElement('div');
+					empty.className = 'mapp-list-empty';
+					empty.textContent = this.#i18n.t('channelEmptyList');
+					channelsListEl.appendChild(empty);
+					return;
+				}
+				items.forEach(ch => {
+					const row = document.createElement('button');
+					row.type = 'button';
+					row.className = 'mapp-sheet-item mapp-sheet-item--btn';
+					row.textContent = `${ch.name} (@${ch.slug})`;
+					row.addEventListener('click', () => {
+						callbacks.onManageChannel?.({
+							id: ch.chatId,
+							name: ch.name,
+							type: 'channel',
+							channelSlug: ch.slug,
+							avatar: ch.avatar,
+						});
+					});
+					channelsListEl.appendChild(row);
+				});
+			} catch (e) {
+				showStatus(channelsMsg, e.message || 'Error', false);
+			}
+		};
+
+		chCreateBtn.addEventListener('click', async () => {
+			chCreateBtn.disabled = true;
+			try {
+				const r = await messengerRpc('CreateChannel', {
+					name: chNameInput.value.trim(),
+					slug: chSlugInput.value.trim(),
+				});
+				if (!r?.success) throw new Error(r?.error || 'Create failed');
+				chNameInput.value = '';
+				chSlugInput.value = '';
+				showStatus(channelsMsg, this.#i18n.t('saved'), true);
+				await loadChannels();
+				callbacks.onManageChannel?.({
+					id: r.chatId,
+					name: r.name,
+					type: 'channel',
+					channelSlug: r.slug,
+				});
+			} catch (e) {
+				showStatus(channelsMsg, e.message || 'Error', false);
+			} finally {
+				chCreateBtn.disabled = false;
+			}
+		});
 
 		const formatInviteExpiry = (iso) => {
 			if (!iso) return '';
@@ -5259,6 +5532,7 @@ class MessengerUserProfileModal {
 			mkNavRow(this.#i18n.t('securityTab'), 'password'),
 			mkNavRow(this.#i18n.t('privacy'), 'privacy'),
 			mkNavRow(this.#i18n.t('invitationsTab'), 'invites'),
+			mkNavRow(this.#i18n.t('channelsTab'), 'channels'),
 			mkNavRow(this.#i18n.t('appearanceTab'), 'chatSettings'),
 			mkNavRow(this.#i18n.t('foldersTab'), 'folders'),
 			mkNavRow(this.#i18n.t('aboutAppTab'), 'about'),
@@ -6607,6 +6881,192 @@ class MessengerGroupProfileModal {
 	}
 }
 
+class MessengerChannelProfileModal {
+	#utils;
+	#icons;
+	#i18n;
+	#themeManager;
+	#dismiss = null;
+	#menuBuilder;
+	#avatarBuilder;
+	#api;
+	#closeOverlay = null;
+
+	constructor(utils, icons, i18n, themeManager, menuBuilder, avatarBuilder, api) {
+		this.#utils = utils;
+		this.#icons = icons;
+		this.#i18n = i18n;
+		this.#themeManager = themeManager;
+		this.#menuBuilder = menuBuilder;
+		this.#avatarBuilder = avatarBuilder;
+		this.#api = api;
+	}
+
+	async open(targetRootEl, chat, callbacks = {}) {
+		this.close();
+		let info;
+		try {
+			info = await this.#api.getChannelInfo(chat.id);
+			if (!info?.success) throw new Error(info?.error || 'GetChannelInfo failed');
+		} catch (e) {
+			MessengerDialog.alert({
+				title: this.#i18n.t('channelSaveError'),
+				message: e.message || '',
+				type: MessengerDialog.TYPE_DANGER,
+				themeManager: this.#themeManager,
+			});
+			return;
+		}
+
+		const canEdit = !!info.canEdit;
+		const canEditSlug = !!info.canEditSlug;
+		const content = this.#utils.mk('div', 'mapp-group-profile-content');
+		const statusEl = this.#utils.mk('div', 'mapp-profile-status-text');
+		statusEl.hidden = true;
+
+		const head = this.#utils.mk('div', 'mapp-profile-head');
+		const avatarSlot = this.#utils.mk('div', 'mapp-profile-head-avatar');
+		let pendingPhoto = null;
+		let avatarPreviewUrl = null;
+		const applyAvatar = async (file) => {
+			if (!file || !canEdit) return;
+			pendingPhoto = await compressImageFile(file, 512);
+			if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+			avatarPreviewUrl = URL.createObjectURL(pendingPhoto);
+			avatarSlot.innerHTML = '';
+			avatarSlot.appendChild(this.#avatarBuilder.build(chat.id, info.name || chat.name, avatarPreviewUrl, 56));
+			await this.#api.uploadChannelAvatar(chat.id, pendingPhoto);
+			callbacks.onUpdated?.({ id: chat.id, avatar: avatarPreviewUrl });
+		};
+		avatarSlot.appendChild(this.#avatarBuilder.build(chat.id, info.name || chat.name, info.avatar || chat.avatar, 56));
+		if (canEdit) {
+			avatarSlot.classList.add('mapp-profile-head-avatar--editable');
+			avatarSlot.addEventListener('click', () => openAvatarSourcePicker({
+				i18n: this.#i18n, themeManager: this.#themeManager, icons: this.#icons,
+				cropOutputSize: 512, onPick: applyAvatar,
+			}));
+		}
+
+		const headText = this.#utils.mk('div', 'mapp-profile-head-text');
+		const nameInput = document.createElement('input');
+		nameInput.type = 'text';
+		applyStandardFieldInput(nameInput);
+		nameInput.value = info.name || '';
+		nameInput.disabled = !canEdit;
+		headText.appendChild(mkProfileField(this.#i18n.t('channelNameLabel'), nameInput));
+
+		const slugInput = document.createElement('input');
+		slugInput.type = 'text';
+		applyStandardFieldInput(slugInput);
+		slugInput.value = info.slug || '';
+		slugInput.disabled = !canEditSlug;
+		const slugHint = this.#utils.mk('div', 'mapp-input-hint');
+		slugHint.textContent = this.#i18n.t('channelSlugHint');
+		headText.append(mkProfileField(this.#i18n.t('channelSlugLabel'), slugInput), slugHint);
+
+		const descInput = document.createElement('textarea');
+		applyStandardFieldInput(descInput);
+		descInput.value = info.description || '';
+		descInput.disabled = !canEdit;
+		descInput.rows = 3;
+		headText.appendChild(mkProfileField(this.#i18n.t('channelDescriptionLabel'), descInput));
+		head.append(avatarSlot, headText);
+		content.appendChild(head);
+
+		let saveTimer = null;
+		const persist = () => {
+			clearTimeout(saveTimer);
+			saveTimer = setTimeout(async () => {
+				try {
+					const r = await this.#api.updateChannel(chat.id, {
+						name: nameInput.value.trim(),
+						slug: slugInput.value.trim(),
+						description: descInput.value.trim(),
+					});
+					if (!r?.success) throw new Error(r?.error);
+					callbacks.onUpdated?.({ id: chat.id, name: r.name, channelSlug: r.slug });
+					statusEl.hidden = false;
+					MessengerUtils.setStatusTone(statusEl, true);
+					statusEl.textContent = this.#i18n.t('saved');
+				} catch (e) {
+					statusEl.hidden = false;
+					MessengerUtils.setStatusTone(statusEl, false);
+					statusEl.textContent = e.message || this.#i18n.t('channelSaveError');
+				}
+			}, 600);
+		};
+		if (canEdit) {
+			nameInput.addEventListener('input', persist);
+			descInput.addEventListener('input', persist);
+		}
+		if (canEditSlug) slugInput.addEventListener('change', persist);
+
+		const linkCard = mkUiCard(this.#i18n.t('channelShare'));
+		const channelLink = buildChannelProfileUrl(info.slug || chat.channelSlug);
+		if (channelLink) {
+			const linkRow = this.#utils.mk('div', 'mapp-profile-link-row');
+			const linkEl = document.createElement('a');
+			linkEl.href = channelLink;
+			linkEl.target = '_blank';
+			linkEl.rel = 'noopener';
+			linkEl.textContent = channelLink.replace(/^https?:\/\//, '');
+			linkRow.appendChild(linkEl);
+			linkCard.appendChild(linkRow);
+		}
+		content.appendChild(linkCard);
+
+		if (info.isOwner) {
+			const dangerCard = mkUiCard('');
+			const delBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-danger mapp-btn-block');
+			delBtn.type = 'button';
+			delBtn.textContent = this.#i18n.t('channelDelete');
+			delBtn.addEventListener('click', async () => {
+				const ok = await MessengerDialog.confirm({
+					title: this.#i18n.t('channelDelete'),
+					message: this.#i18n.t('channelDeleteConfirm'),
+					themeManager: this.#themeManager,
+				});
+				if (!ok) return;
+				await this.#api.deleteChannel(chat.id);
+				this.close();
+				callbacks.onDeleted?.(chat.id);
+			});
+			dangerCard.appendChild(delBtn);
+			content.appendChild(dangerCard);
+		}
+
+		content.appendChild(statusEl);
+		const panel = this.#menuBuilder.buildWindow(
+			info.name || chat.name,
+			content,
+			() => this.close(),
+			{
+				profileLink: channelLink,
+				qrTitle: this.#i18n.t('qrChannelTitle'),
+				icons: this.#icons,
+				i18n: this.#i18n,
+				themeManager: this.#themeManager,
+			},
+		);
+		panel.classList.add('mc-panel-window--profile', 'mc-panel-window--group-profile');
+		this.#themeManager.applyChatVars(panel);
+		this.#themeManager.applyAppVars(panel);
+		this.#closeOverlay = this.#menuBuilder.openInOverlay(panel);
+		lockAppScroll();
+		this.#dismiss = messengerMakeDismissable(() => {
+			if (this.#closeOverlay) { this.#closeOverlay(); this.#closeOverlay = null; }
+			unlockAppScroll();
+			this.#dismiss = null;
+		}, null);
+	}
+
+	close() {
+		if (this.#dismiss) { this.#dismiss(); return; }
+		if (this.#closeOverlay) { this.#closeOverlay(); this.#closeOverlay = null; }
+		unlockAppScroll();
+	}
+}
+
 class MessengerAttachMenu {
 	#utils;
 	#icons;
@@ -6762,8 +7222,13 @@ class MessengerNewChatModal {
 			createInFlight = true;
 			try {
 				const chat = await this.#api.createDirectChat(contact.id);
-				close();
-				onChatCreated(chat);
+				if (close.immediate) close.immediate();
+				else close();
+				onChatCreated({
+					...chat,
+					contactUserId: contact.id,
+					avatar: contact.avatar || chat.avatar,
+				});
 			} catch (e) {
 				console.warn('[MessengerNewChatModal] createDirectChat', e);
 				await MessengerDialog.alert({
@@ -6863,7 +7328,8 @@ class MessengerNewChatModal {
 						});
 						delete chat.keySetupWarning;
 					}
-					close();
+					if (close.immediate) close.immediate();
+					else close();
 					onChatCreated(chat);
 				} catch (e) {
 					console.warn('[MessengerNewChatModal] createGroup', e);
@@ -7395,7 +7861,7 @@ class MessengerFileUploadBubble {
 	create(file) {
 		const isImage = file.type.startsWith('image/');
 		const row = this.#utils.mk('div', 'mc-msg-row mc-msg-row--mine mc-file-upload-row');
-		const localId = this.#utils.guid();
+		const localId = this.#utils.localMessageId();
 		row.dataset.localUploadId = localId;
 
 		const bubble = this.#utils.mk('div', 'mc-bubble');
@@ -7541,7 +8007,7 @@ class MessengerFileUploadBubble {
 
 	createAlbum(files, caption = '') {
 		const row = this.#utils.mk('div', 'mc-msg-row mc-msg-row--mine mc-file-upload-row');
-		const localId = this.#utils.guid();
+		const localId = this.#utils.localMessageId();
 		row.dataset.localUploadId = localId;
 		row.dataset.msgId = localId;
 
@@ -7869,7 +8335,7 @@ class MessengerFileHandler {
 				}
 				if (msgArea) MessengerUtils.scrollToBottom(msgArea);
 				const messageText = MessengerCustomMessage.pack(contentType, payload);
-				const localId = bubbleCtrl?.localId ?? this.#utils.guid();
+				const localId = bubbleCtrl?.localId ?? this.#utils.localMessageId();
 				try {
 					const serverMsg = await this.#api.sendMessage(chatId, messageText, localId);
 					if (serverMsg?.id && bubbleCtrl) {
@@ -8560,24 +9026,42 @@ class MessengerThemeManager {
 
 class MessengerAvatarBuilder {
 	#utils;
+	#cache;
 
-	constructor(utils) {
+	constructor(utils, cache = null) {
 		this.#utils = utils;
+		this.#cache = cache;
+	}
+
+	#showInitials(wrap, id, name) {
+		wrap.innerHTML = '';
+		const ini = this.#utils.mk('span', 'mc-avatar-initials');
+		ini.textContent = this.#utils.initials(name || '?');
+		wrap.style.setProperty('--mc-avatar-bg', this.#utils.avatarColor(id || 'x'));
+		wrap.appendChild(ini);
+	}
+
+	#mountAvatarImg(wrap, id, name, avatarUrl) {
+		const img = document.createElement('img');
+		img.className = 'mc-avatar-img';
+		img.alt = '';
+		img.decoding = 'async';
+		img.addEventListener('error', () => this.#showInitials(wrap, id, name), { once: true });
+		wrap.appendChild(img);
+		if (this.#cache?.applyAvatarSrc) {
+			this.#cache.applyAvatarSrc(img, avatarUrl);
+		} else {
+			img.src = MessengerAppContext.toAbsoluteUrl(avatarUrl);
+		}
 	}
 
 	build(id, name, base64, size) {
 		const wrap = this.#utils.mk('div', 'mc-avatar');
 		MessengerUtils.setAvatarSize(wrap, size);
 		if (base64) {
-			const img = document.createElement('img');
-			img.className = 'mc-avatar-img';
-			img.src = base64;
-			wrap.appendChild(img);
+			this.#mountAvatarImg(wrap, id, name, base64);
 		} else {
-			const ini = this.#utils.mk('span', 'mc-avatar-initials');
-			ini.textContent = this.#utils.initials(name || '?');
-			wrap.style.setProperty('--mc-avatar-bg', this.#utils.avatarColor(id || 'x'));
-			wrap.appendChild(ini);
+			this.#showInitials(wrap, id, name);
 		}
 		return wrap;
 	}
@@ -9549,6 +10033,9 @@ class MessengerUtils {
 			return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
 		});
 	}
+	localMessageId() {
+		return 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+	}
 	initials(name) {
 		const p = (name || '?').trim().split(/\s+/);
 		return p.length >= 2 ? (p[0][0] + p[1][0]).toUpperCase() : (name || '?').slice(0, 2).toUpperCase();
@@ -9825,6 +10312,47 @@ class MessengerUtils {
 			.map(m => m.id);
 	}
 
+	static findLastRenderedRealMessage(all, renderedIds) {
+		let last = null;
+		for (const m of all) {
+			if (m.isVirtual || m.deletedForEveryone) continue;
+			if (!renderedIds?.has(m.id)) continue;
+			if (!last || MessengerUtils.compareMessages(m, last) > 0) last = m;
+		}
+		return last;
+	}
+
+	/** Срез неотрисованных старых сообщений для prepend после GetMessages. */
+	static collectPrependSliceForOlderPage(allNow, renderedIds) {
+		const firstRenderedRealIdx = allNow.findIndex(
+			m => !m.isVirtual && renderedIds.has(m.id)
+		);
+		if (firstRenderedRealIdx <= 0) {
+			return { slice: [], startIdx: firstRenderedRealIdx < 0 ? allNow.length : 0 };
+		}
+		const firstRendered = allNow[firstRenderedRealIdx];
+		const seen = new Set();
+		const slice = [];
+		const pushIfNew = (m) => {
+			if (m.isVirtual || renderedIds.has(m.id) || seen.has(m.id)) return;
+			slice.push(m);
+			seen.add(m.id);
+		};
+		for (let i = 0; i < firstRenderedRealIdx; i++) pushIfNew(allNow[i]);
+		for (const m of allNow) {
+			if (seen.has(m.id) || renderedIds.has(m.id) || m.isVirtual) continue;
+			if (MessengerUtils.compareMessages(m, firstRendered) < 0) pushIfNew(m);
+		}
+		slice.sort(MessengerUtils.compareMessages);
+		let startIdx = firstRenderedRealIdx;
+		const firstReal = slice.find(m => !m.isVirtual);
+		if (firstReal) {
+			const idx = allNow.findIndex(m => m.id === firstReal.id);
+			if (idx >= 0) startIdx = idx;
+		}
+		return { slice, startIdx };
+	}
+
 	static findFirstOrderMismatch(renderedIds, expectedIds) {
 		const minLen = Math.min(renderedIds.length, expectedIds.length);
 		for (let i = 0; i < minLen; i++) {
@@ -9915,6 +10443,57 @@ class MessengerOfflineStore {
 			return null;
 		}
 	}
+
+	static CHANNEL_META_PREFIX = 'sm-offline-channel-meta:';
+	static CHANNEL_SLUG_PREFIX = 'sm-offline-channel-slug:';
+
+	static saveChannelMeta(chatId, meta) {
+		if (!chatId || !meta) return;
+		try {
+			const payload = {
+				chatId,
+				name: meta.name || '',
+				slug: meta.slug || '',
+				description: meta.description || '',
+				isSubscribed: meta.isSubscribed !== false,
+				canPost: !!meta.canPost,
+				myRole: meta.myRole || null,
+				savedAt: Date.now(),
+			};
+			localStorage.setItem(
+				MessengerOfflineStore.CHANNEL_META_PREFIX + chatId,
+				JSON.stringify(payload)
+			);
+			if (payload.slug) {
+				localStorage.setItem(
+					MessengerOfflineStore.CHANNEL_SLUG_PREFIX + payload.slug.toLowerCase(),
+					chatId
+				);
+			}
+		} catch (_) { /* ignore quota */ }
+	}
+
+	static loadChannelMeta(chatId) {
+		if (!chatId) return null;
+		try {
+			const raw = localStorage.getItem(MessengerOfflineStore.CHANNEL_META_PREFIX + chatId);
+			if (!raw) return null;
+			const parsed = JSON.parse(raw);
+			return parsed?.chatId ? parsed : null;
+		} catch {
+			return null;
+		}
+	}
+
+	static chatIdByChannelSlug(slug) {
+		const norm = String(slug || '').trim().toLowerCase();
+		if (!norm) return null;
+		try {
+			return localStorage.getItem(MessengerOfflineStore.CHANNEL_SLUG_PREFIX + norm) || null;
+		} catch {
+			return null;
+		}
+	}
 }
 
 class MessengerCache {
@@ -9940,6 +10519,10 @@ class MessengerCache {
 		return this.#cryptoGetter?.() || null;
 	}
 
+	static #isLockedPlaceholder(text) {
+		return text === SupraCrypto.LOCKED_PREVIEW || text === SupraCrypto.LOCKED_OTHER;
+	}
+
 	static #messageRecordFromMsg(chatId, msg) {
 		const ts = msg.timestamp instanceof Date
 			? msg.timestamp.getTime()
@@ -9952,11 +10535,9 @@ class MessengerCache {
 		let replyToTextPreview = msg.replyToTextPreview ?? null;
 		let encText = msg._encText || null;
 		let encReply = msg._encReplyPreview ?? null;
-		if (tier === 'protected') {
-			if (!encText && SupraCrypto.isEncrypted(text)) encText = text;
-			if (encReply == null && replyToTextPreview && SupraCrypto.isEncrypted(replyToTextPreview)) {
-				encReply = replyToTextPreview;
-			}
+		if (!encText && SupraCrypto.isEncrypted(text)) encText = text;
+		if (encReply == null && replyToTextPreview && SupraCrypto.isEncrypted(replyToTextPreview)) {
+			encReply = replyToTextPreview;
 		}
 		return {
 			chatId,
@@ -9967,7 +10548,7 @@ class MessengerCache {
 			senderAvatar: msg.senderAvatar ?? null,
 			text,
 			timestamp: ts,
-			status: msg.status ?? 'read',
+			status: msg.status ?? 'sent',
 			isOwn: !!msg.isOwn,
 			isVirtual: !!msg.isVirtual,
 			contentType: msg.contentType ?? null,
@@ -10006,10 +10587,24 @@ class MessengerCache {
 				_lc: MessengerCache.CACHE_PLAIN_VERSION,
 			};
 		}
+		let text = record.text ?? '';
+		let replyToTextPreview = record.replyToTextPreview ?? null;
+		if (MessengerCache.#isLockedPlaceholder(text)) {
+			text = record._encText
+				|| (SupraCrypto.isEncrypted(record.text) ? record.text : '');
+			if (!text || MessengerCache.#isLockedPlaceholder(text)) {
+				console.warn('[MessengerCache] skip locked placeholder without ciphertext', record.id);
+				return null;
+			}
+		}
+		if (replyToTextPreview && MessengerCache.#isLockedPlaceholder(replyToTextPreview)) {
+			replyToTextPreview = record._encReplyPreview
+				|| (SupraCrypto.isEncrypted(record.replyToTextPreview) ? record.replyToTextPreview : null);
+		}
 		return {
 			...record,
-			text: record.text ?? '',
-			replyToTextPreview: record.replyToTextPreview ?? null,
+			text,
+			replyToTextPreview,
 			_encText: null,
 			_encReplyPreview: null,
 			bodyEnc: null,
@@ -10545,6 +11140,112 @@ class MessengerCache {
 	async fetchAndCacheViewerImage(url, signal = null) {
 		return this.getOrCreateThumbnail(url, signal, MESSENGER_VIEWER_FHD_MAX);
 	}
+
+	static #avatarStorageKey(url) {
+		if (!url || typeof url !== 'string') return null;
+		if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+		const abs = MessengerAppContext.toAbsoluteUrl(url);
+		try {
+			const u = new URL(abs, window.location.origin);
+			if (u.pathname.startsWith('/api/files/') && u.pathname.includes('avatar')) {
+				return u.origin + u.pathname;
+			}
+		} catch { /* ignore */ }
+		const q = abs.indexOf('?');
+		return q >= 0 ? abs.slice(0, q) : abs;
+	}
+
+	async getAvatarBlobUrl(url) {
+		const key = MessengerCache.#avatarStorageKey(url);
+		if (!key) return null;
+		if (this.#objectURLs.has(key)) return this.#objectURLs.get(key);
+		const abs = MessengerAppContext.toAbsoluteUrl(url);
+		const lookupKeys = key === url || key === abs
+			? [key]
+			: [key, abs, url];
+		try {
+			const db = await this.#getDB();
+			for (const lookupKey of lookupKeys) {
+				const record = await new Promise((resolve, reject) => {
+					const tx = db.transaction(MessengerCache.STORE_IMAGES, 'readonly');
+					const req = tx.objectStore(MessengerCache.STORE_IMAGES).get(lookupKey);
+					req.onsuccess = (e) => resolve(e.target.result ?? null);
+					req.onerror = (e) => reject(e.target.error);
+				});
+				if (!record?.blob) continue;
+				const objectURL = URL.createObjectURL(record.blob);
+				this.#objectURLs.set(key, objectURL);
+				return objectURL;
+			}
+		} catch { /* ignore */ }
+		return null;
+	}
+
+	async fetchAndCacheAvatar(url, signal = null) {
+		const key = MessengerCache.#avatarStorageKey(url);
+		if (!key) return null;
+		if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+		const cached = await this.getAvatarBlobUrl(url);
+		if (cached) return cached;
+		const abs = MessengerAppContext.toAbsoluteUrl(url);
+		try {
+			const response = await fetch(abs, { credentials: 'same-origin', signal });
+			if (!response.ok) throw new Error(`HTTP ${response.status} for ${abs}`);
+			const blob = await response.blob();
+			const db = await this.#getDB();
+			await new Promise((resolve, reject) => {
+				const tx = db.transaction(MessengerCache.STORE_IMAGES, 'readwrite');
+				tx.objectStore(MessengerCache.STORE_IMAGES).put({ url: key, blob });
+				tx.oncomplete = () => resolve();
+				tx.onerror = (e) => reject(e.target.error);
+			});
+			const objectURL = URL.createObjectURL(blob);
+			this.#objectURLs.set(key, objectURL);
+			return objectURL;
+		} catch (err) {
+			if (err?.name === 'AbortError') throw err;
+			return null;
+		}
+	}
+
+	applyAvatarSrc(imgEl, url, signal = null) {
+		if (!imgEl || !url) return;
+		const abs = MessengerAppContext.toAbsoluteUrl(url);
+		const apply = (src) => {
+			if (imgEl.isConnected && src) imgEl.src = src;
+		};
+		void (async () => {
+			try {
+				const cached = await this.getAvatarBlobUrl(url);
+				if (cached) {
+					apply(cached);
+					return;
+				}
+				const fetched = await this.fetchAndCacheAvatar(url, signal);
+				if (fetched) {
+					apply(fetched);
+				} else if (typeof navigator === 'undefined' || navigator.onLine !== false) {
+					apply(abs);
+				}
+			} catch (err) {
+				if (err?.name !== 'AbortError' && (typeof navigator === 'undefined' || navigator.onLine !== false)) {
+					apply(abs);
+				}
+			}
+		})();
+	}
+
+	prefetchAvatars(urls) {
+		const seen = new Set();
+		for (const raw of urls || []) {
+			if (!raw || typeof raw !== 'string') continue;
+			const key = MessengerCache.#avatarStorageKey(raw);
+			if (!key || seen.has(key)) continue;
+			seen.add(key);
+			void this.fetchAndCacheAvatar(raw).catch(() => {});
+		}
+	}
+
 	async getImage(url) {
 		if (this.#objectURLs.has(url)) return this.#objectURLs.get(url);
 		try {
@@ -10724,6 +11425,26 @@ class MessengerMessageService {
 		const { separatorsAdded } = await this.ingest(chatId, [msg], api);
 		return { msg, separatorAdded: separatorsAdded[0] ?? null };
 	}
+	async ingestOwnFromRealtime(chatId, msg, api = null) {
+		const textKey = (msg?.text ?? '').trim();
+		if (textKey) {
+			try {
+				const pendingGroups = await this.#cache.getPendingMessages();
+				const group = pendingGroups.find((g) => g.chatId === chatId);
+				if (group) {
+					for (const localMsg of group.messages) {
+						if ((localMsg.text ?? '').trim() !== textKey) continue;
+						await this.confirmOptimistic(chatId, localMsg.id, msg);
+						return { msg, separatorAdded: null, deduped: true };
+					}
+				}
+			} catch (err) {
+				console.warn('[MessengerMessageService] ingestOwnFromRealtime dedup error:', err);
+			}
+		}
+		const result = await this.ingestOne(chatId, msg, api);
+		return { ...result, deduped: false };
+	}
 	async confirmOptimistic(chatId, localId, serverMsg) {
 		try {
 			await this.#cache.purgeMessageAliases(chatId, serverMsg?.id, localId);
@@ -10741,18 +11462,27 @@ class MessengerMessageService {
 		const start = Math.max(0, end - limit);
 		return all.slice(start, end);
 	}
-	async syncNewMessages(chatId, api, pageSize = 50) {
+	async syncNewMessages(chatId, api, pageSize = 50, { markAsRead = false } = {}) {
 		const lastId = await this.#cache.getLastMessageId(chatId);
 		let newMsgs = [];
 		try {
-			newMsgs = await api.getNewMessages(chatId, lastId, pageSize);
+			const panel = await api.syncChatPanel(chatId, {
+				afterMessageId: lastId,
+				markAsRead,
+			});
+			if (!panel?.success) throw new Error(panel?.error || 'SyncChatPanel failed');
+			newMsgs = panel.messages || [];
+			if (newMsgs.length) await this.ingest(chatId, newMsgs, api);
+			const reconcile = await this.reconcileWithServerIndex(chatId, api, lastId, panel.syncIndex);
+			return {
+				messages: newMsgs,
+				reconcile: reconcile || { historyCleared: false, removedIds: [] },
+				markedRead: !!panel.markedRead,
+			};
 		} catch (err) {
 			console.warn('[MessengerMessageService] syncNewMessages error:', err);
-			return { messages: [], reconcile: { historyCleared: false, removedIds: [] } };
+			return { messages: [], reconcile: { historyCleared: false, removedIds: [] }, markedRead: false };
 		}
-		if (newMsgs.length) await this.ingest(chatId, newMsgs, api);
-		const reconcile = await this.reconcileWithServerIndex(chatId, api, lastId);
-		return { messages: newMsgs, reconcile: reconcile || { historyCleared: false, removedIds: [] } };
 	}
 	async initialLoad(chatId, api, pageSize = 20) {
 		const cached = await this.#cache.getMessages(chatId);
@@ -10795,9 +11525,16 @@ class MessengerMessageService {
 		}
 	}
 
-	async reconcileWithServerIndex(chatId, api, afterMessageId = null) {
+	#sliceSyncIndexAfter(indexEntries, afterMessageId) {
+		if (!afterMessageId || !indexEntries?.length) return indexEntries || [];
+		const idx = indexEntries.findIndex(e => e.id === afterMessageId);
+		if (idx < 0) return indexEntries;
+		return indexEntries.slice(idx + 1);
+	}
+
+	async reconcileWithServerIndex(chatId, api, afterMessageId = null, preloadedIndex = null) {
 		try {
-			const fullIndex = await api.getMessageSyncIndex(chatId, null);
+			const fullIndex = preloadedIndex ?? await api.getMessageSyncIndex(chatId, null);
 			const serverIds = new Set((fullIndex || []).map(e => e.id));
 
 			if (!fullIndex?.length) {
@@ -10822,7 +11559,7 @@ class MessengerMessageService {
 			if (removedIds.length) this.#knownSeparators.delete(chatId);
 
 			const index = afterMessageId
-				? await api.getMessageSyncIndex(chatId, afterMessageId)
+				? this.#sliceSyncIndexAfter(fullIndex, afterMessageId)
 				: fullIndex;
 			if (!index?.length) return { historyCleared: false, removedIds };
 
@@ -10870,13 +11607,21 @@ class MessengerMessageService {
 		return result.all;
 	}
 
-	async syncRecentFromServer(chatId, api, pageSize = 50) {
+	async syncRecentFromServer(chatId, api, pageSize = 50, { markAsRead = false } = {}) {
 		let reconcile = { historyCleared: false, removedIds: [] };
+		let markedRead = false;
 		try {
-			const batch = await api.getMessages(chatId, 0, pageSize);
-			if (batch.length) await this.ingest(chatId, batch, api);
-			const sync = await this.syncNewMessages(chatId, api, pageSize);
-			reconcile = sync.reconcile || reconcile;
+			const lastId = await this.#cache.getLastMessageId(chatId);
+			const panel = await api.syncChatPanel(chatId, {
+				count: pageSize,
+				afterMessageId: lastId,
+				markAsRead,
+			});
+			if (!panel?.success) throw new Error(panel?.error || 'SyncChatPanel failed');
+			markedRead = !!panel.markedRead;
+			if (panel.messages?.length) await this.ingest(chatId, panel.messages, api);
+			reconcile = await this.reconcileWithServerIndex(chatId, api, lastId, panel.syncIndex)
+				|| reconcile;
 		} catch (err) {
 			console.warn('[MessengerMessageService] syncRecentFromServer error:', err);
 		}
@@ -10884,6 +11629,7 @@ class MessengerMessageService {
 			all: await this.getDisplayMessages(chatId, api),
 			historyCleared: !!reconcile.historyCleared,
 			removedIds: reconcile.removedIds || [],
+			markedRead,
 		};
 	}
 
@@ -12046,12 +12792,23 @@ class MessengerSidebar {
 		}
 		const row2 = this.#utils.mk('div', 'mapp-chat-item-row');
 		const previewEl = this.#utils.mk('span', 'mapp-chat-item-preview');
-		const preview = MessengerChatListPreview.getDisplay(chat.lastMessage || '', this.#i18n);
-		if (preview.locked) previewEl.classList.add('mapp-chat-item-preview--locked');
-		previewEl.textContent = preview.text;
+		const previewInfo = this.#formatChatPreview
+			? this.#formatChatPreview(chat)
+			: (() => {
+				const p = MessengerChatListPreview.getDisplay(chat.lastMessage || '', this.#i18n);
+				return { text: p.text, typing: false, locked: p.locked };
+			})();
+		if (previewInfo.locked && !previewInfo.typing) previewEl.classList.add('mapp-chat-item-preview--locked');
+		if (previewInfo.typing) {
+			previewEl.classList.add('mapp-chat-item-preview--typing');
+			fillTypingIndicator(previewEl, this.#i18n);
+		} else {
+			previewEl.textContent = previewInfo.text;
+		}
 		const badgeWrap = this.#utils.mk('span', 'mapp-badge-wrap');
 		if (chat.unreadCount > 0) {
 			const badge = this.#utils.mk('span', 'mapp-badge');
+			if (isChatNotificationMuted(chat.id)) badge.classList.add('mapp-badge--muted');
 			badge.textContent = chat.unreadCount > 99 ? '99+' : chat.unreadCount;
 			badgeWrap.appendChild(badge);
 		}
@@ -12211,6 +12968,24 @@ class MessengerSidebar {
 	}
 
 	#themeManager = null;
+	#formatChatPreview = null;
+
+	setChatPreviewFormatter(fn) {
+		this.#formatChatPreview = typeof fn === 'function' ? fn : null;
+	}
+
+	updateChatPreview(chatId, previewInfo) {
+		const item = this.el.chatList?.querySelector(`[data-chat-id="${chatId}"]`);
+		const previewEl = item?.querySelector('.mapp-chat-item-preview');
+		if (!previewEl || !previewInfo) return;
+		previewEl.classList.toggle('mapp-chat-item-preview--typing', !!previewInfo.typing);
+		previewEl.classList.toggle('mapp-chat-item-preview--locked', !!previewInfo.locked && !previewInfo.typing);
+		if (previewInfo.typing) {
+			fillTypingIndicator(previewEl, this.#i18n);
+		} else {
+			previewEl.textContent = previewInfo.text || '';
+		}
+	}
 
 	updateUnreadBadge(chatId, count, chats) {
 		const chat = chats.find(c => c.id === chatId);
@@ -12226,6 +13001,7 @@ class MessengerSidebar {
 		wrap.innerHTML = '';
 		if (count > 0) {
 			const badge = this.#utils.mk('span', 'mapp-badge');
+			if (isChatNotificationMuted(chatId)) badge.classList.add('mapp-badge--muted');
 			badge.textContent = count > 99 ? '99+' : count;
 			wrap.appendChild(badge);
 		}
@@ -12248,20 +13024,24 @@ class MessengerChatReadGate {
 		if (chatId) this.#lastEngagement.set(chatId, Date.now());
 	}
 
-	bindMsgArea(chatId, msgArea, isVisibleFn) {
+	bindMsgArea(chatId, msgArea, isVisibleFn, onEngaged = null) {
 		if (!msgArea || !chatId || this.#boundAreas.has(msgArea)) return;
 		this.#boundAreas.add(msgArea);
 		const bump = () => {
 			if (typeof isVisibleFn === 'function' && !isVisibleFn()) return;
 			this.recordEngagement(chatId);
+			if (typeof onEngaged === 'function') onEngaged();
 		};
-		['scroll', 'keydown', 'pointerdown', 'touchstart', 'wheel', 'focusin'].forEach((ev) => {
+		// Только явные действия пользователя — не scroll/wheel (auto-scroll при новом сообщении).
+		['keydown', 'pointerdown', 'touchstart'].forEach((ev) => {
 			msgArea.addEventListener(ev, bump, { passive: true });
 		});
 		const panel = msgArea.closest('.mapp-chat-panel, .mc-chat-embed');
 		const input = panel?.querySelector('.mc-input-field, textarea.mc-input, input.mc-input');
-		if (input) input.addEventListener('input', bump, { passive: true });
-		bump();
+		if (input) {
+			input.addEventListener('input', bump, { passive: true });
+			input.addEventListener('focusin', bump, { passive: true });
+		}
 	}
 
 	shouldMarkRead(chatId, { isActiveChat, isChatVisible }) {
@@ -12286,6 +13066,7 @@ class MessengerAppView {
 	#settingsModal;
 	#profileModal;
 	#groupProfileModal;
+	#channelProfileModal;
 	#avatarBuilder;
 	#presence = null;
 	#connectionStateMgr = null;
@@ -12300,6 +13081,7 @@ class MessengerAppView {
 	#previewDecryptScheduled = false;
 	#previewDecryptPending = false;
 	#pendingMarkRead = new Set();
+	#markReadSyncTimer = new Map();
 	#syncInFlight = null;
 	#lastSyncAt = 0;
 	static SYNC_DEBOUNCE_MS = 2500;
@@ -12307,13 +13089,16 @@ class MessengerAppView {
 	#panelPool = new Map();
 	#panelPoolOrder = [];
 	#msgService = null;
+	#mediaCache = null;
+	/** @type {Map<string, { users: Map<string, { userName: string, timer: number }> }>} */
+	#chatTypingState = new Map();
 	static PANEL_POOL_MAX = 5;
 	#mobilePopstateHandler = null;
 	#keyboardLayoutDestroy = null;
 	#historyLeaveSync = false;
 	static NAV_SESSION_PREFIX = 'mapp.nav.';
 	el = {};
-	constructor(utils, icons, themeManager, i18n, sidebar, panelFactory, modal, api, fileTransferTypes = [], settingsModal = null, profileModal = null, groupProfileModal = null, avatarBuilder = null, readGate = null) {
+	constructor(utils, icons, themeManager, i18n, sidebar, panelFactory, modal, api, fileTransferTypes = [], settingsModal = null, profileModal = null, groupProfileModal = null, channelProfileModal = null, avatarBuilder = null, readGate = null) {
 		this.#readGate = readGate || new MessengerChatReadGate();
 		this.#utils = utils;
 		this.#icons = icons;
@@ -12327,7 +13112,11 @@ class MessengerAppView {
 		this.#settingsModal = settingsModal;
 		this.#profileModal = profileModal;
 		this.#groupProfileModal = groupProfileModal;
+		this.#channelProfileModal = channelProfileModal;
 		this.#avatarBuilder = avatarBuilder;
+		if (typeof globalThis !== 'undefined') {
+			globalThis.addEventListener('sm-notify-prefs-changed', () => this.#renderChatList());
+		}
 	}
 
 	getReadGate() {
@@ -12340,15 +13129,45 @@ class MessengerAppView {
 
 	markReadIfEngaged(chatId, { becauseNewMessage = false } = {}) {
 		const chat = this.#chats.find(c => c.id === chatId);
+		if (isChannelType(chat?.type)) return;
 		const hasUnreadSignal = this.#pendingMarkRead.has(chatId) || (chat?.unreadCount > 0);
 		if (!hasUnreadSignal && !becauseNewMessage) return;
 		if (!this.#readGate.shouldMarkRead(chatId, {
 			isActiveChat: this.#activeChat?.id === chatId,
 			isChatVisible: this.#isChatVisible(chatId),
 		})) return;
-		this.#api.markRead(chatId).then(() => {
+		this.#api.markChatRead(chatId).then(() => {
 			this.#pendingMarkRead.delete(chatId);
 		}).catch(() => {});
+	}
+
+	shouldMarkReadForSync(chatId) {
+		const chat = this.#chats.find(c => c.id === chatId);
+		if (isChannelType(chat?.type)) return false;
+		const hasUnreadSignal = this.#pendingMarkRead.has(chatId) || (chat?.unreadCount > 0);
+		if (!hasUnreadSignal) return false;
+		return this.#readGate.shouldMarkRead(chatId, {
+			isActiveChat: this.#activeChat?.id === chatId,
+			isChatVisible: this.#isChatVisible(chatId),
+		});
+	}
+
+	acknowledgeMarkRead(chatId) {
+		this.#pendingMarkRead.delete(chatId);
+	}
+
+	scheduleMarkReadOnSync(chatId) {
+		if (!chatId) return;
+		this.#pendingMarkRead.add(chatId);
+		if (this.#markReadSyncTimer.has(chatId)) return;
+		const timer = setTimeout(() => {
+			this.#markReadSyncTimer.delete(chatId);
+			if (!this.shouldMarkReadForSync(chatId)) return;
+			this.#api.markChatRead(chatId).then(() => {
+				this.acknowledgeMarkRead(chatId);
+			}).catch(() => {});
+		}, 80);
+		this.#markReadSyncTimer.set(chatId, timer);
 	}
 
 	#pushTraceHasDeliveryIssue(trace) {
@@ -12429,9 +13248,13 @@ class MessengerAppView {
 					return this.receiveMessage(chatId, msg, listPreviewSource);
 				}
 			}
+			const msgText = (msg.text ?? '').trim();
 			const pending = [...this.#activeState.messages.values()].find((e) => {
 				const d = e.data;
-				return d?.isOwn && MessengerUtils.isLocalMessageId(d.id) && !d.serverId;
+				if (!d?.isOwn || d.serverId) return false;
+				if (MessengerUtils.isLocalMessageId(d.id)) return true;
+				const localText = (d.text ?? '').trim();
+				return !!(msgText && localText && localText === msgText);
 			});
 			if (pending) {
 				await this.#panelFactory.confirmServerMessage(this.#activeState, pending.data.id, msg);
@@ -12538,6 +13361,7 @@ class MessengerAppView {
 		panelPoolHost.setAttribute('aria-hidden', 'true');
 		const empty = this.#utils.mk('div', 'mapp-placeholder');
 		empty.textContent = this.#i18n.t('selectChat');
+		if (MessengerUtils.isMobile()) empty.hidden = true;
 		chatArea.appendChild(empty);
 		root.append(sidebarEl, chatArea, panelPoolHost);
 		container.appendChild(root);
@@ -12547,6 +13371,7 @@ class MessengerAppView {
 		this.el.empty = empty;
 		this.el.placeholder = empty;
 		this.#sidebar.setOnFilter((q) => this.#filterChats(q));
+		this.#sidebar.setChatPreviewFormatter((chat) => this.#formatChatListPreview(chat));
 		this.#sidebar.setOnFolderSelect(() => {
 			this.#filterChats(this.#sidebar.el._filterQuery || '');
 			this.#persistNavState();
@@ -12573,6 +13398,10 @@ class MessengerAppView {
 						this.#sidebar.openArchiveFolder();
 					},
 					onCreateFolder: () => this.promptCreateFolder(null),
+					onManageChannel: (chat) => {
+						this.#profileModal.close();
+						this.#showChannelProfile(chat);
+					},
 					onLogout: async () => {
 						window.AppBootLog?.clear?.();
 						SupraAuthCrypto.clearOnLogout(this.#currentUser?.id);
@@ -12706,7 +13535,7 @@ class MessengerAppView {
 		this.#parkActivePanel();
 		this.el.root.classList.remove('mapp-show-chat');
 		this.#keyboardLayoutDestroy?.apply?.();
-		this.el.empty.hidden = false;
+		this.#setEmptyPlaceholderVisible(true);
 		this.#activeChat = null;
 		this.#sidebar.setActiveItem(null);
 		this.#renderChatList();
@@ -12727,6 +13556,20 @@ class MessengerAppView {
 		this.#leaveChatUi();
 		this.#syncHistoryAfterLeaveChat();
 	}
+
+	#setEmptyPlaceholderVisible(visible) {
+		if (!this.el.empty) return;
+		if (visible && MessengerUtils.isMobile()) {
+			this.el.empty.hidden = true;
+			if (this.el.root?.classList.contains('mapp-show-chat') && !this.#activeState && !this.#activeChat) {
+				this.el.root.classList.remove('mapp-show-chat');
+				this.#keyboardLayoutDestroy?.apply?.();
+				this.#showBottomNavigationBar();
+			}
+			return;
+		}
+		this.el.empty.hidden = !visible;
+	}
 	#isChatVisible(chatId) {
 		if (!this.#activeState || this.#activeState.chatId !== chatId) return false;
 		if (!MessengerUtils.isMobile()) return true;
@@ -12741,6 +13584,37 @@ class MessengerAppView {
 	}
 	setMessageService(msgService) {
 		this.#msgService = msgService;
+	}
+
+	setMediaCache(cache) {
+		this.#mediaCache = cache;
+	}
+
+	#collectAvatarUrls(extra = []) {
+		const urls = [...extra];
+		if (this.#currentUser?.avatar) urls.push(this.#currentUser.avatar);
+		for (const chat of this.#chats || []) {
+			if (chat.avatar) urls.push(chat.avatar);
+		}
+		return urls;
+	}
+
+	#prefetchAvatars(extra = []) {
+		this.#mediaCache?.prefetchAvatars?.(this.#collectAvatarUrls(extra));
+	}
+
+	async #warmAvatarsFromMessageCache() {
+		if (!this.#msgService || !this.#mediaCache || !this.#chats?.length) return;
+		const urls = [];
+		await Promise.all(this.#chats.map(async (chat) => {
+			try {
+				const msgs = await this.#msgService.getCachedMessages(chat.id);
+				for (const msg of msgs || []) {
+					if (msg.senderAvatar) urls.push(msg.senderAvatar);
+				}
+			} catch { /* ignore */ }
+		}));
+		if (urls.length) this.#prefetchAvatars(urls);
 	}
 
 	scheduleRefreshLastMessagePreviews() {
@@ -12871,8 +13745,10 @@ class MessengerAppView {
 
 	#applyProfilesFromSync(profiles) {
 		if (!profiles || typeof profiles !== 'object') return;
+		const avatarUrls = [];
 		for (const [userId, profile] of Object.entries(profiles)) {
 			if (!profile) continue;
+			if (profile.avatar) avatarUrls.push(profile.avatar);
 			this.#api?.cacheContactProfile?.(userId, profile);
 			if (profile.onlineStatus) {
 				this.#presence?.update(userId, profile.onlineStatus);
@@ -12885,6 +13761,7 @@ class MessengerAppView {
 				lastSeenAt: profile.lastSeenAt ?? undefined,
 			});
 		}
+		if (avatarUrls.length) this.#prefetchAvatars(avatarUrls);
 	}
 
 	async #buildSyncCursors() {
@@ -12911,17 +13788,22 @@ class MessengerAppView {
 			api.importSyncEncryptionKeys?.(result.encryptionKeys);
 		}
 		const entries = Object.entries(result.messagesByChat || {});
+		const senderAvatars = [];
 		await Promise.all(entries.map(async ([chatId, msgs]) => {
 			if (!msgs?.length) return;
 			await msgService.ingest(chatId, msgs, api);
 			for (const msg of msgs) {
+				if (msg.senderAvatar) senderAvatars.push(msg.senderAvatar);
 				this.receiveMessage(chatId, msg, null, { bumpUnread: false });
 			}
 		}));
+		if (senderAvatars.length) this.#prefetchAvatars(senderAvatars);
 		if (reconcileActive && this.#activeState?.chatId) {
 			const activeId = this.#activeState.chatId;
 			try {
-				const { reconcile } = await msgService.syncNewMessages(activeId, api, 50);
+				const markAsRead = this.shouldMarkReadForSync(activeId);
+				const { reconcile, markedRead } = await msgService.syncNewMessages(activeId, api, 50, { markAsRead });
+				if (markedRead) this.acknowledgeMarkRead(activeId);
 				if (reconcile?.historyCleared) {
 					this.handleHistoryCleared(activeId);
 				} else {
@@ -12934,17 +13816,22 @@ class MessengerAppView {
 			}
 		}
 		if (this.#activeState && this.#isChatVisible(this.#activeState.chatId)) {
-			await this.#panelFactory.syncPanelMessages(
-				this.#activeState.chatId,
-				this.#activeState
-			);
-			if (api.getCrypto()?.isUnlocked) {
-				await this.#panelFactory.refreshEncryptedMessagesDisplay(
-					this.#activeState,
-					this.#activeState.chatId
-				);
+			const panelState = this.#activeState;
+			if (panelState._syncInFlightPromise) {
+				try { await panelState._syncInFlightPromise; } catch { /* ignore */ }
 			}
-			this.markReadIfEngaged(this.#activeState.chatId);
+			if (panelState.firstLoadDone) {
+				await this.#panelFactory.appendPendingMessagesFromCache(
+					panelState.chatId,
+					panelState
+				);
+				if (api.getCrypto()?.isUnlocked) {
+					await this.#panelFactory.refreshEncryptedMessagesDisplay(
+						panelState,
+						panelState.chatId
+					);
+				}
+			}
 		}
 	}
 
@@ -12991,6 +13878,20 @@ class MessengerAppView {
 		if (this.#currentUser?.id && chats?.length) {
 			MessengerOfflineStore.saveChats(this.#currentUser.id, chats);
 		}
+		for (const c of chats || []) {
+			if (!isChannelType(c.type)) continue;
+			const existing = MessengerOfflineStore.loadChannelMeta(c.id);
+			MessengerOfflineStore.saveChannelMeta(c.id, {
+				name: c.name || existing?.name || '',
+				slug: c.channelSlug || existing?.slug || '',
+				description: c.channelPreview?.description || existing?.description || '',
+				isSubscribed: c.channelPreview?.isSubscribed ?? (existing?.isSubscribed !== false),
+				canPost: channelMetaCanPost(existing),
+				myRole: existing?.myRole || null,
+			});
+		}
+		this.#prefetchAvatars();
+		void this.#warmAvatarsFromMessageCache();
 		this.#renderChatList();
 		if (chats?.length) {
 			this.scheduleRefreshLastMessagePreviews();
@@ -13008,6 +13909,7 @@ class MessengerAppView {
 		if (user.id && user.login) this.#contactLogins.set(user.id, user.login);
 		if (user.id) MessengerOfflineStore.saveUser(this.#currentUser);
 		this.#sidebar.updateUser(this.#currentUser);
+		if (user.avatar) this.#prefetchAvatars([user.avatar]);
 	}
 
 	handleLoginChanged({ userId, oldLogin, newLogin, displayName } = {}) {
@@ -13041,6 +13943,132 @@ class MessengerAppView {
 		return id ? `${MessengerAppView.NAV_SESSION_PREFIX}${id}` : null;
 	}
 
+	#findChannelBySlug(slug) {
+		const norm = String(slug || '').trim().toLowerCase();
+		if (!norm) return null;
+		const fromList = this.#chats.find(c =>
+			isChannelType(c.type) && String(c.channelSlug || '').trim().toLowerCase() === norm
+		);
+		if (fromList) return fromList;
+		const chatId = MessengerOfflineStore.chatIdByChannelSlug(norm);
+		if (!chatId) return null;
+		const cached = this.#chats.find(c => c.id === chatId);
+		if (cached) return cached;
+		const meta = MessengerOfflineStore.loadChannelMeta(chatId);
+		if (!meta) return null;
+		return {
+			id: chatId,
+			name: meta.name || '',
+			type: 'channel',
+			avatar: null,
+			channelSlug: meta.slug || slug,
+			channelPreview: {
+				description: meta.description || '',
+				isSubscribed: meta.isSubscribed !== false,
+			},
+			lastMessage: '',
+			lastMessageTime: null,
+			unreadCount: 0,
+		};
+	}
+
+	#resolveChannelMeta(chat) {
+		if (!isChannelType(chat?.type)) return null;
+		const stored = MessengerOfflineStore.loadChannelMeta(chat.id);
+		if (stored) {
+			const meta = {
+				success: true,
+				chatId: chat.id,
+				name: stored.name || chat.name || '',
+				slug: stored.slug || chat.channelSlug || '',
+				description: stored.description || '',
+				isSubscribed: stored.isSubscribed !== false,
+				canPost: !!stored.canPost,
+				myRole: stored.myRole || null,
+			};
+			meta.canPost = channelMetaCanPost(meta);
+			return meta;
+		}
+		if (chat.channelPreview) {
+			return {
+				success: true,
+				chatId: chat.id,
+				name: chat.name || '',
+				slug: chat.channelSlug || '',
+				description: chat.channelPreview.description || '',
+				isSubscribed: !!chat.channelPreview.isSubscribed,
+				canPost: false,
+			};
+		}
+		return {
+			success: true,
+			chatId: chat.id,
+			name: chat.name || '',
+			slug: chat.channelSlug || '',
+			description: '',
+			isSubscribed: true,
+			canPost: false,
+		};
+	}
+
+	async #refreshChannelMetaFromServer(chat) {
+		if (!isChannelType(chat?.type)) return null;
+		const existing = MessengerOfflineStore.loadChannelMeta(chat.id);
+		try {
+			const info = await this.#api.getChannelInfo(chat.id);
+			if (info?.success) {
+				const meta = {
+					chatId: chat.id,
+					name: info.name || chat.name || '',
+					slug: info.slug || chat.channelSlug || '',
+					description: info.description || '',
+					isSubscribed: info.isSubscribed !== false,
+					canPost: !!info.canPost || channelRoleCanPost(info.myRole),
+					myRole: info.myRole || null,
+				};
+				MessengerOfflineStore.saveChannelMeta(chat.id, meta);
+				chat.channelSlug = meta.slug || chat.channelSlug;
+				chat.channelPreview = {
+					description: meta.description,
+					isSubscribed: meta.isSubscribed,
+				};
+				return { ...info, ...meta };
+			}
+		} catch (_) { /* ignore */ }
+		if (existing) {
+			const meta = {
+				success: true,
+				chatId: chat.id,
+				name: existing.name || chat.name || '',
+				slug: existing.slug || chat.channelSlug || '',
+				description: existing.description || '',
+				isSubscribed: existing.isSubscribed !== false,
+				canPost: channelMetaCanPost(existing),
+				myRole: existing.myRole || null,
+			};
+			return meta;
+		}
+		if (chat.channelSlug) {
+			try {
+				const p = await this.#api.getChannelLinkPreview(chat.channelSlug);
+				if (p?.success) {
+					const meta = {
+						chatId: p.chatId || chat.id,
+						name: p.name || chat.name || '',
+						slug: p.slug || chat.channelSlug,
+						description: p.description || '',
+						isSubscribed: !!p.isSubscribed,
+						canPost: false,
+						myRole: null,
+					};
+					MessengerOfflineStore.saveChannelMeta(chat.id, meta);
+					return { success: true, ...p, ...meta };
+				}
+			} catch (_) { /* ignore */ }
+		}
+		return null;
+	}
+
 	#persistNavState() {
 		// Навигация не сохраняется между перезагрузками — всегда стартуем на «Все чаты».
 	}
@@ -13055,7 +14083,7 @@ class MessengerAppView {
 		this.#parkActivePanel();
 		this.#activeChat = null;
 		this.#sidebar.setActiveItem(null);
-		if (this.el.empty) this.el.empty.hidden = false;
+		this.#setEmptyPlaceholderVisible(true);
 		if (MessengerUtils.isMobile()) {
 			this.el.root?.classList.remove('mapp-show-chat');
 			this.#showBottomNavigationBar();
@@ -13203,18 +14231,54 @@ class MessengerAppView {
 		this.el.chatArea.appendChild(entry.state.el);
 		this.#activeState = entry.state;
 		this.el.empty.hidden = true;
-		this.markReadIfEngaged(chat.id);
-		this.#refreshDirectChatHeaderSub(chat);
+		this.#refreshActiveChatHeader();
 		if (!entry.state.firstLoadDone) {
+			if (chat.deepLinkMessageId) {
+				entry.state.pendingAnchorMessageId = chat.deepLinkMessageId;
+				delete chat.deepLinkMessageId;
+			}
 			this.#panelFactory.loadHistory(chat.id, entry.state);
 		} else {
 			this.#relayoutActivePanel(entry.state);
+			if (chat.deepLinkMessageId) {
+				const anchorId = chat.deepLinkMessageId;
+				delete chat.deepLinkMessageId;
+				void this.#panelFactory.scrollToQuotedMessage(entry.state, anchorId);
+			}
+			if (this.shouldMarkReadForSync(chat.id)) {
+				this.#api.markChatRead(chat.id).then(() => {
+					this.acknowledgeMarkRead(chat.id);
+				}).catch(() => {});
+			}
 		}
 		this.#panelFactory.syncImageViewerActionHost(entry.state);
 		global.ThemeChatBg?.paint?.();
 	}
 
 	#createAndOpenPanel(chat, pendingUnreadCount) {
+		return this.#createAndOpenPanelAsync(chat, pendingUnreadCount);
+	}
+
+	async #createAndOpenPanelAsync(chat, pendingUnreadCount) {
+		let channelMeta = null;
+		if (isChannelType(chat.type)) {
+			channelMeta = this.#resolveChannelMeta(chat);
+			const applyFreshMeta = (fresh) => {
+				if (!fresh?.success) return;
+				const state = this.#activeState?.chatId === chat.id
+					? this.#activeState
+					: this.#panelPool.get(chat.id)?.state;
+				if (!state) return;
+				state.channelMeta = fresh;
+				this.#panelFactory.syncChannelComposer(state);
+			};
+			if (typeof navigator === 'undefined' || navigator.onLine !== false) {
+				const fresh = await this.#refreshChannelMetaFromServer(chat).catch(() => null);
+				if (fresh?.success) channelMeta = fresh;
+			} else {
+				void this.#refreshChannelMetaFromServer(chat).then(applyFreshMeta);
+			}
+		}
 		this.el.empty.hidden = true;
 		const onThemeApply = (theme) => {
 			this.#themeManager.applyTheme(theme);
@@ -13224,10 +14288,54 @@ class MessengerAppView {
 			const state = this.#activeState;
 			const edit = state?.editDraft;
 			if (!edit && !text?.trim()) return;
+			if (isChannelType(chat.type)) {
+				field.value = '';
+				const localMsg = {
+					id: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+					serverId: null,
+					chatId: chat.id,
+					senderId: this.#currentUser?.id ?? 'me',
+					senderName: chat.name,
+					senderAvatar: chat.avatar ?? null,
+					text: text.trim(),
+					timestamp: new Date(),
+					status: 'sending',
+					isOwn: true,
+					isVirtual: false,
+					encryptionTier: 'basic',
+				};
+				this.#panelFactory.clearComposerDraft(state);
+				await this.#panelFactory.appendMsg(state, localMsg);
+				await this.#bumpChatPreview(chat.id, localMsg, localMsg.timestamp);
+				try {
+					const serverMsg = await this.#api.sendMessage(chat.id, text.trim(), {
+						localId: localMsg.id,
+						encryptionTier: 'basic',
+						themeManager: this.#themeManager,
+						i18n: this.#i18n,
+					});
+					if (serverMsg?.id) {
+						const confirmed = {
+							...localMsg,
+							id: serverMsg.id,
+							serverId: serverMsg.id,
+							status: serverMsg.status || 'sent',
+							senderName: chat.name,
+						};
+						this.#panelFactory.updateMsgStatus(state, localMsg.id, confirmed.status);
+						await this.#panelFactory.confirmServerMessage(state, localMsg.id, confirmed);
+						await this.#bumpChatPreview(chat.id, confirmed, confirmed.timestamp);
+					}
+				} catch (e) {
+					console.warn('[MessengerAppView] channel sendMessage error:', e);
+					this.#panelFactory.updateMsgStatus(state, localMsg.id, 'error');
+				}
+				return;
+			}
 			if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) {
 				MessengerDialog.showNotice(
 					this.#i18n.t('offlineSendBlocked'),
-					this.#i18n.t('confirm'),
+					this.#i18n.t('close'),
 					null,
 					this.#themeManager
 				);
@@ -13375,11 +14483,20 @@ class MessengerAppView {
 				return this.#blockGroup(c);
 			},
 			onMarkReadIfEngaged: () => this.markReadIfEngaged(chat.id),
+			onShouldMarkReadOnSync: () => this.shouldMarkReadForSync(chat.id),
+			onMarkReadAcknowledged: () => this.acknowledgeMarkRead(chat.id),
 			onChatPreviewRefresh: () => {
 				this.refreshChatListPreview(chat.id).catch(() => {});
 			},
 			onForwardNavigate: (chatId) => this.#openChatById(chatId),
+			onDeepLinkNavigate: (href) => this.#navigateDeepLink(href),
 			onNavigateBack: () => this.#navigateBackFromChat(),
+			channelMeta,
+			onShowChannelProfile: (c) => this.#showChannelProfile(c),
+			onChannelAbout: (c) => this.#openChannelAboutModal(c),
+			onChannelShare: (c) => this.#shareChannel(c),
+			onChannelManage: (c) => this.#showChannelProfile(c),
+			onChannelLeave: (c) => this.#leaveChannel(c, channelMeta),
 		};
 		const state = this.#panelFactory.create(
 			chat,
@@ -13390,10 +14507,14 @@ class MessengerAppView {
 			chatCallbacks
 		);
 		state.unreadCount = pendingUnreadCount;
+		if (chat.deepLinkMessageId) {
+			state.pendingAnchorMessageId = chat.deepLinkMessageId;
+			delete chat.deepLinkMessageId;
+		}
 		this.#activeState = state;
 		this.el.chatArea.appendChild(state.el);
 		this.#panelFactory.loadHistory(chat.id, state);
-		this.#refreshDirectChatHeaderSub(chat);
+		this.#refreshActiveChatHeader();
 		global.ThemeChatBg?.paint?.();
 	}
 
@@ -13420,7 +14541,7 @@ class MessengerAppView {
 		}
 		this.#parkActivePanel();
 		this.el.root?.classList.remove('mapp-show-chat');
-		if (this.el.empty) this.el.empty.hidden = false;
+		this.#setEmptyPlaceholderVisible(true);
 		this.#activeChat = null;
 		this.#sidebar.setActiveItem(null);
 		this.#renderChatList();
@@ -13440,9 +14561,23 @@ class MessengerAppView {
 		this.#openChat(chat);
 	}
 
+	#mergeChatForOpen(chat) {
+		const existing = this.#chats.find(c => c.id === chat.id);
+		if (!existing) return { ...chat };
+		return {
+			...existing,
+			...chat,
+			name: chat.name || existing.name,
+			avatar: chat.avatar || existing.avatar,
+			contactUserId: chat.contactUserId || existing.contactUserId,
+			isAdmin: chat.isAdmin ?? existing.isAdmin,
+			isGroupCreator: chat.isGroupCreator ?? existing.isGroupCreator,
+		};
+	}
+
 	async #openChat(chat) {
-		this.#readGate.recordEngagement(chat.id);
-		const chatData = this.#chats.find(c => c.id === chat.id) || chat;
+		this.#api?.syncChatsMeta?.(this.#chats);
+		const chatData = this.#mergeChatForOpen(chat);
 		void this.#ensureChatKeysInBackground(chatData);
 		const pendingUnreadCount = chatData?.unreadCount || 0;
 		if (chatData?.unreadCount > 0) {
@@ -13452,16 +14587,29 @@ class MessengerAppView {
 		}
 
 		if (this.#activeState?.chatId === chat.id && this.#isChatVisible(chat.id)) {
-			this.markReadIfEngaged(chat.id);
+			if (chat.deepLinkMessageId) {
+				const anchorId = chat.deepLinkMessageId;
+				delete chat.deepLinkMessageId;
+				void this.#panelFactory.scrollToQuotedMessage(this.#activeState, anchorId);
+			}
+			if (this.shouldMarkReadForSync(chat.id)) {
+				this.#api.markChatRead(chat.id).then(() => {
+					this.acknowledgeMarkRead(chat.id);
+				}).catch(() => {});
+			}
 			return;
 		}
 
-		this.#activeChat = chat;
+		this.#activeChat = chatData;
 		this.#persistNavState();
-		this.#sidebar.setActiveItem(chat.id);
+		this.#sidebar.setActiveItem(chatData.id);
 		if (MessengerUtils.isMobile()) {
 			if (!this.el.root.classList.contains('mapp-show-chat')) {
-				history.pushState({ mappChatOpen: true }, '');
+				if (history.state?.mappOverlay) {
+					history.replaceState({ mappChatOpen: true }, '');
+				} else if (!history.state?.mappChatOpen) {
+					history.pushState({ mappChatOpen: true }, '');
+				}
 			}
 			this.el.root.classList.add('mapp-show-chat');
 			this.#keyboardLayoutDestroy?.apply?.();
@@ -13470,23 +14618,33 @@ class MessengerAppView {
 			}
 		}
 
-		const cached = this.#panelPool.get(chat.id);
+		const cached = this.#panelPool.get(chatData.id);
+		if (cached && !cached.stale && isChannelType(chatData.type)) {
+			const meta = this.#resolveChannelMeta(chatData);
+			const hasComposer = !!cached.state.el?.querySelector('.mc-input-field');
+			const wantsComposer = channelMetaCanPost(meta);
+			const hasStub = !!cached.state.el?.querySelector('.mc-input-area--channel-stub');
+			const isNone = !!cached.state.el?.querySelector('.mc-input-area--channel-none');
+			if (wantsComposer ? !hasComposer : (!hasStub || isNone)) {
+				cached.stale = true;
+			}
+		}
 		if (cached && !cached.stale) {
-			if (this.#activeState?.chatId !== chat.id) {
+			if (this.#activeState?.chatId !== chatData.id) {
 				this.#parkActivePanel();
 			}
-			this.#activateParkedPanel(chat, cached, pendingUnreadCount);
+			this.#activateParkedPanel(chatData, cached, pendingUnreadCount);
 			return;
 		}
 
 		if (cached?.stale) {
-			this.#evictPanel(chat.id);
+			this.#evictPanel(chatData.id);
 		}
 
-		if (this.#activeState?.chatId !== chat.id) {
+		if (this.#activeState?.chatId !== chatData.id) {
 			this.#parkActivePanel();
 		}
-		this.#createAndOpenPanel(chat, pendingUnreadCount);
+		await this.#createAndOpenPanel(chatData, pendingUnreadCount);
 	}
 
 	#ensureChatKeysInBackground(chatData) {
@@ -13654,6 +14812,179 @@ class MessengerAppView {
 		});
 	}
 
+	async #showChannelProfile(chat) {
+		if (!this.#channelProfileModal || !chat?.id) return;
+		await this.#channelProfileModal.open(this.el.root, chat, {
+			onUpdated: (meta) => this.updateChatMeta(chat.id, meta),
+			onDeleted: async (chatId) => {
+				await this.removeChat(chatId, { showMobileList: true, clearCache: true });
+			},
+		});
+	}
+
+	async #openChannelAboutModal(chat) {
+		if (!chat?.id) return;
+		let info = {
+			name: chat.name,
+			avatar: chat.avatar,
+			slug: chat.channelSlug,
+			description: '',
+			subscriberCount: null,
+		};
+		try {
+			if (chat.channelSlug) {
+				const p = await this.#api.getChannelLinkPreview(chat.channelSlug);
+				if (p?.success) {
+					info = {
+						name: p.name || info.name,
+						avatar: p.avatar ?? info.avatar,
+						slug: p.slug || info.slug,
+						description: p.description || '',
+						subscriberCount: p.subscriberCount,
+					};
+				}
+			} else {
+				const p = await this.#api.getChannelInfo(chat.id);
+				if (p?.success) {
+					info = {
+						name: p.name || info.name,
+						avatar: p.avatar ?? info.avatar,
+						slug: p.slug || info.slug,
+						description: p.description || '',
+						subscriberCount: p.subscriberCount,
+					};
+				}
+			}
+		} catch (e) {
+			console.warn('[MessengerAppView] openChannelAboutModal', e);
+		}
+
+		lockAppScroll();
+		const overlay = this.#utils.mk('div', 'mapp-modal-overlay');
+		const close = () => { unlockAppScroll(); overlay.remove(); };
+		const modal = this.#utils.mk('div', 'mapp-modal mapp-contact-profile-modal');
+		this.#themeManager.applyChatVars(modal);
+		this.#themeManager.applyAppVars(modal);
+		const header = this.#utils.mk('div', 'mapp-modal-header');
+		const title = this.#utils.mk('div', 'mapp-modal-title');
+		title.textContent = this.#i18n.t('channelAbout');
+		const closeBtn = this.#utils.mk('button', 'mapp-modal-close');
+		closeBtn.innerHTML = '×';
+		closeBtn.addEventListener('click', close);
+		header.append(title, closeBtn);
+		overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+		const body = this.#utils.mk('div', 'mapp-contact-profile-body');
+		const avatarWrap = this.#utils.mk('div', 'mapp-contact-profile-avatar-wrap');
+		avatarWrap.appendChild(this.#avatarBuilder.build(
+			chat.id, info.name || chat.name, info.avatar || chat.avatar || null, 72
+		));
+		const nameEl = this.#utils.mk('div', 'mapp-contact-profile-name');
+		nameEl.textContent = info.name || chat.name || '';
+		body.append(avatarWrap, nameEl);
+		if (info.description) {
+			const desc = this.#utils.mk('div', 'mapp-input-hint');
+			desc.textContent = info.description;
+			body.appendChild(desc);
+		}
+		if (info.subscriberCount != null) {
+			const subs = this.#utils.mk('div', 'mapp-input-hint');
+			subs.textContent = `${info.subscriberCount} ${this.#i18n.t('channelRoleSubscriber').toLowerCase()}`;
+			body.appendChild(subs);
+		}
+		const link = info.slug ? buildChannelProfileUrl(info.slug) : null;
+		if (link) {
+			const linkRow = this.#utils.mk('div', 'mapp-profile-link-row mapp-selectable-text');
+			linkRow.textContent = link.replace(/^https?:\/\//, '');
+			body.appendChild(linkRow);
+			const actions = this.#utils.mk('div', 'mapp-modal-actions');
+			const qrBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-secondary mapp-btn-block');
+			qrBtn.type = 'button';
+			qrBtn.textContent = this.#i18n.t('invitationsQr');
+			qrBtn.addEventListener('click', () => {
+				MessengerQrDialog.show({
+					link,
+					title: this.#i18n.t('qrChannelTitle'),
+					i18n: this.#i18n,
+					themeManager: this.#themeManager,
+				});
+			});
+			const copyBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-primary mapp-btn-block');
+			copyBtn.type = 'button';
+			copyBtn.textContent = this.#i18n.t('invitationsCopy');
+			copyBtn.addEventListener('click', async () => {
+				try {
+					await navigator.clipboard.writeText(link);
+				} catch (_) { /* ignore */ }
+			});
+			actions.append(qrBtn, copyBtn);
+			modal.append(header, body, actions);
+		} else {
+			modal.append(header, body);
+		}
+		overlay.appendChild(modal);
+		document.body.appendChild(overlay);
+	}
+
+	#shareChannel(chat) {
+		const slug = chat.channelSlug;
+		const link = slug ? buildChannelProfileUrl(slug) : null;
+		if (!link) return;
+		if (navigator.share) {
+			navigator.share({ title: chat.name || '', url: link }).catch(() => {
+				MessengerQrDialog.show({
+					link,
+					title: this.#i18n.t('channelShareMenu'),
+					i18n: this.#i18n,
+					themeManager: this.#themeManager,
+				});
+			});
+		} else {
+			MessengerQrDialog.show({
+				link,
+				title: this.#i18n.t('channelShareMenu'),
+				i18n: this.#i18n,
+				themeManager: this.#themeManager,
+			});
+		}
+	}
+
+	async #leaveChannel(chat, channelMeta) {
+		if (!chat?.id) return;
+		const role = String(channelMeta?.myRole || '').toLowerCase();
+		const isSubscriber = !role || role === 'subscriber';
+		if (!isSubscriber) {
+			await MessengerDialog.alert({
+				title: this.#i18n.t('channelLeave'),
+				message: this.#i18n.t('channelLeaveAdminMsg'),
+				type: MessengerDialog.TYPE_INFO,
+				themeManager: this.#themeManager,
+			});
+			return;
+		}
+		const confirmed = await MessengerDialog.confirm({
+			title: this.#i18n.t('channelLeaveTitle'),
+			message: this.#i18n.t('channelLeaveMsg'),
+			type: MessengerDialog.TYPE_DANGER,
+			confirmLabel: this.#i18n.t('confirm'),
+			cancelLabel: this.#i18n.t('cancel'),
+			themeManager: this.#themeManager,
+		});
+		if (!confirmed) return;
+		try {
+			await this.#api.unsubscribeChannel(chat.id);
+			await this.removeChat(chat.id, { showMobileList: true, clearCache: true });
+		} catch (e) {
+			console.warn('[MessengerAppView] leaveChannel error', e);
+			await MessengerDialog.alert({
+				title: this.#i18n.t('channelLeave'),
+				message: e.message || '',
+				type: MessengerDialog.TYPE_DANGER,
+				themeManager: this.#themeManager,
+			});
+		}
+	}
+
 	touchContactLastSeen(userId, at = new Date()) {
 		if (!userId) return;
 		this.updateContactProfile(userId, { lastSeenAt: at });
@@ -13681,11 +15012,13 @@ class MessengerAppView {
 		}
 		this.#renderChatList();
 		if (active?.id) {
-			this.#refreshDirectChatHeaderSub(active);
-			if (avatar !== undefined) this.#refreshDirectChatHeaderAvatar(active, avatar);
+			if (active.type === 'direct') {
+				this.#refreshActiveChatHeader();
+			}
 		}
 		if (avatar !== undefined) {
 			this.#refreshSenderAvatarsInPanels(userId, avatar);
+			if (avatar) this.#prefetchAvatars([avatar]);
 		}
 	}
 
@@ -13715,16 +15048,15 @@ class MessengerAppView {
 				const avWrap = row.querySelector('.mc-avatar');
 				if (!avWrap) return;
 				if (avatarUrl) {
-					let img = avWrap.querySelector('.mc-avatar-img');
-					if (img) {
-						img.src = avatarUrl;
+					const img = avWrap.querySelector('.mc-avatar-img');
+					if (img && this.#mediaCache?.applyAvatarSrc) {
+						this.#mediaCache.applyAvatarSrc(img, avatarUrl);
 						return;
 					}
-					avWrap.innerHTML = '';
-					img = document.createElement('img');
-					img.className = 'mc-avatar-img';
-					img.src = avatarUrl;
-					avWrap.appendChild(img);
+					const row = state.msgArea?.querySelector(`[data-sender-id="${userId}"]`);
+					const senderName = row?.querySelector('.mc-sender-name')?.textContent?.trim() || '?';
+					const fresh = this.#avatarBuilder.build(userId, senderName, avatarUrl, 30);
+					avWrap.replaceWith(fresh);
 				}
 			});
 		};
@@ -13735,7 +15067,7 @@ class MessengerAppView {
 	#refreshDirectChatHeaderSub(chat) {
 		if (!chat || chat.type !== 'direct' || this.#activeState?.chatId !== chat.id) return;
 		const subEl = this.#activeState.el?.querySelector('.mc-header-sub');
-		if (!subEl) return;
+		if (!subEl || subEl.classList.contains('mc-header-sub--typing')) return;
 		const canShow = this.#canShowContactPresence();
 		const presence = canShow && chat.contactUserId ? this.#presence?.get(chat.contactUserId) : null;
 		const text = MessengerUtils.getDirectChatHeaderSub(
@@ -13794,6 +15126,9 @@ class MessengerAppView {
 	}
 
 	async #showContactProfile(chat) {
+		if (isChannelType(chat?.type)) {
+			return this.#showChannelProfile(chat);
+		}
 		if (this.#isGroupChat(chat)) {
 			return this.#showGroupProfile(chat);
 		}
@@ -13811,6 +15146,60 @@ class MessengerAppView {
 		}
 	}
 
+	#findDirectChatByUserId(userId) {
+		if (!userId) return null;
+		return this.#chats.find(c => c.type === 'direct' && c.contactUserId === userId) || null;
+	}
+
+	#findDirectChatByLogin(login) {
+		const norm = String(login || '').trim().toLowerCase();
+		if (!norm) return null;
+		for (const c of this.#chats) {
+			if (c.type !== 'direct' || !c.contactUserId) continue;
+			const cachedLogin = this.#contactLogins.get(c.contactUserId);
+			if (cachedLogin && cachedLogin.toLowerCase() === norm) return c;
+		}
+		return null;
+	}
+
+	async #navigateDeepLink(href) {
+		const target = parseMessengerDeepLink(href);
+		if (!target) return false;
+		if (target.type === 'group') {
+			await this.openGroupByChatId(target.chatId);
+			normalizeAppUrl();
+			return true;
+		}
+		const { slug, messageId } = target;
+		if (isGroupChatId(slug)) {
+			await this.openGroupByChatId(slug);
+			normalizeAppUrl();
+			return true;
+		}
+		const channelPreview = await this.#api.getChannelLinkPreview(slug).catch(() => null);
+		if (channelPreview?.success) {
+			await this.openChannelBySlug(slug, channelPreview, { messageId });
+			normalizeAppUrl();
+			return true;
+		}
+		const localChannel = this.#findChannelBySlug(slug);
+		if (localChannel) {
+			await this.openChannelBySlug(slug, {
+				success: true,
+				chatId: localChannel.id,
+				name: localChannel.name || '',
+				slug: localChannel.channelSlug || slug,
+				avatar: localChannel.avatar || null,
+				description: localChannel.channelPreview?.description || '',
+				isSubscribed: localChannel.channelPreview?.isSubscribed !== false,
+			}, { messageId });
+			normalizeAppUrl();
+			return true;
+		}
+		await this.#openProfileByLogin(slug);
+		return true;
+	}
+
 	async #openProfileByLogin(login) {
 		try {
 			const profile = await this.#api.getContactByLogin(login);
@@ -13825,6 +15214,13 @@ class MessengerAppView {
 				if (nextUrl) history.replaceState(null, '', nextUrl);
 			}
 			if (profile.id && profile.login) this.#contactLogins.set(profile.id, profile.login);
+			const existingChat = this.#findDirectChatByUserId(profile.id)
+				|| this.#findDirectChatByLogin(profile.login);
+			if (existingChat) {
+				normalizeAppUrl();
+				this.#openChat(existingChat);
+				return;
+			}
 			this.#openProfileModal(profile, {
 				writeBtn: true,
 				onWrite: async () => {
@@ -13963,9 +15359,13 @@ class MessengerAppView {
 	handleHistoryCleared(chatId) {
 		this.#evictPanel(chatId);
 		if (this.#activeChat?.id === chatId) {
-			this.el.empty.hidden = false;
-			this.#activeChat = null;
-			this.#sidebar.setActiveItem(null);
+			if (MessengerUtils.isMobile()) {
+				this.#showChatListMobile();
+			} else {
+				this.#setEmptyPlaceholderVisible(true);
+				this.#activeChat = null;
+				this.#sidebar.setActiveItem(null);
+			}
 		}
 		const c = this.#chats.find(x => x.id === chatId);
 		if (c) { c.lastMessage = ''; c.lastMessageTime = null; }
@@ -13983,16 +15383,18 @@ class MessengerAppView {
 		}
 		this.#evictPanel(chatId);
 		if (this.#activeChat?.id === chatId) {
-			if (this.#activeState) {
-				this.el.empty.hidden = false;
+			if (MessengerUtils.isMobile()) {
+				this.#showChatListMobile();
+			} else {
+				if (this.#activeState) this.#setEmptyPlaceholderVisible(true);
+				this.#activeChat = null;
+				this.#sidebar.setActiveItem(null);
 			}
-			this.#activeChat = null;
-			this.#sidebar.setActiveItem(null);
 		}
 		this.#chats = this.#chats.filter(c => c.id !== chatId);
 		this.#renderChatList();
 		this.#groupProfileModal?.close?.();
-		if (showMobileList && MessengerUtils.isMobile()) {
+		if (showMobileList && MessengerUtils.isMobile() && this.#activeChat?.id !== chatId) {
 			this.#showChatListMobile();
 		}
 	}
@@ -14161,11 +15563,143 @@ class MessengerAppView {
 		return this.#openProfileByLogin(login);
 	}
 
+	navigateDeepLink(href) {
+		return this.#navigateDeepLink(href);
+	}
+
+	async openChannelBySlug(slug, preview = null, { messageId = null } = {}) {
+		if (!slug) return;
+		try {
+			let p = preview;
+			if (!p?.success) {
+				p = await this.#api.getChannelLinkPreview(slug).catch(() => null);
+			}
+			if (!p?.success) {
+				const local = this.#findChannelBySlug(slug);
+				if (!local) return;
+				p = {
+					success: true,
+					chatId: local.id,
+					name: local.name || '',
+					slug: local.channelSlug || slug,
+					avatar: local.avatar || null,
+					description: local.channelPreview?.description || '',
+					isSubscribed: local.channelPreview?.isSubscribed !== false,
+				};
+			}
+			if (!p?.success) return;
+			const chatPayload = {
+				id: p.chatId,
+				name: p.name || '',
+				type: 'channel',
+				avatar: p.avatar || null,
+				channelSlug: p.slug || slug,
+				deepLinkMessageId: messageId || null,
+				channelPreview: {
+					description: p.description || '',
+					isSubscribed: !!p.isSubscribed,
+				},
+			};
+			const existingIdx = this.#chats.findIndex(c => c.id === p.chatId);
+			if (existingIdx >= 0) {
+				this.#chats[existingIdx] = {
+					...this.#chats[existingIdx],
+					...chatPayload,
+				};
+			} else {
+				this.#chats.push({
+					...chatPayload,
+					lastMessage: '',
+					lastMessageTime: null,
+					unreadCount: 0,
+				});
+			}
+			const existingMeta = MessengerOfflineStore.loadChannelMeta(p.chatId);
+			MessengerOfflineStore.saveChannelMeta(p.chatId, {
+				name: p.name || existingMeta?.name || '',
+				slug: p.slug || slug,
+				description: p.description || '',
+				isSubscribed: p.isSubscribed !== false,
+				canPost: channelMetaCanPost(existingMeta),
+				myRole: existingMeta?.myRole || null,
+			});
+			this.#renderChatList();
+			this.#openChat(this.#chats.find(c => c.id === p.chatId));
+		} catch (e) {
+			console.warn('[MessengerAppView] openChannelBySlug error', e);
+		}
+	}
+
+	async #openChannelSubscribeModal(preview) {
+		lockAppScroll();
+		const overlay = this.#utils.mk('div', 'mapp-modal-overlay');
+		const close = () => { unlockAppScroll(); overlay.remove(); };
+		const modal = this.#utils.mk('div', 'mapp-modal mapp-contact-profile-modal');
+		this.#themeManager.applyChatVars(modal);
+		this.#themeManager.applyAppVars(modal);
+		const header = this.#utils.mk('div', 'mapp-modal-header');
+		const title = this.#utils.mk('div', 'mapp-modal-title');
+		title.textContent = this.#i18n.t('channelJoinTitle');
+		const closeBtn = this.#utils.mk('button', 'mapp-modal-close');
+		closeBtn.innerHTML = '×';
+		closeBtn.addEventListener('click', close);
+		header.append(title, closeBtn);
+		overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+		const body = this.#utils.mk('div', 'mapp-contact-profile-body');
+		const avatarWrap = this.#utils.mk('div', 'mapp-contact-profile-avatar-wrap');
+		avatarWrap.appendChild(this.#avatarBuilder.build(preview.chatId, preview.name || '', preview.avatar || null, 72));
+		const nameEl = this.#utils.mk('div', 'mapp-contact-profile-name');
+		nameEl.textContent = preview.name || '';
+		if (preview.description) {
+			const desc = this.#utils.mk('div', 'mapp-input-hint');
+			desc.textContent = preview.description;
+			body.append(avatarWrap, nameEl, desc);
+		} else {
+			body.append(avatarWrap, nameEl);
+		}
+		const actions = this.#utils.mk('div', 'mapp-modal-actions');
+		const subBtn = this.#utils.mk('button', 'mapp-btn mapp-btn-primary mapp-btn-block');
+		subBtn.textContent = this.#i18n.t('channelSubscribe');
+		subBtn.addEventListener('click', async () => {
+			subBtn.disabled = true;
+			try {
+				const r = await this.#api.subscribeChannel(preview.chatId);
+				if (!r?.success) throw new Error(r?.error || 'Subscribe failed');
+				const chat = {
+					id: preview.chatId,
+					name: preview.name || '',
+					type: 'channel',
+					avatar: preview.avatar || null,
+					channelSlug: preview.slug,
+				};
+				if (!this.#chats.find(c => c.id === preview.chatId)) {
+					this.#chats.push({ ...chat, lastMessage: '', lastMessageTime: null, unreadCount: 0 });
+					this.#renderChatList();
+				}
+				close();
+				this.#openChat(chat);
+			} catch (e) {
+				subBtn.disabled = false;
+				await MessengerDialog.alert({
+					title: this.#i18n.t('channelJoinTitle'),
+					message: e.message || '',
+					type: MessengerDialog.TYPE_DANGER,
+					themeManager: this.#themeManager,
+				});
+			}
+		});
+		actions.appendChild(subBtn);
+		modal.append(header, body, actions);
+		overlay.appendChild(modal);
+		document.body.appendChild(overlay);
+	}
+
 	async openGroupByChatId(chatId) {
 		if (!chatId) return;
 		const existing = this.#chats.find(c => c.id === chatId);
 		if (existing) {
-			await this.#showGroupProfile(existing);
+			normalizeAppUrl();
+			this.#openChat(existing);
 			return;
 		}
 		try {
@@ -14187,7 +15721,8 @@ class MessengerAppView {
 					});
 					this.#renderChatList();
 				}
-				await this.#showGroupProfile(chat);
+				normalizeAppUrl();
+				this.#openChat(chat);
 				return;
 			}
 			if (preview.excludedFromGroup) {
@@ -14299,6 +15834,7 @@ class MessengerAppView {
 		const bumpUnread = opts.bumpUnread !== false;
 		const meId = this.#currentUser?.id;
 		if (meId && msg.senderId === meId) msg.isOwn = true;
+		if (msg.senderAvatar) this.#prefetchAvatars([msg.senderAvatar]);
 		this.#markPanelStale(chatId);
 		const isChatVisible = this.#isChatVisible(chatId);
 		if (isChatVisible && this.#activeState && !this.#isMessageAlreadyInPanel(this.#activeState, msg.id)) {
@@ -14312,7 +15848,7 @@ class MessengerAppView {
 					this.#sidebar.updateUnreadBadge(chatId, chat.unreadCount, this.#chats);
 				}
 			} else if (!msg.isOwn) {
-				this.markReadIfEngaged(chatId, { becauseNewMessage: true });
+				this.#pendingMarkRead.add(chatId);
 			}
 			const msgTs = MessengerUtils.messageTimestampMs(msg);
 			const currentTs = chat.lastMessageTime
@@ -14397,9 +15933,52 @@ class MessengerAppView {
 		}
 	}
 	receiveActivity(chatId, userId, userName, activityType, active) {
+		const chat = this.#chats.find(c => c.id === chatId);
+		if (isChannelType(chat?.type)) return;
+		this.#updateChatTypingPreview(chatId, userId, userName, activityType, active);
 		this.#forEachPanelState(chatId, state => {
 			this.#panelFactory.updateActivity(state, userId, userName, activityType, active);
 		});
+	}
+
+	#updateChatTypingPreview(chatId, userId, userName, activityType, active) {
+		if (activityType !== 'typing') return;
+		const chat = this.#chats.find(c => c.id === chatId);
+		if (!chat || isChannelType(chat.type)) return;
+		let st = this.#chatTypingState.get(chatId);
+		if (!st) {
+			st = { users: new Map() };
+			this.#chatTypingState.set(chatId, st);
+		}
+		const existing = st.users.get(userId);
+		if (existing?.timer) clearTimeout(existing.timer);
+		if (active) {
+			const timer = setTimeout(
+				() => this.#updateChatTypingPreview(chatId, userId, userName, activityType, false),
+				MessengerActivityTracker.DEFAULT_TIMEOUT
+			);
+			st.users.set(userId, { userName, timer });
+		} else {
+			st.users.delete(userId);
+		}
+		if (!st.users.size) this.#chatTypingState.delete(chatId);
+		this.#sidebar.updateChatPreview(chatId, this.#formatChatListPreview(chat));
+	}
+
+	#formatChatListPreview(chat) {
+		const typing = this.#getChatTypingPreview(chat);
+		if (typing) {
+			return { text: typing, typing: true };
+		}
+		const preview = MessengerChatListPreview.getDisplay(chat.lastMessage || '', this.#i18n);
+		return { text: preview.text, typing: false, locked: preview.locked };
+	}
+
+	#getChatTypingPreview(chat) {
+		if (chat?.type !== 'direct') return null;
+		const st = this.#chatTypingState.get(chat.id);
+		if (!st?.users?.size) return null;
+		return this.#i18n.t('typingShort');
 	}
 	addChat(chat) {
 		if (!this.#chats.find(c => c.id === chat.id)) {
@@ -14410,7 +15989,7 @@ class MessengerAppView {
 	async reloadAllChats() {
 		this.#clearPanelPool();
 		this.#activeChat = null;
-		this.el.empty.hidden = false;
+		this.#setEmptyPlaceholderVisible(true);
 		this.el.chatArea?.querySelectorAll('.mapp-chat-panel').forEach(p => p.remove());
 		this.el.panelPoolHost?.replaceChildren();
 		if (MessengerUtils.isMobile()) {
@@ -14453,6 +16032,7 @@ class MessengerApiClient {
 	#chatKeyStatus = new Map();
 	#distributeLastAt = new Map();
 	#distributeInFlight = new Map();
+	#markReadInFlight = new Map();
 	static DISTRIBUTE_COOLDOWN_MS = 5 * 60 * 1000;
 
 	setCrypto(crypto) {
@@ -14481,7 +16061,13 @@ class MessengerApiClient {
 			unreadCount: c.unreadCount || 0,
 			requiresCustomGroupPassword: !!c.requiresCustomGroupPassword,
 			hasGroupAutoKey: !!c.hasGroupAutoKey,
+			channelSlug: c.channelSlug || null,
 		};
+	}
+
+	#isChannelChatId(chatId) {
+		const chat = this.#chatsMeta.get(chatId);
+		return chat ? isChannelType(chat.type) : false;
 	}
 
 	#updateChatsMeta(chats) {
@@ -14526,6 +16112,18 @@ class MessengerApiClient {
 		return out;
 	}
 
+	#preserveCipherForCache(m) {
+		const { encText, encReply } = this.#captureEncFields(m);
+		const cipher = encText || (SupraCrypto.isEncrypted(m.text) ? m.text : null);
+		if (!cipher) return m;
+		return this.#attachEncFields({
+			...m,
+			text: cipher,
+			replyToTextPreview: encReply ?? m.replyToTextPreview,
+			_locked: false,
+		}, cipher, encReply);
+	}
+
 	async mapCachedMessages(chatId, messages) {
 		if (!messages?.length) return messages || [];
 		const out = [];
@@ -14560,6 +16158,7 @@ class MessengerApiClient {
 
 	async prepareMessagesForCache(chatId, messages) {
 		if (!messages?.length) return messages || [];
+		if (this.#isChannelChatId(chatId)) return messages;
 		const chat = this.#chatsMeta.get(chatId);
 		let keysEnsured = false;
 		const out = [];
@@ -14571,16 +16170,21 @@ class MessengerApiClient {
 					|| (m.replyToTextPreview && SupraCrypto.isEncrypted(m.replyToTextPreview)
 						? m.replyToTextPreview
 						: null);
+				if (!encText) {
+					out.push(m);
+					continue;
+				}
 				out.push({
 					...m,
-					text: encText || m.text,
+					text: encText,
 					replyToTextPreview: encReply,
 					_encText: encText,
 					_encReplyPreview: encReply,
 				});
 				continue;
 			}
-			if (SupraCrypto.isEncrypted(m.text) && chat && this.#crypto) {
+			const hasCipher = !!(m._encText || SupraCrypto.isEncrypted(m.text));
+			if (hasCipher && chat && this.#crypto) {
 				if (!keysEnsured) {
 					try {
 						await this.ensureChatEncryptionKeys(chat, { distribute: false });
@@ -14589,7 +16193,18 @@ class MessengerApiClient {
 					}
 					keysEnsured = true;
 				}
-				out.push(await this.#decryptMessageFields(m, chatId));
+				const decrypted = await this.#decryptMessageFields({
+					...m,
+					text: m._encText || m.text,
+					replyToTextPreview: m._encReplyPreview ?? m.replyToTextPreview,
+				}, chatId);
+				if (decrypted._locked || decrypted.text === SupraCrypto.LOCKED_PREVIEW) {
+					out.push(this.#preserveCipherForCache(m));
+				} else {
+					out.push(decrypted);
+				}
+			} else if (hasCipher) {
+				out.push(this.#preserveCipherForCache(m));
 			} else {
 				out.push(m);
 			}
@@ -14606,6 +16221,7 @@ class MessengerApiClient {
 	}
 
 	async resolveOutgoingEncryption(chatId, options = {}) {
+		if (this.#isChannelChatId(chatId)) return { tier: 'basic' };
 		const crypto = this.#crypto;
 		if (!crypto) return { tier: 'basic' };
 		if (crypto.getCustomPassword(chatId)) return { tier: 'protected' };
@@ -14646,6 +16262,7 @@ class MessengerApiClient {
 	}
 
 	async prepareOutgoingFields(chatId, text, options = {}) {
+		if (this.#isChannelChatId(chatId)) return { encryptionTier: 'basic' };
 		const resolved = options._resolvedTier
 			|| await this.resolveOutgoingEncryption(chatId, options);
 		if (resolved.cancelled) {
@@ -14664,6 +16281,7 @@ class MessengerApiClient {
 	}
 
 	async #decryptMessageFields(m, chatId) {
+		if (this.#isChannelChatId(chatId)) return m;
 		if (!this.#crypto || !m) return m;
 		const chat = this.#chatsMeta.get(chatId);
 		if (!chat) return m;
@@ -14694,7 +16312,13 @@ class MessengerApiClient {
 		} else {
 			key = await this.#crypto.getAutoChatKey(chat, opts);
 			if (!key) {
-				return { ...m, text: SupraCrypto.LOCKED_PREVIEW, _locked: true, encryptionTier: tier };
+				return this.#attachEncFields({
+					...m,
+					text: SupraCrypto.LOCKED_PREVIEW,
+					replyToTextPreview: encReply ? SupraCrypto.LOCKED_PREVIEW : null,
+					_locked: true,
+					encryptionTier: tier,
+				}, encText, encReply);
 			}
 		}
 		const cipherText = encText || m.text;
@@ -14775,6 +16399,13 @@ class MessengerApiClient {
 	async #setupGroupKeys(chatId, participantIds, { requiresCustomPassword = false, customPassword = null } = {}) {
 		if (!this.#crypto || !this.#currentUserId) {
 			throw new Error('Сессия шифрования не активна');
+		}
+		const missing = await this.#fetchMissingKeyUserIds(chatId);
+		const participantCount = participantIds.filter(id => id !== this.#currentUserId).length + 1;
+		if (missing !== null && !this.#shouldIssueFreshChatKeys(missing, participantCount)) {
+			throw new Error(
+				'Ключи шифрования для этого чата уже созданы. Дождитесь выдачи ключа от другого участника.'
+			);
 		}
 		const autoPassword = SupraCrypto.generateGroupAutoPassword();
 		const allIds = [this.#currentUserId, ...participantIds.filter(id => id !== this.#currentUserId)];
@@ -14889,18 +16520,50 @@ class MessengerApiClient {
 		}
 	}
 
+	async #fetchMissingKeyUserIds(chatId) {
+		try {
+			const missRes = await fetch(
+				`/api/encryption/group-keys/${encodeURIComponent(chatId)}/missing`,
+				{ credentials: 'same-origin' }
+			);
+			if (!missRes.ok) return null;
+			const { userIds } = await missRes.json();
+			return Array.isArray(userIds) ? userIds : [];
+		} catch (e) {
+			console.warn('[MessengerApiClient] fetchMissingKeyUserIds', e);
+			return null;
+		}
+	}
+
+	/**
+	 * Новый автопароль (#setupGroupKeys) допустим только если ключей ещё нет ни у кого.
+	 * Иначе старые сообщения станут нечитаемы для всех участников.
+	 */
+	#shouldIssueFreshChatKeys(missingUserIds, participantCount) {
+		if (!missingUserIds?.length || !this.#currentUserId) return false;
+		if (!missingUserIds.includes(this.#currentUserId)) return false;
+		if (participantCount <= 0) {
+			return missingUserIds.length > 1;
+		}
+		return missingUserIds.length >= participantCount;
+	}
+
 	async #rotateChatEncryptionKeys(chat) {
 		const chatId = chat.id;
 		const type = (chat.type || '').toLowerCase();
+		const missing = await this.#fetchMissingKeyUserIds(chatId);
 		if (type === 'direct') {
 			const otherId = chat.contactUserId;
 			if (!otherId) return false;
+			if (!this.#shouldIssueFreshChatKeys(missing, 2)) return false;
 			await this.#setupGroupKeys(chatId, [otherId]);
 		} else if (type === 'group' || type === 'public_group') {
 			const info = await this.getGroupInfo(chatId);
 			const participantIds = (info.members || [])
 				.map(m => m.id)
 				.filter(id => id && id !== this.#currentUserId);
+			const memberCount = info.members?.length || 0;
+			if (!this.#shouldIssueFreshChatKeys(missing, memberCount)) return false;
 			await this.#setupGroupKeys(chatId, participantIds);
 		} else {
 			return false;
@@ -15025,12 +16688,17 @@ class MessengerApiClient {
 		});
 		if (!missRes.ok) return false;
 		const { userIds: missing } = await missRes.json();
-		if (!missing?.includes(this.#currentUserId)) return false;
+		if (!this.#shouldIssueFreshChatKeys(missing, 2)) return false;
 
 		const otherId = chat.contactUserId;
 		if (!otherId) return false;
 
-		await this.#setupGroupKeys(chatId, [otherId]);
+		try {
+			await this.#setupGroupKeys(chatId, [otherId]);
+		} catch (e) {
+			console.warn('[MessengerApiClient] ensureChatEncryptionKeys direct setup', e);
+			return false;
+		}
 		this.#chatKeyStatus.set(chatId, { hasKey: true, checkedAt: Date.now() });
 		chat.hasGroupAutoKey = true;
 		const meta = this.#chatsMeta.get(chatId);
@@ -15071,10 +16739,11 @@ class MessengerApiClient {
 		});
 		if (!missRes.ok) return false;
 		const { userIds: missing } = await missRes.json();
-		if (!missing?.includes(this.#currentUserId)) return false;
 
 		try {
 			const info = await this.getGroupInfo(chatId);
+			const memberCount = info.members?.length || 0;
+			if (!this.#shouldIssueFreshChatKeys(missing, memberCount)) return false;
 			const participantIds = (info.members || [])
 				.map(m => m.id)
 				.filter(id => id && id !== this.#currentUserId);
@@ -15413,6 +17082,45 @@ class MessengerApiClient {
 		}
 	}
 
+	async syncChatPanel(chatId, { count, afterMessageId, markAsRead = false } = {}) {
+		const payload = { chatId };
+		if (markAsRead) payload.markAsRead = true;
+		if (count != null) payload.count = count;
+		if (afterMessageId) payload.afterMessageId = afterMessageId;
+		const r = await this.call('SyncChatPanel', payload);
+		if (!r?.success) throw new Error(r?.error || 'SyncChatPanel failed');
+		const hasMessages = Array.isArray(r.messages) && r.messages.length > 0;
+		return {
+			success: true,
+			markedRead: !!r.markedRead,
+			messages: hasMessages
+				? MessengerUtils.sortMessages(await this.#mapMessages(r.messages, chatId))
+				: [],
+			syncIndex: (r.syncIndex || []).map(e => ({
+				id: e.id,
+				timestamp: new Date(e.timestamp),
+			})),
+		};
+	}
+
+	async markChatRead(chatId) {
+		const meta = this.chatMeta(chatId);
+		if (isChannelType(meta?.type)) return { success: true, markedRead: false };
+		if (this.#markReadInFlight.has(chatId)) return this.#markReadInFlight.get(chatId);
+		const task = (async () => {
+			const r = await this.call('SyncChatPanel', { chatId, markAsRead: true });
+			if (!r?.success) throw new Error(r?.error || 'SyncChatPanel markAsRead failed');
+			return { success: true, markedRead: !!r.markedRead };
+		})().catch((e) => {
+			console.warn('[MessengerApiClient] markChatRead', e);
+			return { success: false, markedRead: false };
+		}).finally(() => {
+			this.#markReadInFlight.delete(chatId);
+		});
+		this.#markReadInFlight.set(chatId, task);
+		return task;
+	}
+
 	async #mapMessages(raw = [], chatId = null) {
 		const mapped = raw.map(m => ({
 			id: m.id,
@@ -15421,7 +17129,7 @@ class MessengerApiClient {
 			senderAvatar: m.senderAvatar || null,
 			text: m.text,
 			timestamp: new Date(m.timestamp),
-			status: m.status || 'read',
+			status: m.status || 'sent',
 			isOwn: !!m.isOwn,
 			replyToMessageId: m.replyToMessageId || null,
 			replyToSenderName: m.replyToSenderName || null,
@@ -15440,6 +17148,32 @@ class MessengerApiClient {
 	async sendMessage(chatId, text, options = {}) {
 		const localId = typeof options === 'string' ? options : options?.localId;
 		const plainOpts = typeof options === 'object' ? options : {};
+		if (this.#isChannelChatId(chatId)) {
+			MessengerMessageSounds.playOutgoing();
+			const r = await this.call('SendMessage', {
+				chatId,
+				text: text.trim(),
+				localId,
+				replyToMessageId: plainOpts?.replyToMessageId || null,
+				forwardedFromSenderName: plainOpts?.forwardedFromSenderName || null,
+				replyToTextPreview: plainOpts?.replyToTextPreview || null,
+				encryptionTier: 'basic',
+			});
+			if (!r?.success) throw new Error(r?.error || 'SendMessage failed');
+			return {
+				id: r.messageId,
+				status: r.status || 'sent',
+				text: text.trim(),
+				timestamp: new Date(),
+				isOwn: true,
+				encryptionTier: 'basic',
+				replyToMessageId: plainOpts?.replyToMessageId || null,
+				replyToSenderName: plainOpts?.replyToSenderName || null,
+				replyToTextPreview: plainOpts?.replyToTextPreview || null,
+				forwardedFromSenderName: plainOpts?.forwardedFromSenderName || null,
+				pushDebug: r.pushDebug || null,
+			};
+		}
 		const resolved = plainOpts._resolvedTier
 			|| await this.resolveOutgoingEncryption(chatId, plainOpts);
 		if (resolved.cancelled) {
@@ -15500,8 +17234,46 @@ class MessengerApiClient {
 		return r;
 	}
 
+	async batchRequest(action, params = {}) {
+		const r = await this.call('BatchRequest', { action, ...params });
+		if (!r?.success && !(r?.results?.length)) {
+			throw new Error(r?.error || 'BatchRequest failed');
+		}
+		return r;
+	}
+
+	async deleteMessages(chatId, messageIds, deleteForEveryone = false) {
+		const ids = [...new Set((messageIds || []).filter(Boolean))];
+		if (!ids.length) return { success: true, results: [] };
+		const r = await this.batchRequest('deleteMessage', { chatId, messageIds: ids, deleteForEveryone });
+		const failed = (r.results || []).filter(item => !item.success);
+		if (!r.success && failed.length === ids.length) {
+			throw new Error(r.error || failed[0]?.error || 'deleteMessages failed');
+		}
+		return r;
+	}
+
+	async markMessagesRead(chatId, messageIds = null) {
+		const ids = messageIds ? [...new Set(messageIds.filter(Boolean))] : [];
+		return this.batchRequest('markMessagesRead', {
+			chatId,
+			messageIds: ids.length ? ids : undefined,
+		});
+	}
+
+	async getMessagesInfo(chatId, messageIds) {
+		const ids = [...new Set((messageIds || []).filter(Boolean))];
+		if (!ids.length) return { success: true, results: [] };
+		return this.batchRequest('getMessageInfo', { chatId, messageIds: ids });
+	}
+
 	async getMessageInfo(chatId, messageId) {
-		return this.call('GetMessageInfo', { chatId, messageId });
+		const r = await this.getMessagesInfo(chatId, [messageId]);
+		const item = (r.results || []).find(x => x.messageId === messageId);
+		if (!item?.success) {
+			return { success: false, error: item?.error || r?.error || 'GetMessageInfo failed' };
+		}
+		return { success: true, info: item.data };
 	}
 
 	canForwardMessage(msg) {
@@ -15525,53 +17297,56 @@ class MessengerApiClient {
 	}
 
 	async forwardMessage(sourceChatId, messageId, contactIds, sourceMsg = null, options = {}) {
-		if (!contactIds?.length) throw new Error('Не выбраны контакты');
-		if (contactIds.length > 10) throw new Error('Можно выбрать не более 10 контактов');
 		if (!sourceMsg) throw new Error('Сообщение не найдено');
-
-		const display = await this.decryptMessageForDisplay(sourceMsg, sourceChatId);
-		if (!this.canForwardMessage(display)) {
-			throw new Error(options.i18n?.t('forwardNotAllowed') || 'Нельзя переслать это сообщение');
-		}
-
-		const includeCaption = options.includeCaption !== false;
-		let plainText = MessengerCustomMessage.buildForwardPlainText(display, {
+		return this.forwardMessages(sourceChatId, [messageId], contactIds, [sourceMsg], {
+			...options,
 			imageUrl: options.imageUrl || null,
-			includeCaption,
+			forwardFromName: options.forwardFromName || null,
 		});
-		if (options.imageUrl && !plainText) {
-			throw new Error(options.i18n?.t('forwardNotAllowed') || 'Нельзя переслать это сообщение');
-		}
-		const forwardFrom = options.showSenderName === false
-			? null
-			: (sourceMsg.senderName || display.senderName || '');
-		const sentChatIds = [];
+	}
 
-		for (const targetId of [...new Set(contactIds)]) {
-			let targetChatId;
-			try {
-				targetChatId = await this.#resolveForwardTargetChatId(targetId);
-			} catch (e) {
-				console.warn('[MessengerApiClient] forward resolve target', targetId, e);
+	#resolveForwardFromName(sourceMsg, options = {}) {
+		if (options.forwardFromName != null) return options.forwardFromName || null;
+		if (options.showSenderName === false) return null;
+		return sourceMsg.senderName || '';
+	}
+
+	async #prepareForwardBatchItems(targetChatIds, ordered, options = {}) {
+		const items = [];
+		for (const targetChatId of targetChatIds) {
+			if (this.#isChannelChatId(targetChatId)) {
+				for (const { sourceMsg, plainText } of ordered) {
+			const forwardFrom = this.#resolveForwardFromName(sourceMsg, options);
+			items.push({
+				targetChatId,
+				sourceMessageId: sourceMsg.id,
+				text: plainText.trim(),
+				forwardedFromSenderName: forwardFrom,
+				encryptionTier: 'basic',
+			});
+				}
 				continue;
 			}
-			try {
-				await this.sendMessage(targetChatId, plainText, {
+			const resolved = options._resolvedTier?.get?.(targetChatId)
+				|| await this.resolveOutgoingEncryption(targetChatId, options);
+			if (resolved.cancelled) {
+				const err = new Error('send-cancelled');
+				err.code = 'send-cancelled';
+				throw err;
+			}
+			for (const { sourceMsg, plainText } of ordered) {
+				const enc = await this.#encryptOutgoing(targetChatId, plainText, {}, resolved.tier);
+				const forwardFrom = this.#resolveForwardFromName(sourceMsg, options);
+				items.push({
+					targetChatId,
+					sourceMessageId: sourceMsg.id,
+					text: enc.text,
 					forwardedFromSenderName: forwardFrom,
-					i18n: options.i18n,
-					themeManager: options.themeManager,
+					encryptionTier: enc.encryptionTier,
 				});
-				sentChatIds.push(targetChatId);
-			} catch (e) {
-				if (e?.code === 'send-cancelled') throw e;
-				console.warn('[MessengerApiClient] forward send', targetChatId, e);
 			}
 		}
-
-		if (!sentChatIds.length) {
-			throw new Error(options.i18n?.t('forwardChatsNotFound') || 'Не удалось переслать ни одному контакту');
-		}
-		return { success: true, sentChatIds };
+		return items;
 	}
 
 	async forwardMessages(sourceChatId, messageIds, contactIds, sourceMsgs = null, options = {}) {
@@ -15588,58 +17363,47 @@ class MessengerApiClient {
 			if (!sourceMsg) continue;
 			const display = await this.decryptMessageForDisplay(sourceMsg, sourceChatId);
 			if (!this.canForwardMessage(display)) continue;
-			ordered.push({
-				sourceMsg,
-				plainText: MessengerCustomMessage.buildForwardPlainText(display, { includeCaption }),
+			const plainText = MessengerCustomMessage.buildForwardPlainText(display, {
+				includeCaption,
+				imageUrl: options.imageUrl || null,
 			});
+			if (options.imageUrl && !plainText) continue;
+			ordered.push({ sourceMsg, plainText });
 		}
 		if (!ordered.length) {
 			throw new Error(options.i18n?.t('forwardNotAllowed') || 'Нельзя переслать выбранные сообщения');
 		}
 
-		const sentChatIds = [];
+		const targetChatIds = [];
 		for (const targetId of [...new Set(contactIds)]) {
-			let targetChatId;
 			try {
-				targetChatId = await this.#resolveForwardTargetChatId(targetId);
+				targetChatIds.push(await this.#resolveForwardTargetChatId(targetId));
 			} catch (e) {
 				console.warn('[MessengerApiClient] forward resolve target', targetId, e);
-				continue;
 			}
-			let sentAny = false;
-			for (const { sourceMsg, plainText } of ordered) {
-				const forwardFrom = options.showSenderName === false
-					? null
-					: (sourceMsg.senderName || '');
-				try {
-					await this.sendMessage(targetChatId, plainText, {
-						forwardedFromSenderName: forwardFrom,
-						i18n: options.i18n,
-						themeManager: options.themeManager,
-					});
-					sentAny = true;
-				} catch (e) {
-					if (e?.code === 'send-cancelled') throw e;
-					console.warn('[MessengerApiClient] forward send', targetChatId, e);
-				}
-			}
-			if (sentAny) sentChatIds.push(targetChatId);
 		}
-
-		if (!sentChatIds.length) {
+		if (!targetChatIds.length) {
 			throw new Error(options.i18n?.t('forwardChatsNotFound') || 'Не удалось переслать ни одному контакту');
 		}
-		return { success: true, sentChatIds };
+
+		const items = await this.#prepareForwardBatchItems(targetChatIds, ordered, options);
+		if (!items.length) {
+			throw new Error(options.i18n?.t('forwardNotAllowed') || 'Нельзя переслать выбранные сообщения');
+		}
+
+		MessengerMessageSounds.playOutgoing();
+		const r = await this.batchRequest('forwardMessages', { chatId: sourceChatId, items });
+		if (!r?.sentChatIds?.length) {
+			throw new Error(options.i18n?.t('forwardChatsNotFound') || 'Не удалось переслать ни одному контакту');
+		}
+		return { success: true, sentChatIds: r.sentChatIds };
 	}
 
-	async markRead(chatId) {
-		try {
-			await this.call('MarkMessagesRead', {
-				chatId
-			});
-		} catch (e) {
-			console.warn('[MessengerApiClient] MarkRead', e);
+	async markRead(chatId, messageIds = null) {
+		if (messageIds?.length) {
+			return this.markMessagesRead(chatId, messageIds);
 		}
+		return this.markChatRead(chatId);
 	}
 
 	async createDirectChat(contactId) {
@@ -15685,6 +17449,8 @@ class MessengerApiClient {
 			unreadCount: 0,
 			hasGroupAutoKey: false,
 			requiresCustomGroupPassword: !!groupOptions.requiresCustomPassword,
+			isAdmin: true,
+			isGroupCreator: true,
 		};
 		this.#chatsMeta.set(chat.id, chat);
 		try {
@@ -15710,6 +17476,8 @@ class MessengerApiClient {
 	}
 
 	async sendActivity(chatId, activityType, active) {
+		const meta = this.chatMeta(chatId);
+		if (isChannelType(meta?.type)) return;
 		try {
 			await this.call('SendUserActivity', {
 				chatId,
@@ -15724,6 +17492,11 @@ class MessengerApiClient {
 	async getGroupInfo(chatId) {
 		const r = await this.call('GetGroupInfo', { chatId });
 		if (!r?.success) throw new Error(r?.error || 'GetGroupInfo failed');
+		const meta = this.#chatsMeta.get(chatId);
+		if (meta) {
+			meta.isAdmin = !!r.isAdmin;
+			meta.isGroupCreator = !!r.isCreator;
+		}
 		return r;
 	}
 
@@ -15783,6 +17556,82 @@ class MessengerApiClient {
 		if (!r?.success) throw new Error(r?.error || 'AddGroupMembers failed');
 		await this.distributeMissingGroupKeys(chatId, { force: true });
 		return r;
+	}
+
+	async createChannel(name, slug) {
+		return this.call('CreateChannel', { name, slug });
+	}
+
+	async getMyChannels() {
+		return this.call('GetMyChannels', {});
+	}
+
+	async getChannelInfo(chatId) {
+		return this.call('GetChannelInfo', { chatId });
+	}
+
+	async updateChannel(chatId, fields) {
+		return this.call('UpdateChannel', { chatId, ...fields });
+	}
+
+	async uploadChannelAvatar(chatId, photo) {
+		const fd = new FormData();
+		fd.append('photo', photo);
+		const r = await fetch(`/api/channel/${encodeURIComponent(chatId)}/avatar`, {
+			method: 'POST',
+			body: fd,
+			credentials: 'same-origin',
+		});
+		const data = await r.json().catch(() => ({}));
+		if (!r.ok) throw new Error(data.error || 'Upload failed');
+		return data;
+	}
+
+	async getChannelLinkPreview(slug) {
+		return this.call('GetChannelLinkPreview', { slug });
+	}
+
+	async getPublicChannelMessages(slug, limit = 50) {
+		const r = await fetch(
+			`/api/public/channel/${encodeURIComponent(slug)}/messages?limit=${Math.max(1, Math.min(limit, 100))}`,
+			{ credentials: 'same-origin' }
+		);
+		if (!r.ok) return null;
+		return r.json();
+	}
+
+	async getPublicChannelMessagesAround(slug, messageId, before = 25, after = 25) {
+		const params = new URLSearchParams({
+			messageId: String(messageId || ''),
+			before: String(Math.max(0, before)),
+			after: String(Math.max(0, after)),
+		});
+		const r = await fetch(
+			`/api/public/channel/${encodeURIComponent(slug)}/messages/around?${params}`,
+			{ credentials: 'same-origin' }
+		);
+		if (!r.ok) return null;
+		return r.json();
+	}
+
+	async subscribeChannel(chatId) {
+		return this.call('SubscribeChannel', { chatId });
+	}
+
+	async unsubscribeChannel(chatId) {
+		return this.call('UnsubscribeChannel', { chatId });
+	}
+
+	async setChannelMemberRole(chatId, memberUserId, role) {
+		return this.call('SetChannelMemberRole', { chatId, memberUserId, role });
+	}
+
+	async transferChannelOwnership(chatId, newOwnerUserId) {
+		return this.call('TransferChannelOwnership', { chatId, newOwnerUserId });
+	}
+
+	async deleteChannel(chatId) {
+		return this.call('DeleteChannel', { chatId });
 	}
 
 	async decryptRealtimeMessage(chatId, msg) {
@@ -15855,6 +17704,8 @@ class MessengerTransport {
 	static RETRY_DELAYS_MS = [1000, 2000, 5000, 10000, 15000, 30000];
 	static SIGNALR_RECONNECT_DELAYS_MS = [0, 2000, 5000, 10000, 15000, 30000];
 	static PAGE_RESUME_DEBOUNCE_MS = 250;
+	static PAGE_HIDE_DISCONNECT_GRACE_MS = 45000;
+	static PAGE_HIDE_PICKER_GRACE_MS = 120000;
 	static HEARTBEAT_MS = 30000;
 	#onMessage;
 	#wsUrl;
@@ -15865,6 +17716,7 @@ class MessengerTransport {
 	#wsReconnectTimer = null;
 	#signalRRetryTimer = null;
 	#pageResumeDebounceTimer = null;
+	#pageHideDisconnectTimer = null;
 	#wsReconnectDelay = 1000;
 	#wsConnectAttempts = 0;
 	#signalRStartAttempts = 0;
@@ -15900,6 +17752,7 @@ class MessengerTransport {
 		} else {
 			this.#hadConnectedOnce = true;
 		}
+		try { globalThis.AppUpdateNotifier?.checkOnTransportConnected?.(); } catch (_) { /* ignore */ }
 	}
 	#installPageLifecycleHandlers() {
 		this.#boundOnPageActivated = () => this.#onPageActivated();
@@ -15929,13 +17782,34 @@ class MessengerTransport {
 		this.#boundOnOnline = null;
 		clearTimeout(this.#pageResumeDebounceTimer);
 		this.#pageResumeDebounceTimer = null;
+		clearTimeout(this.#pageHideDisconnectTimer);
+		this.#pageHideDisconnectTimer = null;
+	}
+	#cancelPageHideDisconnect() {
+		clearTimeout(this.#pageHideDisconnectTimer);
+		this.#pageHideDisconnectTimer = null;
+	}
+	#schedulePageHideDisconnect() {
+		this.#cancelPageHideDisconnect();
+		const pickerActive = typeof globalThis !== 'undefined' && globalThis.__smExternalPickerActive;
+		const graceMs = pickerActive
+			? MessengerTransport.PAGE_HIDE_PICKER_GRACE_MS
+			: MessengerTransport.PAGE_HIDE_DISCONNECT_GRACE_MS;
+		this.#pageHideDisconnectTimer = setTimeout(() => {
+			this.#pageHideDisconnectTimer = null;
+			if (typeof globalThis !== 'undefined' && globalThis.__smExternalPickerActive) {
+				this.#schedulePageHideDisconnect();
+				return;
+			}
+			const conn = this.#signalRConnection;
+			if (conn && conn.state === 'Connected') {
+				conn.stop().catch(() => {});
+			}
+		}, graceMs);
 	}
 	#onPageHide() {
 		this.#stopHeartbeat();
-		const conn = this.#signalRConnection;
-		if (conn && conn.state === 'Connected') {
-			conn.stop().catch(() => {});
-		}
+		this.#schedulePageHideDisconnect();
 	}
 	#startHeartbeat() {
 		if (this.#heartbeatTimer) return;
@@ -15956,10 +17830,12 @@ class MessengerTransport {
 		conn.invoke('Heartbeat').catch(() => {});
 	}
 	#onPageShow(e) {
+		this.#cancelPageHideDisconnect();
 		if (e.persisted) this.resumeConnection('pageshow-bfcache');
 	}
 	#onPageActivated() {
 		if (document.visibilityState === 'hidden') return;
+		this.#cancelPageHideDisconnect();
 		clearTimeout(this.#pageResumeDebounceTimer);
 		this.#pageResumeDebounceTimer = setTimeout(
 			() => this.resumeConnection('visible'),
@@ -16801,6 +18677,9 @@ function messageUrlToAnchor(displayHtml, hrefRaw) {
 		.replace(/"/g, '&quot;')
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;');
+	if (isMessengerInternalLink(href)) {
+		return `<a href="${safeHref}" rel="noopener noreferrer" class="mc-msg-internal-link">${displayHtml}</a>`;
+	}
 	return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${displayHtml}</a>`;
 }
 
@@ -16856,7 +18735,10 @@ function renderMessengerMessageHtml(text) {
 				.replace(/"/g, '&quot;')
 				.replace(/</g, '&lt;')
 				.replace(/>/g, '&gt;');
-			return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+			const internal = isMessengerInternalLink(href);
+			const cls = internal ? ' class="mc-msg-internal-link"' : '';
+			const target = internal ? '' : ' target="_blank"';
+			return `<a href="${safeHref}"${target} rel="noopener noreferrer"${cls}>${label}</a>`;
 		} catch (e) {
 			return label;
 		}
@@ -16946,8 +18828,7 @@ async function confirmOpenMessageLink(href, { themeManager = null, i18n = null }
 		themeManager,
 	});
 	if (!ok) return false;
-	window.open(normalized, '_blank', 'noopener,noreferrer');
-	return true;
+	return openExternalLink(normalized);
 }
 
 class MessengerMessageRenderer {
@@ -17109,33 +18990,50 @@ class MessengerMessageRenderer {
 		wrap.appendChild(pill);
 		return wrap;
 	}
-	createSystemEventEl(msg) {
+	#buildSystemEventLabel(msg) {
 		const parsed = MessengerCustomMessage.parse(msg.text);
 		const payload = parsed?.payload || {};
 		const kind = payload.kind || '';
-		let label = '';
 		if (kind === 'groupRenamed') {
-			label = (this.#i18n.t('systemGroupRenamed') || '')
+			return (this.#i18n.t('systemGroupRenamed') || '')
 				.replace('{actor}', payload.actorName || '')
 				.replace('{name}', payload.newName || '');
-		} else if (kind === 'groupAvatarChanged') {
-			label = (this.#i18n.t('systemGroupAvatarChanged') || '')
+		}
+		if (kind === 'groupAvatarChanged') {
+			return (this.#i18n.t('systemGroupAvatarChanged') || '')
 				.replace('{actor}', payload.actorName || '');
-		} else if (kind === 'groupAdminGranted') {
-			label = (this.#i18n.t('systemGroupAdminGranted') || '')
-				.replace('{actor}', payload.actorName || '')
-				.replace('{target}', payload.targetName || '');
-		} else if (kind === 'groupAdminRevoked') {
-			label = (this.#i18n.t('systemGroupAdminRevoked') || '')
+		}
+		if (kind === 'groupAdminGranted') {
+			return (this.#i18n.t('systemGroupAdminGranted') || '')
 				.replace('{actor}', payload.actorName || '')
 				.replace('{target}', payload.targetName || '');
 		}
+		if (kind === 'groupAdminRevoked') {
+			return (this.#i18n.t('systemGroupAdminRevoked') || '')
+				.replace('{actor}', payload.actorName || '')
+				.replace('{target}', payload.targetName || '');
+		}
+		return msg.text || '';
+	}
+	createSystemEventEl(msg) {
+		const label = this.#buildSystemEventLabel(msg);
+		const fullText = label || msg.text || '';
 		const wrap = this.#utils.mk('div', 'mc-system-event');
 		wrap.dataset.msgId = msg.id;
 		const ts = msg.timestamp instanceof Date ? msg.timestamp.getTime() : new Date(msg.timestamp).getTime();
 		wrap.dataset.msgTs = String(ts);
 		const pill = this.#utils.mk('span', 'mc-system-event-pill');
-		pill.textContent = label || msg.text || '';
+		pill.textContent = fullText;
+		pill.addEventListener('click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			void MessengerDialog.alert({
+				title: this.#utils.formatDateTime(msg.timestamp),
+				message: fullText,
+				type: MessengerDialog.TYPE_INFO,
+				confirmLabel: this.#i18n.t('ok'),
+			});
+		});
 		wrap.appendChild(pill);
 		return wrap;
 	}
@@ -17222,9 +19120,11 @@ class MessengerMessageRenderer {
 		const timeEl = this.#utils.mk('span', 'mc-msg-time');
 		timeEl.textContent = this.#utils.formatTime(msg.timestamp);
 		footer.appendChild(timeEl);
-		if (isMine) {
+		if (isMine && !msg._hideReadReceipt) {
+			let st = msg.status || 'sent';
+			if (st === 'read') st = 'sent';
 			const statusEl = this.#utils.mk('span', 'mc-msg-status');
-			this.setStatusIcon(statusEl, msg.status || 'sent');
+			this.setStatusIcon(statusEl, st);
 			footer.appendChild(statusEl);
 		}
 		this.#syncTierLock(footer, msg, isMine);
@@ -17308,7 +19208,7 @@ class MessengerMessageRenderer {
 		return bar;
 	}
 	updateActivityBar(bar, activities, i18n) {
-		if (!bar) return;
+		if (!bar || bar.dataset.channelDesc != null) return;
 		const textEl = bar.querySelector('.mc-activity-text');
 		if (!activities || activities.length === 0) {
 			bar.classList.remove('mc-activity-bar--visible');
@@ -17325,6 +19225,21 @@ class MessengerMessageRenderer {
 				' ' + (i18n.locale === 'ru' ? 'печатают' : 'are typing');
 		} else {
 			textEl.textContent = i18n.tActivityMany(unique.length);
+		}
+	}
+	setChannelDescriptionBar(bar, description) {
+		if (!bar) return;
+		const text = String(description || '').trim();
+		const dots = bar.querySelector('.mc-activity-dots');
+		const textEl = bar.querySelector('.mc-activity-text');
+		if (dots) dots.hidden = true;
+		if (textEl) textEl.textContent = text;
+		if (text) {
+			bar.dataset.channelDesc = '1';
+			bar.classList.add('mc-activity-bar--channel-desc', 'mc-activity-bar--visible');
+		} else {
+			delete bar.dataset.channelDesc;
+			bar.classList.remove('mc-activity-bar--channel-desc', 'mc-activity-bar--visible');
 		}
 	}
 	buildInputArea(chatId, msgArea, onSend, onActivity = null, fileOptions = null, connectionStateMgr = null) {
@@ -17348,13 +19263,11 @@ class MessengerMessageRenderer {
 			!connectionStateMgr
 			|| connectionStateMgr.state === MessengerConnectionStateManager.STATE_CONNECTED;
 		const doSend = () => {
-			if (!isSendAllowed()) return;
 			sendStop();
 			onSend(chatId, field, msgArea);
 			resetFieldHeight();
 		};
 		field.addEventListener('input', () => {
-			if (!isSendAllowed()) return;
 			field.style.height = 'auto';
 			if (field.scrollHeight > 40) field.style.height = Math.min(field.scrollHeight, 120) + 'px';
 			if (MessengerUtils.isMobile()) {
@@ -17363,6 +19276,7 @@ class MessengerMessageRenderer {
 					msgArea.scrollTop = msgArea.scrollHeight;
 				}
 			}
+			if (!isSendAllowed()) return;
 			if (onActivity) {
 				const now = Date.now();
 				if (now - lastActivitySentAt >= THROTTLE_MS) {
@@ -17393,12 +19307,10 @@ class MessengerMessageRenderer {
 		btn.addEventListener('click', doSend);
 		const applyConnectionState = (state) => {
 			const connected = state === MessengerConnectionStateManager.STATE_CONNECTED;
-			field.disabled = !connected;
-			btn.disabled = !connected;
+			field.disabled = false;
+			btn.disabled = false;
 			area.classList.toggle('mc-input-area--offline', !connected);
-			field.placeholder = connected
-				? this.#i18n.t('writeMessage')
-				: this.#i18n.t('offlineSendPlaceholder');
+			field.placeholder = this.#i18n.t('writeMessage');
 			const attachBtn = area.querySelector('.mc-attach-btn');
 			if (attachBtn) attachBtn.disabled = !connected;
 		};
@@ -17416,6 +19328,27 @@ class MessengerMessageRenderer {
 		} else {
 			applyConnectionState(MessengerConnectionStateManager.STATE_CONNECTED);
 		}
+		return area;
+	}
+
+	buildChannelSubscribeArea(opts) {
+		const area = this.#utils.mk('div', 'mc-input-area mc-input-area--channel-stub');
+		const btn = this.#utils.mk('button', 'mc-channel-stub-btn');
+		btn.type = 'button';
+		const refresh = () => {
+			if (!opts.isSubscribed) {
+				btn.textContent = this.#i18n.t('channelSubscribe');
+				btn.onclick = () => opts.onSubscribe?.();
+			} else {
+				btn.textContent = opts.notificationsMuted
+					? this.#i18n.t('channelEnableNotifications')
+					: this.#i18n.t('channelDisableNotifications');
+				btn.onclick = () => opts.onToggleNotifications?.();
+			}
+		};
+		refresh();
+		area.refreshChannelStub = refresh;
+		area.appendChild(btn);
 		return area;
 	}
 }
@@ -17544,6 +19477,157 @@ class MessengerChatPanel {
 	setPresenceManager(presence) { this.#presence = presence; }
 	setConnectionStateManager(mgr) { this.#connectionStateMgr = mgr; }
 
+	#formatActivityText(activities, i18n) {
+		if (!activities?.length) return '';
+		const unique = [...new Map(activities.map(a => [a.userId, a])).values()];
+		if (unique.length === 1) {
+			return i18n.tActivity(unique[0].activityType, unique[0].userName);
+		}
+		if (unique.length <= 3) {
+			return unique.map(u => u.userName).join(', ')
+				+ (i18n.locale === 'ru' ? ' печатают' : ' are typing');
+		}
+		return i18n.tActivityMany(unique.length);
+	}
+
+	#restoreDirectHeaderSub(state, chat) {
+		const subEl = state?.el?.querySelector('.mc-header-sub');
+		if (!subEl || chat?.type !== 'direct') return;
+		subEl.classList.remove('mc-header-sub--typing');
+		const canShow = this.#canShowContactPresence();
+		const presence = canShow && chat.contactUserId ? this.#presence?.get(chat.contactUserId) : null;
+		subEl.textContent = MessengerUtils.getDirectChatHeaderSub(
+			chat, presence, this.#i18n, this.#utils, canShow
+		) ?? (this.#i18n.t('typeLabels')?.direct || '');
+	}
+
+	#applyChatActivityUi(state, activityBar, activities, chat) {
+		if (!state) return;
+		const typing = (activities || []).filter(a => a.activityType === 'typing');
+		const isDirect = chat?.type === 'direct';
+		if (isDirect) {
+			const subEl = state.el?.querySelector('.mc-header-sub');
+			if (subEl) {
+				if (typing.length) {
+					subEl.classList.add('mc-header-sub--typing');
+					fillTypingIndicator(subEl, this.#i18n);
+				} else {
+					this.#restoreDirectHeaderSub(state, chat);
+				}
+			}
+			this.#msgRenderer.updateActivityBar(activityBar, [], this.#i18n);
+			return;
+		}
+		this.#msgRenderer.updateActivityBar(activityBar, activities, this.#i18n);
+	}
+
+	syncChannelComposer(state) {
+		if (!state?.isChannelChat || !state.el || !state._composerChat) return;
+		const meta = state.channelMeta;
+		const chat = state._composerChat;
+		const oldInput = state.el.querySelector('.mc-input-area');
+		if (!oldInput) return;
+
+		const hasComposer = !!oldInput.querySelector('.mc-input-field');
+		const hasStub = oldInput.classList.contains('mc-input-area--channel-stub');
+		const isNone = oldInput.classList.contains('mc-input-area--channel-none');
+		const canPost = channelMetaCanPost(meta);
+		const wantsComposer = canPost;
+		const wantsStub = !canPost;
+
+		if (wantsComposer && hasComposer) return;
+		if (wantsStub && hasStub && !isNone) {
+			state.channelMeta = meta;
+			oldInput.refreshChannelStub?.();
+			return;
+		}
+		if (!wantsComposer && !wantsStub) return;
+
+		const newInput = wantsComposer
+			? this.#msgRenderer.buildInputArea(
+				chat.id,
+				state.msgArea,
+				state._composerOnSend,
+				state._composerOnActivity,
+				state._composerFileOptions,
+				this.#connectionStateMgr
+			)
+			: this.#buildChannelStubInput(chat, meta, state);
+
+		oldInput.replaceWith(newInput);
+		state.inputField = newInput.querySelector('.mc-input-field') || null;
+	}
+
+	#buildChannelStubInput(chat, channelMeta, panelState) {
+		let notificationsMuted = true;
+		let inputArea;
+		const liveMeta = () => panelState?.channelMeta || channelMeta;
+		const refreshMute = async () => {
+			try {
+				const push = window.SupraPush;
+				if (push?.getPreferences) {
+					const prefs = await push.getPreferences();
+					notificationsMuted = prefs?.mutedChatIds?.includes?.(chat.id) ?? true;
+				}
+			} catch (_) { /* ignore */ }
+			inputArea?.refreshChannelStub?.();
+		};
+		inputArea = this.#msgRenderer.buildChannelSubscribeArea({
+			get isSubscribed() { return !!liveMeta()?.isSubscribed; },
+			get notificationsMuted() { return notificationsMuted; },
+			onSubscribe: async () => {
+				try {
+					await this.#api.subscribeChannel(chat.id);
+					if (panelState?.channelMeta) panelState.channelMeta.isSubscribed = true;
+					else if (channelMeta) channelMeta.isSubscribed = true;
+					try {
+						const info = await this.#api.getChannelInfo(chat.id);
+						if (info?.success && panelState?.channelMeta) {
+							Object.assign(panelState.channelMeta, info);
+							MessengerOfflineStore.saveChannelMeta(chat.id, {
+								name: info.name || chat.name,
+								slug: info.slug || chat.channelSlug,
+								description: info.description || '',
+								isSubscribed: true,
+								canPost: !!info.canPost || channelRoleCanPost(info.myRole),
+								myRole: info.myRole || null,
+							});
+						}
+					} catch (_) { /* ignore */ }
+					await refreshMute();
+					inputArea.refreshChannelStub?.();
+					if (panelState) {
+						this.syncChannelComposer(panelState);
+						panelState.renderedIds.clear();
+						panelState.messages.clear();
+						panelState.msgArea?.querySelectorAll('.mc-msg-row, .mc-date-sep, .mc-system-event')
+							.forEach(el => el.remove());
+						panelState.firstLoadDone = false;
+						panelState.hasMore = true;
+						panelState.isLoading = false;
+						void this.loadHistory(chat.id, panelState);
+					}
+				} catch (e) {
+					console.warn('[MessengerChatPanel] subscribeChannel', e);
+				}
+			},
+			onToggleNotifications: async () => {
+				try {
+					const push = window.SupraPush;
+					if (!push?.setChatMuted) return;
+					const nextMuted = !notificationsMuted;
+					await push.setChatMuted(chat.id, nextMuted);
+					notificationsMuted = nextMuted;
+					inputArea.refreshChannelStub?.();
+				} catch (e) {
+					console.warn('[MessengerChatPanel] toggle channel notifications', e);
+				}
+			},
+		});
+		void refreshMute();
+		return inputArea;
+	}
+
 	#canShowContactPresence() {
 		return this.#connectionStateMgr?.state === MessengerConnectionStateManager.STATE_CONNECTED;
 	}
@@ -17628,11 +19712,24 @@ class MessengerChatPanel {
 
 	async refreshEncryptedMessagesDisplay(state, chatId) {
 		if (!state?.messages?.size || !chatId || !this.#api.getCrypto()?.isUnlocked) return;
+		const cached = await this.#cache.getMessages(chatId);
+		const cacheById = new Map();
+		for (const row of cached) {
+			if (row.isVirtual) continue;
+			cacheById.set(row.id, row);
+			if (row.serverId) cacheById.set(row.serverId, row);
+		}
 		for (const entry of state.messages.values()) {
 			const m = entry.data;
 			if (!m || m.isVirtual || m.deletedForEveryone) continue;
-			const encText = m._encText || (SupraCrypto.isEncrypted(m.text) ? m.text : null);
-			const encReply = m._encReplyPreview
+			const cachedRow = cacheById.get(m.id) || cacheById.get(m.serverId);
+			const encText = (cachedRow && SupraCrypto.isEncrypted(cachedRow.text) ? cachedRow.text : null)
+				|| m._encText
+				|| (SupraCrypto.isEncrypted(m.text) ? m.text : null);
+			const encReply = (cachedRow?.replyToTextPreview && SupraCrypto.isEncrypted(cachedRow.replyToTextPreview)
+				? cachedRow.replyToTextPreview
+				: null)
+				|| m._encReplyPreview
 				|| (m.replyToTextPreview && SupraCrypto.isEncrypted(m.replyToTextPreview)
 					? m.replyToTextPreview
 					: null);
@@ -17780,13 +19877,15 @@ class MessengerChatPanel {
 			if (MessengerUtils.isMobile()) {
 				if (appEl.root.classList.contains('mapp-show-chat')) {
 					history.back();
+				} else if (typeof chatCallbacks.onNavigateBack === 'function') {
+					chatCallbacks.onNavigateBack();
 				} else {
 					appEl.root.classList.remove('mapp-show-chat');
-					appEl.empty.hidden = false;
+					if (appEl.empty) appEl.empty.hidden = true;
 				}
 			} else {
 				appEl.root.classList.remove('mapp-show-chat');
-				appEl.empty.hidden = false;
+				if (appEl.empty) appEl.empty.hidden = false;
 			}
 		});
 		const canShow = this.#canShowContactPresence();
@@ -17798,20 +19897,32 @@ class MessengerChatPanel {
 			: this.#avatarBuilder.build(chat.id, displayName, chat.avatar || null, 32);
 		const nameEl = this.#utils.mk('div', 'mc-header-name');
 		nameEl.textContent = displayName;
-		const subEl = this.#utils.mk('div', 'mc-header-sub');
-		if (chat.type === 'direct') {
-			const subText = MessengerUtils.getDirectChatHeaderSub(
-				chat, avatarPresence, this.#i18n, this.#utils, canShow
-			);
-			subEl.textContent = subText ?? (this.#i18n.t('typeLabels')[chat.type] || '');
-		} else {
-			subEl.textContent = this.#i18n.t('typeLabels')[chat.type] || '';
-		}
-		const activityBar = this.#msgRenderer.buildActivityBar();
-		const subRow = this.#utils.mk('div', 'mc-header-sub-row');
-		subRow.append(subEl, activityBar);
+		const isChannelHeader = isChannelType(chat.type);
+		const channelDescription = formatChannelHeaderDescription(chatCallbacks.channelMeta?.description || '');
 		const nameWrap = this.#utils.mk('div', 'mc-header-name-wrap');
-		nameWrap.append(nameEl, subRow);
+		let activityBar = null;
+		if (isChannelHeader) {
+			nameWrap.append(nameEl);
+			if (channelDescription) {
+				const descEl = this.#utils.mk('div', 'mc-header-sub mc-header-channel-desc');
+				descEl.textContent = channelDescription;
+				nameWrap.append(descEl);
+			}
+		} else {
+			const subEl = this.#utils.mk('div', 'mc-header-sub');
+			if (chat.type === 'direct') {
+				const subText = MessengerUtils.getDirectChatHeaderSub(
+					chat, avatarPresence, this.#i18n, this.#utils, canShow
+				);
+				subEl.textContent = subText ?? (this.#i18n.t('typeLabels')[chat.type] || '');
+			} else {
+				subEl.textContent = this.#i18n.t('typeLabels')[chat.type] || '';
+			}
+			activityBar = this.#msgRenderer.buildActivityBar();
+			const subRow = this.#utils.mk('div', 'mc-header-sub-row');
+			subRow.append(subEl, activityBar);
+			nameWrap.append(nameEl, subRow);
+		}
 		const profileHit = this.#utils.mk('div', 'mapp-sidebar-user mc-header-profile-hit');
 		profileHit.append(avatar, nameWrap);
 		const info = this.#utils.mk('div', 'mc-header-info');
@@ -17819,6 +19930,7 @@ class MessengerChatPanel {
 		bindChatHeaderProfileClick(profileHit, chat, {
 			onShowProfile: chatCallbacks.onShowProfile,
 			onShowGroupProfile: chatCallbacks.onShowGroupProfile,
+			onChannelAbout: chatCallbacks.onChannelAbout,
 		});
 		const menuWrap = this.#utils.mk('div', 'mc-menu-wrap');
 		const dotsBtn = this.#utils.mk('button', 'mc-dots-btn');
@@ -17853,8 +19965,8 @@ class MessengerChatPanel {
 		});
 		menuWrap.append(dotsBtn, dropdown);
 		header.append(info, menuWrap);
-		const activityTracker = new MessengerActivityTracker(activities => {
-			this.#msgRenderer.updateActivityBar(activityBar, activities, this.#i18n);
+		const activityTracker = isChannelHeader ? null : new MessengerActivityTracker(activities => {
+			this.#applyChatActivityUi(panelState, activityBar, activities, chat);
 		});
 		const msgArea = this.#utils.mk('div', 'mc-messages');
 		const topLoader = this.#utils.mk('div', 'mc-top-loader');
@@ -17867,9 +19979,16 @@ class MessengerChatPanel {
 		const msgWrap = this.#utils.mk('div', 'mc-messages-wrap');
 		msgWrap.append(msgArea, scrollDownBtn);
 		if (this.#readGate) {
-			this.#readGate.bindMsgArea(chat.id, msgArea, () => this.#chatVisibleFn?.(chat.id) ?? false);
+			this.#readGate.bindMsgArea(
+				chat.id,
+				msgArea,
+				() => this.#chatVisibleFn?.(chat.id) ?? false,
+				chatCallbacks.onMarkReadIfEngaged
+			);
 		}
-		const onActivity = (type, active) => this.#api.sendActivity(chat.id, type, active).catch(() => {});
+		const onActivity = isChannelHeader
+			? null
+			: (type, active) => this.#api.sendActivity(chat.id, type, active).catch(() => {});
 		const replyBar = this.#buildReplyBar();
 		const selectBar = this.#buildSelectionBar();
 		const fileOptions = fileTransferTypes.length > 0 ? {
@@ -17904,15 +20023,32 @@ class MessengerChatPanel {
 				});
 			},
 		} : null;
-		const inputArea = this.#msgRenderer.buildInputArea(
-			chat.id, msgArea, onSend, onActivity, fileOptions, this.#connectionStateMgr
-		);
+		const channelMeta = chatCallbacks.channelMeta;
+		const isChannel = isChannelType(chat.type);
+		const canPostChannel = isChannel && channelMetaCanPost(channelMeta);
+		let inputArea;
+		if (isChannel && canPostChannel) {
+			inputArea = this.#msgRenderer.buildInputArea(
+				chat.id, msgArea, onSend, onActivity, fileOptions, this.#connectionStateMgr
+			);
+		} else if (isChannel) {
+			inputArea = this.#buildChannelStubInput(chat, channelMeta, panelState);
+		} else {
+			inputArea = this.#msgRenderer.buildInputArea(
+				chat.id, msgArea, onSend, onActivity, fileOptions, this.#connectionStateMgr
+			);
+		}
 		el.append(header, msgWrap, replyBar, selectBar, inputArea);
 		global.ThemeChatBg?.paint?.();
 		const isGroupChat = chat.type === 'group' || chat.type === 'public_group';
+		const isChannelChat = isChannelType(chat.type);
 		const state = {
 			chatId: chat.id,
 			isGroupChat,
+			groupCanModerate: isGroupChat ? !!(chat.isAdmin || chat.isGroupCreator) : false,
+			isChannelChat,
+			channelSlug: chat.channelSlug || channelMeta?.slug || null,
+			channelMeta,
 			el,
 			msgArea,
 			topLoader,
@@ -17960,17 +20096,33 @@ class MessengerChatPanel {
 			onMarkReadIfEngaged: typeof chatCallbacks.onMarkReadIfEngaged === 'function'
 				? chatCallbacks.onMarkReadIfEngaged
 				: null,
+			onShouldMarkReadOnSync: typeof chatCallbacks.onShouldMarkReadOnSync === 'function'
+				? chatCallbacks.onShouldMarkReadOnSync
+				: null,
+			onMarkReadAcknowledged: typeof chatCallbacks.onMarkReadAcknowledged === 'function'
+				? chatCallbacks.onMarkReadAcknowledged
+				: null,
 			onChatPreviewRefresh: typeof chatCallbacks.onChatPreviewRefresh === 'function'
 				? chatCallbacks.onChatPreviewRefresh
 				: null,
 			onForwardNavigate: typeof chatCallbacks.onForwardNavigate === 'function'
 				? chatCallbacks.onForwardNavigate
 				: null,
+			onDeepLinkNavigate: typeof chatCallbacks.onDeepLinkNavigate === 'function'
+				? chatCallbacks.onDeepLinkNavigate
+				: null,
 			onNavigateBack: typeof chatCallbacks.onNavigateBack === 'function'
 				? chatCallbacks.onNavigateBack
 				: null,
+			_composerChat: chat,
+			_composerOnSend: onSend,
+			_composerOnActivity: onActivity,
+			_composerFileOptions: fileOptions,
 		};
 		panelState = state;
+		if (isGroupChat && !state.groupCanModerate) {
+			void this.#resolveGroupCanDeleteForEveryone(state);
+		}
 		this.#bindMessageInteractions(state);
 		scrollDownBtn.addEventListener('click', () => {
 			if (state.quoteView) {
@@ -18096,7 +20248,11 @@ class MessengerChatPanel {
 			icon: muted ? this.#icons.bell() : this.#icons.bellOff(),
 			labelKey: muted ? 'unmuteNotifications' : 'muteNotifications',
 			labelFallback: muted ? 'Включить уведомления' : 'Отключить уведомления',
-			action: () => { try { push.setChatMuted(chat.id, !muted); } catch (_) { /* ignore */ } },
+			action: () => {
+				try {
+					void push.setChatMuted(chat.id, !muted);
+				} catch (_) { /* ignore */ }
+			},
 		};
 	}
 
@@ -18105,9 +20261,64 @@ class MessengerChatPanel {
 		if (spec) addItem(spec.icon, spec.labelKey, spec.labelFallback, false, spec.action);
 	}
 
+	#canManageChannel(channelMeta) {
+		if (!channelMeta) return false;
+		const role = String(channelMeta.myRole || '').toLowerCase();
+		return !!channelMeta.isOwner || role === 'owner' || role === 'admin';
+	}
+
+	#appendChannelMenuItems(chat, callbacks, addItem) {
+		const push = (typeof window !== 'undefined') ? window.SupraPush : null;
+		const muted = push && typeof push.isChatMuted === 'function' ? push.isChatMuted(chat.id) : true;
+		if (push && typeof push.setChatMuted === 'function') {
+			addItem(
+				muted ? this.#icons.bell() : this.#icons.bellOff(),
+				muted ? 'channelEnableNotifications' : 'channelDisableNotifications',
+				muted ? this.#i18n.t('channelEnableNotifications') : this.#i18n.t('channelDisableNotifications'),
+				false,
+				() => {
+					try {
+						void push.setChatMuted(chat.id, !muted);
+					} catch (_) { /* ignore */ }
+				},
+			);
+		}
+		addItem(
+			this.#icons.info(),
+			'channelAbout',
+			this.#i18n.t('channelAbout'),
+			false,
+			() => callbacks.onChannelAbout?.(chat),
+		);
+		addItem(
+			this.#icons.qrCode(),
+			'channelShareMenu',
+			this.#i18n.t('channelShareMenu'),
+			false,
+			() => callbacks.onChannelShare?.(chat),
+		);
+		if (this.#canManageChannel(callbacks.channelMeta)) {
+			addItem(
+				this.#icons.profile(),
+				'channelManage',
+				this.#i18n.t('channelManage'),
+				false,
+				() => callbacks.onChannelManage?.(chat),
+			);
+		}
+		addItem(
+			this.#icons.exitGroup(),
+			'channelLeave',
+			this.#i18n.t('channelLeave'),
+			true,
+			() => callbacks.onChannelLeave?.(chat),
+		);
+	}
+
 	#buildChatMenu(chat, callbacks = {}) {
 		const menu = this.#utils.mk('div', 'mc-menu');
 		const isGroup = chat.type === 'group' || chat.type === 'public_group';
+		const isChannel = isChannelType(chat.type);
 
 		const addItem = (icon, labelKey, labelFallback, danger, action) => {
 			const item = this.#utils.mk('div', 'mc-menu-item');
@@ -18119,6 +20330,12 @@ class MessengerChatPanel {
 			item.addEventListener('click', e => { e.stopPropagation(); menu.classList.remove('mc-menu--open'); action(); });
 			menu.appendChild(item);
 		};
+
+		if (isChannel) {
+			this.#appendChannelMenuItems(chat, callbacks, addItem);
+			menu.closeSubmenus = () => {};
+			return menu;
+		}
 
 		if (isGroup && typeof callbacks.onShowGroupProfile === 'function') {
 			addItem(this.#icons.profile(), 'groupProfile', this.#i18n.t('groupProfile'), false, () => callbacks.onShowGroupProfile(chat));
@@ -18157,6 +20374,7 @@ class MessengerChatPanel {
 	#buildChatMenuSheetItems(chat, callbacks = {}) {
 		const items = [];
 		const isGroup = chat.type === 'group' || chat.type === 'public_group';
+		const isChannel = isChannelType(chat.type);
 
 		const pushItem = (icon, labelKey, labelFallback, danger, action) => {
 			items.push({
@@ -18166,6 +20384,11 @@ class MessengerChatPanel {
 				action,
 			});
 		};
+
+		if (isChannel) {
+			this.#appendChannelMenuItems(chat, callbacks, pushItem);
+			return items;
+		}
 
 		if (isGroup && typeof callbacks.onShowGroupProfile === 'function') {
 			pushItem(this.#icons.profile(), 'groupProfile', this.#i18n.t('groupProfile'), false, () => callbacks.onShowGroupProfile(chat));
@@ -18463,6 +20686,10 @@ class MessengerChatPanel {
 		const idx = all.findIndex(m => m.id === targetId && !m.isVirtual);
 		if (idx < 0) return false;
 
+		if (state.isChannelChat && state.channelMeta && !state.channelMeta.isSubscribed) {
+			state.publicQuoteAll = all;
+		}
+
 		this.#clearPanelMessages(state);
 		const startIdx = MessengerUtils.findPageStart(all, idx + 1, this.#pageSize);
 		const endIdx = Math.min(all.length, idx + this.#pageSize + 1);
@@ -18490,6 +20717,7 @@ class MessengerChatPanel {
 		state.quoteTargetId = null;
 		state.hasMoreNewer = false;
 		state.cacheBottomIdx = 0;
+		state.publicQuoteAll = null;
 		state.firstLoadDone = false;
 		state.hasMore = true;
 		state.isLoading = false;
@@ -18497,11 +20725,120 @@ class MessengerChatPanel {
 		await this.loadHistory(chatId, state);
 	}
 
+	#mapPublicChannelMessages(data, chatId) {
+		return (data?.messages || []).map(m => ({
+			id: m.id,
+			chatId,
+			senderName: m.channelName || data.name || '',
+			text: m.text,
+			timestamp: new Date(m.timestamp),
+			isOwn: false,
+			status: 'sent',
+			encryptionTier: 'basic',
+		}));
+	}
+
+	async #loadOlderPublicQuoteWindow(chatId, state) {
+		const all = state.publicQuoteAll || [];
+		if (state.cacheTopIdx > 0) {
+			const startIdx = MessengerUtils.findPageStart(all, state.cacheTopIdx, this.#pageSize);
+			const page = all.slice(startIdx, state.cacheTopIdx);
+			state.cacheTopIdx = startIdx;
+			state.hasMore = startIdx > 0;
+			if (!page.length) return;
+			const prevH = state.msgArea.scrollHeight;
+			const prevTop = state.msgArea.scrollTop;
+			this.#renderBatch(state, page, 'prepend');
+			this.#recalcSeparatorsInDOM(state);
+			requestAnimationFrame(() => {
+				state.msgArea.scrollTop = prevTop + (state.msgArea.scrollHeight - prevH);
+			});
+			return;
+		}
+		const anchorIdx = this.#firstRealIndexAtOrAfter(all, 0);
+		if (anchorIdx < 0) {
+			state.hasMore = false;
+			return;
+		}
+		const anchorId = all[anchorIdx].id;
+		const around = await this.#api.getPublicChannelMessagesAround(
+			state.channelSlug, anchorId, this.#pageSize, 0
+		);
+		if (!around?.found || !around.messages?.length) {
+			state.hasMore = false;
+			return;
+		}
+		const merged = this.#mapPublicChannelMessages(around, chatId);
+		state.publicQuoteAll = merged;
+		const newStart = merged.findIndex(m => m.id === anchorId);
+		const sliceStart = MessengerUtils.findPageStart(merged, newStart + 1, this.#pageSize);
+		const page = merged.slice(sliceStart, newStart);
+		state.cacheTopIdx = sliceStart;
+		state.hasMore = !!around.hasMoreBefore;
+		if (!page.length) return;
+		const prevH = state.msgArea.scrollHeight;
+		const prevTop = state.msgArea.scrollTop;
+		this.#renderBatch(state, page, 'prepend');
+		this.#recalcSeparatorsInDOM(state);
+		requestAnimationFrame(() => {
+			state.msgArea.scrollTop = prevTop + (state.msgArea.scrollHeight - prevH);
+		});
+	}
+
+	async #loadNewerPublicQuoteWindow(chatId, state) {
+		const all = state.publicQuoteAll || [];
+		if (state.cacheBottomIdx < all.length) {
+			const endIdx = Math.min(all.length, state.cacheBottomIdx + this.#pageSize);
+			const page = all.slice(state.cacheBottomIdx, endIdx);
+			state.cacheBottomIdx = endIdx;
+			state.hasMoreNewer = endIdx < all.length;
+			if (page.length) {
+				this.#renderBatch(state, page, 'append');
+				this.#recalcSeparatorsInDOM(state);
+			}
+			return;
+		}
+		let anchorIdx = -1;
+		for (let i = Math.min(all.length, state.cacheBottomIdx) - 1; i >= 0; i--) {
+			if (!all[i].isVirtual) {
+				anchorIdx = i;
+				break;
+			}
+		}
+		if (anchorIdx < 0) {
+			state.hasMoreNewer = false;
+			return;
+		}
+		const anchorId = all[anchorIdx].id;
+		const around = await this.#api.getPublicChannelMessagesAround(
+			state.channelSlug, anchorId, 0, this.#pageSize
+		);
+		if (!around?.found || !around.messages?.length) {
+			state.hasMoreNewer = false;
+			return;
+		}
+		const merged = this.#mapPublicChannelMessages(around, chatId);
+		state.publicQuoteAll = merged;
+		const anchorPos = merged.findIndex(m => m.id === anchorId);
+		const sliceEnd = Math.min(merged.length, anchorPos + this.#pageSize + 1);
+		const page = merged.slice(anchorPos + 1, sliceEnd);
+		state.cacheBottomIdx = sliceEnd;
+		state.hasMoreNewer = !!around.hasMoreAfter;
+		if (page.length) {
+			this.#renderBatch(state, page, 'append');
+			this.#recalcSeparatorsInDOM(state);
+		}
+	}
+
 	async #loadOlderQuoteWindow(chatId, state) {
 		if (state.isLoading) return;
 		state.isLoading = true;
 		state.topLoader.hidden = false;
 		try {
+			if (state.isChannelChat && state.channelSlug && state.channelMeta && !state.channelMeta.isSubscribed) {
+				await this.#loadOlderPublicQuoteWindow(chatId, state);
+				return;
+			}
 			let all = await this.#getDisplayMessages(chatId);
 			if (state.cacheTopIdx > 0) {
 				const startIdx = MessengerUtils.findPageStart(all, state.cacheTopIdx, this.#pageSize);
@@ -18552,6 +20889,10 @@ class MessengerChatPanel {
 		if (state.isLoading) return;
 		state.isLoading = true;
 		try {
+			if (state.isChannelChat && state.channelSlug && state.channelMeta && !state.channelMeta.isSubscribed) {
+				await this.#loadNewerPublicQuoteWindow(chatId, state);
+				return;
+			}
 			const all = await this.#getDisplayMessages(chatId);
 			if (state.cacheBottomIdx < all.length) {
 				const endIdx = Math.min(all.length, state.cacheBottomIdx + this.#pageSize);
@@ -18659,9 +21000,16 @@ class MessengerChatPanel {
 			if (state.selectionMode) return;
 			const link = e.target.closest(MESSAGE_LINK_SELECTOR);
 			if (!link) return;
+			const href = link.getAttribute('href');
+			if (parseMessengerDeepLink(href)) {
+				e.preventDefault();
+				e.stopPropagation();
+				void state.onDeepLinkNavigate?.(href);
+				return;
+			}
 			e.preventDefault();
 			e.stopPropagation();
-			void this.#confirmOpenMessageLink(link.getAttribute('href'));
+			void this.#handleExternalMessageLink(href);
 		};
 		bubble.addEventListener('click', interceptMessageLink, true);
 		bubble.addEventListener('auxclick', (e) => {
@@ -18696,11 +21044,15 @@ class MessengerChatPanel {
 		});
 	}
 
-	async #confirmOpenMessageLink(href) {
+	async #handleExternalMessageLink(href) {
 		await confirmOpenMessageLink(href, {
 			themeManager: this.#themeManager,
 			i18n: this.#i18n,
 		});
+	}
+
+	scrollToQuotedMessage(state, messageId) {
+		return this.#scrollToQuotedMessage(state, messageId);
 	}
 
 	#showMessageMenu(e, state, msg, row = null, { forcePopup = false } = {}) {
@@ -18771,16 +21123,39 @@ class MessengerChatPanel {
 			}
 			push(this.#icons.reply(), 'msgActionReply', false, () => this.setReplyDraft(state, msg));
 			for (const href of resolveMessageLinks(row, msg.text)) {
+				const internal = !!parseMessengerDeepLink(href);
 				sheetItems.push({
-					icon: this.#icons.externalLink(),
+					icon: internal ? this.#icons.forward() : this.#icons.externalLink(),
 					label: formatMessageLinkActionLabel(this.#i18n, href),
 					danger: false,
 					truncate: true,
-					action: () => this.#confirmOpenMessageLink(href),
+					action: () => {
+						if (internal && typeof state.onDeepLinkNavigate === 'function') {
+							return state.onDeepLinkNavigate(href);
+						}
+						return this.#handleExternalMessageLink(href);
+					},
 				});
 			}
 			if (this.#api.canForwardMessage(msg)) {
 				push(this.#icons.forward(), 'msgActionForward', false, () => this.#forwardMessage(state, msg));
+			}
+			if (state.isChannelChat && state.channelSlug && msg.id) {
+				push(this.#icons.forward(), 'channelShareMessage', false, async () => {
+					const link = buildChannelMessageUrl(state.channelSlug, msg.id);
+					if (link && navigator.share) {
+						try { await navigator.share({ url: link }); } catch (_) { /* ignore */ }
+					} else if (link) {
+						await navigator.clipboard?.writeText?.(link);
+						MessengerDialog.showNotice(this.#i18n.t('channelMessageLinkCopied'), this.#i18n.t('confirm'), null, this.#themeManager);
+					}
+				});
+				push(this.#icons.copy(), 'channelCopyMessageLink', false, async () => {
+					const link = buildChannelMessageUrl(state.channelSlug, msg.id);
+					if (!link) return;
+					await navigator.clipboard?.writeText?.(link);
+					MessengerDialog.showNotice(this.#i18n.t('channelMessageLinkCopied'), this.#i18n.t('confirm'), null, this.#themeManager);
+				});
 			}
 			if (MessengerCustomMessage.hasCopyableText(msg)) {
 				push(this.#icons.copy(), 'msgActionCopy', false, () => this.#copyMessageText(msg, state));
@@ -18990,8 +21365,9 @@ class MessengerChatPanel {
 					i18n: this.#i18n,
 					themeManager: this.#themeManager,
 					imageUrl: imageUrl || null,
-					showSenderName: forwardSettings?.showSenderName,
+					showSenderName: state.isChannelChat ? false : forwardSettings?.showSenderName,
 					includeCaption: forwardSettings?.includeCaption,
+					forwardFromName: state.isChannelChat ? (msg.senderName || null) : null,
 				});
 				this.#finishForward(state, result?.sentChatIds?.[0]);
 			} catch (e) {
@@ -19057,6 +21433,26 @@ class MessengerChatPanel {
 		});
 	}
 
+	async #resolveGroupCanDeleteForEveryone(state) {
+		if (!state?.isGroupChat) return false;
+		if (state.groupCanModerate) return true;
+		const meta = this.#api.chatMeta?.(state.chatId);
+		if (meta?.isAdmin || meta?.isGroupCreator) {
+			state.groupCanModerate = true;
+			return true;
+		}
+		try {
+			const info = await this.#api.getGroupInfo(state.chatId);
+			if (info?.success) {
+				state.groupCanModerate = !!(info.isAdmin || info.isCreator);
+				return state.groupCanModerate;
+			}
+		} catch (e) {
+			console.warn('[MessengerChatPanel] group moderator check', e);
+		}
+		return false;
+	}
+
 	async #confirmDeleteOwnMessages() {
 		const result = await MessengerDialog.confirmWithCheckbox({
 			title: this.#i18n.t('deleteMessageTitle'),
@@ -19075,8 +21471,9 @@ class MessengerChatPanel {
 
 	async #deleteMessage(state, msg) {
 		const isOwn = !!msg.isOwn;
+		const canDeleteForEveryone = isOwn || await this.#resolveGroupCanDeleteForEveryone(state);
 		let deleteForEveryone = false;
-		if (isOwn) {
+		if (canDeleteForEveryone) {
 			const choice = await this.#confirmDeleteOwnMessages();
 			if (choice === null) return;
 			deleteForEveryone = choice;
@@ -19218,8 +21615,9 @@ class MessengerChatPanel {
 		const entries = this.#getSelectedMessageEntries(state);
 		if (!entries.length) return;
 		const allOwn = entries.every(({ msg }) => !!msg.isOwn);
+		const canDeleteForEveryone = allOwn || await this.#resolveGroupCanDeleteForEveryone(state);
 		let deleteForEveryone = false;
-		if (allOwn) {
+		if (canDeleteForEveryone) {
 			const choice = await this.#confirmDeleteOwnMessages();
 			if (choice === null) return;
 			deleteForEveryone = choice;
@@ -19234,15 +21632,19 @@ class MessengerChatPanel {
 			});
 			if (!confirmed) return;
 		}
-		for (const { msg } of entries) {
-			try {
-				const forEveryone = deleteForEveryone && !!msg.isOwn;
-				await this.#api.deleteMessage(state.chatId, msg.id, forEveryone);
-				await this.#msgService.deleteMessage(state.chatId, msg.id);
-				this.deleteMessage(state, msg.id, msg.id);
-			} catch (e) {
-				console.warn('[MessengerChatPanel] bulk delete', e);
+		try {
+			const messageIds = entries.map(({ msg }) => msg.id);
+			const r = await this.#api.deleteMessages(state.chatId, messageIds, deleteForEveryone);
+			for (const item of (r.results || [])) {
+				if (!item.success) {
+					console.warn('[MessengerChatPanel] bulk delete item', item.messageId, item.error);
+					continue;
+				}
+				await this.#msgService.deleteMessage(state.chatId, item.messageId);
+				this.deleteMessage(state, item.messageId, item.messageId);
 			}
+		} catch (e) {
+			console.warn('[MessengerChatPanel] bulk delete', e);
 		}
 		this.#exitSelectionMode(state);
 	}
@@ -19320,8 +21722,11 @@ class MessengerChatPanel {
 			} else if (MessengerCustomMessage.isSystemEvent(msg)) {
 				el = this.#msgRenderer.createSystemEventEl(msg);
 			} else {
+				const msgForRender = state.isChannelChat
+					? { ...msg, _hideReadReceipt: true, status: msg.status === 'read' ? 'sent' : msg.status }
+					: msg;
 				el = this.#msgRenderer.createMsgEl(
-					msg,
+					msgForRender,
 					state.currentUser,
 					state.avatarCache,
 					state.onAvatarClick,
@@ -19395,9 +21800,14 @@ class MessengerChatPanel {
 		this.#recalcSeparatorsInDOM(state);
 		state.firstLoadDone = true;
 		state.isLoading = false;
+		if (state.pendingAnchorMessageId) {
+			const anchorId = state.pendingAnchorMessageId;
+			state.pendingAnchorMessageId = null;
+			requestAnimationFrame(() => void this.#scrollToQuotedMessage(state, anchorId));
+			return;
+		}
 		state.scrollCleanup?.();
 		state.scrollCleanup = MessengerUtils.scrollToBottom(state.msgArea);
-		state.onMarkReadIfEngaged?.();
 	}
 	async #syncNewMessagesIntoPanel(chatId, state) {
 		try {
@@ -19406,13 +21816,36 @@ class MessengerChatPanel {
 				if (state.renderedIds.has(msg.id)) continue;
 				await this.appendMsg(state, msg);
 			}
-			if (newMsgs.length) state.onMarkReadIfEngaged?.();
 		} catch (e) {
 			console.warn('[MessengerChatPanel] syncNewMessages error', e);
 		}
 	}
+	async appendPendingMessagesFromCache(chatId, state) {
+		try {
+			if (!state.firstLoadDone) return;
+			const all = await this.#msgService.getDisplayMessages(chatId, this.#api);
+			const lastRendered = MessengerUtils.findLastRenderedRealMessage(all, state.renderedIds);
+			const pendingNew = [];
+			for (const msg of all) {
+				if (msg.isVirtual || msg.deletedForEveryone || state.renderedIds.has(msg.id)) continue;
+				if (!lastRendered || MessengerUtils.compareMessages(msg, lastRendered) > 0) {
+					pendingNew.push(msg);
+				}
+			}
+			if (!pendingNew.length) return;
+			pendingNew.sort(MessengerUtils.compareMessages);
+			for (const msg of pendingNew) {
+				await this.appendMsg(state, msg);
+			}
+		} catch (e) {
+			console.warn('[MessengerChatPanel] appendPendingMessagesFromCache error', e);
+		}
+	}
 	async syncPanelMessages(chatId, state) {
 		await this.#syncNewMessagesIntoPanel(chatId, state);
+	}
+	backgroundSyncPanelMessages(chatId, state) {
+		return this.#backgroundSyncPanelMessages(chatId, state);
 	}
 	#reconcileVisibleOrderAfterSync(state, chatId, all) {
 		const expectedIds = MessengerUtils.getExpectedVisibleMessageIds(all, state.cacheTopIdx);
@@ -19474,8 +21907,11 @@ class MessengerChatPanel {
 			} else if (MessengerCustomMessage.isSystemEvent(msg)) {
 				el = this.#msgRenderer.createSystemEventEl(msg);
 			} else {
+				const msgForRender = state.isChannelChat
+					? { ...msg, _hideReadReceipt: true, status: msg.status === 'read' ? 'sent' : msg.status }
+					: msg;
 				el = this.#msgRenderer.createMsgEl(
-					msg,
+					msgForRender,
 					state.currentUser,
 					state.avatarCache,
 					state.onAvatarClick,
@@ -19497,35 +21933,42 @@ class MessengerChatPanel {
 		return true;
 	}
 	async #backgroundSyncPanelMessages(chatId, state) {
-		if (state._syncInFlight) return;
-		state._syncInFlight = true;
-		try {
-			const result = await this.#msgService.syncRecentFromServer(chatId, this.#api, this.#pageSize);
-			if (result.historyCleared) {
-				state.msgArea.querySelectorAll('[data-msg-id]').forEach(el => el.remove());
-				state.messages.clear();
-				state.renderedIds.clear();
-				state.firstLoadDone = false;
-				this.#applyInitialMessages(state, chatId, result.all);
-				return;
+		if (state._syncInFlightPromise) return state._syncInFlightPromise;
+		state._syncInFlightPromise = (async () => {
+			state._syncInFlight = true;
+			try {
+				const markAsRead = state.onShouldMarkReadOnSync?.() ?? false;
+				const result = await this.#msgService.syncRecentFromServer(
+					chatId, this.#api, this.#pageSize, { markAsRead }
+				);
+				if (result.markedRead) state.onMarkReadAcknowledged?.();
+				if (result.historyCleared) {
+					state.msgArea.querySelectorAll('[data-msg-id]').forEach(el => el.remove());
+					state.messages.clear();
+					state.renderedIds.clear();
+					state.firstLoadDone = false;
+					this.#applyInitialMessages(state, chatId, result.all);
+					return;
+				}
+				for (const id of result.removedIds || []) {
+					this.deleteMessage(state, id, id);
+				}
+				this.#reconcileVisibleOrderAfterSync(state, chatId, result.all);
+				if (this.#api.getCrypto()?.isUnlocked) {
+					await this.refreshEncryptedMessagesDisplay(state, chatId);
+				}
+				if (this.#api.getCrypto()?.getCustomPassword(chatId)) {
+					await this.refreshProtectedMessagesDisplay(state, chatId);
+				}
+			} catch (e) {
+				console.warn('[MessengerChatPanel] background sync error', e);
+			} finally {
+				state._syncInFlight = false;
+				state._syncInFlightPromise = null;
+				state.onChatPreviewRefresh?.();
 			}
-			for (const id of result.removedIds || []) {
-				this.deleteMessage(state, id, id);
-			}
-			this.#reconcileVisibleOrderAfterSync(state, chatId, result.all);
-			state.onMarkReadIfEngaged?.();
-			if (this.#api.getCrypto()?.isUnlocked) {
-				await this.refreshEncryptedMessagesDisplay(state, chatId);
-			}
-			if (this.#api.getCrypto()?.getCustomPassword(chatId)) {
-				await this.refreshProtectedMessagesDisplay(state, chatId);
-			}
-		} catch (e) {
-			console.warn('[MessengerChatPanel] background sync error', e);
-		} finally {
-			state._syncInFlight = false;
-			state.onChatPreviewRefresh?.();
-		}
+		})();
+		return state._syncInFlightPromise;
 	}
 	async #panelInitialLoad(chatId, state) {
 		const cachedPage = await this.#msgService.prepareInitialVisiblePage(
@@ -19551,15 +21994,29 @@ class MessengerChatPanel {
 		if (state._initialFetchInFlight) return;
 		state._initialFetchInFlight = true;
 		try {
-			const batch = await this.#api.getMessages(chatId, 0, this.#pageSize);
-			if (batch.length) await this.#msgService.ingest(chatId, batch, this.#api);
-			const cachedPage = await this.#msgService.prepareInitialVisiblePage(
-				chatId,
-				this.#api,
-				this.#pageSize
+			if (state.isChannelChat && state.channelSlug && state.channelMeta && !state.channelMeta.isSubscribed) {
+				if (state.pendingAnchorMessageId) {
+					await this.#fetchPublicChannelMessageAnchor(chatId, state);
+				} else {
+					await this.#fetchPublicChannelMessages(chatId, state);
+				}
+				return;
+			}
+			const markAsRead = state.onShouldMarkReadOnSync?.() ?? false;
+			const result = await this.#msgService.syncRecentFromServer(
+				chatId, this.#api, this.#pageSize, { markAsRead }
 			);
+			if (result.markedRead) state.onMarkReadAcknowledged?.();
 			state.topLoader.hidden = true;
-			if (!cachedPage) {
+			if (result.historyCleared) {
+				state.msgArea.querySelectorAll('[data-msg-id]').forEach(el => el.remove());
+				state.messages.clear();
+				state.renderedIds.clear();
+				state.firstLoadDone = false;
+				this.#applyInitialMessages(state, chatId, result.all);
+				return;
+			}
+			if (!result.all?.length) {
 				if (!state.firstLoadDone) {
 					state.hasMore = false;
 					state.firstLoadDone = true;
@@ -19570,15 +22027,26 @@ class MessengerChatPanel {
 			}
 			this.#hideMessagesStatus(state);
 			if (state.firstLoadDone && state.renderedIds.size > 0) {
-				const all = await this.#getDisplayMessages(chatId);
-				this.#reconcileVisibleOrderAfterSync(state, chatId, all);
+				this.#reconcileVisibleOrderAfterSync(state, chatId, result.all);
 			} else {
-				this.#applyInitialMessages(state, chatId, cachedPage.raw, {
-					startIdx: cachedPage.startIdx,
-					visible: cachedPage.visible,
-				});
+				const cachedPage = await this.#msgService.prepareInitialVisiblePage(
+					chatId,
+					this.#api,
+					this.#pageSize
+				);
+				if (cachedPage) {
+					this.#applyInitialMessages(state, chatId, cachedPage.raw, {
+						startIdx: cachedPage.startIdx,
+						visible: cachedPage.visible,
+					});
+				}
 			}
-			void this.#backgroundSyncPanelMessages(chatId, state);
+			if (this.#api.getCrypto()?.isUnlocked) {
+				await this.refreshEncryptedMessagesDisplay(state, chatId);
+			}
+			if (this.#api.getCrypto()?.getCustomPassword(chatId)) {
+				await this.refreshProtectedMessagesDisplay(state, chatId);
+			}
 		} catch (e) {
 			console.warn('[MessengerChatPanel] initial server load error', e);
 			if (!state.firstLoadDone) {
@@ -19590,6 +22058,78 @@ class MessengerChatPanel {
 			state._initialFetchInFlight = false;
 		}
 	}
+
+	async #fetchPublicChannelMessageAnchor(chatId, state) {
+		const messageId = state.pendingAnchorMessageId;
+		state.pendingAnchorMessageId = null;
+		state.isLoading = true;
+		try {
+			const data = await this.#api.getPublicChannelMessagesAround(
+				state.channelSlug,
+				messageId,
+				this.#pageSize,
+				this.#pageSize
+			);
+			state.topLoader.hidden = true;
+			if (!data?.found || !data.messages?.length) {
+				state.pendingAnchorMessageId = null;
+				await this.#fetchPublicChannelMessages(chatId, state);
+				return;
+			}
+			const all = this.#mapPublicChannelMessages(data, chatId);
+			this.#hideMessagesStatus(state);
+			this.#applyQuoteWindow(state, all, messageId, !!data.hasMoreBefore, !!data.hasMoreAfter);
+			state.firstLoadDone = true;
+			state.isLoading = false;
+		} catch (e) {
+			console.warn('[MessengerChatPanel] public channel anchor load error', e);
+			state.pendingAnchorMessageId = null;
+			await this.#fetchPublicChannelMessages(chatId, state);
+		}
+	}
+
+	async #fetchPublicChannelMessages(chatId, state) {
+		try {
+			const data = await this.#api.getPublicChannelMessages(state.channelSlug, this.#pageSize);
+			state.topLoader.hidden = true;
+			if (!data?.found) {
+				if (!state.firstLoadDone) {
+					state.hasMore = false;
+					state.firstLoadDone = true;
+					state.isLoading = false;
+					this.#showMessagesStatus(state, this.#i18n.t('messagesEmpty'));
+				}
+				return;
+			}
+			const msgs = (data.messages || []).map(m => ({
+				id: m.id,
+				chatId,
+				senderName: m.channelName || data.name || '',
+				text: m.text,
+				timestamp: new Date(m.timestamp),
+				isOwn: false,
+				status: 'sent',
+				encryptionTier: 'basic',
+			}));
+			this.#hideMessagesStatus(state);
+			if (msgs.length) {
+				this.#applyInitialMessages(state, chatId, msgs);
+			} else if (!state.firstLoadDone) {
+				state.hasMore = false;
+				state.firstLoadDone = true;
+				state.isLoading = false;
+				this.#showMessagesStatus(state, this.#i18n.t('messagesEmpty'));
+			}
+		} catch (e) {
+			console.warn('[MessengerChatPanel] public channel load error', e);
+			if (!state.firstLoadDone) {
+				state.firstLoadDone = true;
+				state.isLoading = false;
+				state.topLoader.hidden = true;
+			}
+		}
+	}
+
 	async #panelLoadOlderPage(chatId, state) {
 		if (state.cacheTopIdx > 0) {
 			const olderPage = await this.#msgService.prepareOlderVisiblePage(
@@ -19632,20 +22172,17 @@ class MessengerChatPanel {
 		state.serverOffset += serverPage.length;
 		if (serverPage.length < this.#pageSize) state.hasMore = false;
 		const allNow = await this.#getDisplayMessages(chatId);
-		const firstRenderedRealIdx = allNow.findIndex(
-			m => !m.isVirtual && state.renderedIds.has(m.id)
+		const { slice: insertedSlice, startIdx } = MessengerUtils.collectPrependSliceForOlderPage(
+			allNow, state.renderedIds
 		);
 		state.topLoader.hidden = true;
-		if (firstRenderedRealIdx <= 0) { state.isLoading = false; return; }
-		const insertedSlice = allNow
-			.slice(0, firstRenderedRealIdx)
-			.filter(m => !state.renderedIds.has(m.id));
-		state.cacheTopIdx = 0;
 		if (!insertedSlice.length) { state.isLoading = false; return; }
+		state.cacheTopIdx = startIdx;
 		const prevH = state.msgArea.scrollHeight;
 		const prevTop = state.msgArea.scrollTop;
 		this.#renderBatch(state, insertedSlice, 'prepend');
 		this.#recalcSeparatorsInDOM(state);
+		this.#reconcileVisibleOrderAfterSync(state, chatId, allNow);
 		state.isLoading = false;
 		requestAnimationFrame(() => {
 			state.msgArea.scrollTop = prevTop + (state.msgArea.scrollHeight - prevH);
@@ -19800,6 +22337,7 @@ class MessengerChatPanel {
 		if (key !== msgId) state.messages.set(key, entry);
 	}
 	updateMsgStatus(state, msgId, status) {
+		if (state.isChannelChat) return;
 		const found = this.#findEntry(state, msgId);
 		if (!found) {
 			if (state.pendingStatus) state.pendingStatus.set(msgId, status);
@@ -19810,6 +22348,7 @@ class MessengerChatPanel {
 		if (el) this.#msgRenderer.setStatusIcon(el, status);
 	}
 	updateActivity(state, userId, userName, activityType, active) {
+		if (state.isChannelChat) return;
 		state.activityTracker?.update(userId, userName, activityType, active);
 	}
 	deleteMessage(state, storedId, originalId) {
@@ -19997,9 +22536,12 @@ class MessengerChatView {
 		});
 		const msgWrap = this.#utils.mk('div', 'mc-messages-wrap');
 		msgWrap.append(messages, scrollDownBtn);
-		this.#readGate.recordEngagement(chatMeta.id);
-		this.#readGate.bindMsgArea(chatMeta.id, messages, () =>
-			typeof document !== 'undefined' && document.visibilityState !== 'hidden');
+		this.#readGate.bindMsgArea(
+			chatMeta.id,
+			messages,
+			() => typeof document !== 'undefined' && document.visibilityState !== 'hidden',
+			() => this.markReadIfEngaged()
+		);
 		const fileTransferTypes = this.#options.fileTransferTypes || [];
 		const fileOptions = fileTransferTypes.length > 0 ? {
 			types: fileTransferTypes,
@@ -20241,28 +22783,32 @@ class MessengerChatView {
 		return true;
 	}
 	async #backgroundSyncChatMessages() {
-		if (this._syncInFlight) return;
-		this._syncInFlight = true;
+		if (this._syncInFlightPromise) return this._syncInFlightPromise;
 		const chatId = this.#chatMeta.id;
-		try {
-			const result = await this.#msgService.syncRecentFromServer(chatId, this.#api, this.#pageSize);
-			if (result.historyCleared) {
-				this.el.messages.querySelectorAll('[data-msg-id]').forEach(el => el.remove());
-				this.#messages.clear();
-				this.#renderedIds.clear();
-				this.#firstLoadDone = false;
-				this.#applyInitialMessages(result.all);
-				return;
+		this._syncInFlightPromise = (async () => {
+			this._syncInFlight = true;
+			try {
+				const result = await this.#msgService.syncRecentFromServer(chatId, this.#api, this.#pageSize);
+				if (result.historyCleared) {
+					this.el.messages.querySelectorAll('[data-msg-id]').forEach(el => el.remove());
+					this.#messages.clear();
+					this.#renderedIds.clear();
+					this.#firstLoadDone = false;
+					this.#applyInitialMessages(result.all);
+					return;
+				}
+				for (const id of result.removedIds || []) {
+					this.deleteMessage(id, id);
+				}
+				this.#reconcileVisibleOrderAfterSync(result.all);
+			} catch (e) {
+				console.warn('[MessengerChatView] background sync error', e);
+			} finally {
+				this._syncInFlight = false;
+				this._syncInFlightPromise = null;
 			}
-			for (const id of result.removedIds || []) {
-				this.deleteMessage(id, id);
-			}
-			this.#reconcileVisibleOrderAfterSync(result.all);
-		} catch (e) {
-			console.warn('[MessengerChatView] background sync error', e);
-		} finally {
-			this._syncInFlight = false;
-		}
+		})();
+		return this._syncInFlightPromise;
 	}
 	async #initialLoad() {
 		const chatId = this.#chatMeta.id;
@@ -20369,20 +22915,17 @@ class MessengerChatView {
 		this.#serverOffset += serverPage.length;
 		if (serverPage.length < this.#pageSize) this.#hasMoreHist = false;
 		const allNow = await this.#msgService.getDisplayMessages(chatId, this.#api);
-		const firstRenderedRealIdx = allNow.findIndex(
-			m => !m.isVirtual && this.#renderedIds.has(m.id)
+		const { slice: insertedSlice, startIdx } = MessengerUtils.collectPrependSliceForOlderPage(
+			allNow, this.#renderedIds
 		);
 		this.#el('topLoader').hidden = true;
-		if (firstRenderedRealIdx <= 0) { this.#isLoadingHist = false; return; }
-		const insertedSlice = allNow
-			.slice(0, firstRenderedRealIdx)
-			.filter(m => !this.#renderedIds.has(m.id));
-		this.#cacheTopIdx = 0;
 		if (!insertedSlice.length) { this.#isLoadingHist = false; return; }
+		this.#cacheTopIdx = startIdx;
 		const prevH = this.el.messages.scrollHeight;
 		const prevTop = this.el.messages.scrollTop;
 		this.#renderBatch(insertedSlice, 'prepend');
 		this.#recalcSeparatorsInDOM();
+		this.#reconcileVisibleOrderAfterSync(allNow);
 		this.#isLoadingHist = false;
 		requestAnimationFrame(() => {
 			this.el.messages.scrollTop = prevTop + (this.el.messages.scrollHeight - prevH);
@@ -20409,9 +22952,13 @@ class MessengerChatView {
 		if (this.#resolveMessageEntry(msg.id)) {
 			return this.receiveMessage(msg);
 		}
+		const msgText = (msg.text ?? '').trim();
 		const pending = [...this.#messages.values()].find((e) => {
 			const d = e.data;
-			return d?.isOwn && MessengerUtils.isLocalMessageId(d.id) && !d.serverId;
+			if (!d?.isOwn || d.serverId) return false;
+			if (MessengerUtils.isLocalMessageId(d.id)) return true;
+			const localText = (d.text ?? '').trim();
+			return !!(msgText && localText && localText === msgText);
 		});
 		if (pending) {
 			await this.confirmMessage(pending.data.id, msg);
@@ -20605,7 +23152,7 @@ class MessengerChatView {
 		if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) {
 			MessengerDialog.showNotice(
 				this.#i18n.t('offlineSendBlocked'),
-				this.#i18n.t('confirm'),
+				this.#i18n.t('close'),
 				null,
 				this.#themeManager
 			);
@@ -20614,7 +23161,7 @@ class MessengerChatView {
 		field.value = '';
 		field.style.height = '';
 		field.rows = 1;
-		const localId = this.#utils.guid();
+		const localId = this.#utils.localMessageId();
 		let outgoingPrep = { encryptionTier: 'basic' };
 		let resolved = { tier: 'basic' };
 		try {
@@ -20687,7 +23234,13 @@ class MessengerChatView {
 		if (this.#avatarCache.get(msg.senderId) === msg.senderAvatar) return;
 		this.#avatarCache.set(msg.senderId, msg.senderAvatar);
 		this.el.messages?.querySelectorAll(`[data-sender-id="${msg.senderId}"] .mc-avatar-img`)
-			.forEach(img => { img.src = msg.senderAvatar; });
+			.forEach(img => {
+				if (this.#cache?.applyAvatarSrc) {
+					this.#cache.applyAvatarSrc(img, msg.senderAvatar);
+				} else {
+					img.src = MessengerAppContext.toAbsoluteUrl(msg.senderAvatar);
+				}
+			});
 	}
 	#buildHeader() {
 		const header = this.#utils.mk('div', 'mc-header');
@@ -20895,7 +23448,7 @@ class MessengerPresenceManager {
 		};
 		const events = [
 			'mousemove', 'mousedown', 'keydown', 'keyup', 'input',
-			'touchstart', 'scroll', 'pointerdown', 'pointermove', 'click', 'wheel', 'focusin',
+			'touchstart', 'pointerdown', 'pointermove', 'click', 'focusin',
 		];
 		const targets = new Set([document, window]);
 		if (rootEl) targets.add(rootEl);
@@ -21048,7 +23601,7 @@ class Messenger {
 		const utilsInst = new MessengerUtils(i18nInst);
 		const themeManagerInst = new MessengerThemeManager(themeKey);
 		const apiInst = new MessengerApiClient();
-		const avatarBuilderInst = new MessengerAvatarBuilder(utilsInst);
+		const avatarBuilderInst = new MessengerAvatarBuilder(utilsInst, cacheInst);
 		const presenceInst = new MessengerPresenceManager();
 		const msgRendererInst = new MessengerMessageRenderer(
 			utilsInst, iconsInst, avatarBuilderInst, i18nInst, cacheInst
@@ -21080,14 +23633,18 @@ class Messenger {
 		const groupProfileModalInst = new MessengerGroupProfileModal(
 			utilsInst, iconsInst, i18nInst, themeManagerInst, menuBuilderInst, avatarBuilderInst, apiInst
 		);
+		const channelProfileModalInst = new MessengerChannelProfileModal(
+			utilsInst, iconsInst, i18nInst, themeManagerInst, menuBuilderInst, avatarBuilderInst, apiInst
+		);
 		const readGateInst = new MessengerChatReadGate();
 		const appViewInst = new MessengerAppView(
 			utilsInst, iconsInst, themeManagerInst, i18nInst,
 			sidebarInst, panelFactoryInst, modalInst, apiInst, fileTransferTypes,
-			settingsModalInst, profileModalInst, groupProfileModalInst, avatarBuilderInst,
+			settingsModalInst, profileModalInst, groupProfileModalInst, channelProfileModalInst, avatarBuilderInst,
 			readGateInst
 		);
 		appViewInst.setMessageService(msgServiceInst);
+		appViewInst.setMediaCache(cacheInst);
 		panelFactoryInst.setReadEngagement(
 			readGateInst,
 			(chatId) => appViewInst.isChatVisibleForRead(chatId)
@@ -21275,17 +23832,10 @@ class Messenger {
 			(result) => this.#onReconcileResult(result),
 			this.#options.reconcileAgeMs ?? 10000
 		).catch(e => console.warn('[Messenger] reconcileOnStartup error:', e));
-		const atMatch = window.location.pathname.match(/^\/@([^/?#]+)$/i);
-		if (atMatch) {
-			const slug = decodeURIComponent(atMatch[1]);
+		if (/^\/@[^/?#]+/i.test(window.location.pathname)) {
 			void (async () => {
 				try {
-					if (isGroupChatId(slug)) {
-						await this.#appView.openGroupByChatId(slug);
-					} else {
-						await this.#appView.openProfileByLogin(slug);
-					}
-					normalizeAppUrl();
+					await this.#appView.navigateDeepLink(window.location.href);
 				} catch { /* ignore */ }
 			})();
 		}
@@ -21488,12 +24038,18 @@ class Messenger {
 				};
 				this.#api.decryptRealtimeMessage(body.chatId, rawMsg).then(async msg => {
 					if (!msg.isOwn) {
-						MessengerMessageSounds.playIncoming();
+						if (!isChatNotificationMuted(body.chatId)) {
+							MessengerMessageSounds.playIncoming();
+						}
 						this.#showBackgroundNotification(body.chatId, msg.senderName || body.senderName);
 					}
 					if (this.#mode === Messenger.MODE_APP) {
 						try {
-							await this.#msgService.ingestOne(body.chatId, msg);
+							if (msg.isOwn) {
+								await this.#msgService.ingestOwnFromRealtime(body.chatId, rawMsg, this.#api);
+							} else {
+								await this.#msgService.ingestOne(body.chatId, rawMsg, this.#api);
+							}
 							this.#cache.prefetchMessageImages(msg.text);
 						} catch (e) {
 							console.warn('[Messenger] cache realtime message', e);
@@ -21502,13 +24058,17 @@ class Messenger {
 							await this.#appView.receiveOwnMessage(body.chatId, msg, listPreviewSource);
 						} else {
 							this.#appView.receiveMessage(body.chatId, msg, listPreviewSource);
-						}
-						if (this.#appView.isChatVisibleForRead(body.chatId) && !msg.isOwn) {
-							this.#markReadIfEngaged(body.chatId, { becauseNewMessage: true });
+							if (this.#appView.isChatVisibleForRead(body.chatId)) {
+								this.#appView.scheduleMarkReadOnSync(body.chatId);
+							}
 						}
 					} else if (this.#chatView.chatMeta?.id === body.chatId) {
 						try {
-							await this.#msgService.ingestOne(body.chatId, msg);
+							if (msg.isOwn) {
+								await this.#msgService.ingestOwnFromRealtime(body.chatId, rawMsg, this.#api);
+							} else {
+								await this.#msgService.ingestOne(body.chatId, rawMsg, this.#api);
+							}
 							this.#cache.prefetchMessageImages(msg.text);
 						} catch (e) {
 							console.warn('[Messenger] cache realtime message', e);
@@ -21533,6 +24093,8 @@ class Messenger {
 			}
 			case 'SupraMessageStatusUpdate': {
 				const { messageId, status, chatId } = body;
+				const statusChatMeta = chatId ? this.#api.chatMeta(chatId) : null;
+				if (isChannelType(statusChatMeta?.type)) break;
 				if (this.#mode === Messenger.MODE_APP) {
 					this.#appView.updateMessageStatus(messageId, status);
 				} else {
@@ -21562,12 +24124,15 @@ class Messenger {
 						unreadCount: 0,
 					});
 				break;
-			case 'SupraUserActivity':
+			case 'SupraUserActivity': {
+				const activityChatMeta = this.#api.chatMeta(body.chatId);
+				if (isChannelType(activityChatMeta?.type)) break;
 				if (this.#mode === Messenger.MODE_APP)
 					this.#appView.receiveActivity(body.chatId, body.userId, body.userName, body.activityType, body.active);
 				else if (this.#chatView.chatMeta?.id === body.chatId)
 					this.#chatView.receiveActivity(body.userId, body.userName, body.activityType, body.active);
 				break;
+			}
 			case 'SupraMessageUpdated': {
 				const { chatId, messageId } = body;
 				if (!chatId || !messageId) break;
@@ -21644,6 +24209,18 @@ class Messenger {
 						name: chatName,
 						avatar: chatAvatar ?? null,
 						requiresCustomGroupPassword,
+					});
+				}
+				break;
+			}
+			case 'SupraChannelUpdated': {
+				const { chatId, chatName, chatAvatar, slug } = body;
+				if (!chatId) break;
+				if (this.#mode === Messenger.MODE_APP) {
+					this.#appView.updateChatMeta(chatId, {
+						name: chatName,
+						avatar: chatAvatar ?? null,
+						channelSlug: slug ?? null,
 					});
 				}
 				break;

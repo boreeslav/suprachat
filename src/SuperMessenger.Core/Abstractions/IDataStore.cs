@@ -18,6 +18,8 @@ public interface IDataStore
 
     Task<IReadOnlyList<SupraChatRecord>> GetChatsAsync(CancellationToken ct = default);
     Task<SupraChatRecord?> GetChatByIdAsync(Guid id, CancellationToken ct = default);
+    Task<SupraChatRecord?> GetChannelBySlugAsync(string slug, CancellationToken ct = default);
+    Task<bool> IsChannelSlugTakenAsync(string slug, Guid? excludeChatId = null, CancellationToken ct = default);
     Task SaveChatAsync(SupraChatRecord chat, CancellationToken ct = default);
 
     Task<IReadOnlyList<SupraChatParticipantRecord>> GetAllParticipantsAsync(CancellationToken ct = default);
@@ -29,6 +31,8 @@ public interface IDataStore
     Task<IReadOnlyList<SupraChatMessageRecord>> GetAllMessagesAsync(CancellationToken ct = default);
     Task<IReadOnlyList<SupraChatMessageRecord>> GetMessagesByChatAsync(Guid chatId, CancellationToken ct = default);
     Task<SupraChatMessageRecord?> GetMessageByIdAsync(Guid messageId, CancellationToken ct = default);
+    Task<SupraChatMessageRecord?> GetMessageByClientLocalIdAsync(
+        Guid chatId, Guid senderUserId, string clientLocalId, CancellationToken ct = default);
     Task SaveMessageAsync(SupraChatMessageRecord message, CancellationToken ct = default);
     Task UpdateMessageAsync(SupraChatMessageRecord message, CancellationToken ct = default);
     Task UpdateMessagesStatusAsync(Guid chatId, Guid readerUserId, string status, CancellationToken ct = default);
@@ -36,6 +40,7 @@ public interface IDataStore
 
     Task<IReadOnlyList<SupraMessageUserDeletionRecord>> GetMessageUserDeletionsByUserAsync(Guid userId, CancellationToken ct = default);
     Task SaveMessageUserDeletionAsync(SupraMessageUserDeletionRecord deletion, CancellationToken ct = default);
+    Task SaveMessageUserDeletionsAsync(IReadOnlyList<SupraMessageUserDeletionRecord> deletions, CancellationToken ct = default);
     Task<bool> IsMessageDeletedForUserAsync(Guid messageId, Guid userId, CancellationToken ct = default);
 
     Task<IReadOnlyList<SupraMessageReadReceiptRecord>> GetReadReceiptsByMessageAsync(Guid messageId, CancellationToken ct = default);

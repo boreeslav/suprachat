@@ -2,6 +2,21 @@
 set -euo pipefail
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 
+publish_build_manifest() {
+  local mf="__REMOTE_DIR__/src/SuperMessenger.Web/wwwroot/build-manifest.json"
+  if [ ! -f "$mf" ]; then
+    return 0
+  fi
+  local cid
+  cid=$(docker compose ps -q supermessenger 2>/dev/null || true)
+  if [ -z "$cid" ]; then
+    log "  build manifest ready (no running container yet)"
+    return 0
+  fi
+  docker cp "$mf" "${cid}:/app/data/build-manifest.json"
+  log "  build manifest published to /app/data (API returns new version before restart)"
+}
+
 log "=== SuperMessenger deploy ==="
 log "[1/5] Extract to __REMOTE_DIR__"
 mkdir -p __REMOTE_DIR__
@@ -9,6 +24,9 @@ cd __REMOTE_DIR__
 # tar does not remove files absent from the archive; wipe deploy artifacts first
 rm -rf src Dockerfile docker-compose.yml
 tar -xzf /tmp/__ARCHIVE_NAME__
+
+log "[1b/5] Publish build version (before container restart)"
+publish_build_manifest
 
 log "[2/5] Environment"
 export APP_PORT=__APP_PORT__
@@ -33,6 +51,7 @@ docker compose build --progress=plain
 
 log "[5/5] Start containers"
 docker compose up -d
+publish_build_manifest
 docker compose ps
 curl -sf -o /dev/null -w "HTTP %{http_code} login.html\n" http://127.0.0.1:__APP_PORT__/login.html || true
 

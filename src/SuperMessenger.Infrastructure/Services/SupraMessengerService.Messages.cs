@@ -21,10 +21,14 @@ public sealed partial class SupraMessengerService
         return deletions.Select(d => d.MessageId).ToHashSet();
     }
 
+    static string MessageStatusForClient(SupraChatRecord? chat, string status) =>
+        chat != null && IsChannelChat(chat) ? "sent" : status;
+
     SupraChatMessageDto MapMessageDto(
         SupraChatMessageRecord m,
         Guid userId,
-        IReadOnlyDictionary<Guid, string?> avatarByUser)
+        IReadOnlyDictionary<Guid, string?> avatarByUser,
+        SupraChatRecord? chat = null)
     {
         var text = m.DeletedForEveryone ? "" : m.Text;
         return new SupraChatMessageDto
@@ -35,7 +39,7 @@ public sealed partial class SupraMessengerService
             senderAvatar = avatarByUser.TryGetValue(m.SenderUserId, out var av) ? av : null,
             text = text,
             timestamp = m.CreatedOn,
-            status = m.Status,
+            status = MessageStatusForClient(chat, m.Status),
             isOwn = m.SenderUserId == userId,
             replyToMessageId = m.ReplyToMessageId?.ToString(),
             replyToSenderName = m.ReplyToSenderName,
@@ -103,6 +107,7 @@ public sealed partial class SupraMessengerService
         string? forwardedFromSenderName = null,
         string? replyToTextPreview = null,
         string? encryptionTier = null,
+        string? clientLocalId = null,
         CancellationToken ct = default)
     {
         try
@@ -114,8 +119,30 @@ public sealed partial class SupraMessengerService
             if (!await _store.IsParticipantAsync(chatGuid, user.Id, ct))
                 throw new UnauthorizedAccessException("Пользователь не является участником чата");
 
+            var normalizedLocalId = string.IsNullOrWhiteSpace(clientLocalId) ? null : clientLocalId.Trim();
+            if (normalizedLocalId != null)
+            {
+                var existing = await _store.GetMessageByClientLocalIdAsync(chatGuid, user.Id, normalizedLocalId, ct);
+                if (existing != null)
+                {
+                    return (new SupraSendMessageResponse
+                    {
+                        success = true,
+                        messageId = existing.Id.ToString(),
+                        status = existing.Status,
+                    }, null);
+                }
+            }
+
             var chat = await _store.GetChatByIdAsync(chatGuid, ct);
-            if (chat != null && string.Equals(chat.Type, "direct", StringComparison.OrdinalIgnoreCase))
+            if (chat != null && IsChannelChat(chat))
+            {
+                if (!await CanUserPostToChannelAsync(user.Id, chatGuid, ct))
+                    return (new SupraSendMessageResponse { success = false, error = "Нет права публиковать в этом канале" }, null);
+                if (IsEncryptedPayload(text) || string.Equals(encryptionTier, "protected", StringComparison.OrdinalIgnoreCase))
+                    return (new SupraSendMessageResponse { success = false, error = "Каналы не поддерживают шифрование" }, null);
+            }
+            else if (chat != null && string.Equals(chat.Type, "direct", StringComparison.OrdinalIgnoreCase))
             {
                 var parts = await _store.GetParticipantsByChatAsync(chatGuid, ct);
                 var otherId = parts.FirstOrDefault(p => p.UserId != user.Id)?.UserId;
@@ -157,12 +184,13 @@ public sealed partial class SupraMessengerService
 
             var msgGuid = Guid.NewGuid();
             var now = DateTime.UtcNow;
+            var displayName = chat != null && IsChannelChat(chat) ? chat.Name : user.DisplayName;
             var record = new SupraChatMessageRecord
             {
                 Id = msgGuid,
                 ChatId = chatGuid,
                 SenderUserId = user.Id,
-                SenderName = user.DisplayName,
+                SenderName = displayName,
                 Text = text.Trim(),
                 Status = "sent",
                 CreatedOn = now,
@@ -170,11 +198,17 @@ public sealed partial class SupraMessengerService
                 ReplyToSenderName = replySender,
                 ReplyToTextPreview = replyPreview,
                 ForwardedFromSenderName = fwdName,
-                EncryptionTier = NormalizeEncryptionTier(encryptionTier),
+                EncryptionTier = chat != null && IsChannelChat(chat) ? "basic" : NormalizeEncryptionTier(encryptionTier),
+                ClientLocalId = normalizedLocalId,
             };
             await _store.SaveMessageAsync(record, ct);
 
-            var payload = MapNewMessagePayload(record, user);
+            var payload = MapNewMessagePayload(record, chat != null && IsChannelChat(chat) ? null : user);
+            if (chat != null && IsChannelChat(chat))
+            {
+                payload.senderName = chat.Name;
+                payload.senderAvatar = ChannelAvatarUrl(chat);
+            }
             return (new SupraSendMessageResponse
             {
                 success = true,
@@ -241,6 +275,7 @@ public sealed partial class SupraMessengerService
             var avatarByUser = (await _store.GetUsersAsync(ct))
                 .ToDictionary(u => u.Id, AvatarUrl);
 
+            var chat = await _store.GetChatByIdAsync(chatGuid, ct);
             var ordered = await GetVisibleMessagesOrderedAsync(chatGuid, userId, ct);
             List<SupraChatMessageRecord> slice;
 
@@ -262,7 +297,7 @@ public sealed partial class SupraMessengerService
                     .ToList();
             }
 
-            var messages = slice.Select(m => MapMessageDto(m, userId, avatarByUser)).ToList();
+            var messages = slice.Select(m => MapMessageDto(m, userId, avatarByUser, chat)).ToList();
             return new SupraGetMessagesResponse { success = true, messages = messages };
         }
         catch (Exception ex)
@@ -291,6 +326,7 @@ public sealed partial class SupraMessengerService
             var avatarByUser = (await _store.GetUsersAsync(ct))
                 .ToDictionary(u => u.Id, AvatarUrl);
 
+            var chat = await _store.GetChatByIdAsync(chatGuid, ct);
             var ordered = await GetVisibleMessagesOrderedAsync(chatGuid, userId, ct);
             var idx = ordered.FindIndex(m => m.Id == msgGuid);
             if (idx < 0)
@@ -301,7 +337,7 @@ public sealed partial class SupraMessengerService
             var start = Math.Max(0, idx - takeBefore);
             var end = Math.Min(ordered.Count, idx + takeAfter + 1);
             var slice = ordered.Skip(start).Take(end - start).ToList();
-            var messages = slice.Select(m => MapMessageDto(m, userId, avatarByUser)).ToList();
+            var messages = slice.Select(m => MapMessageDto(m, userId, avatarByUser, chat)).ToList();
 
             return new SupraGetMessagesAroundResponse
             {
@@ -314,6 +350,107 @@ public sealed partial class SupraMessengerService
         catch (Exception ex)
         {
             return new SupraGetMessagesAroundResponse { success = false, error = ex.Message };
+        }
+    }
+
+    public async Task<(SupraSyncChatPanelResponse response, List<(SupraWsStatusPayload payload, Guid senderUserId)> readUpdates)> SyncChatPanelAsync(
+        Guid userId,
+        string chatId,
+        int? count,
+        string? afterMessageId,
+        bool markAsRead,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var chatGuid = Guid.Parse(chatId);
+            if (!await _store.IsParticipantAsync(chatGuid, userId, ct))
+                throw new UnauthorizedAccessException("Пользователь не является участником чата");
+
+            var wantsSync = count is > 0 || !string.IsNullOrWhiteSpace(afterMessageId);
+
+            if (markAsRead && !wantsSync)
+            {
+                var (markResponse, updates) = await MarkMessagesReadAsync(userId, chatId, ct);
+                return (new SupraSyncChatPanelResponse
+                {
+                    success = markResponse.success,
+                    markedRead = markResponse.success,
+                    error = markResponse.error,
+                }, updates);
+            }
+
+            if (!wantsSync)
+            {
+                return (new SupraSyncChatPanelResponse
+                {
+                    success = false,
+                    error = "Укажите count или afterMessageId для синхронизации, либо markAsRead для прочтения",
+                }, []);
+            }
+
+            var avatarByUser = (await _store.GetUsersAsync(ct))
+                .ToDictionary(u => u.Id, AvatarUrl);
+            var chat = await _store.GetChatByIdAsync(chatGuid, ct);
+            var ordered = await GetVisibleMessagesOrderedAsync(chatGuid, userId, ct);
+
+            var syncEntries = ordered.Select(m => new SupraMessageSyncEntryDto
+            {
+                id = m.Id.ToString(),
+                timestamp = m.CreatedOn,
+            }).ToList();
+
+            var takeCount = count ?? 0;
+            var tailLimit = takeCount > 0 ? takeCount : 50;
+
+            var recentSlice = takeCount > 0
+                ? ordered
+                    .OrderByDescending(m => m.CreatedOn)
+                    .ThenByDescending(m => m.Id)
+                    .Take(takeCount)
+                    .OrderBy(m => m.CreatedOn)
+                    .ThenBy(m => m.Id)
+                    .ToList()
+                : [];
+
+            List<SupraChatMessageRecord> tailSlice = [];
+            if (!string.IsNullOrWhiteSpace(afterMessageId) && Guid.TryParse(afterMessageId, out var afterGuid))
+            {
+                var anchor = await _store.GetMessageByIdAsync(afterGuid, ct);
+                tailSlice = SliceAfterMessageId(ordered, afterGuid, anchor, chatGuid)
+                    .Take(tailLimit)
+                    .ToList();
+            }
+
+            var recentIds = recentSlice.Select(m => m.Id).ToHashSet();
+            var messageRecords = recentSlice
+                .Concat(tailSlice.Where(m => !recentIds.Contains(m.Id)))
+                .OrderBy(m => m.CreatedOn)
+                .ThenBy(m => m.Id)
+                .ToList();
+
+            var messages = messageRecords.Select(m => MapMessageDto(m, userId, avatarByUser, chat)).ToList();
+
+            var readUpdates = new List<(SupraWsStatusPayload payload, Guid senderUserId)>();
+            var markedRead = false;
+            if (markAsRead)
+            {
+                var (markResponse, updates) = await MarkMessagesReadAsync(userId, chatId, ct);
+                markedRead = markResponse.success;
+                readUpdates = updates;
+            }
+
+            return (new SupraSyncChatPanelResponse
+            {
+                success = true,
+                messages = messages,
+                syncIndex = syncEntries,
+                markedRead = markedRead,
+            }, readUpdates);
+        }
+        catch (Exception ex)
+        {
+            return (new SupraSyncChatPanelResponse { success = false, error = ex.Message }, []);
         }
     }
 
@@ -417,8 +554,9 @@ public sealed partial class SupraMessengerService
 
             if (deleteForEveryone)
             {
-                if (message.SenderUserId != user.Id)
-                    return (new SupraDeleteMessageResponse { success = false, error = "Можно удалить у всех только свои сообщения" }, null, false);
+                var chat = await _store.GetChatByIdAsync(chatGuid, ct);
+                if (!await CanDeleteMessageForEveryoneAsync(user.Id, chat, message.SenderUserId, ct))
+                    return (new SupraDeleteMessageResponse { success = false, error = "Недостаточно прав для удаления у всех" }, null, false);
 
                 message.DeletedForEveryone = true;
                 message.Text = "";
@@ -474,7 +612,10 @@ public sealed partial class SupraMessengerService
             if (string.Equals(source.EncryptionTier, "protected", StringComparison.OrdinalIgnoreCase))
                 return (new SupraForwardMessageResponse { success = false, error = "Нельзя переслать защищённое сообщение" }, []);
 
-            var forwardFrom = source.SenderName;
+            var sourceChat = await _store.GetChatByIdAsync(sourceChatGuid, ct);
+            var forwardFrom = sourceChat != null && IsChannelChat(sourceChat)
+                ? sourceChat.Name
+                : source.SenderName;
             var text = source.Text;
             var sentChatIds = new List<string>();
             var broadcasts = new List<(Guid, SupraWsNewMessagePayload)>();

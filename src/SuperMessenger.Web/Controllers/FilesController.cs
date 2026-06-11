@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SuperMessenger.Core.Abstractions;
 using SuperMessenger.Core.Entities;
+using SuperMessenger.Infrastructure.Services;
 using SuperMessenger.Web.Services;
 
 namespace SuperMessenger.Web.Controllers;
@@ -46,17 +47,35 @@ public sealed class FilesController : ControllerBase
         return PhysicalFile(chat.AvatarPath, "image/jpeg");
     }
 
-    // Anonymous group avatar, only for groups that allow joining by link
-    // (used by the public deep-link preview for unauthenticated visitors).
+    // Anonymous avatar for public deep links: joinable groups and channels.
     [HttpGet("group-avatar-public/{chatId:guid}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetGroupAvatarPublic(Guid chatId, CancellationToken ct)
     {
         var chat = await _store.GetChatByIdAsync(chatId, ct);
-        if (chat == null || !chat.AllowJoinByLink ||
-            chat.AvatarPath == null || !System.IO.File.Exists(chat.AvatarPath))
+        if (chat == null || chat.AvatarPath == null || !System.IO.File.Exists(chat.AvatarPath))
+            return NotFound();
+        var isChannel = SupraMessengerService.IsChannelChat(chat);
+        var isJoinableGroup = (string.Equals(chat.Type, "group", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(chat.Type, "public_group", StringComparison.OrdinalIgnoreCase))
+            && chat.AllowJoinByLink;
+        if (!isChannel && !isJoinableGroup)
             return NotFound();
         return PhysicalFile(chat.AvatarPath, "image/jpeg");
+    }
+
+    /// <summary>Файлы из сообщений публичного канала (без авторизации).</summary>
+    [HttpGet("channel-public/{fileId:guid}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetChannelPublicFile(Guid fileId, CancellationToken ct)
+    {
+        var file = await _store.GetFileByIdAsync(fileId, ct);
+        if (file == null || !System.IO.File.Exists(file.StoragePath))
+            return NotFound();
+        var chat = await _store.GetChatByIdAsync(file.ChatId, ct);
+        if (chat == null || !SupraMessengerService.IsChannelChat(chat))
+            return NotFound();
+        return PhysicalFile(file.StoragePath, file.MimeType, file.FileName);
     }
 
     [HttpGet("{fileId:guid}")]

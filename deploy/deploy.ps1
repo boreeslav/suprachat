@@ -150,11 +150,24 @@ function Build-DeployTree([string]$BuildDir) {
     Build-ClientAssets $sourceMessenger
     Copy-ProjectSources $BuildDir
     $webProjectDir = Join-Path $BuildDir "src\SuperMessenger.Web"
-    Update-DeployRelease -Root $Root -WebProjectDir $webProjectDir
-    Update-AssetUrls $BuildDir
+    $releaseInfo = Update-DeployRelease -Root $Root -WebProjectDir $webProjectDir
+    Update-AssetUrls $BuildDir -AppVersion $releaseInfo.Version
 }
 
-function Update-AssetUrls([string]$DestRoot) {
+function Write-BuildManifest([string]$WwwRoot, [long]$BuildNumber, [string]$AppVersion) {
+    $manifestPath = Join-Path $WwwRoot "build-manifest.json"
+    $payload = [ordered]@{
+        build = $BuildNumber
+        swVersion = $BuildNumber
+        appVersion = $AppVersion
+        publishedAt = (Get-Date).ToUniversalTime().ToString('o')
+    }
+    $json = ($payload | ConvertTo-Json -Compress)
+    [System.IO.File]::WriteAllText($manifestPath, $json, [System.Text.UTF8Encoding]::new($false))
+    Write-Host "  build-manifest.json: build=$BuildNumber appVersion=$AppVersion" -ForegroundColor DarkGray
+}
+
+function Update-AssetUrls([string]$DestRoot, [string]$AppVersion = '') {
     $www = Join-Path $DestRoot "src\SuperMessenger.Web\wwwroot"
     $cssPath = Join-Path $www "messenger\supra-messenger.css"
     $cryptoPath = Join-Path $www "messenger\vendor\supra-webcrypto.bundle.js"
@@ -228,6 +241,10 @@ function Update-AssetUrls([string]$DestRoot) {
         $envJs = [regex]::Replace($envJs, "const DEPLOY_PROTOCOL = '[^']*';", "const DEPLOY_PROTOCOL = '$($script:ClientProtocol)';")
         [System.IO.File]::WriteAllText($envPath, $envJs)
         Write-Host "  supra-env protocol: $ClientProtocol" -ForegroundColor DarkGray
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($AppVersion)) {
+        Write-BuildManifest $www $scriptBuild $AppVersion.Trim()
     }
 }
 

@@ -22,6 +22,7 @@ builder.Services.AddDataProtection()
 
 builder.Services.AddSingleton<IDataStore>(_ => new FileDataStore(dataRoot));
 builder.Services.AddSingleton<AppAppearanceService>(_ => new AppAppearanceService(dataRoot));
+builder.Services.AddSingleton<AppBuildInfoService>();
 builder.Services.AddSingleton<IndexShellRenderer>();
 builder.Services.AddSingleton<SupraMessengerService>();
 builder.Services.AddSingleton<MessengerSyncService>();
@@ -98,6 +99,27 @@ using (var scope = app.Services.CreateScope())
         appearance,
         app.Environment,
         scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DeployBranding"));
+    SyncBuildManifestToData(app.Environment, dataRoot);
+}
+
+static void SyncBuildManifestToData(IWebHostEnvironment env, string dataRoot)
+{
+    var wwwRoot = env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot");
+    var wwwManifest = Path.Combine(wwwRoot, "build-manifest.json");
+    var dataManifest = Path.Combine(dataRoot, "build-manifest.json");
+    if (!File.Exists(wwwManifest)) return;
+    try
+    {
+        if (!File.Exists(dataManifest)
+            || File.GetLastWriteTimeUtc(wwwManifest) > File.GetLastWriteTimeUtc(dataManifest))
+        {
+            File.Copy(wwwManifest, dataManifest, overwrite: true);
+        }
+    }
+    catch
+    {
+        // best-effort
+    }
 }
 
 if (!app.Environment.IsDevelopment())
@@ -118,9 +140,19 @@ app.UseMiddleware<ProtectedStaticPageMiddleware>();
 
 app.Use(async (context, next) =>
 {
+    if (await PublicChannelPage.TryServeAsync(context))
+        return;
+    await next();
+});
+
+app.Use(async (context, next) =>
+{
     if (HttpMethods.IsGet(context.Request.Method) &&
         IndexShellRenderer.IsShellPath(context.Request.Path))
     {
+        if (await PublicChannelPage.TryServeAsync(context))
+            return;
+
         var renderer = context.RequestServices.GetRequiredService<IndexShellRenderer>();
         var html = await renderer.RenderAsync(context.RequestAborted);
         context.Response.ContentType = "text/html; charset=utf-8";
@@ -167,6 +199,8 @@ app.MapFallback(async context =>
         context.Response.StatusCode = StatusCodes.Status404NotFound;
         return;
     }
+    if (await PublicChannelPage.TryServeAsync(context))
+        return;
     var renderer = context.RequestServices.GetRequiredService<IndexShellRenderer>();
     var html = await renderer.RenderAsync(context.RequestAborted);
     context.Response.ContentType = "text/html; charset=utf-8";

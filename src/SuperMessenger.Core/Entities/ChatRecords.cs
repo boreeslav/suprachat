@@ -11,6 +11,10 @@ public sealed class SupraChatRecord
     public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
     /// <summary>Группа требует дополнительный пароль (задаётся вне сервера).</summary>
     public bool RequiresCustomGroupPassword { get; set; }
+    /// <summary>Уникальная ссылка канала (/@slug). Только для Type=channel.</summary>
+    public string? Slug { get; set; }
+    /// <summary>Описание канала.</summary>
+    public string? Description { get; set; }
 }
 
 public sealed class SupraChatParticipantRecord
@@ -19,6 +23,8 @@ public sealed class SupraChatParticipantRecord
     public Guid ChatId { get; set; }
     public Guid UserId { get; set; }
     public bool IsAdmin { get; set; }
+    /// <summary>owner | admin | author | subscriber — для каналов; пусто для групп.</summary>
+    public string Role { get; set; } = "";
 }
 
 public sealed class SupraChatMessageRecord
@@ -38,6 +44,8 @@ public sealed class SupraChatMessageRecord
     public bool DeletedForEveryone { get; set; }
     /// <summary>basic — базовый ключ; protected — с доп. паролем чата.</summary>
     public string EncryptionTier { get; set; } = "basic";
+    /// <summary>Клиентский id для идемпотентной отправки (local_*).</summary>
+    public string? ClientLocalId { get; set; }
 }
 
 public sealed class SupraMessageUserDeletionRecord

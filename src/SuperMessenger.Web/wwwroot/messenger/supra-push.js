@@ -224,6 +224,12 @@
 		return !isChatMuted(chatId);
 	}
 
+	function notifyPrefsChanged() {
+		try {
+			global.dispatchEvent(new CustomEvent('sm-notify-prefs-changed'));
+		} catch (_) { /* ignore */ }
+	}
+
 	async function setGlobalMuted(muted) {
 		prefs.globalMuted = !!muted;
 		try {
@@ -234,6 +240,7 @@
 				body: JSON.stringify({ muted: !!muted }),
 			});
 		} catch (_) { /* ignore */ }
+		notifyPrefsChanged();
 		return { ok: true };
 	}
 
@@ -251,6 +258,7 @@
 				body: JSON.stringify({ chatId: id, muted: !!muted }),
 			});
 		} catch (_) { /* ignore */ }
+		notifyPrefsChanged();
 		return { ok: true };
 	}
 

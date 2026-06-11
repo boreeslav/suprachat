@@ -70,12 +70,32 @@
 		offlineBlobUrl = null;
 	}
 
+	const stableBgHeights = new WeakMap();
+
+	function captureStableBgHeight(wrap) {
+		const root = wrap?.closest?.('.mc-root');
+		if (!root) return;
+		const headerH = root.querySelector(':scope > .mc-header')?.offsetHeight || 0;
+		const h = Math.max(0, root.clientHeight - headerH);
+		if (h <= 0) return;
+		const w = typeof window !== 'undefined' ? window.innerWidth : 0;
+		const prev = stableBgHeights.get(root);
+		if (!prev || prev.w !== w) {
+			stableBgHeights.set(root, { w, h });
+			wrap.style.setProperty('--sm-chat-bg-stable-h', `${h}px`);
+		} else if (!wrap.style.getPropertyValue('--sm-chat-bg-stable-h')) {
+			wrap.style.setProperty('--sm-chat-bg-stable-h', `${prev.h}px`);
+		}
+	}
+
 	function ensureWrapLayer(wrap) {
 		if (!wrap?.classList?.contains('mc-messages-wrap')) return;
+		wrap.classList.remove('sm-chat-wallpaper');
 		const show = ThemeChatBg.enabled && ThemeChatBg.displayUrl;
 		let layer = wrap.querySelector(':scope > .mc-theme-bg-layer');
 		if (!show) {
 			layer?.remove();
+			wrap.style.removeProperty('--sm-chat-bg-stable-h');
 			return;
 		}
 		if (!layer) {
@@ -84,6 +104,7 @@
 			layer.setAttribute('aria-hidden', 'true');
 			wrap.insertBefore(layer, wrap.firstChild);
 		}
+		captureStableBgHeight(wrap);
 		const msg = wrap.querySelector(':scope > .mc-messages');
 		if (msg) {
 			msg.style.position = 'relative';
@@ -130,7 +151,13 @@
 				'--m-chat-bg-image',
 				show ? cssUrlValue(this.displayUrl) : 'none',
 			);
+			document.getElementById('sm-chat-wallpaper-rules')?.remove();
 			document.querySelectorAll('.mc-messages-wrap').forEach(ensureWrapLayer);
+			if (typeof requestAnimationFrame === 'function') {
+				requestAnimationFrame(() => {
+					document.querySelectorAll('.mc-messages-wrap').forEach(ensureWrapLayer);
+				});
+			}
 		},
 
 		async _loadOnce(apiUrl) {
@@ -197,7 +224,6 @@
 		async invalidate() {
 			this.apiUrl = null;
 			this.displayUrl = null;
-			this.enabled = false;
 			this.loading = null;
 			revokeOfflineBlobUrl();
 			try {
@@ -219,7 +245,11 @@
 			} catch { /* ignore */ }
 			if (!build || build === '0') return;
 			const prev = localStorage.getItem(THEME_BG_BUILD_KEY);
-			if (prev && prev !== build) void this.invalidate();
+			if (prev && prev !== build) {
+				void this.invalidate().then(() => {
+					global.MessengerThemeManager?.refreshThemeChatBg?.();
+				});
+			}
 			localStorage.setItem(THEME_BG_BUILD_KEY, build);
 		},
 	};

@@ -609,33 +609,87 @@
 
 
 
+	function fetchPublicPreview(url) {
+
+		return fetch(url, { credentials: 'same-origin' })
+
+			.then((r) => (r.ok ? r.json() : null));
+
+	}
+
+
+
+	function mountPublicChannelView() {
+
+		if (window.AppSplash) AppSplash.hide();
+
+		fetch('/channel-view.html', { credentials: 'same-origin' })
+
+			.then((r) => (r.ok ? r.text() : Promise.reject(new Error('channel view'))))
+
+			.then((html) => {
+
+				document.open();
+
+				document.write(html);
+
+				document.close();
+
+			})
+
+			.catch(() => gotoLogin());
+
+	}
+
+
+
 	function showDeepLinkPreview(slug) {
 
 		const isGroup = GROUP_ID_RE.test(slug);
 
-		const url = isGroup
+		if (isGroup) {
 
-			? '/api/public/group/' + encodeURIComponent(slug)
+			fetchPublicPreview('/api/public/group/' + encodeURIComponent(slug))
 
-			: '/api/public/profile/' + encodeURIComponent(slug);
+				.then((preview) => {
+
+					if (preview && preview.found) renderPreview(preview);
+
+					else gotoLogin();
+
+				})
+
+				.catch(() => gotoLogin());
+
+			return;
+
+		}
 
 
 
-		fetch(url, { credentials: 'same-origin' })
+		fetchPublicPreview('/api/public/channel/' + encodeURIComponent(slug))
 
-			.then((r) => (r.ok ? r.json() : null))
+			.then((channelPreview) => {
+
+				if (channelPreview && channelPreview.found) {
+
+					mountPublicChannelView();
+
+					return null;
+
+				}
+
+				return fetchPublicPreview('/api/public/profile/' + encodeURIComponent(slug));
+
+			})
 
 			.then((preview) => {
 
-				if (preview && preview.found) {
+				if (preview === null) return;
 
-					renderPreview(preview);
+				if (preview && preview.found) renderPreview(preview);
 
-				} else {
-
-					gotoLogin();
-
-				}
+				else gotoLogin();
 
 			})
 
