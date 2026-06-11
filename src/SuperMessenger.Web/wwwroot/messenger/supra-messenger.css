@@ -708,7 +708,11 @@
     padding: 8px 4px;
     font-size: 14px;
     resize: none;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    touch-action: pan-y;
     outline: none;
     line-height: 1.4;
     max-height: 120px;
@@ -716,6 +720,12 @@
     background: var(--m-input-bg);
     color: var(--m-input-text);
     transition: border-color .2s, background .3s, color .3s;
+}
+
+.mc-input-field::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
 }
 
 .mc-input-field::placeholder {
