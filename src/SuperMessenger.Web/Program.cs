@@ -21,6 +21,7 @@ builder.Services.AddDataProtection()
     .SetApplicationName("SuperMessenger");
 
 builder.Services.AddSingleton<IDataStore>(_ => new FileDataStore(dataRoot));
+builder.Services.AddSingleton<ChatImageProcessingService>();
 builder.Services.AddSingleton<AppAppearanceService>(_ => new AppAppearanceService(dataRoot));
 builder.Services.AddSingleton<AppBuildInfoService>();
 builder.Services.AddSingleton<IndexShellRenderer>();

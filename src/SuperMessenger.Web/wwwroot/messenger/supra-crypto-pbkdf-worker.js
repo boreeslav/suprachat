@@ -14,32 +14,42 @@ function concat(a, b) {
 	return out;
 }
 
+async function deriveBits(password, saltBytes, iterations, bitLength) {
+	const enc = new TextEncoder();
+	const baseKey = await crypto.subtle.importKey(
+		'raw',
+		enc.encode(password),
+		'PBKDF2',
+		false,
+		['deriveBits']
+	);
+	return crypto.subtle.deriveBits(
+		{
+			name: 'PBKDF2',
+			salt: saltBytes,
+			iterations: iterations || 310000,
+			hash: 'SHA-256',
+		},
+		baseKey,
+		bitLength || 256
+	);
+}
+
 self.onmessage = async (e) => {
-	const { reqId, password, saltB64, userId, iterations } = e.data || {};
+	const { reqId, kind, password, saltB64, userId, iterations, bits } = e.data || {};
 	try {
-		if (!reqId || !password || !saltB64 || !userId) {
+		if (!reqId || !password || !saltB64) {
 			throw new Error('invalid pbkdf request');
 		}
 		const salt = ub64(saltB64);
 		const enc = new TextEncoder();
-		const baseKey = await crypto.subtle.importKey(
-			'raw',
-			enc.encode(password),
-			'PBKDF2',
-			false,
-			['deriveBits']
-		);
-		const bits = await crypto.subtle.deriveBits(
-			{
-				name: 'PBKDF2',
-				salt: concat(salt, enc.encode(userId)),
-				iterations: iterations || 310000,
-				hash: 'SHA-256',
-			},
-			baseKey,
-			256
-		);
-		self.postMessage({ reqId, bits }, [bits]);
+		let pbkdfSalt = salt;
+		if (kind === 'masterKey' || (!kind && userId)) {
+			if (!userId) throw new Error('invalid masterKey pbkdf request');
+			pbkdfSalt = concat(salt, enc.encode(userId));
+		}
+		const derived = await deriveBits(password, pbkdfSalt, iterations, bits || 256);
+		self.postMessage({ reqId, bits: new Uint8Array(derived) }, [derived]);
 	} catch (err) {
 		self.postMessage({ reqId, error: err?.message || String(err) });
 	}

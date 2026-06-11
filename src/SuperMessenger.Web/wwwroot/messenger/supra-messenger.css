@@ -249,6 +249,7 @@
 	flex-direction: column;
 	gap: 6px;
 	transition: background .3s;
+	-webkit-overflow-scrolling: touch;
 }
 
 .mc-messages::-webkit-scrollbar {
@@ -2501,13 +2502,22 @@
 	min-height: 0;
 	overflow: hidden;
 	position: relative;
+	touch-action: pan-y;
+	cursor: grab;
+}
+
+.mapp-chat-list-viewport:active {
+	cursor: grabbing;
 }
 
 .mapp-chat-list-track {
 	display: flex;
 	height: 100%;
 	will-change: transform;
-	transition: transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.mapp-chat-list-track--snap {
+	transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .mapp-chat-list-track--dragging {
@@ -2533,7 +2543,7 @@
 	z-index: 2;
 	background: var(--mapp-sidebar-bg, #fff);
 	will-change: transform;
-	transition: transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+	transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 @media (max-width: 1199px) {
@@ -3821,23 +3831,23 @@
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-	isolation: isolate;
+	background-color: var(--m-chat-bg);
 }
 
 .mc-theme-bg-layer {
 	position: absolute;
-	left: 0;
-	right: 0;
-	top: 0;
-	width: 100%;
-	height: var(--sm-chat-bg-stable-h, 100%);
+	inset: 0;
 	z-index: 0;
 	pointer-events: none;
-	background-color: var(--m-chat-bg);
-	background-image: var(--m-chat-bg-image, none);
-	background-size: cover;
-	background-position: center top;
-	background-repeat: no-repeat;
+	overflow: hidden;
+}
+
+.mc-theme-bg-img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center top;
 }
 
 .mc-header,
@@ -4055,8 +4065,22 @@ html.sm-mobile-viewport .mapp-root.mapp-no-ui {
 		background: var(--mapp-content-bg);
 	}
 
+	/* translateX(0) оставляет compositor-layer на MIUI/WebView → рвёт скролл и фон */
 	.mapp-root.mapp-show-chat .mapp-chat-area {
-		transform: translateX(0);
+		transform: none;
+	}
+
+	.mapp-chat-panel,
+	.mapp-chat-panel .mc-root,
+	.mc-messages-wrap {
+		background-color: var(--m-chat-bg);
+	}
+
+	.mc-date-separator-pill,
+	.mc-system-event-pill,
+	.mc-bubble--media-no-caption > .mc-msg-footer {
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
 	}
 
 	.mapp-placeholder {
@@ -4550,11 +4574,8 @@ body.mapp-scroll-lock .mapp-bottom-sheet {
 
 /* ===== FOLDERS BAR ===== */
 .mapp-folders-bar {
-	display: flex;
-	flex-direction: row;
 	overflow-x: auto;
 	overflow-y: hidden;
-	gap: 4px;
 	padding: 4px 10px 6px;
 	background: var(--mapp-sidebar-bg, #f7f7f7);
 	border-bottom: 1px solid var(--mapp-border, #e5e5e5);
@@ -4562,10 +4583,106 @@ body.mapp-scroll-lock .mapp-bottom-sheet {
 	overscroll-behavior-x: contain;
 	overscroll-behavior-y: none;
 	-webkit-overflow-scrolling: touch;
+	touch-action: manipulation;
 }
 .mapp-folders-bar::-webkit-scrollbar { display: none; }
 
+.mapp-folders-bar-track {
+	position: relative;
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
+	gap: 4px;
+	min-width: min-content;
+}
+
+.mapp-folder-slider {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	border-radius: 20px;
+	background: var(--mapp-accent, #2196f3);
+	z-index: 0;
+	will-change: left, width;
+	pointer-events: none;
+}
+
+.mapp-folder-slider.snap {
+	transition:
+		left 0.35s cubic-bezier(0.25, 0.8, 0.25, 1),
+		width 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Белый дублирующий слой: clip-path синхронизируется со слайдером в JS */
+.mapp-folder-tab-labels-white {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
+	gap: 4px;
+	pointer-events: none;
+	z-index: 2;
+	clip-path: inset(0 100% 0 0 round 20px);
+	will-change: clip-path;
+}
+
+.mapp-folder-tab-labels-white.snap {
+	transition: clip-path 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.mapp-folder-tab-labels-white .mapp-folder-tab-lbl {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 5px 12px;
+	border-radius: 20px;
+	border: 1px solid transparent;
+	font-size: 13px;
+	color: #fff;
+	white-space: nowrap;
+	flex-shrink: 0;
+	font-family: inherit;
+	box-sizing: border-box;
+}
+
+.mapp-folder-tab-labels-white .mapp-folder-tab-icon--svg svg {
+	stroke: currentColor;
+}
+
+.mapp-folder-tab-labels-white .mapp-folder-tab-badge {
+	background: rgba(255, 255, 255, 0.25);
+	color: #fff;
+}
+
+/* В режиме слайдера базовые вкладки всегда серые — белый цвет только через clip-слой */
+.mapp-folders-bar-track--clip .mapp-folder-tab,
+.mapp-folders-bar-track--clip .mapp-folder-tab--active,
+.mapp-folders-bar-track--clip .mapp-folder-tab:hover,
+.mapp-folders-bar-track--clip .mapp-folder-tab:active,
+.mapp-folders-bar-track--clip .mapp-folder-tab--active:hover,
+.mapp-folders-bar-track--clip .mapp-folder-tab--active:active {
+	color: var(--mapp-text, #444);
+	border-color: var(--mapp-border, #e0e0e0);
+	background: transparent;
+}
+
+.mapp-folders-bar-track--clip .mapp-folder-tab--active .mapp-folder-tab-badge {
+	background: var(--mapp-accent, #2196f3);
+	color: #fff;
+}
+
+.mapp-folders-bar-track--clip .mapp-folder-tab {
+	transition: border-color 0.15s;
+}
+
 .mapp-folder-tab {
+	position: relative;
+	z-index: 1;
 	display: flex;
 	align-items: center;
 	gap: 4px;
@@ -4577,9 +4694,12 @@ body.mapp-scroll-lock .mapp-bottom-sheet {
 	cursor: pointer;
 	color: var(--mapp-text, #444);
 	white-space: nowrap;
-	transition: background .15s, color .15s, border-color .15s;
+	transition: color 0.3s, border-color 0.15s;
 	font-family: inherit;
 	flex-shrink: 0;
+	touch-action: manipulation;
+	user-select: none;
+	-webkit-user-select: none;
 }
 .mapp-folder-tab:hover:not(.mapp-folder-tab--active),
 .mapp-folder-tab:active:not(.mapp-folder-tab--active) {
@@ -4590,9 +4710,9 @@ body.mapp-scroll-lock .mapp-bottom-sheet {
 .mapp-folder-tab--active,
 .mapp-folder-tab--active:hover,
 .mapp-folder-tab--active:active {
-	background: var(--mapp-accent, #2196f3);
+	background: transparent;
 	color: #fff;
-	border-color: var(--mapp-accent, #2196f3);
+	border-color: transparent;
 }
 .mapp-folder-tab--active .mapp-folder-tab-icon--svg svg {
 	stroke: currentColor;
@@ -4610,7 +4730,6 @@ body.mapp-scroll-lock .mapp-bottom-sheet {
 	}
 
 	.mapp-root.mapp-desktop .mapp-folders-bar {
-		flex-direction: column;
 		width: 68px;
 		min-width: 68px;
 		overflow-x: hidden;
@@ -4618,8 +4737,17 @@ body.mapp-scroll-lock .mapp-bottom-sheet {
 		padding: 8px 4px;
 		border-bottom: none;
 		border-right: 1px solid var(--mapp-border, #e5e5e5);
-		gap: 2px;
+	}
+
+	.mapp-root.mapp-desktop .mapp-folders-bar-track {
+		flex-direction: column;
 		align-items: center;
+		gap: 2px;
+		width: 100%;
+	}
+
+	.mapp-root.mapp-desktop .mapp-folder-slider {
+		display: none;
 	}
 
 	.mapp-root.mapp-desktop .mapp-folder-tab {
@@ -4633,9 +4761,18 @@ body.mapp-scroll-lock .mapp-bottom-sheet {
 		align-items: center;
 		text-align: center;
 		font-size: 10px;
-		border-radius: 10px;
+		border-radius: 0;
 		gap: 2px;
 		box-sizing: border-box;
+	}
+
+	.mapp-root.mapp-desktop .mapp-folder-tab--active,
+	.mapp-root.mapp-desktop .mapp-folder-tab--active:hover,
+	.mapp-root.mapp-desktop .mapp-folder-tab--active:active {
+		border-radius: 10px;
+		background: var(--mapp-accent, #2196f3);
+		color: #fff;
+		border-color: var(--mapp-accent, #2196f3);
 	}
 
 	.mapp-root.mapp-desktop .mapp-folder-tab-label {
@@ -7167,4 +7304,109 @@ textarea.mapp-profile-field-input:focus,
 	height: 100%;
 	min-height: 0;
 	overflow: hidden;
+}
+
+/* ===== Channel profile & settings ===== */
+.mapp-channel-profile-hub {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 16px 16px 8px;
+	text-align: center;
+}
+
+.mapp-channel-profile-content .mapp-ui-card {
+	margin: 0 16px 12px;
+}
+
+.mapp-channel-profile-content > .mapp-btn-settings-wide {
+	margin: 0 16px 12px;
+}
+
+.mc-panel-window--channel-profile .mapp-group-profile-scroll {
+	padding-bottom: 16px;
+}
+
+.mapp-group-member-icon-btn--display {
+	opacity: .85;
+	cursor: default;
+	pointer-events: none;
+}
+
+.mapp-profile-link-row--copy {
+	cursor: pointer;
+	border: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+	border-radius: 10px;
+	padding: 10px 12px;
+	margin-top: 8px;
+	transition: background 120ms;
+}
+
+.mapp-profile-link-row--copy:hover {
+	background: var(--mapp-hover, rgba(0, 0, 0, .04));
+}
+
+.mc-dialog-actions--vertical {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+}
+
+.mc-dialog-actions--vertical .mc-dialog-btn {
+	width: 100%;
+}
+
+.mapp-channel-settings-list {
+	display: flex;
+	flex-direction: column;
+	margin-top: 12px;
+	border: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+	border-radius: 12px;
+	overflow: hidden;
+}
+
+.mapp-channel-settings-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	padding: 11px 12px;
+	border: none;
+	border-bottom: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+	background: var(--mapp-sidebar-bg, #fff);
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+	transition: background 120ms;
+}
+
+.mapp-channel-settings-row:last-child {
+	border-bottom: none;
+}
+
+.mapp-channel-settings-row:hover {
+	background: var(--mapp-hover, rgba(0, 0, 0, .04));
+}
+
+.mapp-channel-settings-row--deleted {
+	opacity: .72;
+}
+
+.mapp-channel-settings-row-avatar {
+	flex-shrink: 0;
+}
+
+.mapp-channel-settings-row-meta {
+	flex: 1;
+	min-width: 0;
+}
+
+.mapp-channel-settings-deleted-badge {
+	flex-shrink: 0;
+	font-size: 11px;
+	font-weight: 600;
+	padding: 3px 8px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--mapp-danger, #e53935) 12%, transparent);
+	color: var(--mapp-danger, #c62828);
 }

@@ -176,6 +176,16 @@ public sealed class SupraMessengerController : ControllerBase
                 GetString(data, "newOwnerUserId") ?? "",
                 ct),
             "DeleteChannel" => await HandleDeleteChannel(user, data, ct),
+            "RestoreChannel" => await HandleRestoreChannel(user, data, ct),
+            "GetChannelSubscribers" => await _messenger.GetChannelSubscribersAsync(
+                user.Id,
+                GetString(data, "chatId") ?? "",
+                GetInt(data, "page", 1),
+                GetInt(data, "pageSize", 10),
+                GetString(data, "query"),
+                ct),
+            "AddChannelMember" => await HandleAddChannelMember(user, data, ct),
+            "RemoveChannelMember" => await HandleRemoveChannelMember(user, data, ct),
             _ => new { success = false, error = $"Unknown method: {methodName}" },
         };
 
@@ -830,8 +840,47 @@ public sealed class SupraMessengerController : ControllerBase
         if (result.success)
         {
             foreach (var uid in participants)
-                await NotifyChatRemovedAsync(uid, chatId, ct);
+            {
+                if (uid != user.Id)
+                    await NotifyChatRemovedAsync(uid, chatId, ct);
+            }
         }
+        return result;
+    }
+
+    private async Task<object> HandleRestoreChannel(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var chatId = GetString(data, "chatId") ?? "";
+        var result = await _messenger.RestoreChannelAsync(user, chatId, ct);
+        if (result.success && Guid.TryParse(chatId, out var cg))
+            await BroadcastChannelUpdatedAsync(cg, ct);
+        return result;
+    }
+
+    private async Task<object> HandleAddChannelMember(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var chatId = GetString(data, "chatId") ?? "";
+        var result = await _messenger.AddChannelMemberAsync(
+            user,
+            chatId,
+            GetString(data, "memberUserId") ?? "",
+            GetString(data, "role") ?? "",
+            ct);
+        if (result.success && Guid.TryParse(chatId, out var cg))
+            await BroadcastChannelUpdatedAsync(cg, ct);
+        return result;
+    }
+
+    private async Task<object> HandleRemoveChannelMember(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var chatId = GetString(data, "chatId") ?? "";
+        var result = await _messenger.RemoveChannelMemberAsync(
+            user,
+            chatId,
+            GetString(data, "memberUserId") ?? "",
+            ct);
+        if (result.success && Guid.TryParse(chatId, out var cg))
+            await BroadcastChannelUpdatedAsync(cg, ct);
         return result;
     }
 

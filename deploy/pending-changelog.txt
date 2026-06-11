@@ -1,2 +1,5 @@
 # Changelog items before deploy (one per line). Lines starting with # are ignored.
 
+Крипто: кэш RSA и ключей чатов в sessionStorage, PBKDF в worker, RSA unwrap в worker
+Старт: unlock параллельно сплэшу; sync/reconcile в idle; превью — сначала видимые чаты, остальные по скроллу
+Каналы: превью/medium изображений на сервере, channel-view, API и sync

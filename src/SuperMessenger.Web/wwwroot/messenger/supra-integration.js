@@ -810,35 +810,7 @@
 
 			if (window.__bootMark) __bootMark('chats-load-start');
 
-			const messenger = boot();
-
-			if (window.AppBranding?.syncMessengerThemes) {
-				AppBranding.syncMessengerThemes();
-			}
-
-			if (window.__bootMark) __bootMark('messenger-constructed');
-
-			if (messenger) {
-				// Сплэш скрываем по готовности оболочки (кэш чатов уже в сайдбаре);
-				// полный sync bundle догружается в фоне через whenChatsLoaded / whenReady.
-				await Promise.all([
-					messenger.whenRendered?.(),
-					waitForMessengerCss(4000),
-				]);
-			}
-
-			// Мгновенное снятие сплэша до тяжёлой крипты (RSA блокирует main thread —
-			// анимированный hide и visibility:#chat не успевают обновиться).
-			if (window.AppSplash) {
-				AppSplash.hide(true);
-			}
-
-			if (window.AppSplash?.yieldToMain) {
-				await AppSplash.yieldToMain();
-			}
-
-			if (window.__bootMark) __bootMark('splash-ui-ready');
-
+			// Разблокировка крипты параллельно с отрисовкой оболочки (PBKDF — в worker).
 			const cryptoPromise = (async () => {
 				if (window.__bootMark) __bootMark('crypto-unlock-start');
 				await SupraAuthCrypto.restoreSession(user.id);
@@ -858,6 +830,34 @@
 				}
 				return crypto;
 			})();
+
+			const messenger = boot();
+
+			if (window.AppBranding?.syncMessengerThemes) {
+				AppBranding.syncMessengerThemes();
+			}
+
+			if (window.__bootMark) __bootMark('messenger-constructed');
+
+			if (messenger) {
+				// Сплэш скрываем по готовности оболочки (кэш чатов уже в сайдбаре);
+				// полный sync bundle догружается в фоне через whenChatsLoaded / whenReady.
+				await Promise.all([
+					messenger.whenRendered?.(),
+					waitForMessengerCss(4000),
+				]);
+			}
+
+			// Мгновенное снятие сплэша до attachCrypto (RSA unwrap может блокировать main thread).
+			if (window.AppSplash) {
+				AppSplash.hide(true);
+			}
+
+			if (window.AppSplash?.yieldToMain) {
+				await AppSplash.yieldToMain();
+			}
+
+			if (window.__bootMark) __bootMark('splash-ui-ready');
 
 			const cryptoReady = cryptoPromise.then((crypto) => {
 				if (crypto) attachCrypto(crypto);

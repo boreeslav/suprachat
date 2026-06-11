@@ -13,12 +13,18 @@ public sealed class FilesController : ControllerBase
 {
     private readonly IDataStore _store;
     private readonly CurrentUserAccessor _current;
+    private readonly ChatImageProcessingService _images;
     private readonly string _filesRoot;
 
-    public FilesController(IDataStore store, CurrentUserAccessor current, IConfiguration config)
+    public FilesController(
+        IDataStore store,
+        CurrentUserAccessor current,
+        ChatImageProcessingService images,
+        IConfiguration config)
     {
         _store = store;
         _current = current;
+        _images = images;
         _filesRoot = config["Data:FilesPath"] ?? Path.Combine(config["Data:Root"] ?? "data", "uploads");
         Directory.CreateDirectory(_filesRoot);
     }
@@ -64,29 +70,36 @@ public sealed class FilesController : ControllerBase
         return PhysicalFile(chat.AvatarPath, "image/jpeg");
     }
 
+    [HttpGet("channel-public/{fileId:guid}/preview")]
+    [AllowAnonymous]
+    public Task<IActionResult> GetChannelPublicPreview(Guid fileId, CancellationToken ct) =>
+        ServeVariantAsync(fileId, ImageVariant.Preview, channelPublic: true, ct);
+
+    [HttpGet("channel-public/{fileId:guid}/medium")]
+    [AllowAnonymous]
+    public Task<IActionResult> GetChannelPublicMedium(Guid fileId, CancellationToken ct) =>
+        ServeVariantAsync(fileId, ImageVariant.Medium, channelPublic: true, ct);
+
     /// <summary>Файлы из сообщений публичного канала (без авторизации).</summary>
     [HttpGet("channel-public/{fileId:guid}")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetChannelPublicFile(Guid fileId, CancellationToken ct)
-    {
-        var file = await _store.GetFileByIdAsync(fileId, ct);
-        if (file == null || !System.IO.File.Exists(file.StoragePath))
-            return NotFound();
-        var chat = await _store.GetChatByIdAsync(file.ChatId, ct);
-        if (chat == null || !SupraMessengerService.IsChannelChat(chat))
-            return NotFound();
-        return PhysicalFile(file.StoragePath, file.MimeType, file.FileName);
-    }
+    public Task<IActionResult> GetChannelPublicFile(Guid fileId, CancellationToken ct) =>
+        ServeVariantAsync(fileId, ImageVariant.Original, channelPublic: true, ct);
+
+    [HttpGet("{fileId:guid}/preview")]
+    [Authorize]
+    public Task<IActionResult> GetPreview(Guid fileId, CancellationToken ct) =>
+        ServeVariantAsync(fileId, ImageVariant.Preview, channelPublic: false, ct);
+
+    [HttpGet("{fileId:guid}/medium")]
+    [Authorize]
+    public Task<IActionResult> GetMedium(Guid fileId, CancellationToken ct) =>
+        ServeVariantAsync(fileId, ImageVariant.Medium, channelPublic: false, ct);
 
     [HttpGet("{fileId:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetFile(Guid fileId, CancellationToken ct)
-    {
-        var file = await _store.GetFileByIdAsync(fileId, ct);
-        if (file == null || !System.IO.File.Exists(file.StoragePath))
-            return NotFound();
-        return PhysicalFile(file.StoragePath, file.MimeType, file.FileName);
-    }
+    public Task<IActionResult> GetFile(Guid fileId, CancellationToken ct) =>
+        ServeVariantAsync(fileId, ImageVariant.Original, channelPublic: false, ct);
 
     [HttpPost("upload")]
     [Authorize]
@@ -129,7 +142,7 @@ public sealed class FilesController : ControllerBase
                 Size = fs.Length,
                 StoragePath = path,
             };
-            await _store.SaveFileAsync(record, ct);
+            await SaveWithImageVariantsAsync(record, ct);
             return Ok(new { success = true, fileId = fileId.ToString() });
         }
 
@@ -140,7 +153,7 @@ public sealed class FilesController : ControllerBase
         await using (var stream = System.IO.File.Create(storagePath))
             await upload.CopyToAsync(stream, ct);
 
-        await _store.SaveFileAsync(new SupraFileRecord
+        var fileRecord = new SupraFileRecord
         {
             Id = fileId,
             ChatId = chatId,
@@ -149,8 +162,96 @@ public sealed class FilesController : ControllerBase
             MimeType = upload.ContentType,
             Size = upload.Length,
             StoragePath = storagePath,
-        }, ct);
+        };
+        await SaveWithImageVariantsAsync(fileRecord, ct);
 
         return Ok(new { success = true, fileId = fileId.ToString() });
+    }
+
+    private enum ImageVariant { Preview, Medium, Original }
+
+    private async Task<IActionResult> ServeVariantAsync(
+        Guid fileId,
+        ImageVariant variant,
+        bool channelPublic,
+        CancellationToken ct)
+    {
+        var file = await _store.GetFileByIdAsync(fileId, ct);
+        if (file == null || !System.IO.File.Exists(file.StoragePath))
+            return NotFound();
+
+        if (channelPublic)
+        {
+            var chat = await _store.GetChatByIdAsync(file.ChatId, ct);
+            if (chat == null || !SupraMessengerService.IsChannelChat(chat))
+                return NotFound();
+        }
+        else
+        {
+            var user = await _current.GetCurrentUserAsync(ct);
+            if (user == null) return Unauthorized();
+            if (!await _store.IsParticipantAsync(file.ChatId, user.Id, ct))
+                return Forbid();
+        }
+
+        file = await EnsureImageVariantsAsync(file, ct);
+
+        return variant switch
+        {
+            ImageVariant.Preview => ServeImagePath(file.PreviewPath, file),
+            ImageVariant.Medium => ServeImagePath(file.MediumPath, file),
+            _ => PhysicalFile(file.StoragePath, file.MimeType, file.FileName),
+        };
+    }
+
+    private IActionResult ServeImagePath(string? variantPath, SupraFileRecord file)
+    {
+        if (variantPath != null && System.IO.File.Exists(variantPath))
+            return PhysicalFile(variantPath, "image/jpeg");
+        return PhysicalFile(file.StoragePath, file.MimeType, file.FileName);
+    }
+
+    private async Task SaveWithImageVariantsAsync(SupraFileRecord record, CancellationToken ct)
+    {
+        if (ChatImageProcessingService.IsProcessableImage(record.MimeType, record.FileName))
+        {
+            try
+            {
+                var (preview, medium) = await _images.ProcessAsync(record.StoragePath, record.Id, ct);
+                record.PreviewPath = preview;
+                record.MediumPath = medium;
+            }
+            catch
+            {
+                // Оригинал сохранён — варианты сгенерируются при первом запросе.
+            }
+        }
+
+        await _store.SaveFileAsync(record, ct);
+    }
+
+    private async Task<SupraFileRecord> EnsureImageVariantsAsync(SupraFileRecord file, CancellationToken ct)
+    {
+        if (!ChatImageProcessingService.IsProcessableImage(file.MimeType, file.FileName))
+            return file;
+
+        var previewOk = file.PreviewPath != null && System.IO.File.Exists(file.PreviewPath);
+        var mediumOk = file.MediumPath != null && System.IO.File.Exists(file.MediumPath);
+        if (previewOk && mediumOk)
+            return file;
+
+        try
+        {
+            var (preview, medium) = await _images.ProcessAsync(file.StoragePath, file.Id, ct);
+            file.PreviewPath = preview;
+            file.MediumPath = medium;
+            await _store.SaveFileAsync(file, ct);
+        }
+        catch
+        {
+            // Отдаём оригинал как fallback.
+        }
+
+        return file;
     }
 }
