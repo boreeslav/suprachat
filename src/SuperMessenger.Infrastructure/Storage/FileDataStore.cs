@@ -107,6 +107,27 @@ public sealed class FileDataStore : IDataStore
     public async Task<SupraChatRecord?> GetChatByIdAsync(Guid id, CancellationToken ct = default)
         => (await _chats.ReadAllAsync(ct)).FirstOrDefault(c => c.Id == id);
 
+    public async Task<SupraChatRecord?> GetChannelBySlugAsync(string slug, CancellationToken ct = default)
+    {
+        var norm = (slug ?? "").Trim();
+        if (norm.Length < 4) return null;
+        return (await _chats.ReadAllAsync(ct)).FirstOrDefault(c =>
+            string.Equals(c.Type, "channel", StringComparison.OrdinalIgnoreCase) &&
+            c.Slug != null &&
+            string.Equals(c.Slug, norm, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<bool> IsChannelSlugTakenAsync(string slug, Guid? excludeChatId = null, CancellationToken ct = default)
+    {
+        var norm = (slug ?? "").Trim();
+        if (norm.Length < 4) return false;
+        return (await _chats.ReadAllAsync(ct)).Any(c =>
+            string.Equals(c.Type, "channel", StringComparison.OrdinalIgnoreCase) &&
+            c.Slug != null &&
+            string.Equals(c.Slug, norm, StringComparison.OrdinalIgnoreCase) &&
+            (excludeChatId == null || c.Id != excludeChatId));
+    }
+
     public async Task SaveChatAsync(SupraChatRecord chat, CancellationToken ct = default)
     {
         var list = await _chats.ReadAllAsync(ct);
@@ -148,6 +169,17 @@ public sealed class FileDataStore : IDataStore
     public async Task<SupraChatMessageRecord?> GetMessageByIdAsync(Guid messageId, CancellationToken ct = default)
         => (await _messages.ReadAllAsync(ct)).FirstOrDefault(m => m.Id == messageId);
 
+    public async Task<SupraChatMessageRecord?> GetMessageByClientLocalIdAsync(
+        Guid chatId, Guid senderUserId, string clientLocalId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(clientLocalId)) return null;
+        var key = clientLocalId.Trim();
+        return (await _messages.ReadAllAsync(ct)).FirstOrDefault(m =>
+            m.ChatId == chatId &&
+            m.SenderUserId == senderUserId &&
+            string.Equals(m.ClientLocalId, key, StringComparison.Ordinal));
+    }
+
     public async Task SaveMessageAsync(SupraChatMessageRecord message, CancellationToken ct = default)
     {
         var list = await _messages.ReadAllAsync(ct);
@@ -169,11 +201,22 @@ public sealed class FileDataStore : IDataStore
         => (await _messageUserDeletions.ReadAllAsync(ct)).Where(d => d.UserId == userId).ToList();
 
     public async Task SaveMessageUserDeletionAsync(SupraMessageUserDeletionRecord deletion, CancellationToken ct = default)
+        => await SaveMessageUserDeletionsAsync([deletion], ct);
+
+    public async Task SaveMessageUserDeletionsAsync(IReadOnlyList<SupraMessageUserDeletionRecord> deletions, CancellationToken ct = default)
     {
+        if (deletions.Count == 0) return;
         var list = await _messageUserDeletions.ReadAllAsync(ct);
-        if (!list.Any(d => d.MessageId == deletion.MessageId && d.UserId == deletion.UserId))
+        var changed = false;
+        foreach (var deletion in deletions)
+        {
+            if (list.Any(d => d.MessageId == deletion.MessageId && d.UserId == deletion.UserId))
+                continue;
             list.Add(deletion);
-        await _messageUserDeletions.WriteAllAsync(list, ct);
+            changed = true;
+        }
+        if (changed)
+            await _messageUserDeletions.WriteAllAsync(list, ct);
     }
 
     public async Task<bool> IsMessageDeletedForUserAsync(Guid messageId, Guid userId, CancellationToken ct = default)

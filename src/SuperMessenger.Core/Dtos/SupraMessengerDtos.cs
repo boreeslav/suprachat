@@ -14,6 +14,9 @@ public sealed class SupraChatDto
     public int unreadCount { get; set; }
     public bool requiresCustomGroupPassword { get; set; }
     public bool hasGroupAutoKey { get; set; }
+    public string? channelSlug { get; set; }
+    public bool isAdmin { get; set; }
+    public bool isGroupCreator { get; set; }
 }
 
 public sealed class SupraContactDto
@@ -151,6 +154,16 @@ public sealed class SupraGetMessageSyncIndexResponse
     public string? error { get; set; }
 }
 
+/// <summary>Единый ответ для открытия/синхронизации панели чата: сообщения, индекс reconcile и прочтение.</summary>
+public sealed class SupraSyncChatPanelResponse
+{
+    public bool success { get; set; }
+    public List<SupraChatMessageDto> messages { get; set; } = [];
+    public List<SupraMessageSyncEntryDto> syncIndex { get; set; } = [];
+    public bool markedRead { get; set; }
+    public string? error { get; set; }
+}
+
 public sealed class SupraSendMessageResponse
 {
     public bool success { get; set; }
@@ -220,6 +233,33 @@ public sealed class SupraDeleteMessageResponse
 {
     public bool success { get; set; }
     public string? error { get; set; }
+}
+
+public sealed class SupraBatchForwardItem
+{
+    public string targetChatId { get; set; } = "";
+    public string sourceMessageId { get; set; } = "";
+    public string text { get; set; } = "";
+    public string? forwardedFromSenderName { get; set; }
+    public string encryptionTier { get; set; } = "basic";
+}
+
+public sealed class SupraBatchItemResult
+{
+    public string messageId { get; set; } = "";
+    public string? targetChatId { get; set; }
+    public string? newMessageId { get; set; }
+    public object? data { get; set; }
+    public bool success { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraBatchResponse
+{
+    public bool success { get; set; }
+    public string? error { get; set; }
+    public List<string> sentChatIds { get; set; } = [];
+    public List<SupraBatchItemResult> results { get; set; } = [];
 }
 
 public sealed class SupraForwardMessageResponse
@@ -471,4 +511,117 @@ public sealed class SupraMessageDeliveryEventDto
     public string? userId { get; set; }
     public string? userName { get; set; }
     public string? detail { get; set; }
+}
+
+public sealed class SupraChannelMemberDto
+{
+    public string id { get; set; } = "";
+    public string name { get; set; } = "";
+    public string login { get; set; } = "";
+    public string? avatar { get; set; }
+    public string role { get; set; } = "";
+    public bool isOwner { get; set; }
+}
+
+public sealed class SupraGetChannelInfoResponse
+{
+    public bool success { get; set; }
+    public string? chatId { get; set; }
+    public string? name { get; set; }
+    public string? slug { get; set; }
+    public string? description { get; set; }
+    public string? avatar { get; set; }
+    public string? creatorUserId { get; set; }
+    public List<SupraChannelMemberDto> members { get; set; } = [];
+    public bool canEdit { get; set; }
+    public bool canEditSlug { get; set; }
+    public bool canPost { get; set; }
+    public bool canManageMembers { get; set; }
+    public bool isOwner { get; set; }
+    public bool isSubscribed { get; set; }
+    public string? myRole { get; set; }
+    public int subscriberCount { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraGetMyChannelsResponse
+{
+    public bool success { get; set; }
+    public List<SupraChannelListItemDto> channels { get; set; } = [];
+    public string? error { get; set; }
+}
+
+public sealed class SupraChannelListItemDto
+{
+    public string chatId { get; set; } = "";
+    public string name { get; set; } = "";
+    public string slug { get; set; } = "";
+    public string? avatar { get; set; }
+    public string myRole { get; set; } = "";
+    public int subscriberCount { get; set; }
+}
+
+public sealed class SupraCreateChannelResponse
+{
+    public bool success { get; set; }
+    public string? chatId { get; set; }
+    public string? slug { get; set; }
+    public string? name { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraUpdateChannelResponse
+{
+    public bool success { get; set; }
+    public string? name { get; set; }
+    public string? slug { get; set; }
+    public string? description { get; set; }
+    public string? avatar { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraGetChannelLinkPreviewResponse
+{
+    public bool success { get; set; }
+    public string? chatId { get; set; }
+    public string? name { get; set; }
+    public string? slug { get; set; }
+    public string? description { get; set; }
+    public string? avatar { get; set; }
+    public bool isSubscribed { get; set; }
+    public bool canSubscribe { get; set; }
+    public int subscriberCount { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraWsChannelUpdatedPayload
+{
+    public string type { get; set; } = "SupraChannelUpdated";
+    public string chatId { get; set; } = "";
+    public string chatName { get; set; } = "";
+    public string? chatAvatar { get; set; }
+    public string? slug { get; set; }
+    public string? description { get; set; }
+}
+
+public sealed class SupraPublicChannelMessageDto
+{
+    public string id { get; set; } = "";
+    public DateTime timestamp { get; set; }
+    public string text { get; set; } = "";
+    public string channelName { get; set; } = "";
+    public string? channelSlug { get; set; }
+}
+
+public sealed class SupraPublicChannelMessagesAroundResult
+{
+    public bool found { get; set; }
+    public string chatId { get; set; } = "";
+    public string name { get; set; } = "";
+    public string slug { get; set; } = "";
+    public string description { get; set; } = "";
+    public string? avatar { get; set; }
+    public bool hasMoreBefore { get; set; }
+    public bool hasMoreAfter { get; set; }
+    public List<SupraPublicChannelMessageDto> messages { get; set; } = [];
 }

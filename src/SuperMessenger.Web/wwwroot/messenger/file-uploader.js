@@ -360,6 +360,33 @@
         }
         processNext();
     }
+    let _pickerWakeLock = null;
+
+    function setPickerActive(active) {
+        if (typeof globalThis !== 'undefined') {
+            globalThis.__smExternalPickerActive = !!active;
+        }
+    }
+
+    async function acquirePickerWakeLock() {
+        try {
+            if (_pickerWakeLock || !('wakeLock' in navigator)) return;
+            _pickerWakeLock = await navigator.wakeLock.request('screen');
+            _pickerWakeLock.addEventListener('release', () => { _pickerWakeLock = null; });
+        } catch (_) { /* ignore */ }
+    }
+
+    function releasePickerWakeLock() {
+        try { _pickerWakeLock?.release(); } catch (_) { /* ignore */ }
+        _pickerWakeLock = null;
+    }
+
+    function ensureStoragePersisted() {
+        try {
+            globalThis.SupraSecureStore?.ensurePersistence?.();
+        } catch (_) { /* ignore */ }
+    }
+
     function openPicker(opts = {}) {
         return new Promise((resolve, reject) => {
             const input = document.createElement('input');
@@ -373,6 +400,15 @@
                 input.accept = opts.accept;
             }
             let settled = false;
+            let onPickerVisibility = null;
+            const endPickerSession = () => {
+                setPickerActive(false);
+                releasePickerWakeLock();
+                if (onPickerVisibility) {
+                    document.removeEventListener('visibilitychange', onPickerVisibility);
+                    onPickerVisibility = null;
+                }
+            };
             const cleanup = () => {
                 input.removeEventListener('change', onChange);
                 window.removeEventListener('focus', onWindowFocus);
@@ -381,12 +417,14 @@
             const finishResolve = (files) => {
                 if (settled) return;
                 settled = true;
+                endPickerSession();
                 cleanup();
                 resolve(files);
             };
             const finishReject = (err) => {
                 if (settled) return;
                 settled = true;
+                endPickerSession();
                 cleanup();
                 reject(err);
             };
@@ -408,6 +446,15 @@
             };
             input.addEventListener('change', onChange);
             window.addEventListener('focus', onWindowFocus);
+            onPickerVisibility = () => {
+                if (document.visibilityState === 'visible' && !settled) {
+                    void acquirePickerWakeLock();
+                }
+            };
+            document.addEventListener('visibilitychange', onPickerVisibility);
+            setPickerActive(true);
+            ensureStoragePersisted();
+            void acquirePickerWakeLock();
             document.body.appendChild(input);
             input.click();
         });

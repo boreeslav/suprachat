@@ -62,12 +62,28 @@ public sealed partial class SupraMessengerService
         string.Equals(chat.Type, "group", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(chat.Type, "public_group", StringComparison.OrdinalIgnoreCase);
 
+    async Task<bool> IsGroupModeratorAsync(Guid userId, SupraChatRecord? chat, CancellationToken ct)
+    {
+        if (chat == null || !IsGroupChat(chat)) return false;
+        if (chat.CreatorUserId == userId) return true;
+        var me = (await _store.GetParticipantsByChatAsync(chat.Id, ct))
+            .FirstOrDefault(p => p.UserId == userId);
+        return me?.IsAdmin == true;
+    }
+
+    async Task<bool> CanDeleteMessageForEveryoneAsync(
+        Guid userId, SupraChatRecord? chat, Guid senderUserId, CancellationToken ct)
+    {
+        if (senderUserId == userId) return true;
+        return await IsGroupModeratorAsync(userId, chat, ct);
+    }
+
     /// <summary>Инфо о чате для пуш-уведомления: групповой ли и его название (для групп).</summary>
     public async Task<(bool isGroup, string name)?> GetChatNotificationInfoAsync(Guid chatId, CancellationToken ct = default)
     {
         var chat = await _store.GetChatByIdAsync(chatId, ct);
         if (chat == null) return null;
-        return (IsGroupChat(chat), chat.Name ?? "");
+        return (IsGroupChat(chat) || IsChannelChat(chat), chat.Name ?? "");
     }
 
     public async Task<SupraGetCurrentUserResponse> GetCurrentUserAsync(UserRecord user, CancellationToken ct = default)
@@ -169,6 +185,10 @@ public sealed partial class SupraMessengerService
             var chatGuid = Guid.Parse(chatId);
             if (!await _store.IsParticipantAsync(chatGuid, userId, ct))
                 throw new UnauthorizedAccessException("Пользователь не является участником чата");
+
+            var chat = await _store.GetChatByIdAsync(chatGuid, ct);
+            if (chat != null && IsChannelChat(chat))
+                return (new SupraMarkReadResponse { success = true }, []);
 
             var messages = (await _store.GetMessagesByChatAsync(chatGuid, ct))
                 .Where(m => m.SenderUserId != userId && m.Status != "read")

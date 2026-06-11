@@ -9,18 +9,19 @@ namespace SuperMessenger.Web.Controllers;
 [Route("api/app")]
 public sealed class AppController : ControllerBase
 {
-    private static readonly System.Text.RegularExpressions.Regex BuildNumberRegex =
-        new(@"const BUILD_NUMBER = (\d+);", System.Text.RegularExpressions.RegexOptions.Compiled);
-    private static readonly System.Text.RegularExpressions.Regex SwVersionRegex =
-        new(@"const SW_VERSION = (\d+);", System.Text.RegularExpressions.RegexOptions.Compiled);
-
     private readonly AppAppearanceService _appearance;
+    private readonly AppBuildInfoService _buildInfo;
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<AppController> _log;
 
-    public AppController(AppAppearanceService appearance, IWebHostEnvironment env, ILogger<AppController> log)
+    public AppController(
+        AppAppearanceService appearance,
+        AppBuildInfoService buildInfo,
+        IWebHostEnvironment env,
+        ILogger<AppController> log)
     {
         _appearance = appearance;
+        _buildInfo = buildInfo;
         _env = env;
         _log = log;
     }
@@ -41,93 +42,18 @@ public sealed class AppController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> GetBuild(CancellationToken ct)
     {
-        var scriptPath = Path.Combine(_env.WebRootPath, "messenger", "app-script-cache.js");
-        if (!System.IO.File.Exists(scriptPath)) return NotFound();
+        var info = await _buildInfo.ResolveAsync(ct);
+        if (info == null) return NotFound();
 
-        var swPath = Path.Combine(_env.WebRootPath, "sw.js");
-        var scriptWrite = System.IO.File.GetLastWriteTimeUtc(scriptPath);
-        var swWrite = System.IO.File.Exists(swPath)
-            ? System.IO.File.GetLastWriteTimeUtc(swPath)
-            : DateTime.MinValue;
-        var filesStamp = scriptWrite > swWrite ? scriptWrite : swWrite;
-
-        if (TryGetCachedBuild(filesStamp, out var cached))
-        {
-            Response.Headers.CacheControl = "public, max-age=30";
-            return Ok(cached);
-        }
-
-        var js = await System.IO.File.ReadAllTextAsync(scriptPath, ct);
-        var match = BuildNumberRegex.Match(js);
-        if (!match.Success) return NotFound();
-
-        long swVersion = 0;
-        if (System.IO.File.Exists(swPath))
-        {
-            var swJs = await System.IO.File.ReadAllTextAsync(swPath, ct);
-            var swMatch = SwVersionRegex.Match(swJs);
-            if (swMatch.Success) swVersion = long.Parse(swMatch.Groups[1].Value);
-        }
-
-        var settings = await _appearance.GetEffectiveAsync(ct);
         var payload = new
         {
-            build = long.Parse(match.Groups[1].Value),
-            swVersion,
-            appVersion = settings.AppVersion ?? "",
+            build = info.Build,
+            swVersion = info.SwVersion,
+            appVersion = info.AppVersion,
         };
 
-        StoreCachedBuild(filesStamp, payload.build, payload.swVersion, payload.appVersion);
-
-        Response.Headers.CacheControl = "public, max-age=30";
+        Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
         return Ok(payload);
-    }
-
-    private static readonly object BuildCacheLock = new();
-    private static DateTime _buildCacheFilesStamp = DateTime.MinValue;
-    private static DateTime _buildCacheAppearanceAt = DateTime.MinValue;
-    private static long _buildCacheBuild;
-    private static long _buildCacheSwVersion;
-    private static string _buildCacheAppVersion = "";
-
-    private static bool TryGetCachedBuild(DateTime filesStamp, out object payload)
-    {
-        lock (BuildCacheLock)
-        {
-            if (_buildCacheBuild <= 0)
-            {
-                payload = null!;
-                return false;
-            }
-
-            var filesFresh = _buildCacheFilesStamp >= filesStamp;
-            var appearanceFresh = DateTime.UtcNow - _buildCacheAppearanceAt < TimeSpan.FromMinutes(2);
-            if (!filesFresh || !appearanceFresh)
-            {
-                payload = null!;
-                return false;
-            }
-
-            payload = new
-            {
-                build = _buildCacheBuild,
-                swVersion = _buildCacheSwVersion,
-                appVersion = _buildCacheAppVersion,
-            };
-            return true;
-        }
-    }
-
-    private static void StoreCachedBuild(DateTime filesStamp, long build, long swVersion, string appVersion)
-    {
-        lock (BuildCacheLock)
-        {
-            _buildCacheFilesStamp = filesStamp;
-            _buildCacheAppearanceAt = DateTime.UtcNow;
-            _buildCacheBuild = build;
-            _buildCacheSwVersion = swVersion;
-            _buildCacheAppVersion = appVersion ?? "";
-        }
     }
 
     /// <summary>

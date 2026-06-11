@@ -9,14 +9,12 @@
 	const LS_VERSION_KEY = 'sm-client-app-version';
 	const BANNER_ID = 'sm-update-banner';
 	const STYLE_ID = 'sm-update-banner-css';
-	const CHECK_INTERVAL_MS = 30_000;
 	const SNOOZE_MS = 60_000;
 
 	let localBuild = 0;
 	let localAppVersion = '';
 	let started = false;
 	let bootCheckDone = false;
-	let checkTimer = null;
 	let snoozeTimer = null;
 	let checkInFlight = null;
 
@@ -83,7 +81,6 @@
 		if (!v) return;
 		localAppVersion = v;
 		persistClientState();
-		if (started && bootCheckDone) checkForUpdate();
 	}
 
 	function isSnoozed() {
@@ -265,16 +262,11 @@
 		persistClientState();
 		hideBanner();
 		bootCheckDone = true;
-		scheduleDeferredCheck();
 	}
 
-	function scheduleDeferredCheck() {
-		const run = () => { void checkForUpdate(); };
-		if (typeof global.requestIdleCallback === 'function') {
-			global.requestIdleCallback(run, { timeout: 15000 });
-		} else {
-			global.setTimeout(run, 3000);
-		}
+	function checkOnTransportConnected() {
+		if (!started || localBuild <= 0) return;
+		void checkForUpdate();
 	}
 
 	async function checkForUpdate() {
@@ -329,33 +321,7 @@
 	}
 
 	function watchServiceWorker() {
-		if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
-
-		navigator.serviceWorker.addEventListener('message', (event) => {
-			if (event.data && event.data.type === 'sm-update-available') {
-				checkForUpdate();
-			}
-		});
-
-		navigator.serviceWorker.ready.then((reg) => {
-			reg.addEventListener('updatefound', () => {
-				const sw = reg.installing;
-				if (!sw) return;
-				sw.addEventListener('statechange', () => {
-					if (sw.state === 'installed' && navigator.serviceWorker.controller) {
-						checkForUpdate();
-					}
-				});
-			});
-		}).catch(() => { /* ignore */ });
-
-		navigator.serviceWorker.addEventListener('controllerchange', () => {
-			checkForUpdate();
-		});
-	}
-
-	function onVisibilityChange() {
-		if (document.visibilityState === 'visible') checkForUpdate();
+		/* Проверка версии — один раз после WebSocket, не по событиям SW. */
 	}
 
 	function hookAppearanceReady() {
@@ -385,24 +351,15 @@
 
 		watchServiceWorker();
 		hookAppearanceReady();
-		document.addEventListener('visibilitychange', onVisibilityChange);
 
 		if (isSnoozed()) scheduleSnoozeRecheck();
-		else {
-			checkTimer = setInterval(checkForUpdate, CHECK_INTERVAL_MS);
-		}
 	}
 
 	function stop() {
 		started = false;
 		bootCheckDone = false;
 		checkInFlight = null;
-		if (checkTimer != null) {
-			clearInterval(checkTimer);
-			checkTimer = null;
-		}
 		clearSnoozeTimer();
-		document.removeEventListener('visibilitychange', onVisibilityChange);
 		hideBanner();
 	}
 
@@ -410,6 +367,7 @@
 		start,
 		stop,
 		checkForUpdate,
+		checkOnTransportConnected,
 		applyUpdate,
 		setLocalAppVersion,
 		markBootComplete,

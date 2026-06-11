@@ -18,10 +18,12 @@ namespace SuperMessenger.Web.Controllers;
 public sealed class PublicPreviewController : ControllerBase
 {
     private readonly IDataStore _store;
+    private readonly SupraMessengerService _messenger;
 
-    public PublicPreviewController(IDataStore store)
+    public PublicPreviewController(IDataStore store, SupraMessengerService messenger)
     {
         _store = store;
+        _messenger = messenger;
     }
 
     [HttpGet("profile/{login}")]
@@ -73,5 +75,61 @@ public sealed class PublicPreviewController : ControllerBase
             memberCount = members.Count(),
             canJoin = true,
         });
+    }
+
+    [HttpGet("channel/{slug}")]
+    public async Task<IActionResult> GetChannel(string slug, CancellationToken ct)
+    {
+        var chat = await _store.GetChannelBySlugAsync(slug, ct);
+        if (chat == null)
+            return Ok(new { found = false });
+
+        var members = await _store.GetParticipantsByChatAsync(chat.Id, ct);
+
+        return Ok(new
+        {
+            found = true,
+            type = "channel",
+            chatId = chat.Id.ToString(),
+            name = chat.Name,
+            slug = chat.Slug,
+            description = chat.Description ?? "",
+            avatar = string.IsNullOrEmpty(chat.AvatarPath) ? null : $"/api/files/group-avatar-public/{chat.Id}",
+            subscriberCount = members.Count,
+        });
+    }
+
+    [HttpGet("channel/{slug}/messages")]
+    public async Task<IActionResult> GetChannelMessages(string slug, [FromQuery] int limit = 50, CancellationToken ct = default)
+    {
+        var chat = await _store.GetChannelBySlugAsync(slug, ct);
+        if (chat == null)
+            return Ok(new { found = false, messages = Array.Empty<object>() });
+
+        var messages = await _messenger.GetPublicChannelMessagesAsync(slug, limit, ct);
+        return Ok(new
+        {
+            found = true,
+            chatId = chat.Id.ToString(),
+            name = chat.Name,
+            slug = chat.Slug,
+            description = chat.Description ?? "",
+            avatar = string.IsNullOrEmpty(chat.AvatarPath) ? null : $"/api/files/group-avatar-public/{chat.Id}",
+            messages,
+        });
+    }
+
+    [HttpGet("channel/{slug}/messages/around")]
+    public async Task<IActionResult> GetChannelMessagesAround(
+        string slug,
+        [FromQuery] string messageId,
+        [FromQuery] int before = 25,
+        [FromQuery] int after = 25,
+        CancellationToken ct = default)
+    {
+        var result = await _messenger.GetPublicChannelMessagesAroundAsync(slug, messageId, before, after, ct);
+        if (result == null)
+            return Ok(new { found = false, messages = Array.Empty<object>() });
+        return Ok(result);
     }
 }

@@ -454,8 +454,9 @@
 	align-items: center;
 	gap: 8px;
 	padding: 8px 12px;
-	border-top: 1px solid var(--m-border, rgba(0, 0, 0, .1));
-	background: var(--m-panel-bg, #f5f5f5);
+	border-top: 1px solid var(--m-input-area-border, var(--m-header-border, rgba(0, 0, 0, .1)));
+	background: var(--m-input-bg, #f5f5f5);
+	color: var(--m-input-text, var(--m-header-text, #1c1c1e));
 }
 
 .mc-reply-bar-inner {
@@ -466,6 +467,7 @@
 .mc-reply-bar-label {
 	font-size: 11px;
 	font-weight: 600;
+	color: var(--m-input-text, inherit);
 	opacity: .65;
 	margin-bottom: 4px;
 }
@@ -473,7 +475,10 @@
 .mc-reply-bar-body {
 	min-width: 0;
 	border-left: 3px solid var(--m-accent, #4a9eff);
-	padding-left: 8px;
+	padding: 4px 8px;
+	border-radius: 4px;
+	background: var(--m-other-bubble-bg, rgba(0, 0, 0, .06));
+	color: var(--m-other-bubble-text, inherit);
 }
 
 .mc-reply-bar-author[hidden] {
@@ -483,11 +488,13 @@
 .mc-reply-bar-author {
 	font-size: 12px;
 	font-weight: 600;
+	color: var(--m-sender-name, var(--m-accent, #4a9eff));
 }
 
 .mc-reply-bar-preview {
 	font-size: 12px;
-	opacity: .75;
+	color: var(--m-other-bubble-text, inherit);
+	opacity: .85;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -499,6 +506,7 @@
 	line-height: 0;
 	white-space: normal;
 	overflow: visible;
+	opacity: 1;
 }
 
 .mc-reply-bar-thumb {
@@ -512,6 +520,7 @@
 .mc-reply-bar-close {
 	border: none;
 	background: transparent;
+	color: var(--m-input-text, var(--m-header-text, inherit));
 	font-size: 22px;
 	line-height: 1;
 	cursor: pointer;
@@ -519,19 +528,25 @@
 	padding: 0 4px;
 }
 
+.mc-reply-bar-close:hover {
+	opacity: .9;
+}
+
 .mc-select-bar {
 	display: flex;
 	align-items: center;
 	gap: 12px;
 	padding: 10px 12px;
-	border-top: 1px solid var(--m-border, rgba(0, 0, 0, .1));
-	background: var(--m-panel-bg, #f5f5f5);
+	border-top: 1px solid var(--m-input-area-border, var(--m-header-border, rgba(0, 0, 0, .1)));
+	background: var(--m-input-bg, #f5f5f5);
+	color: var(--m-input-text, var(--m-header-text, #1c1c1e));
 }
 
 .mc-select-bar-count {
 	flex: 1;
 	font-size: 14px;
 	font-weight: 500;
+	color: inherit;
 }
 
 .mc-select-bar-btn {
@@ -546,8 +561,9 @@
 
 .mc-select-bar-btn--secondary {
 	background: transparent;
-	color: var(--m-text, #333);
-	border: 1px solid var(--m-border, rgba(0, 0, 0, .15));
+	color: inherit;
+	border: 1px solid var(--m-input-area-border, var(--m-header-border, rgba(0, 0, 0, .15)));
+	opacity: .85;
 }
 
 .mc-select-bar-btn--danger {
@@ -688,7 +704,7 @@
 .mc-input-field {
     flex: 1;
     border: 0px;
-    border-radius: 20px;
+    border-radius: 0;
     padding: 8px 4px;
     font-size: 14px;
     resize: none;
@@ -743,6 +759,67 @@
 	opacity: 0.55;
 }
 
+.mc-input-area--channel-none {
+	display: none;
+}
+
+.mc-input-area--channel-stub {
+	justify-content: center;
+	padding: 10px 16px;
+	background: var(--m-header-bg);
+	border-top: 1px solid var(--m-header-border);
+}
+
+.mc-channel-stub-btn {
+	display: block;
+	width: 100%;
+	max-width: 360px;
+	margin: 0 auto;
+	padding: 10px 16px;
+	border: none;
+	border-radius: 0;
+	background: transparent;
+	color: var(--m-header-text);
+	font: inherit;
+	font-size: 15px;
+	font-weight: 500;
+	line-height: 1.3;
+	cursor: pointer;
+	text-align: center;
+	transition: opacity .15s;
+}
+
+.mc-channel-stub-btn:hover {
+	opacity: .82;
+}
+
+.mc-channel-stub-btn:active {
+	opacity: .65;
+}
+
+.mc-channel-stub-btn:disabled {
+	opacity: .45;
+	cursor: not-allowed;
+}
+
+.mc-activity-bar--channel-desc {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+}
+
+.mc-header-channel-desc {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	color: var(--m-header-text);
+	opacity: .85;
+	font-size: 13px;
+	line-height: 1.25;
+	font-weight: 400;
+}
+
 .mc-send-btn:hover {
 	opacity: .88;
 }
@@ -761,6 +838,20 @@
 
 .mc-header-sub {
 	flex-shrink: 0;
+	white-space: nowrap;
+}
+
+.mc-header-sub--typing {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	opacity: .6;
+	font-style: normal;
+	min-width: 0;
+}
+
+.mc-typing-inline-text {
+	font-size: inherit;
 	white-space: nowrap;
 }
 
@@ -2582,6 +2673,16 @@
 	max-width: none;
 }
 
+.mapp-chat-item-preview--typing {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	opacity: .65;
+	font-style: normal;
+	min-width: 0;
+	flex: 1;
+}
+
 .mapp-badge-wrap {
 	flex-shrink: 0;
 }
@@ -2598,6 +2699,11 @@
 	font-size: 10px;
 	font-weight: 700;
 	border-radius: 9px;
+}
+
+.mapp-badge--muted {
+	background: var(--mapp-sub-text, #9a9a9a);
+	color: #fff;
 }
 
 .mapp-avatar {
@@ -3713,13 +3819,17 @@
 
 .mc-theme-bg-layer {
 	position: absolute;
-	inset: 0;
+	left: 0;
+	right: 0;
+	top: 0;
+	width: 100%;
+	height: var(--sm-chat-bg-stable-h, 100%);
 	z-index: 0;
 	pointer-events: none;
 	background-color: var(--m-chat-bg);
 	background-image: var(--m-chat-bg-image, none);
 	background-size: cover;
-	background-position: center;
+	background-position: center top;
 	background-repeat: no-repeat;
 }
 
@@ -3787,12 +3897,12 @@
 	align-items: center;
 	justify-content: center;
 	padding: 8px 0;
-	pointer-events: none;
 	user-select: none;
 	flex-shrink: 0;
 }
 
 .mc-system-event-pill {
+	display: inline-block;
 	background: var(--m-date-sep-bg, rgba(120, 120, 128, .22));
 	color: var(--m-date-sep-text, #555);
 	font-size: 11px;
@@ -3802,8 +3912,18 @@
 	backdrop-filter: blur(6px);
 	-webkit-backdrop-filter: blur(6px);
 	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	text-align: center;
 	max-width: min(92%, 420px);
+	box-sizing: border-box;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	touch-action: manipulation;
+}
+
+.mc-system-event-pill:active {
+	opacity: .72;
 }
 
 .mc-new-msg-divider {
@@ -3930,6 +4050,10 @@ html.sm-mobile-viewport .mapp-root.mapp-no-ui {
 
 	.mapp-root.mapp-show-chat .mapp-chat-area {
 		transform: translateX(0);
+	}
+
+	.mapp-placeholder {
+		display: none !important;
 	}
 
 	.mapp-chat-panel .mc-header {
@@ -5455,22 +5579,22 @@ body.mapp-scroll-lock .mapp-root {
 	-moz-user-select: none;
 }
 
-.mapp-root *:not(.mc-msg-text):not(.mapp-selectable-text)::selection,
-.mapp-modal *:not(.mc-msg-text):not(.mapp-selectable-text)::selection,
-.mc-panel-window *:not(.mc-msg-text):not(.mapp-selectable-text)::selection,
-.mapp-modal-overlay *:not(.mc-msg-text):not(.mapp-selectable-text)::selection,
-.mapp-sheet-overlay *:not(.mc-msg-text):not(.mapp-selectable-text)::selection,
-.mapp-root .mc-root *:not(.mc-msg-text):not(.mapp-selectable-text)::selection {
+.mapp-root *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::selection,
+.mapp-modal *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::selection,
+.mc-panel-window *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::selection,
+.mapp-modal-overlay *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::selection,
+.mapp-sheet-overlay *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::selection,
+.mapp-root .mc-root *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::selection {
 	background: transparent;
 	color: inherit;
 }
 
-.mapp-root *:not(.mc-msg-text):not(.mapp-selectable-text)::-moz-selection,
-.mapp-modal *:not(.mc-msg-text):not(.mapp-selectable-text)::-moz-selection,
-.mc-panel-window *:not(.mc-msg-text):not(.mapp-selectable-text)::-moz-selection,
-.mapp-modal-overlay *:not(.mc-msg-text):not(.mapp-selectable-text)::-moz-selection,
-.mapp-sheet-overlay *:not(.mc-msg-text):not(.mapp-selectable-text)::-moz-selection,
-.mapp-root .mc-root *:not(.mc-msg-text):not(.mapp-selectable-text)::-moz-selection {
+.mapp-root *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::-moz-selection,
+.mapp-modal *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::-moz-selection,
+.mc-panel-window *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::-moz-selection,
+.mapp-modal-overlay *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::-moz-selection,
+.mapp-sheet-overlay *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::-moz-selection,
+.mapp-root .mc-root *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::-moz-selection {
 	background: transparent;
 	color: inherit;
 }
@@ -5570,13 +5694,17 @@ body.mapp-scroll-lock .mapp-root {
 .mapp-selectable-text::selection,
 .mapp-root input::selection,
 .mapp-root textarea::selection,
+.mapp-root textarea.mc-input-field::selection,
+.mapp-root .mapp-profile-status-input::selection,
 .mapp-root [contenteditable="true"]::selection,
 .mapp-modal input::selection,
 .mapp-modal textarea::selection,
+.mapp-modal .mapp-profile-status-input::selection,
 .mapp-modal [contenteditable="true"]::selection,
 .mc-root input::selection,
-.mc-root textarea::selection {
-	background: rgba(74, 127, 193, 0.28);
+.mc-root textarea::selection,
+.mc-root textarea.mc-input-field::selection {
+	background: var(--m-selection-bg, rgba(74, 127, 193, 0.28));
 	color: inherit;
 }
 
@@ -5584,11 +5712,15 @@ body.mapp-scroll-lock .mapp-root {
 .mapp-selectable-text::-moz-selection,
 .mapp-root input::-moz-selection,
 .mapp-root textarea::-moz-selection,
+.mapp-root textarea.mc-input-field::-moz-selection,
+.mapp-root .mapp-profile-status-input::-moz-selection,
 .mapp-modal input::-moz-selection,
 .mapp-modal textarea::-moz-selection,
+.mapp-modal .mapp-profile-status-input::-moz-selection,
 .mc-root input::-moz-selection,
-.mc-root textarea::-moz-selection {
-	background: rgba(74, 127, 193, 0.28);
+.mc-root textarea::-moz-selection,
+.mc-root textarea.mc-input-field::-moz-selection {
+	background: var(--m-selection-bg, rgba(74, 127, 193, 0.28));
 	color: inherit;
 }
 

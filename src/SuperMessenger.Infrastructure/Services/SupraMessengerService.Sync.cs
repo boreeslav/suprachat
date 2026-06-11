@@ -77,12 +77,22 @@ public sealed partial class SupraMessengerService
             {
                 avatar = GroupAvatarUrl(chat);
             }
+            else if (IsChannelChat(chat))
+            {
+                avatar = ChannelAvatarUrl(chat);
+            }
 
             visibleByChat.TryGetValue(chatId, out var chatMsgs);
             chatMsgs ??= [];
             var last = chatMsgs.LastOrDefault();
-            var unread = chatMsgs.Count(m => m.SenderUserId != userId && m.Status != "read");
+            var unread = IsChannelChat(chat)
+                ? 0
+                : chatMsgs.Count(m => m.SenderUserId != userId && m.Status != "read");
             memberKeyByChat.TryGetValue(chatId, out var memberKey);
+            var isGroupCreator = IsGroupChat(chat) && chat.CreatorUserId == userId;
+            var isAdmin = isGroupCreator || (IsGroupChat(chat)
+                && participantsByChat.TryGetValue(chatId, out var groupParts)
+                && groupParts.FirstOrDefault(p => p.UserId == userId)?.IsAdmin == true);
 
             result.Add(new SupraChatDto
             {
@@ -98,6 +108,9 @@ public sealed partial class SupraMessengerService
                 unreadCount = unread,
                 requiresCustomGroupPassword = chat.RequiresCustomGroupPassword,
                 hasGroupAutoKey = memberKey != null,
+                channelSlug = IsChannelChat(chat) ? chat.Slug : null,
+                isAdmin = isAdmin,
+                isGroupCreator = isGroupCreator,
             });
         }
 
@@ -176,8 +189,11 @@ public sealed partial class SupraMessengerService
 
                 var slice = SliceMessagesAfterId(ordered, cursor, limit);
                 if (slice.Count == 0) continue;
+                SupraChatRecord? chatRecord = string.Equals(chat.type, "channel", StringComparison.OrdinalIgnoreCase)
+                    ? new SupraChatRecord { Type = "channel" }
+                    : null;
                 response.messagesByChat[chat.id] = slice
-                    .Select(m => MapMessageDto(m, userId, snapshot.AvatarByUser))
+                    .Select(m => MapMessageDto(m, userId, snapshot.AvatarByUser, chatRecord))
                     .ToList();
             }
 
