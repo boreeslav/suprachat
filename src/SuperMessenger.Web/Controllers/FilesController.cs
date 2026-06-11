@@ -14,17 +14,20 @@ public sealed class FilesController : ControllerBase
     private readonly IDataStore _store;
     private readonly CurrentUserAccessor _current;
     private readonly ChatImageProcessingService _images;
+    private readonly ChatFileService _files;
     private readonly string _filesRoot;
 
     public FilesController(
         IDataStore store,
         CurrentUserAccessor current,
         ChatImageProcessingService images,
+        ChatFileService files,
         IConfiguration config)
     {
         _store = store;
         _current = current;
         _images = images;
+        _files = files;
         _filesRoot = config["Data:FilesPath"] ?? Path.Combine(config["Data:Root"] ?? "data", "uploads");
         Directory.CreateDirectory(_filesRoot);
     }
@@ -190,7 +193,7 @@ public sealed class FilesController : ControllerBase
         {
             var user = await _current.GetCurrentUserAsync(ct);
             if (user == null) return Unauthorized();
-            if (!await _store.IsParticipantAsync(file.ChatId, user.Id, ct))
+            if (!await _files.CanUserAccessFileAsync(user.Id, file, ct))
                 return Forbid();
         }
 

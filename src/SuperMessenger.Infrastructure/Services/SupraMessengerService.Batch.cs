@@ -116,7 +116,10 @@ public sealed partial class SupraMessengerService
             }
 
             foreach (var message in messagesToUpdate)
+            {
                 await _store.UpdateMessageAsync(message, ct);
+                await _files.ReleaseMessageAttachmentsAsync(message.Id, ct);
+            }
 
             if (userDeletions.Count > 0)
                 await _store.SaveMessageUserDeletionsAsync(userDeletions, ct);

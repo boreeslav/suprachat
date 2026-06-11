@@ -59,8 +59,19 @@ public interface IDataStore
     Task DeleteFolderMembersByFolderAsync(Guid folderId, CancellationToken ct = default);
     Task DeleteFolderMembersByChatAsync(Guid userId, Guid chatId, CancellationToken ct = default);
 
+    Task<IReadOnlyList<SupraFileRecord>> GetAllFilesAsync(CancellationToken ct = default);
     Task<SupraFileRecord?> GetFileByIdAsync(Guid id, CancellationToken ct = default);
     Task SaveFileAsync(SupraFileRecord file, CancellationToken ct = default);
+    Task DeleteFileRecordAsync(Guid id, CancellationToken ct = default);
+
+    Task<IReadOnlyList<SupraMessageFileReferenceRecord>> GetAllMessageFileReferencesAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<SupraMessageFileReferenceRecord>> GetMessageFileReferencesByMessageAsync(Guid messageId, CancellationToken ct = default);
+    Task<IReadOnlyList<SupraMessageFileReferenceRecord>> GetMessageFileReferencesByFileAsync(Guid fileId, CancellationToken ct = default);
+    Task<bool> IsFileReferencedAsync(Guid fileId, CancellationToken ct = default);
+    Task ReplaceMessageFileReferencesAsync(Guid messageId, Guid chatId, IReadOnlyList<Guid> fileIds, CancellationToken ct = default);
+    Task DeleteMessageFileReferencesByMessageAsync(Guid messageId, CancellationToken ct = default);
+    Task ClearAllMessageFileReferencesAsync(CancellationToken ct = default);
+    Task AddMessageFileReferencesAsync(Guid messageId, Guid chatId, IReadOnlyList<Guid> fileIds, CancellationToken ct = default);
 
     Task<IReadOnlyList<SupraUserBlockRecord>> GetUserBlocksAsync(CancellationToken ct = default);
     Task SaveUserBlockAsync(SupraUserBlockRecord block, CancellationToken ct = default);

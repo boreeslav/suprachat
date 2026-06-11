@@ -11,6 +11,7 @@ public sealed class FileDataStore : IDataStore
     private readonly JsonFileCollectionStore<SupraChatParticipantRecord> _participants;
     private readonly JsonFileCollectionStore<SupraChatMessageRecord> _messages;
     private readonly JsonFileCollectionStore<SupraFileRecord> _files;
+    private readonly JsonFileCollectionStore<SupraMessageFileReferenceRecord> _messageFileReferences;
     private readonly JsonFileCollectionStore<SupraChatFolderRecord> _folders;
     private readonly JsonFileCollectionStore<SupraChatFolderMemberRecord> _folderMembers;
     private readonly JsonFileCollectionStore<SupraUserBlockRecord> _userBlocks;
@@ -31,6 +32,7 @@ public sealed class FileDataStore : IDataStore
         _messageUserDeletions = new(Path.Combine(dataRoot, "message-user-deletions.json"));
         _messageReadReceipts = new(Path.Combine(dataRoot, "message-read-receipts.json"));
         _files = new(Path.Combine(dataRoot, "files.json"));
+        _messageFileReferences = new(Path.Combine(dataRoot, "message-file-references.json"));
         _folders = new(Path.Combine(dataRoot, "folders.json"));
         _folderMembers = new(Path.Combine(dataRoot, "folder-members.json"));
         _userBlocks = new(Path.Combine(dataRoot, "user-blocks.json"));
@@ -342,6 +344,9 @@ public sealed class FileDataStore : IDataStore
         await _folderMembers.WriteAllAsync(list, ct);
     }
 
+    public async Task<IReadOnlyList<SupraFileRecord>> GetAllFilesAsync(CancellationToken ct = default)
+        => await _files.ReadAllAsync(ct);
+
     public async Task<SupraFileRecord?> GetFileByIdAsync(Guid id, CancellationToken ct = default)
         => (await _files.ReadAllAsync(ct)).FirstOrDefault(f => f.Id == id);
 
@@ -352,6 +357,73 @@ public sealed class FileDataStore : IDataStore
         if (idx >= 0) list[idx] = file;
         else list.Add(file);
         await _files.WriteAllAsync(list, ct);
+    }
+
+    public async Task DeleteFileRecordAsync(Guid id, CancellationToken ct = default)
+    {
+        var list = await _files.ReadAllAsync(ct);
+        list.RemoveAll(f => f.Id == id);
+        await _files.WriteAllAsync(list, ct);
+    }
+
+    public async Task<IReadOnlyList<SupraMessageFileReferenceRecord>> GetAllMessageFileReferencesAsync(CancellationToken ct = default)
+        => await _messageFileReferences.ReadAllAsync(ct);
+
+    public async Task<IReadOnlyList<SupraMessageFileReferenceRecord>> GetMessageFileReferencesByMessageAsync(
+        Guid messageId, CancellationToken ct = default)
+        => (await _messageFileReferences.ReadAllAsync(ct)).Where(r => r.MessageId == messageId).ToList();
+
+    public async Task<IReadOnlyList<SupraMessageFileReferenceRecord>> GetMessageFileReferencesByFileAsync(
+        Guid fileId, CancellationToken ct = default)
+        => (await _messageFileReferences.ReadAllAsync(ct)).Where(r => r.FileId == fileId).ToList();
+
+    public async Task<bool> IsFileReferencedAsync(Guid fileId, CancellationToken ct = default)
+        => (await _messageFileReferences.ReadAllAsync(ct)).Any(r => r.FileId == fileId);
+
+    public async Task ReplaceMessageFileReferencesAsync(
+        Guid messageId, Guid chatId, IReadOnlyList<Guid> fileIds, CancellationToken ct = default)
+    {
+        var list = await _messageFileReferences.ReadAllAsync(ct);
+        list.RemoveAll(r => r.MessageId == messageId);
+        foreach (var fileId in fileIds.Distinct())
+        {
+            list.Add(new SupraMessageFileReferenceRecord
+            {
+                MessageId = messageId,
+                ChatId = chatId,
+                FileId = fileId,
+            });
+        }
+        await _messageFileReferences.WriteAllAsync(list, ct);
+    }
+
+    public async Task DeleteMessageFileReferencesByMessageAsync(Guid messageId, CancellationToken ct = default)
+    {
+        var list = await _messageFileReferences.ReadAllAsync(ct);
+        list.RemoveAll(r => r.MessageId == messageId);
+        await _messageFileReferences.WriteAllAsync(list, ct);
+    }
+
+    public async Task ClearAllMessageFileReferencesAsync(CancellationToken ct = default)
+        => await _messageFileReferences.WriteAllAsync([], ct);
+
+    public async Task AddMessageFileReferencesAsync(
+        Guid messageId, Guid chatId, IReadOnlyList<Guid> fileIds, CancellationToken ct = default)
+    {
+        if (fileIds.Count == 0) return;
+        var list = await _messageFileReferences.ReadAllAsync(ct);
+        var existing = list.Where(r => r.MessageId == messageId).Select(r => r.FileId).ToHashSet();
+        foreach (var fileId in fileIds.Distinct())
+        {
+            if (existing.Contains(fileId)) continue;
+            list.Add(new SupraMessageFileReferenceRecord
+            {
+                MessageId = messageId,
+                ChatId = chatId,
+                FileId = fileId,
+            });
+        }
+        await _messageFileReferences.WriteAllAsync(list, ct);
     }
 
     public async Task<IReadOnlyList<SupraUserBlockRecord>> GetUserBlocksAsync(CancellationToken ct = default)
