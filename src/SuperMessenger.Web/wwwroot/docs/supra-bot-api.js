@@ -30,6 +30,15 @@
 			this.login = options.login;
 			this.token = options.token;
 			this._ws = null;
+			this._wsHandlers = null;
+			this._wsOptions = null;
+			this._wsManualClose = false;
+			this._wsReconnectTimer = null;
+			this._wsReconnectAttempt = 0;
+			this._wsLastInboxId = null;
+			this._wsSeenIds = new Set();
+			this._wsSyncing = false;
+			this._wsPendingMessages = [];
 		}
 
 		_authQuery() {
@@ -84,20 +93,108 @@
 			return this._request('getMessages', params || {}, 'GET');
 		}
 
-		/**
-		 * @param {{ onMessage?: Function, onConnected?: Function, onError?: Function, onClose?: Function }} handlers
-		 */
-		connectWebSocket(handlers) {
-			this.disconnectWebSocket();
+		_clearWsReconnectTimer() {
+			if (this._wsReconnectTimer) {
+				clearTimeout(this._wsReconnectTimer);
+				this._wsReconnectTimer = null;
+			}
+		}
+
+		_scheduleWsReconnect() {
+			if (this._wsManualClose || !this._wsOptions || !this._wsOptions.reconnect) return;
+			this._clearWsReconnectTimer();
+			const minDelay = this._wsOptions.reconnectMinDelay || 1000;
+			const maxDelay = this._wsOptions.reconnectMaxDelay || 30000;
+			const attempt = ++this._wsReconnectAttempt;
+			const delay = Math.min(maxDelay, minDelay * Math.pow(2, attempt - 1));
+			const handlers = this._wsHandlers;
+			if (handlers && handlers.onReconnect) handlers.onReconnect(attempt, delay);
+			this._wsReconnectTimer = setTimeout(() => {
+				this._wsReconnectTimer = null;
+				this._openWebSocket();
+			}, delay);
+		}
+
+		_noteInboxMessage(update) {
+			if (!update || !update.id) return;
+			this._wsLastInboxId = update.id;
+			this._wsSeenIds.add(update.id);
+		}
+
+		_deliverInboxMessage(update, envelope) {
+			const handlers = this._wsHandlers;
+			if (!handlers || !handlers.onMessage || !update) return;
+			if (update.id && this._wsSeenIds.has(update.id)) return;
+			this._noteInboxMessage(update);
+			handlers.onMessage(update, envelope);
+		}
+
+		_flushPendingWsMessages() {
+			const pending = this._wsPendingMessages;
+			this._wsPendingMessages = [];
+			for (const item of pending) {
+				this._deliverInboxMessage(item.update, item.envelope);
+			}
+		}
+
+		async _syncMissedMessages() {
+			const handlers = this._wsHandlers;
+			const options = this._wsOptions;
+			if (!options || !options.syncMissed || !handlers || !handlers.onMessage) return;
+			if (!this._wsLastInboxId) return;
+
+			this._wsSyncing = true;
+			if (handlers.onSyncStart) handlers.onSyncStart();
+			let synced = 0;
+			let afterId = this._wsLastInboxId;
+
+			try {
+				while (true) {
+					const r = await this.getMessages({ count: 100, afterMessageId: afterId });
+					const messages = (r && r.messages) || [];
+					if (!messages.length) break;
+					for (const update of messages) {
+						if (update && update.id && !this._wsSeenIds.has(update.id)) {
+							this._noteInboxMessage(update);
+							handlers.onMessage(update, { type: 'sync' });
+							synced++;
+						}
+						if (update && update.id) afterId = update.id;
+					}
+					if (messages.length < 100) break;
+				}
+			} catch (e) {
+				if (handlers.onSyncError) handlers.onSyncError(e);
+			} finally {
+				this._wsSyncing = false;
+				if (handlers.onSyncComplete) handlers.onSyncComplete(synced);
+				this._flushPendingWsMessages();
+			}
+		}
+
+		_openWebSocket() {
+			if (this._ws) {
+				try {
+					this._ws.onopen = null;
+					this._ws.onmessage = null;
+					this._ws.onerror = null;
+					this._ws.onclose = null;
+					this._ws.close();
+				} catch (_) {}
+				this._ws = null;
+			}
+
+			const handlers = this._wsHandlers;
 			const u = new URL(wsUrlFromBase(this.baseUrl));
 			u.searchParams.set('login', this.login);
 			u.searchParams.set('token', this.token);
 
 			const ws = new WebSocket(u.toString());
 			this._ws = ws;
+			let connectedHandled = false;
 
 			ws.onopen = () => {
-				if (handlers && handlers.onConnected) handlers.onConnected();
+				this._wsReconnectAttempt = 0;
 			};
 
 			ws.onmessage = (ev) => {
@@ -107,11 +204,22 @@
 				} catch {
 					return;
 				}
-				if (msg.type === 'message' && msg.update && handlers && handlers.onMessage) {
-					handlers.onMessage(msg.update, msg);
+
+				if (msg.type === 'connected') {
+					if (!connectedHandled) {
+						connectedHandled = true;
+						if (handlers && handlers.onConnected) handlers.onConnected(msg);
+						this._syncMissedMessages();
+					}
+					return;
 				}
-				if (msg.type === 'connected' && handlers && handlers.onConnected) {
-					handlers.onConnected(msg);
+
+				if (msg.type === 'message' && msg.update) {
+					if (this._wsSyncing) {
+						this._wsPendingMessages.push({ update: msg.update, envelope: msg });
+						return;
+					}
+					this._deliverInboxMessage(msg.update, msg);
 				}
 			};
 
@@ -122,14 +230,64 @@
 			ws.onclose = (e) => {
 				if (handlers && handlers.onClose) handlers.onClose(e);
 				if (this._ws === ws) this._ws = null;
+				if (!this._wsManualClose) this._scheduleWsReconnect();
 			};
+		}
 
-			return ws;
+		/**
+		 * @param {{
+		 *   onMessage?: Function,
+		 *   onConnected?: Function,
+		 *   onError?: Function,
+		 *   onClose?: Function,
+		 *   onReconnect?: Function,
+		 *   onSyncStart?: Function,
+		 *   onSyncComplete?: Function,
+		 *   onSyncError?: Function
+		 * }} handlers
+		 * @param {{
+		 *   reconnect?: boolean,
+		 *   reconnectMinDelay?: number,
+		 *   reconnectMaxDelay?: number,
+		 *   syncMissed?: boolean,
+		 *   lastInboxId?: string|null
+		 * }} [options]
+		 */
+		connectWebSocket(handlers, options) {
+			this.disconnectWebSocket();
+			this._wsManualClose = false;
+			this._wsHandlers = handlers || {};
+			this._wsOptions = Object.assign({
+				reconnect: true,
+				reconnectMinDelay: 1000,
+				reconnectMaxDelay: 30000,
+				syncMissed: true,
+			}, options || {});
+
+			if (this._wsOptions.lastInboxId) {
+				this._wsLastInboxId = this._wsOptions.lastInboxId;
+				this._wsSeenIds.add(this._wsOptions.lastInboxId);
+			} else {
+				this._wsLastInboxId = null;
+				this._wsSeenIds = new Set();
+			}
+
+			this._wsReconnectAttempt = 0;
+			this._wsSyncing = false;
+			this._wsPendingMessages = [];
+			this._openWebSocket();
+			return this._ws;
 		}
 
 		disconnectWebSocket() {
+			this._wsManualClose = true;
+			this._clearWsReconnectTimer();
 			if (this._ws) {
 				try {
+					this._ws.onopen = null;
+					this._ws.onmessage = null;
+					this._ws.onerror = null;
+					this._ws.onclose = null;
 					this._ws.close();
 				} catch (_) {}
 				this._ws = null;
@@ -140,6 +298,11 @@
 			if (this._ws && this._ws.readyState === WebSocket.OPEN) {
 				this._ws.send(JSON.stringify({ action: 'ping' }));
 			}
+		}
+
+		/** Последний обработанный inbox-id (для сохранения между перезапусками). */
+		getLastInboxId() {
+			return this._wsLastInboxId;
 		}
 	}
 

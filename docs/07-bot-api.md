@@ -170,6 +170,27 @@ wss://host/ws/bot?login=mybot_bot&token=...
 { "action": "ping" }
 ```
 
+### Переподключение и пропущенные сообщения
+
+Клиент [`supra-bot-api.js`](../src/SuperMessenger.Web/wwwroot/docs/supra-bot-api.js) по умолчанию:
+
+- **автоматически переподключается** при разрыве WebSocket (экспоненциальная задержка 1–30 с);
+- после реконнекта вызывает **`getMessages` с `afterMessageId`** и передаёт пропущенные сообщения в тот же `onMessage`.
+
+Опции `connectWebSocket(handlers, options)`:
+
+| Опция | По умолчанию | Описание |
+|-------|--------------|----------|
+| `reconnect` | `true` | Автопереподключение |
+| `reconnectMinDelay` | `1000` | Начальная задержка (мс) |
+| `reconnectMaxDelay` | `30000` | Максимальная задержка (мс) |
+| `syncMissed` | `true` | Догрузка inbox после реконнекта |
+| `lastInboxId` | — | Последний обработанный inbox-id (для перезапуска процесса) |
+
+Колбэки: `onReconnect(attempt, delayMs)`, `onSyncStart()`, `onSyncComplete(count)`, `onSyncError(err)`.
+
+Для сохранения позиции между перезапусками бота используйте `api.getLastInboxId()` после обработки сообщений и передайте значение в `lastInboxId` при следующем `connectWebSocket`.
+
 ## JavaScript-клиент
 
 Файл [`/docs/supra-bot-api.js`](../src/SuperMessenger.Web/wwwroot/docs/supra-bot-api.js) — обёртка для браузера и Node (fetch + WebSocket).
@@ -184,9 +205,18 @@ const api = new SupraBotApi({
 await api.sendMessage({ userLogin: 'ivan', text: 'Hello' });
 const { messages } = await api.getMessages({ count: 20 });
 
+function handleMessage(update) {
+  console.log('Message:', update);
+}
+
 api.connectWebSocket({
-  onMessage: (update) => console.log('New:', update),
+  onMessage: handleMessage,
   onConnected: () => console.log('WS ready'),
+  onSyncComplete: (n) => console.log('Missed while offline:', n),
+}, {
+  reconnect: true,      // автопереподключение (по умолчанию true)
+  syncMissed: true,     // getMessages(afterMessageId) после реконнекта
+  lastInboxId: null,    // последний обработанный inbox-id (для перезапуска процесса)
 });
 ```
 
