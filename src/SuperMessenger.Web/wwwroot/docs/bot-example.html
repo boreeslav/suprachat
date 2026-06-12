@@ -41,7 +41,7 @@
 	<div class="panel">
 		<label for="script">JavaScript (обработчик бота)</label>
 		<textarea id="script"></textarea>
-		<p class="hint">Доступны: <code>api</code> (SupraBotApi), <code>log(...)</code>. По умолчанию — подписка на WS и лог входящих.</p>
+		<p class="hint">Доступны: <code>api</code> (SupraBotApi), <code>log(...)</code>. По умолчанию — WS с автопереподключением и догрузкой пропущенных через <code>getMessages</code>.</p>
 		<button type="button" id="run">Запустить</button>
 		<button type="button" id="stop" class="danger">Остановить</button>
 		<button type="button" id="fetchHistory" class="secondary">getMessages</button>
@@ -55,7 +55,7 @@
 
 	<script src="supra-bot-api.js"></script>
 	<script>
-		const DEFAULT_SCRIPT = `// Подписка на новые сообщения через WebSocket
+		const OLD_DEFAULT_SCRIPT = `// Подписка на новые сообщения через WebSocket
 api.connectWebSocket({
   onConnected: () => log('WebSocket: connected'),
   onMessage: (update) => {
@@ -70,6 +70,28 @@ api.connectWebSocket({
 });
 
 log('Скрипт запущен. Ожидание сообщений…');`;
+
+		const DEFAULT_SCRIPT = `// Общий обработчик: live WS, пропущенные при реконнекте и getMessages
+function handleMessage(update) {
+  log('Сообщение от ' + update.senderLogin + ': ' + update.text);
+  // Пример автоответа в личку:
+  // if (update.chatType === 'direct') {
+  //   api.sendMessage({ userLogin: update.senderLogin, text: 'Получил: ' + update.text });
+  // }
+}
+
+// reconnect + syncMissed включены по умолчанию в SupraBotApi
+api.connectWebSocket({
+  onConnected: () => log('WebSocket: подключён'),
+  onMessage: handleMessage,
+  onSyncStart: () => log('Догрузка пропущенных сообщений…'),
+  onSyncComplete: (n) => { if (n) log('Пропущено за offline: ' + n); },
+  onReconnect: (attempt, delayMs) => log('Переподключение #' + attempt + ' через ' + delayMs + ' мс'),
+  onError: () => log('WebSocket: ошибка'),
+  onClose: () => log('WebSocket: разрыв соединения'),
+});
+
+log('Бот запущен. Ожидание сообщений…');`;
 
 		const STORAGE_KEY = 'supermessenger.bot-example';
 		const logEl = document.getElementById('log');
@@ -96,10 +118,15 @@ log('Скрипт запущен. Ожидание сообщений…');`;
 			} catch (_) { /* quota / private mode */ }
 		}
 
+		function isOldDefaultScript(script) {
+			return typeof script === 'string' && script.trim() === OLD_DEFAULT_SCRIPT.trim();
+		}
+
 		const stored = loadStored();
 		loginEl.value = stored?.login || '';
 		tokenEl.value = stored?.token || '';
-		scriptEl.value = stored?.script || DEFAULT_SCRIPT;
+		const savedScript = stored?.script;
+		scriptEl.value = savedScript && !isOldDefaultScript(savedScript) ? savedScript : DEFAULT_SCRIPT;
 
 		[loginEl, tokenEl].forEach((el) => {
 			el.addEventListener('focus', () => { el.readOnly = false; }, { once: true });

@@ -12035,10 +12035,8 @@ class MessengerUtils {
 		if (Number.isNaN(d.getTime())) return this.#i18n.t('lastSeenNever');
 		return `${this.#i18n.t('lastSeen')}: ${this.formatListTime(d)}`;
 	}
-	static getDirectChatHeaderSub(chat, presence, i18n, utils, live = true, connState = null) {
-		if (!chat || chat.type !== 'direct') return null;
-		if (connState === 'connecting') return i18n.t('connectingToServer');
-		if (!live) return null;
+	static getDirectChatHeaderSub(chat, presence, i18n, utils, live = true) {
+		if (!chat || chat.type !== 'direct' || !live) return null;
 		const p = presence || 'offline';
 		if (p === 'online' || p === 'idle') {
 			const status = (chat.contactStatusText || '').trim();
@@ -15481,18 +15479,16 @@ class MessengerAppView {
 			const presence = this.#presence?.get(chat.contactUserId);
 			if (presence === 'online' || presence === 'idle') return;
 			if (!chat.contactLastSeenAt) return;
-			this.#refreshDirectChatHeaderSub(chat);
+			this.#refreshActiveChatHeaderSub(chat);
 		}, 60000);
 	}
 
 	setConnectionStateManager(mgr) {
 		this.#connectionStateMgr = mgr;
 		this.#sidebar.setConnectionStateManager(mgr);
-		mgr?.subscribe((state) => {
+		mgr?.subscribe(() => {
 			this.#refreshActiveChatHeader();
-			if (this.#activeChat?.type === 'direct') {
-				this.#refreshDirectChatHeaderSub(this.#activeChat);
-			}
+			this.#refreshActiveChatHeaderSub();
 		});
 	}
 
@@ -15532,7 +15528,7 @@ class MessengerAppView {
 			)
 			: this.#avatarBuilder.build(chat.id, chat.name || '', chat.avatar || null, 32);
 		old.replaceWith(next);
-		this.#refreshDirectChatHeaderSub(chat);
+		this.#refreshActiveChatHeaderSub(chat);
 	}
 	render(container) {
 		container.innerHTML = '';
@@ -16336,12 +16332,12 @@ class MessengerAppView {
 					avatar: meta.avatar ?? this.#activeChat.avatar,
 				});
 			}
-			this.#panelFactory.refreshBotHeaderSub(
+			this.#panelFactory.refreshChatHeaderSub(
 				this.#activeState?.chatId === chat.id
 					? this.#activeState
 					: this.#panelPool.get(chat.id)?.state,
 				chat,
-				meta,
+				{ botMeta: meta },
 			);
 			return meta;
 		} catch (e) {
@@ -16608,6 +16604,7 @@ class MessengerAppView {
 		this.#activeState = entry.state;
 		this.el.empty.hidden = true;
 		this.#refreshActiveChatHeader();
+		this.#refreshActiveChatHeaderSub(chat);
 		if (!entry.state.firstLoadDone) {
 			if (chat.deepLinkMessageId) {
 				entry.state.pendingAnchorMessageId = chat.deepLinkMessageId;
@@ -16648,6 +16645,7 @@ class MessengerAppView {
 				if (!state) return;
 				state.channelMeta = fresh;
 				this.#panelFactory.syncChannelComposer(state);
+				this.#panelFactory.refreshChatHeaderSub(state, chat, { channelMeta: fresh });
 			};
 			if (typeof navigator === 'undefined' || navigator.onLine !== false) {
 				const fresh = await this.#refreshChannelMetaFromServer(chat).catch(() => null);
@@ -16668,7 +16666,7 @@ class MessengerAppView {
 						: this.#panelPool.get(chat.id)?.state;
 					if (state) {
 						state.botMeta = { ...state.botMeta, ...fresh };
-						this.#panelFactory.refreshBotHeaderSub(state, chat, state.botMeta);
+						this.#panelFactory.refreshChatHeaderSub(state, chat, { botMeta: state.botMeta });
 					}
 				});
 			}
@@ -17298,7 +17296,7 @@ class MessengerAppView {
 							: this.#panelPool.get(chat.id)?.state;
 						if (state) {
 							state.botMeta = { ...(state.botMeta || {}), description: meta.description };
-							this.#panelFactory.refreshBotHeaderSub(state, chat, state.botMeta);
+							this.#panelFactory.refreshChatHeaderSub(state, chat, { botMeta: state.botMeta });
 						}
 					}
 				}
@@ -17634,21 +17632,12 @@ class MessengerAppView {
 		for (const { state } of this.#panelPool.values()) patchState(state);
 	}
 
-	#refreshDirectChatHeaderSub(chat) {
-		if (!chat || chat.type !== 'direct' || this.#activeState?.chatId !== chat.id) return;
-		if (isBotContact(chat)) {
-			this.#panelFactory.refreshBotHeaderSub(this.#activeState, chat, this.#activeState?.botMeta);
-			return;
-		}
-		const subEl = this.#activeState.el?.querySelector('.mc-header-sub');
-		if (!subEl || subEl.classList.contains('mc-header-sub--typing')) return;
-		const canShow = this.#canShowContactPresence();
-		const presence = canShow && chat.contactUserId ? this.#presence?.get(chat.contactUserId) : null;
-		const text = MessengerUtils.getDirectChatHeaderSub(
-			chat, presence, this.#i18n, this.#utils, canShow,
-			this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING
-		);
-		subEl.textContent = text ?? (this.#i18n.t('typeLabels')?.direct || '');
+	#refreshActiveChatHeaderSub(chat = this.#activeChat) {
+		if (!chat || this.#activeState?.chatId !== chat.id) return;
+		this.#panelFactory.refreshChatHeaderSub(this.#activeState, chat, {
+			botMeta: this.#activeState?.botMeta,
+			channelMeta: this.#activeState?.channelMeta,
+		});
 	}
 
 	updateChatMeta(chatId, { name, avatar, contactStatusText, requiresCustomGroupPassword } = {}) {
@@ -17678,7 +17667,7 @@ class MessengerAppView {
 			const headerName = this.#activeState.el?.querySelector('.mc-header-name');
 			if (headerName && name != null) headerName.textContent = name;
 			if (contactStatusText !== undefined && this.#activeChat?.type === 'direct') {
-				this.#refreshDirectChatHeaderSub(this.#activeChat);
+				this.#refreshActiveChatHeaderSub(this.#activeChat);
 			}
 			if (avatar !== undefined) {
 				const info = this.#activeState.el?.querySelector('.mc-header-info');
@@ -22392,19 +22381,94 @@ class MessengerChatPanel {
 	}
 
 	#restoreDirectHeaderSub(state, chat) {
+		this.refreshChatHeaderSub(state, chat, { botMeta: state?.botMeta, channelMeta: state?.channelMeta });
+	}
+
+	#ensureChatHeaderSubElement(state, chat) {
+		const nameWrap = state.el?.querySelector('.mc-header-name-wrap');
+		if (!nameWrap) return null;
+		const isChannelOrBot = isChannelType(chat.type) || isBotContact(chat);
+		if (isChannelOrBot) {
+			let el = nameWrap.querySelector('.mc-header-channel-desc');
+			if (!el) {
+				el = this.#utils.mk('div', 'mc-header-sub mc-header-channel-desc');
+				nameWrap.appendChild(el);
+			}
+			return el;
+		}
+		return nameWrap.querySelector('.mc-header-sub-row .mc-header-sub')
+			|| nameWrap.querySelector('.mc-header-sub:not(.mc-header-channel-desc)');
+	}
+
+	#resolveChatHeaderSubText(state, chat, { botMeta, channelMeta } = {}) {
 		if (isBotContact(chat)) {
-			this.refreshBotHeaderSub(state, chat, state?.botMeta);
+			return formatBotHeaderDescription(
+				getBotChatDescription(chat, botMeta ?? state?.botMeta)
+			) || null;
+		}
+		if (isChannelType(chat.type)) {
+			const meta = channelMeta ?? state?.channelMeta;
+			return formatChannelHeaderDescription(meta?.description || '') || null;
+		}
+		if (chat.type === 'direct') {
+			const canShow = this.#canShowContactPresence();
+			const presence = canShow && chat.contactUserId ? this.#presence?.get(chat.contactUserId) : null;
+			return MessengerUtils.getDirectChatHeaderSub(
+				chat, presence, this.#i18n, this.#utils, canShow
+			) ?? (this.#i18n.t('typeLabels')?.direct || '');
+		}
+		return this.#i18n.t('typeLabels')[chat.type] || '';
+	}
+
+	refreshChatHeaderSub(state, chat, { botMeta, channelMeta } = {}) {
+		if (!state?.el || !chat) return;
+
+		const connState = this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING;
+		const isDirect = chat.type === 'direct' && !isBotContact(chat);
+		const isChannelOrBot = isChannelType(chat.type) || isBotContact(chat);
+		const nameWrap = state.el.querySelector('.mc-header-name-wrap');
+		if (!nameWrap) return;
+
+		if (connState !== MessengerConnectionStateManager.STATE_CONNECTING && isDirect) {
+			const subEl = nameWrap.querySelector('.mc-header-sub-row .mc-header-sub');
+			if (subEl?.classList.contains('mc-header-sub--typing')) return;
+		}
+
+		if (connState === MessengerConnectionStateManager.STATE_CONNECTING) {
+			const subEl = this.#ensureChatHeaderSubElement(state, chat);
+			if (!subEl) return;
+			subEl.classList.remove('mc-header-sub--typing');
+			subEl.textContent = this.#i18n.t('connectingToServer');
 			return;
 		}
-		const subEl = state?.el?.querySelector('.mc-header-sub');
-		if (!subEl || chat?.type !== 'direct') return;
+
+		const text = this.#resolveChatHeaderSubText(state, chat, { botMeta, channelMeta });
+
+		if (isChannelOrBot) {
+			let descEl = nameWrap.querySelector('.mc-header-channel-desc');
+			if (!text) {
+				descEl?.remove();
+				return;
+			}
+			if (!descEl) {
+				descEl = this.#utils.mk('div', 'mc-header-sub mc-header-channel-desc');
+				nameWrap.appendChild(descEl);
+			}
+			descEl.textContent = text;
+			if (isBotContact(chat) && state._composerChat) {
+				state._composerChat = {
+					...state._composerChat,
+					botDescription: (botMeta ?? state?.botMeta)?.description ?? state._composerChat.botDescription,
+				};
+			}
+			return;
+		}
+
+		const subEl = nameWrap.querySelector('.mc-header-sub-row .mc-header-sub')
+			|| nameWrap.querySelector('.mc-header-sub:not(.mc-header-channel-desc)');
+		if (!subEl) return;
 		subEl.classList.remove('mc-header-sub--typing');
-		const canShow = this.#canShowContactPresence();
-		const presence = canShow && chat.contactUserId ? this.#presence?.get(chat.contactUserId) : null;
-		subEl.textContent = MessengerUtils.getDirectChatHeaderSub(
-			chat, presence, this.#i18n, this.#utils, canShow,
-			this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING
-		) ?? (this.#i18n.t('typeLabels')?.direct || '');
+		subEl.textContent = text ?? '';
 	}
 
 	#applyChatActivityUi(state, activityBar, activities, chat) {
@@ -22432,26 +22496,7 @@ class MessengerChatPanel {
 	}
 
 	refreshBotHeaderSub(state, chat, botMeta) {
-		if (!state?.isBotChat || !state.el || !chat) return;
-		const desc = formatBotHeaderDescription(getBotChatDescription(chat, botMeta));
-		const nameWrap = state.el.querySelector('.mc-header-name-wrap');
-		if (!nameWrap) return;
-		let descEl = nameWrap.querySelector('.mc-header-channel-desc');
-		if (!desc) {
-			descEl?.remove();
-			return;
-		}
-		if (!descEl) {
-			descEl = this.#utils.mk('div', 'mc-header-sub mc-header-channel-desc');
-			nameWrap.appendChild(descEl);
-		}
-		descEl.textContent = desc;
-		if (state._composerChat) {
-			state._composerChat = {
-				...state._composerChat,
-				botDescription: botMeta?.description ?? state._composerChat.botDescription,
-			};
-		}
+		this.refreshChatHeaderSub(state, chat, { botMeta });
 	}
 
 	syncChannelComposer(state) {
@@ -22919,8 +22964,7 @@ class MessengerChatPanel {
 			const subEl = this.#utils.mk('div', 'mc-header-sub');
 			if (chat.type === 'direct') {
 				const subText = MessengerUtils.getDirectChatHeaderSub(
-					chat, avatarPresence, this.#i18n, this.#utils, canShow,
-					this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING
+					chat, avatarPresence, this.#i18n, this.#utils, canShow
 				);
 				subEl.textContent = subText ?? (this.#i18n.t('typeLabels')[chat.type] || '');
 			} else {
@@ -23139,6 +23183,7 @@ class MessengerChatPanel {
 			_composerFileOptions: fileOptions,
 		};
 		panelState = state;
+		this.refreshChatHeaderSub(state, chat, { botMeta, channelMeta });
 		if (isGroupChat && !state.groupCanModerate) {
 			void this.#resolveGroupCanDeleteForEveryone(state);
 		}
@@ -25563,7 +25608,21 @@ class MessengerChatView {
 	hasRenderedMessages() {
 		return this.#firstLoadDone || this.#renderedIds.size > 0;
 	}
-	setConnectionStateManager(mgr) { this.#connectionStateMgr = mgr; }
+	setConnectionStateManager(mgr) {
+		this.#connectionStateMgr = mgr;
+		mgr?.subscribe(() => this.#refreshEmbeddedHeaderSub());
+	}
+
+	#refreshEmbeddedHeaderSub() {
+		const subEl = this.el.headerSub;
+		if (!subEl || !this.#chatMeta) return;
+		const connState = this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING;
+		if (connState === MessengerConnectionStateManager.STATE_CONNECTING) {
+			subEl.textContent = this.#i18n.t('connectingToServer');
+			return;
+		}
+		subEl.textContent = this.#i18n.t('typeLabels')[this.#chatMeta.type] || '';
+	}
 
 	markReadIfEngaged() {
 		const chatId = this.#chatMeta?.id;
@@ -26337,7 +26396,10 @@ class MessengerChatView {
 		const nameEl = this.#utils.mk('div', 'mc-header-name');
 		nameEl.textContent = this.#chatMeta.name;
 		const subEl = this.#utils.mk('div', 'mc-header-sub');
-		subEl.textContent = this.#i18n.t('typeLabels')[this.#chatMeta.type] || '';
+		const connState = this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING;
+		subEl.textContent = connState === MessengerConnectionStateManager.STATE_CONNECTING
+			? this.#i18n.t('connectingToServer')
+			: (this.#i18n.t('typeLabels')[this.#chatMeta.type] || '');
 		const activityBar = this.#msgRenderer.buildActivityBar();
 		this.#activityTracker = new MessengerActivityTracker(activities => {
 			this.#msgRenderer.updateActivityBar(activityBar, activities, this.#i18n);
@@ -26355,7 +26417,7 @@ class MessengerChatView {
 		dropdown.closeSubmenus = () => {};
 		dotsBtn.addEventListener('click', e => { e.stopPropagation(); this.#toggleMenu(dropdown); });
 		menuWrap.append(dotsBtn, dropdown);
-		Object.assign(this.el, { menu: dropdown });
+		Object.assign(this.el, { menu: dropdown, headerSub: subEl });
 		header.append(info, menuWrap);
 		return header;
 	}
