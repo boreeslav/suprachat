@@ -2491,13 +2491,12 @@ class MobileBottomSheetMenu {
 		};
 
 		const runItem = (action) => {
+			pendingAction = action;
 			if (navHandle) {
-				pendingAction = action;
-				navHandle.close(true);
+				navHandle.closeImmediate();
 				return;
 			}
 			teardown();
-			action?.();
 		};
 
 		const close = requestClose;
@@ -2898,7 +2897,13 @@ const MessengerNavHistory = (() => {
 			popLayerImmediate(layer, false);
 		},
 		closeImmediate() {
+			if (!layer || layers.indexOf(layer) < 0) return;
+			const closedDepth = layer.depth;
 			popLayerImmediate(layer, false);
+			if (isActive() && readDepth(history.state) === closedDepth) {
+				const top = layers[layers.length - 1];
+				history.replaceState(navState(top?.kind ?? 'root', depth, top?.meta ?? {}), '');
+			}
 		},
 	});
 

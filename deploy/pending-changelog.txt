@@ -1,2 +1,2 @@
 # Changelog items before deploy (one per line). Lines starting with # are ignored.
-
+Исправлено удаление на Android PWA: пункты нижнего меню закрывают sheet сразу (closeImmediate), без ожидания history.back.
