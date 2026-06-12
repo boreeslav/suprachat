@@ -12035,8 +12035,10 @@ class MessengerUtils {
 		if (Number.isNaN(d.getTime())) return this.#i18n.t('lastSeenNever');
 		return `${this.#i18n.t('lastSeen')}: ${this.formatListTime(d)}`;
 	}
-	static getDirectChatHeaderSub(chat, presence, i18n, utils, live = true) {
-		if (!chat || chat.type !== 'direct' || !live) return null;
+	static getDirectChatHeaderSub(chat, presence, i18n, utils, live = true, connState = null) {
+		if (!chat || chat.type !== 'direct') return null;
+		if (connState === 'connecting') return i18n.t('connectingToServer');
+		if (!live) return null;
 		const p = presence || 'offline';
 		if (p === 'online' || p === 'idle') {
 			const status = (chat.contactStatusText || '').trim();
@@ -14035,6 +14037,7 @@ class MessengerSidebar {
 				});
 			}
 		});
+		this.#renderUserStatus();
 		return sidebar;
 	}
 
@@ -17642,7 +17645,8 @@ class MessengerAppView {
 		const canShow = this.#canShowContactPresence();
 		const presence = canShow && chat.contactUserId ? this.#presence?.get(chat.contactUserId) : null;
 		const text = MessengerUtils.getDirectChatHeaderSub(
-			chat, presence, this.#i18n, this.#utils, canShow
+			chat, presence, this.#i18n, this.#utils, canShow,
+			this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING
 		);
 		subEl.textContent = text ?? (this.#i18n.t('typeLabels')?.direct || '');
 	}
@@ -22398,7 +22402,8 @@ class MessengerChatPanel {
 		const canShow = this.#canShowContactPresence();
 		const presence = canShow && chat.contactUserId ? this.#presence?.get(chat.contactUserId) : null;
 		subEl.textContent = MessengerUtils.getDirectChatHeaderSub(
-			chat, presence, this.#i18n, this.#utils, canShow
+			chat, presence, this.#i18n, this.#utils, canShow,
+			this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING
 		) ?? (this.#i18n.t('typeLabels')?.direct || '');
 	}
 
@@ -22914,7 +22919,8 @@ class MessengerChatPanel {
 			const subEl = this.#utils.mk('div', 'mc-header-sub');
 			if (chat.type === 'direct') {
 				const subText = MessengerUtils.getDirectChatHeaderSub(
-					chat, avatarPresence, this.#i18n, this.#utils, canShow
+					chat, avatarPresence, this.#i18n, this.#utils, canShow,
+					this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING
 				);
 				subEl.textContent = subText ?? (this.#i18n.t('typeLabels')[chat.type] || '');
 			} else {
