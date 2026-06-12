@@ -4474,15 +4474,22 @@ body.mapp-scroll-lock .mapp-bottom-sheet {
 	box-shadow: 0 4px 16px rgba(0, 0, 0, .18);
 }
 
+.mapp-sheet-grab {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 10px 16px 6px;
+	touch-action: none;
+	cursor: grab;
+}
+
 .mapp-sheet-handle {
 	width: 40px;
 	height: 4px;
 	border-radius: 2px;
 	background: rgba(128, 128, 128, .45);
-	margin: 10px auto 6px;
 	flex-shrink: 0;
-	touch-action: none;
-	cursor: grab;
 }
 
 .mapp-sheet-header {

@@ -22,6 +22,7 @@ public sealed class FileDataStore : IDataStore
     private readonly JsonFileCollectionStore<LoginChangeRecord> _loginChanges;
     private readonly JsonFileCollectionStore<BotRecord> _bots;
     private readonly JsonFileCollectionStore<BotEngagementRecord> _botEngagements;
+    private readonly JsonFileCollectionStore<BotInboxMessageRecord> _botInbox;
 
     public FileDataStore(string dataRoot)
     {
@@ -43,6 +44,7 @@ public sealed class FileDataStore : IDataStore
         _loginChanges = new(Path.Combine(dataRoot, "login-changes.json"));
         _bots = new(Path.Combine(dataRoot, "bots.json"));
         _botEngagements = new(Path.Combine(dataRoot, "bot-engagements.json"));
+        _botInbox = new(Path.Combine(dataRoot, "bot-inbox.json"));
     }
 
     public async Task<IReadOnlyList<UserRecord>> GetUsersAsync(CancellationToken ct = default)
@@ -571,5 +573,24 @@ public sealed class FileDataStore : IDataStore
             return;
         list.Add(engagement);
         await _botEngagements.WriteAllAsync(list, ct);
+    }
+
+    public async Task<IReadOnlyList<BotInboxMessageRecord>> GetBotInboxMessagesAsync(
+        Guid botUserId, CancellationToken ct = default)
+        => (await _botInbox.ReadAllAsync(ct)).Where(m => m.BotUserId == botUserId).ToList();
+
+    public async Task SaveBotInboxMessageAsync(BotInboxMessageRecord message, CancellationToken ct = default)
+    {
+        var list = await _botInbox.ReadAllAsync(ct);
+        list.Add(message);
+        await _botInbox.WriteAllAsync(list, ct);
+    }
+
+    public async Task DeleteBotInboxMessagesOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default)
+    {
+        var list = await _botInbox.ReadAllAsync(ct);
+        var kept = list.Where(m => m.CreatedOn >= cutoffUtc).ToList();
+        if (kept.Count == list.Count) return;
+        await _botInbox.WriteAllAsync(kept, ct);
     }
 }

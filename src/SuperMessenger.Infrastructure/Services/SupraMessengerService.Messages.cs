@@ -78,7 +78,7 @@ public sealed partial class SupraMessengerService
         };
     }
 
-    static bool IsEncryptedPayload(string? text) =>
+    public static bool IsEncryptedPayload(string? text) =>
         !string.IsNullOrEmpty(text) && text.StartsWith("E1:", StringComparison.Ordinal);
 
     async Task<(Guid? replyId, string? replySender, string? replyPreview)> ResolveReplyAsync(
@@ -585,7 +585,14 @@ public sealed partial class SupraMessengerService
             {
                 var chat = await _store.GetChatByIdAsync(chatGuid, ct);
                 if (!await CanDeleteMessageForEveryoneAsync(user.Id, chat, message.SenderUserId, ct))
-                    return (new SupraDeleteMessageResponse { success = false, error = "Недостаточно прав для удаления у всех" }, null, false);
+                {
+                    await _store.SaveMessageUserDeletionAsync(new SupraMessageUserDeletionRecord
+                    {
+                        MessageId = msgGuid,
+                        UserId = user.Id,
+                    }, ct);
+                    return (new SupraDeleteMessageResponse { success = true }, null, true);
+                }
 
                 message.DeletedForEveryone = true;
                 message.Text = "";
