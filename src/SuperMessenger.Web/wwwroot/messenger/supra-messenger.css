@@ -5772,22 +5772,22 @@ body.mapp-scroll-lock .mapp-root {
 	-moz-user-select: none;
 }
 
-.mapp-root *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::selection,
-.mapp-modal *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::selection,
-.mc-panel-window *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::selection,
-.mapp-modal-overlay *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::selection,
-.mapp-sheet-overlay *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::selection,
-.mapp-root .mc-root *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::selection {
+.mapp-root *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input):not(input):not(textarea):not([contenteditable="true"])::selection,
+.mapp-modal *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input):not(input):not(textarea):not([contenteditable="true"])::selection,
+.mc-panel-window *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input):not(input):not(textarea):not([contenteditable="true"])::selection,
+.mapp-modal-overlay *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input):not(input):not(textarea):not([contenteditable="true"])::selection,
+.mapp-sheet-overlay *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input):not(input):not(textarea):not([contenteditable="true"])::selection,
+.mapp-root .mc-root *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input):not(input):not(textarea):not([contenteditable="true"])::selection {
 	background: transparent;
 	color: inherit;
 }
 
-.mapp-root *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::-moz-selection,
-.mapp-modal *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::-moz-selection,
-.mc-panel-window *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::-moz-selection,
-.mapp-modal-overlay *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::-moz-selection,
-.mapp-sheet-overlay *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::-moz-selection,
-.mapp-root .mc-root *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input)::-moz-selection {
+.mapp-root *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input):not(input):not(textarea):not([contenteditable="true"])::-moz-selection,
+.mapp-modal *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input):not(input):not(textarea):not([contenteditable="true"])::-moz-selection,
+.mc-panel-window *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input):not(input):not(textarea):not([contenteditable="true"])::-moz-selection,
+.mapp-modal-overlay *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input):not(input):not(textarea):not([contenteditable="true"])::-moz-selection,
+.mapp-sheet-overlay *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input):not(input):not(textarea):not([contenteditable="true"])::-moz-selection,
+.mapp-root .mc-root *:not(.mc-msg-text):not(.mapp-selectable-text):not(.mc-input-field):not(.mapp-profile-status-input):not(input):not(textarea):not([contenteditable="true"])::-moz-selection {
 	background: transparent;
 	color: inherit;
 }
