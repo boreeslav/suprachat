@@ -170,12 +170,14 @@ public sealed partial class SupraMessengerService
                     continue;
                 }
 
+                var attachmentFileIds = ParseGuidList(item.attachmentFileIds);
                 var (sendResp, payload) = await SendMessageAsync(
                     user,
                     targetChatGuid.ToString(),
                     item.text,
                     forwardedFromSenderName: item.forwardedFromSenderName,
                     encryptionTier: item.encryptionTier,
+                    attachmentFileIds: attachmentFileIds.Count > 0 ? attachmentFileIds : null,
                     ct: ct);
 
                 if (sendResp.success && payload != null)
@@ -330,5 +332,17 @@ public sealed partial class SupraMessengerService
         {
             return (new SupraBatchResponse { success = false, error = ex.Message }, sideEffects);
         }
+    }
+
+    static List<Guid> ParseGuidList(IEnumerable<string>? ids)
+    {
+        var result = new List<Guid>();
+        if (ids == null) return result;
+        foreach (var id in ids)
+        {
+            if (Guid.TryParse(id, out var guid))
+                result.Add(guid);
+        }
+        return result;
     }
 }

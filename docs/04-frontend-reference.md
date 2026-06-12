@@ -128,14 +128,34 @@ SVG-иконки как HTML-строки: `pencil`, `back`, `dots`, `send`, `ch
 
 ---
 
-## MessengerSettingsModal
+## MessengerNavigation
 
-Меню настроек (тема, кеш, папки, выход).
+Единый стек навигации (history ≤1199px). Alias: `MessengerNavHistory`.
 
 | Метод | Описание |
 |-------|----------|
-| `open(targetRootEl)` | |
-| `close()` | |
+| `init({ onShowChatList })` | Инициализация |
+| `isActive()` / `isHistoryActive()` | `innerWidth ≤ 1199` |
+| `pushChat(chatId)` | Слой чата (mobile fullscreen) |
+| `pushOverlay(onPop, meta)` | Модалки, подэкраны |
+| `pushEphemeral(onPop, meta)` | Sheet, viewer, selection |
+| `dismissTop({ reason })` | Закрыть верхний слой |
+| `getStackSnapshot()` | Снимок стека (отладка) |
+| `logNav(event, extra)` | Запись в `MessengerNavDebugLog` (sessionStorage, без UI) |
+
+---
+
+## MessengerDialog
+
+Модальные confirm/alert.
+
+| Статический метод | Описание |
+|-------------------|----------|
+| `confirm(options)` | Promise boolean |
+| `confirmWithCheckbox(options)` | Promise `{ confirmed, checked }` |
+| `alert(options)` | Promise void |
+
+Типы: `TYPE_INFO`, `TYPE_WARNING`, `TYPE_DANGER`, `TYPE_SUCCESS`.
 
 ---
 
@@ -266,7 +286,7 @@ SVG-иконки как HTML-строки: `pencil`, `back`, `dots`, `send`, `ch
 | `formatDateSeparator(date, i18n)` | |
 | `static isMobile()` | `<= 680px` |
 | `static initViewport(rootEl)` | safe-area / visualViewport |
-| `static hideBottomNavigationBar()` / `show...` | Terrasoft mobile shell |
+| `static hideBottomNavigationBar()` / `show...` | SupraHost mobile shell (`UI.hideBottomNavigationBar`) |
 
 ---
 
@@ -304,7 +324,6 @@ IndexedDB кеш сообщений и файлов.
 | `updateUser(user)` | Имя, аватар, **статус** |
 | `setUserStatus(text)` | Обновить статус в шапке |
 | `setOnFilter(fn)` | |
-| `startSearch(chat, i18n)` / `#exitSearch` | Поиск в чате |
 | `loadFolders` / `renderFoldersBar` | Папки |
 | `openArchiveFolder()` | |
 | `setThemeManager(mgr)` | |
@@ -513,7 +532,7 @@ new Messenger(selector, mode, options)
 
 ## file-uploader.js
 
-Terrasoft-совместимый загрузчик (используется при интеграции; в standalone — через `MessengerFileHandler` + `/api/files/upload`).
+Supra-совместимый загрузчик (используется при интеграции; в standalone — через `MessengerFileHandler` + `/api/files/upload`).
 
 ---
 

@@ -235,14 +235,6 @@ class MessengerI18n {
 			useThemeChatBgDisabledHint: 'Отключено администратором',
 			foldersTab: 'Папки',
 			aboutAppTab: 'О приложении',
-			debugLogButton: 'Отладка',
-			debugLogTitle: 'Журнал отладки',
-			debugLogCopy: 'Скопировать',
-			debugLogClear: 'Очистить',
-			debugLogClose: 'Закрыть',
-			debugLogEmpty: 'Записей пока нет',
-			debugLogCopied: 'Скопировано',
-			pushDebugAutoOpened: 'Push не доставлен — см. журнал отладки',
 			helpTab: 'Помощь',
 			changelogTitle: 'История изменений',
 			contentEmpty: 'Текст не задан',
@@ -732,14 +724,6 @@ class MessengerI18n {
 			useThemeChatBgDisabledHint: 'Disabled by administrator',
 			foldersTab: 'Folders',
 			aboutAppTab: 'About',
-			debugLogButton: 'Debug',
-			debugLogTitle: 'Debug log',
-			debugLogCopy: 'Copy',
-			debugLogClear: 'Clear',
-			debugLogClose: 'Close',
-			debugLogEmpty: 'No entries yet',
-			debugLogCopied: 'Copied',
-			pushDebugAutoOpened: 'Push not delivered — see debug log',
 			helpTab: 'Help',
 			changelogTitle: 'Changelog',
 			contentEmpty: 'No content configured',
@@ -2214,6 +2198,31 @@ function unlockAppScroll() {
 	document.body.classList.remove('mapp-scroll-lock');
 }
 
+/** Блокирует ghost click/tap после снятия overlay (Android). */
+function messengerSwallowGhostPointer(ms = 450) {
+	const until = Date.now() + ms;
+	const block = (e) => {
+		if (Date.now() > until) {
+			cleanup();
+			return;
+		}
+		e.preventDefault();
+		e.stopPropagation();
+		e.stopImmediatePropagation?.();
+	};
+	const cleanup = () => {
+		document.removeEventListener('pointerup', block, true);
+		document.removeEventListener('mouseup', block, true);
+		document.removeEventListener('click', block, true);
+		document.removeEventListener('touchend', block, true);
+	};
+	document.addEventListener('pointerup', block, true);
+	document.addEventListener('mouseup', block, true);
+	document.addEventListener('click', block, true);
+	document.addEventListener('touchend', block, true);
+	setTimeout(cleanup, ms + 50);
+}
+
 function attachMenuDismiss(menuEl, onDismiss) {
 	let removeListeners = () => {};
 	const dismiss = (e) => {
@@ -2370,6 +2379,33 @@ class MobileBottomSheetMenu {
 		let navHandle = null;
 		let pendingAction = null;
 
+		const popSheetUiLevel = () => {
+			if (stack.length > 1) {
+				stack.pop();
+				render();
+			}
+		};
+
+		const pushSubmenuNav = (label) => {
+			MessengerNavigation.pushEphemeral(() => {
+				popSheetUiLevel();
+			}, {
+				overlayKind: 'sheet-submenu',
+				sheetTitle: label,
+			});
+		};
+
+		const dismissSheetSubmenus = () => {
+			let guard = 24;
+			while (stack.length > 1 && guard-- > 0) {
+				if (!MessengerNavigation.dismissTop({ fromUser: false, reason: 'sheet-close-cascade' })) {
+					while (stack.length > 1) stack.pop();
+					render();
+					break;
+				}
+			}
+		};
+
 		const render = () => {
 			const level = stack[stack.length - 1];
 			sheet.replaceChildren();
@@ -2391,8 +2427,9 @@ class MobileBottomSheetMenu {
 				backBtn.title = i18n?.t('back') || 'Back';
 				backBtn.setAttribute('aria-label', backBtn.title);
 				backBtn.addEventListener('click', () => {
-					stack.pop();
-					render();
+					if (stack.length > 1) {
+						MessengerNavigation.dismissTop({ fromUser: true, reason: 'sheet-ui-back' });
+					}
 				});
 				header.appendChild(backBtn);
 			}
@@ -2454,6 +2491,7 @@ class MobileBottomSheetMenu {
 				row.addEventListener('click', () => {
 					if (itemDef.children?.length) {
 						stack.push({ title: itemDef.label, items: itemDef.children });
+						pushSubmenuNav(itemDef.label);
 						render();
 						return;
 					}
@@ -2472,17 +2510,41 @@ class MobileBottomSheetMenu {
 		const teardown = () => {
 			removeDismiss();
 			removeDismiss = () => {};
+			dismissSheetSubmenus();
+			overlay.classList.add('mapp-sheet-overlay--closing');
+			overlay.style.pointerEvents = 'none';
 			unlockAppScroll();
 			overlay.remove();
 			MobileBottomSheetMenu.#active = null;
 			navHandle = null;
 			const after = pendingAction;
 			pendingAction = null;
+			MessengerNavigation.logNav('sheet-teardown');
+			messengerSwallowGhostPointer();
 			onClose?.();
 			if (after) { try { after(); } catch (_) {} }
 		};
 
+		const blockOverlayPointer = (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			e.stopImmediatePropagation();
+		};
+
+		const dismissOverlayNow = () => {
+			if (!overlay.isConnected) return;
+			overlay.classList.add('mapp-sheet-overlay--closing');
+			overlay.style.pointerEvents = 'none';
+			dismissSheetSubmenus();
+			if (navHandle) {
+				navHandle.closeImmediate();
+			} else {
+				teardown();
+			}
+		};
+
 		const requestClose = () => {
+			dismissSheetSubmenus();
 			if (navHandle) {
 				navHandle.close(true);
 				return;
@@ -2491,12 +2553,18 @@ class MobileBottomSheetMenu {
 		};
 
 		const runItem = (action) => {
-			pendingAction = action;
+			const act = typeof action === 'function' ? action : null;
+			dismissSheetSubmenus();
 			if (navHandle) {
 				navHandle.closeImmediate();
-				return;
+			} else {
+				teardown();
 			}
-			teardown();
+			if (act) {
+				requestAnimationFrame(() => {
+					try { act(); } catch (_) {}
+				});
+			}
 		};
 
 		const close = requestClose;
@@ -2505,20 +2573,56 @@ class MobileBottomSheetMenu {
 		lockAppScroll();
 		overlay.appendChild(sheet);
 		document.body.appendChild(overlay);
-		navHandle = MessengerNavHistory.pushEphemeral(() => teardown(), { overlayKind: 'sheet-menu' });
+		navHandle = MessengerNavigation.pushEphemeral(() => teardown(), { overlayKind: 'sheet-menu' });
+		MessengerNavigation.logNav('sheet-open', { title, itemCount: items.length });
 		render();
 		requestAnimationFrame(() => {
 			sheet.style.transform = '';
 			sheet.style.transition = '';
 		});
 
+		overlay.addEventListener('pointerdown', (e) => {
+			if (e.target === overlay) blockOverlayPointer(e);
+		}, true);
 		overlay.addEventListener('click', (e) => {
 			if (e.target === overlay) {
-				e.preventDefault();
-				e.stopPropagation();
-				requestClose();
+				blockOverlayPointer(e);
+				dismissOverlayNow();
 			}
 		}, true);
+
+		let overlayDragStartY = 0;
+		let overlayDragY = 0;
+		let overlayDragging = false;
+		overlay.addEventListener('touchstart', (e) => {
+			if (e.target !== overlay || e.touches.length !== 1) return;
+			overlayDragStartY = e.touches[0].clientY;
+			overlayDragY = 0;
+			overlayDragging = true;
+		}, { passive: true });
+		overlay.addEventListener('touchmove', (e) => {
+			if (!overlayDragging || e.touches.length !== 1) return;
+			const delta = e.touches[0].clientY - overlayDragStartY;
+			if (delta <= 0) {
+				overlayDragY = 0;
+				return;
+			}
+			overlayDragY = delta;
+			if (overlayDragY > 8) e.preventDefault();
+		}, { passive: false });
+		overlay.addEventListener('touchend', (e) => {
+			if (!overlayDragging) return;
+			overlayDragging = false;
+			if (overlayDragY > 72) {
+				blockOverlayPointer(e);
+				dismissOverlayNow();
+			}
+			overlayDragY = 0;
+		}, { passive: false });
+		overlay.addEventListener('touchcancel', () => {
+			overlayDragging = false;
+			overlayDragY = 0;
+		}, { passive: true });
 
 		removeDismiss = attachMenuDismiss(sheet, close);
 
@@ -2823,6 +2927,23 @@ function fillTypingIndicator(el, i18n) {
 	el.append(dots, text);
 }
 
+function applyChatListPreviewEl(previewEl, previewInfo, i18n) {
+	if (!previewEl || !previewInfo) return;
+	previewEl.classList.toggle('mapp-chat-item-preview--typing', !!previewInfo.typing);
+	previewEl.classList.toggle('mapp-chat-item-preview--locked', !!previewInfo.locked && !previewInfo.typing);
+	previewEl.classList.toggle('mapp-chat-item-preview--media', !!previewInfo.media);
+	previewEl.replaceChildren();
+	if (previewInfo.typing) {
+		fillTypingIndicator(previewEl, i18n);
+		return;
+	}
+	if (previewInfo.mediaContent) {
+		previewEl.appendChild(previewInfo.mediaContent);
+		return;
+	}
+	previewEl.textContent = previewInfo.text || '';
+}
+
 function isChatNotificationMuted(chatId) {
 	const push = typeof globalThis !== 'undefined' ? globalThis.SupraPush : null;
 	if (!push?.shouldNotify) return false;
@@ -2856,20 +2977,105 @@ function getBotChatDescription(chat, botMeta) {
 
 let activeProfileAvatarClose = null;
 
+/** Порог history.pushState — совпадает с bottom sheet (≤1199). */
+const MESSENGER_NAV_HISTORY_MAX_WIDTH = 1199;
+
 /**
- * Единый стек навигации (мобильный): список чатов (0) → чат (1) → оверлеи (2+).
- * Слои хранятся в памяти — history.state после popstate уже «ниже», поэтому
- * нельзя опираться только на state для проверки открытых оверлеев.
+ * Журнал навигации (sessionStorage). Запись через logNav; UI отключён.
  */
-const MessengerNavHistory = (() => {
+const MessengerNavDebugLog = (() => {
+	const STORAGE_KEY = 'sm-nav-debug-log';
+	const MAX_ENTRIES = 800;
+
+	const load = () => {
+		try {
+			const raw = sessionStorage.getItem(STORAGE_KEY);
+			if (!raw) return [];
+			const parsed = JSON.parse(raw);
+			return Array.isArray(parsed) ? parsed : [];
+		} catch {
+			return [];
+		}
+	};
+
+	let entries = load();
+
+	const persist = () => {
+		try {
+			sessionStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+		} catch { /* ignore */ }
+	};
+
+	const append = (event, detail = {}) => {
+		const entry = {
+			ts: Date.now(),
+			ms: Math.round(performance.now()),
+			event: String(event),
+			...detail,
+		};
+		entries.push(entry);
+		if (entries.length > MAX_ENTRIES) entries.splice(0, entries.length - MAX_ENTRIES);
+		persist();
+		return entry;
+	};
+
+	return {
+		append,
+		dump: () => entries.slice(),
+		clear() {
+			entries = [];
+			try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+		},
+		formatText() {
+			const build = (document.querySelector('meta[name="sm-build"]') || {}).content || '';
+			const lines = [
+				'Navigation log',
+				'build: ' + build,
+				'path: ' + (window.location?.pathname || ''),
+				'viewport: ' + window.innerWidth + 'x' + window.innerHeight,
+				'---',
+			];
+			if (!entries.length) {
+				lines.push('(empty)');
+				return lines.join('\n');
+			}
+			for (const e of entries) {
+				const iso = new Date(e.ts).toISOString();
+				let line = iso + '\t+' + e.ms + 'ms\t' + e.event;
+				const skip = new Set(['ts', 'ms', 'event']);
+				const extra = {};
+				for (const k of Object.keys(e)) {
+					if (!skip.has(k)) extra[k] = e[k];
+				}
+				if (Object.keys(extra).length) {
+					try { line += '\t' + JSON.stringify(extra); } catch (_) { /* ignore */ }
+				}
+				lines.push(line);
+			}
+			return lines.join('\n');
+		},
+	};
+})();
+
+/**
+ * Единый стек навигации: список чатов → чат → оверлеи.
+ * History (pushState) на viewport ≤1199; desktop ≥1200 — in-memory + Esc.
+ */
+const MessengerNavigation = (() => {
 	let depth = 0;
-	/** @type {{ depth: number, kind: string, onPop: Function|null, meta?: object }[]} */
+	/** @type {{ id: string, depth: number, kind: string, onPop: Function|null, meta?: object }[]} */
 	const layers = [];
+	let layerSeq = 0;
 	let onShowChatList = null;
 	let leaveSyncPending = false;
 	let popConsumed = false;
+	let historySyncSuppress = 0;
+	let navPushCount = 0;
+	let recoverDeferUntil = 0;
+	let escBound = false;
 
-	const isActive = () => typeof MessengerUtils !== 'undefined' && MessengerUtils.isMobile();
+	const isHistoryActive = () => window.innerWidth <= MESSENGER_NAV_HISTORY_MAX_WIDTH;
+	const isActive = isHistoryActive;
 
 	const navState = (kind, d, meta = {}) => ({ mappNav: { depth: d, kind, ...meta } });
 
@@ -2878,51 +3084,144 @@ const MessengerNavHistory = (() => {
 		return typeof d === 'number' ? d : 0;
 	};
 
-	const popLayerImmediate = (layer, fromPopstate) => {
+	const logNav = (event, extra = {}) => {
+		const top = layers[layers.length - 1];
+		MessengerNavDebugLog.append(event, {
+			stackDepth: layers.length,
+			historyDepth: depth,
+			topKind: top?.kind ?? null,
+			topId: top?.id ?? null,
+			historyActive: isHistoryActive(),
+			...extra,
+		});
+	};
+
+	const popLayerImmediate = (layer, fromPopstate, reason = 'programmatic') => {
 		const idx = layers.indexOf(layer);
 		if (idx < 0) return;
 		const removed = layers.splice(idx);
 		depth = idx > 0 ? layers[idx - 1].depth : 0;
+		logNav('pop-immediate', {
+			reason,
+			fromPopstate: !!fromPopstate,
+			removedIds: removed.map(l => l.id),
+			removedKinds: removed.map(l => l.kind),
+		});
 		for (let i = removed.length - 1; i >= 0; i--) {
 			try { removed[i].onPop?.(i === 0 ? fromPopstate : true); } catch (_) {}
 		}
 	};
 
+	const deferRecoverFromPopstate = (ms) => {
+		recoverDeferUntil = Math.max(recoverDeferUntil, Date.now() + ms);
+	};
+
+	const writeHistoryFromStack = () => {
+		if (!isHistoryActive()) return;
+		const top = layers[layers.length - 1];
+		if (top) {
+			depth = top.depth;
+			history.replaceState(navState(top.kind, top.depth, top.meta), '');
+		} else {
+			depth = 0;
+			history.replaceState(
+				navState('root', 0),
+				'',
+				window.location.pathname + window.location.search,
+			);
+		}
+		navPushCount = depth;
+		logNav('write-history-from-stack', { depth, stackDepth: layers.length });
+	};
+
+	const syncHistorySteps = (steps, reason = 'sync') => {
+		if (!isHistoryActive() || steps <= 0) return;
+		logNav('history-sync-deprecated', { steps, reason });
+		writeHistoryFromStack();
+	};
+
+	const bindEscDispatcher = () => {
+		if (escBound) return;
+		escBound = true;
+		document.addEventListener('keydown', (e) => {
+			if (e.key !== 'Escape') return;
+			if (!layers.length) return;
+			const top = layers[layers.length - 1];
+			if (top?.meta?.escHandledLocally) return;
+			const dismissed = api.dismissTop({ fromUser: true, reason: 'escape' });
+			if (dismissed) {
+				e.preventDefault();
+				e.stopPropagation();
+			}
+		}, true);
+	};
+
 	const makeHandle = (layer) => ({
 		close(fromUser = true) {
 			if (!layer || layers.indexOf(layer) < 0) return;
-			if (fromUser && isActive() && history.state?.mappNav?.depth === layer.depth) {
+			logNav('close', { layerId: layer.id, fromUser: !!fromUser });
+			if (fromUser && isHistoryActive() && history.state?.mappNav?.depth === layer.depth) {
+				deferRecoverFromPopstate(400);
 				try { history.back(); return; } catch (_) {}
 			}
-			popLayerImmediate(layer, false);
+			popLayerImmediate(layer, false, fromUser ? 'user-close' : 'programmatic');
+			writeHistoryFromStack();
 		},
 		closeImmediate() {
 			if (!layer || layers.indexOf(layer) < 0) return;
-			const closedDepth = layer.depth;
-			popLayerImmediate(layer, false);
-			if (isActive() && readDepth(history.state) === closedDepth) {
-				const top = layers[layers.length - 1];
-				history.replaceState(navState(top?.kind ?? 'root', depth, top?.meta ?? {}), '');
-			}
+			logNav('close-immediate', { layerId: layer.id });
+			popLayerImmediate(layer, false, 'close-immediate');
+			writeHistoryFromStack();
 		},
 	});
 
 	const registerLayer = (kind, onPop, meta = {}) => {
-		if (!isActive()) return null;
+		bindEscDispatcher();
+		const id = meta.id || (kind + '-' + (++layerSeq));
+		const layerMeta = { ...meta, id };
+		if (!isHistoryActive()) {
+			const layer = { id, depth: 0, kind, onPop, meta: layerMeta };
+			layers.push(layer);
+			logNav('push-desktop', { layerId: id, kind, meta: layerMeta });
+			return {
+				close(fromUser = true) {
+					if (layers.indexOf(layer) < 0) return;
+					logNav('close-desktop', { layerId: id, fromUser: !!fromUser });
+					popLayerImmediate(layer, false, 'desktop-close');
+				},
+				closeImmediate() {
+					if (layers.indexOf(layer) < 0) return;
+					logNav('close-immediate-desktop', { layerId: id });
+					popLayerImmediate(layer, false, 'desktop-close-immediate');
+				},
+			};
+		}
 		const newDepth = depth + 1;
-		const layer = { depth: newDepth, kind, onPop, meta };
+		const layer = { id, depth: newDepth, kind, onPop, meta: layerMeta };
 		layers.push(layer);
 		depth = newDepth;
-		history.pushState(navState(kind, newDepth, meta), '');
-		return layer;
+		history.pushState(navState(kind, newDepth, layerMeta), '');
+		navPushCount++;
+		logNav('push', { layerId: id, kind, depth: newDepth, meta: layerMeta });
+		return makeHandle(layer);
 	};
 
-	return {
+	const api = {
 		init(callbacks = {}) {
 			onShowChatList = callbacks.onShowChatList || null;
+			logNav('init', { historyMaxWidth: MESSENGER_NAV_HISTORY_MAX_WIDTH });
 		},
 		isActive,
+		isHistoryActive,
 		getDepth: () => depth,
+		getStackSnapshot() {
+			return layers.map(l => ({
+				id: l.id,
+				kind: l.kind,
+				depth: l.depth,
+				meta: { ...l.meta },
+			}));
+		},
 		consumePopstate() {
 			popConsumed = true;
 			setTimeout(() => { popConsumed = false; }, 0);
@@ -2934,84 +3233,198 @@ const MessengerNavHistory = (() => {
 			return layers.length > chatIdx + 1;
 		},
 		hasOverlayLayers() {
-			return layers.some(l => l.kind === 'overlay' || l.kind === 'ephemeral');
+			return layers.some(l =>
+				l.kind === 'overlay' || l.kind === 'ephemeral' ||
+				l.kind === 'modal' || l.kind === 'sheet' || l.kind === 'viewer' || l.kind === 'tool');
 		},
 		pushRootGuard() {
-			if (!isActive()) return;
+			if (!isHistoryActive()) return;
 			if (depth > 0) return;
 			if (history.state?.mappNav?.kind === 'root') return;
 			layers.length = 0;
 			depth = 0;
 			history.pushState(navState('root', 0), '');
+			navPushCount++;
+			logNav('push-root-guard');
 		},
 		trapRootBack() {
-			if (!isActive()) return false;
+			if (!isHistoryActive()) return false;
 			this.pushRootGuard();
 			this.consumePopstate();
+			logNav('trap-root-back');
 			return true;
 		},
 		pushChat(chatId) {
-			if (!isActive()) return null;
+			if (!isHistoryActive()) return null;
 			const existing = layers.find(l => l.kind === 'chat');
 			if (existing) {
 				existing.meta = { ...existing.meta, chatId };
+				logNav('push-chat-update', { chatId });
 				return existing;
 			}
 			return registerLayer('chat', (fromPopstate) => {
 				if (fromPopstate) onShowChatList?.();
-			}, { chatId });
+			}, { chatId, overlayKind: 'chat-screen' });
 		},
 		pushLayer(kind, onPop, meta = {}) {
-			if (!isActive()) {
-				if (onPop) messengerRegisterOverlay(() => onPop(true));
-				return {
-					close: () => onPop?.(false),
-					closeImmediate: () => onPop?.(false),
-				};
-			}
-			const layer = registerLayer(kind, onPop, meta);
-			return makeHandle(layer);
+			return registerLayer(kind, onPop, meta);
 		},
 		pushOverlay(onPop, meta = {}) {
-			return this.pushLayer('overlay', onPop, meta);
+			return registerLayer('overlay', onPop, { ...meta, overlayKind: meta.overlayKind || 'overlay' });
 		},
 		pushEphemeral(onPop, meta = {}) {
-			return this.pushLayer('ephemeral', onPop, meta);
+			return registerLayer('ephemeral', onPop, { ...meta, overlayKind: meta.overlayKind || 'ephemeral' });
+		},
+		push(opts = {}) {
+			const kind = opts.kind || 'modal';
+			return registerLayer(kind, opts.onDismiss || opts.onPop || null, opts.meta || opts);
+		},
+		dismissTop({ fromUser = true, reason = 'back' } = {}) {
+			if (!layers.length) {
+				logNav('dismiss-top-empty', { reason });
+				return false;
+			}
+			const top = layers[layers.length - 1];
+			logNav('dismiss-top', { reason, layerId: top.id, kind: top.kind, fromUser });
+			if (fromUser && isHistoryActive() && top.depth > 0 &&
+				history.state?.mappNav?.depth === top.depth) {
+				deferRecoverFromPopstate(400);
+				try { history.back(); return true; } catch (_) {}
+			}
+			popLayerImmediate(top, false, reason);
+			writeHistoryFromStack();
+			return true;
 		},
 		back() {
-			if (!isActive() || depth <= 0) return false;
+			logNav('back-request');
+			if (!isHistoryActive() || depth <= 0) return api.dismissTop({ fromUser: true, reason: 'back' });
 			try { history.back(); return true; } catch (_) { return false; }
 		},
 		popToRoot() {
-			if (!isActive() || depth <= 0) return;
-			leaveSyncPending = true;
-			try { history.go(-depth); } catch (_) { leaveSyncPending = false; }
+			if (!isHistoryActive() || depth <= 0) return;
+			this.closeTransientLayersImmediate();
+			if (depth <= 0) return;
+			const chatLayer = layers.find(l => l.kind === 'chat');
+			if (chatLayer) {
+				popLayerImmediate(chatLayer, false, 'pop-to-root');
+				writeHistoryFromStack();
+			}
+			logNav('pop-to-root', { depth: 0 });
 		},
 		isLeaveSyncPending: () => leaveSyncPending,
 		clearLeaveSyncPending() { leaveSyncPending = false; },
+		closeTransientLayersImmediate() {
+			if (!layers.length) return;
+			let removed = 0;
+			while (layers.length > 0) {
+				const top = layers[layers.length - 1];
+				if (top.kind === 'chat' || top.kind === 'root') break;
+				if (top.kind !== 'overlay' && top.kind !== 'ephemeral' &&
+					top.kind !== 'modal' && top.kind !== 'sheet' && top.kind !== 'viewer' &&
+					top.kind !== 'tool' && top.kind !== 'panel' && top.kind !== 'inline') break;
+				popLayerImmediate(top, false, 'close-transient');
+				removed++;
+			}
+			if (removed > 0) writeHistoryFromStack();
+			else logNav('close-transient-none');
+		},
+		forceResetToRoot() {
+			logNav('force-reset-to-root', { navPushCount, stackDepth: layers.length });
+			layers.length = 0;
+			depth = 0;
+			navPushCount = 0;
+			leaveSyncPending = false;
+			if (isHistoryActive()) {
+				history.replaceState(
+					navState('root', 0),
+					'',
+					window.location.pathname + window.location.search,
+				);
+			}
+		},
 		resetToRoot(url) {
 			layers.length = 0;
 			depth = 0;
 			leaveSyncPending = false;
 			const path = url || (window.location.pathname + window.location.search);
-			history.replaceState(navState('root', 0), '', path);
+			if (isHistoryActive()) {
+				history.replaceState(navState('root', 0), '', path);
+			}
+			logNav('reset-to-root', { path });
 		},
 		handlePopstate(event) {
-			if (!isActive()) return false;
+			if (!isHistoryActive()) return false;
 			const newDepth = readDepth(event.state);
 			const oldDepth = depth;
-			if (newDepth >= oldDepth) return false;
-			while (layers.length > 0 && layers[layers.length - 1].depth > newDepth) {
-				const layer = layers.pop();
-				try { layer.onPop?.(true); } catch (_) {}
+			logNav('popstate', { newDepth, oldDepth, stateKind: event.state?.mappNav?.kind });
+
+			const dialogOverlays = document.querySelectorAll('.mc-dialog-overlay');
+			if (dialogOverlays.length > 0) {
+				const top = layers[layers.length - 1];
+				if (!messengerNavLayerIsDialog(top)) {
+					dialogOverlays[dialogOverlays.length - 1].remove();
+					writeHistoryFromStack();
+					this.consumePopstate();
+					logNav('popstate-orphan-dialog');
+					return true;
+				}
 			}
-			depth = newDepth;
-			if (newDepth <= 0) this.trapRootBack();
+
+			if (historySyncSuppress > 0) {
+				historySyncSuppress--;
+				writeHistoryFromStack();
+				this.consumePopstate();
+				return true;
+			}
+
+			if (newDepth >= oldDepth && layers.length === 0) return false;
+
+			// Лишний popstate без смены depth (trap-root, дубль после programmatic close).
+			if (newDepth >= oldDepth && layers.length > 0) {
+				writeHistoryFromStack();
+				this.consumePopstate();
+				logNav('popstate-skip-same-depth', { newDepth, oldDepth });
+				return true;
+			}
+
+			// Ровно один слой за одно нажатие «назад» (в т.ч. жест от края экрана).
+			if (layers.length > 0) {
+				const layer = layers.pop();
+				logNav('popstate-layer', { layerId: layer.id, kind: layer.kind, overlayKind: layer.meta?.overlayKind });
+				try { layer.onPop?.(true); } catch (_) {}
+				depth = layers.length ? layers[layers.length - 1].depth : 0;
+			} else {
+				depth = 0;
+			}
+
+			// Браузер мог уйти глубже одного шага — выравниваем URL без history.go (не выходим из PWA).
+			if (newDepth !== depth) {
+				writeHistoryFromStack();
+				logNav('popstate-resync', { browserDepth: newDepth, stackDepth: depth });
+			}
+
+			if (depth <= 0) {
+				depth = 0;
+				this.trapRootBack();
+			}
 			this.consumePopstate();
 			return true;
 		},
+		deferRecoverFromPopstate,
+		shouldDeferRecoverFromPopstate: () => Date.now() < recoverDeferUntil,
+		logNav,
 	};
+
+	return api;
 })();
+
+if (typeof window !== 'undefined') {
+	window.MessengerNavigation = MessengerNavigation;
+	window.MessengerNavDebugLog = MessengerNavDebugLog;
+}
+
+/** @deprecated Используйте MessengerNavigation */
+const MessengerNavHistory = MessengerNavigation;
 
 function messengerHistoryHasStackedOverlay() {
 	return MessengerNavHistory.hasOverlayLayers();
@@ -3033,6 +3446,38 @@ function messengerPopstateWasConsumed() {
 	return MessengerNavHistory.popstateWasConsumed();
 }
 
+/** Модалки, bottom sheet, просмотр фото — всё, что должно закрыться раньше выхода из чата. */
+function messengerHasBlockingMobileOverlay() {
+	if (!MessengerUtils.isMobile()) return false;
+	if (MobileBottomSheetMenu.isOpen()) return true;
+	if (document.querySelector('.mc-img-viewer-overlay, .mc-img-viewer')) return true;
+	if (document.querySelector('.mapp-modal-overlay, .mc-dialog-overlay, .mapp-sheet-overlay, .mapp-qr-overlay, .mapp-camera-overlay, .mapp-avatar-crop-overlay, .mapp-folder-icon-picker-overlay')) return true;
+	if (MessengerNavigation.hasOverlayLayers()) return true;
+	return false;
+}
+
+/**
+ * Кнопка «Назад» в шапке чата (mobile): dismissTop по стеку, иначе — список чатов.
+ */
+function messengerHandleMobileBackFromChat(onNavigateBack) {
+	if (!MessengerUtils.isMobile()) {
+		onNavigateBack?.();
+		return;
+	}
+	MessengerNavigation.logNav('chat-header-back', { stack: MessengerNavigation.getStackSnapshot() });
+	if (MobileBottomSheetMenu.isOpen()) {
+		MobileBottomSheetMenu.close(true);
+		return;
+	}
+	if (MessengerMediaOverlays.dismissOnPopstate()) return;
+	if (MessengerNavigation.dismissTop({ fromUser: true, reason: 'back-button' })) return;
+	if (MessengerNavigation.hasLayersAboveChat()) {
+		MessengerNavigation.back();
+		return;
+	}
+	onNavigateBack?.();
+}
+
 /** Стек закрываемых оверлеев на десктопе (Esc и т.п.). */
 const messengerOverlayStack = [];
 function messengerRegisterOverlay(fn) { messengerOverlayStack.push(fn); }
@@ -3048,6 +3493,11 @@ function messengerCloseTopOverlayFromPopstate() {
 }
 
 function messengerMakeDismissable(dismiss, cancelValue, opts = {}) {
+	const navMeta = {
+		overlayKind: opts.overlayKind || 'dialog',
+		...opts,
+		escHandledLocally: true,
+	};
 	let active = true;
 	let pendingResult = cancelValue;
 	let navHandle = null;
@@ -3055,12 +3505,16 @@ function messengerMakeDismissable(dismiss, cancelValue, opts = {}) {
 		if (!active) return;
 		active = false;
 		messengerUnregisterOverlay(closer);
+		MessengerNavigation.logNav('dismissable-finish', {
+			fromPopstate: !!fromPopstate,
+			overlayKind: navMeta.overlayKind || null,
+		});
 		dismiss(result, fromPopstate);
 	};
 	const closer = () => finish(pendingResult, true);
 	const close = (result = cancelValue) => {
 		pendingResult = result;
-		if (MessengerNavHistory.isActive() && active && navHandle) {
+		if (active && navHandle) {
 			navHandle.closeImmediate();
 			return;
 		}
@@ -3071,14 +3525,34 @@ function messengerMakeDismissable(dismiss, cancelValue, opts = {}) {
 		if (navHandle?.closeImmediate) navHandle.closeImmediate();
 		else finish(result, false);
 	};
-	if (MessengerNavHistory.isActive()) {
-		navHandle = MessengerNavHistory.pushOverlay((fromPopstate) => {
-			finish(pendingResult, fromPopstate);
-		}, opts);
-	} else {
+	navHandle = MessengerNavigation.pushOverlay((fromPopstate) => {
+		finish(pendingResult, fromPopstate);
+	}, navMeta);
+	if (!navHandle) {
 		messengerRegisterOverlay(closer);
 	}
 	return close;
+}
+
+function messengerNavLayerIsDialog(layer) {
+	return !!layer && (
+		layer.meta?.escHandledLocally ||
+		layer.meta?.overlayKind === 'dialog' ||
+		layer.meta?.overlayKind === 'debug-log'
+	);
+}
+
+/** Закрыть верхний mc-dialog (стек nav или «сирота» без слоя). */
+function messengerTryDismissTopDialog() {
+	const dialogs = document.querySelectorAll('.mc-dialog-overlay');
+	if (!dialogs.length) return false;
+	const top = MessengerNavigation.getStackSnapshot().at(-1);
+	if (messengerNavLayerIsDialog(top)) {
+		return MessengerNavigation.dismissTop({ fromUser: true, reason: 'dialog-back' });
+	}
+	dialogs[dialogs.length - 1].remove();
+	MessengerNavigation.logNav('dialog-orphan-close');
+	return true;
 }
 
 function messengerHandleNavPopstate(event) {
@@ -4582,21 +5056,6 @@ function buildAboutSettingsPanel({ branding, i18n, themeManager }) {
 	versionLine.appendChild(versionBtn);
 	card.appendChild(versionLine);
 
-	const debugBtn = document.createElement('button');
-	debugBtn.type = 'button';
-	debugBtn.className = 'mapp-btn mapp-btn-secondary mapp-btn-block mapp-btn-settings-wide mapp-about-debug-btn';
-	debugBtn.textContent = i18n.t('debugLogButton');
-	debugBtn.addEventListener('click', () => {
-		if (window.AppBootLog?.openModal) {
-			window.AppBootLog.openModal({ themeManager, i18n });
-			return;
-		}
-		MessengerDialog.alert({
-			title: i18n.t('debugLogTitle'),
-			message: i18n.t('debugLogEmpty'),
-		});
-	});
-
 	const aboutTrim = formatAppBrandedHtml(branding?.aboutHtml || '', appName);
 	if (aboutTrim) {
 		const aboutEl = document.createElement('div');
@@ -4609,8 +5068,6 @@ function buildAboutSettingsPanel({ branding, i18n, themeManager }) {
 		emptyEl.textContent = i18n.t('contentEmpty');
 		card.appendChild(emptyEl);
 	}
-
-	card.appendChild(debugBtn);
 
 	scroll.appendChild(card);
 	return scroll;
@@ -5371,90 +5828,6 @@ function buildMessengerAppSettingsMenuItems({
 		},
 	);
 	return items;
-}
-
-class MessengerSettingsModal {
-	#utils;
-	#icons;
-	#i18n;
-	#themeManager;
-	#menuBuilder;
-	#api;
-	#onClearCache;
-	#onClearAll;
-	#onFoldersChanged;
-	#onOpenArchive;
-	#onCreateFolder;
-	#closeOverlay = null;
-
-	constructor(utils, icons, i18n, themeManager, menuBuilder, onClearCache, onClearAll, api = null, onFoldersChanged = null, onOpenArchive = null, onCreateFolder = null) {
-		this.#utils = utils;
-		this.#icons = icons;
-		this.#i18n = i18n;
-		this.#themeManager = themeManager;
-		this.#menuBuilder = menuBuilder;
-		this.#onClearCache = onClearCache;
-		this.#onClearAll = onClearAll;
-		this.#api = api;
-		this.#onFoldersChanged = onFoldersChanged;
-		this.#onOpenArchive = onOpenArchive;
-		this.#onCreateFolder = onCreateFolder;
-	}
-
-	open(targetRootEl) {
-		if (this.#closeOverlay) this.close();
-
-		let panelEl = null;
-		let menuEl = null;
-		const menuItems = buildMessengerAppSettingsMenuItems({
-			themeManager: this.#themeManager,
-			icons: this.#icons,
-			i18n: this.#i18n,
-			targetRootEl,
-			getPanelEl: () => panelEl,
-			getMenuEl: () => menuEl,
-			onClearCache: () => this.#onClearCache(),
-			onClearAll: () => this.#onClearAll(),
-		});
-
-		menuEl = this.#menuBuilder.buildMenu(menuItems, targetRootEl);
-		menuEl.classList.add('mapp-settings-action-menu');
-		const content = this.#utils.mk('div', 'mapp-settings-content');
-		const settingsMenuCard = mkUiCard(this.#i18n.t('appSettings'));
-		settingsMenuCard.appendChild(menuEl);
-		content.appendChild(settingsMenuCard);
-		if (this.#api) {
-			content.appendChild(buildFolderSettingsPanel({
-				utils: this.#utils,
-				icons: this.#icons,
-				i18n: this.#i18n,
-				api: this.#api,
-				themeManager: this.#themeManager,
-				onChanged: () => this.#onFoldersChanged?.(),
-				onOpenArchive: () => this.#onOpenArchive?.(),
-				onCreateFolder: () => this.#onCreateFolder?.(),
-			}));
-		}
-		panelEl = this.#menuBuilder.buildWindow(
-			this.#i18n.t('settings'),
-			content,
-			() => this.close()
-		);
-		panelEl.classList.add('mc-panel-window--settings');
-
-		this.#themeManager.applyChatVars(panelEl);
-		this.#themeManager.applyAppVars(panelEl);
-
-		this.#closeOverlay = this.#menuBuilder.openInOverlay(panelEl, '', { mobileFullscreen: true });
-	}
-
-	close() {
-		if (this.#closeOverlay) {
-			this.#closeOverlay();
-			this.#closeOverlay = null;
-		}
-		unlockAppScroll();
-	}
 }
 
 class MessengerUserProfileModal {
@@ -6831,6 +7204,7 @@ class MessengerUserProfileModal {
 			headerBackBtn.title = this.#i18n.t('back');
 			headerBackBtn.setAttribute('aria-label', this.#i18n.t('back'));
 			headerBackBtn.addEventListener('click', () => {
+				if (messengerTryDismissTopDialog()) return;
 				MessengerNavHistory.back();
 			});
 			return headerBackBtn;
@@ -9649,11 +10023,24 @@ class MessengerPhotoComposeModal {
 		sendBtn.title = i18n?.t('photoComposeSend') || 'Send';
 		sendBtn.innerHTML = icons?.send?.() || '→';
 
+		const cleanup = () => {
+			if (closed) return;
+			closed = true;
+			previewUrls.forEach(u => { if (u) URL.revokeObjectURL(u); });
+			unlockAppScroll();
+			overlay.remove();
+		};
+
+		const dismiss = messengerMakeDismissable(() => {
+			cleanup();
+			onCancel?.();
+		}, null);
+
 		const doSend = () => {
 			if (!files.length) return;
 			const captionText = caption.value.trim();
 			const snapshot = files.slice();
-			cleanup();
+			dismiss.immediate();
 			onSend?.(snapshot, captionText);
 		};
 
@@ -9669,14 +10056,6 @@ class MessengerPhotoComposeModal {
 		});
 		sendBtn.addEventListener('click', doSend);
 		inputArea.append(caption, sendBtn);
-
-		const cleanup = () => {
-			if (closed) return;
-			closed = true;
-			previewUrls.forEach(u => { if (u) URL.revokeObjectURL(u); });
-			unlockAppScroll();
-			overlay.remove();
-		};
 
 		const ensurePreview = (file, idx) => {
 			if (previewUrls[idx]) return;
@@ -9768,13 +10147,9 @@ class MessengerPhotoComposeModal {
 		overlay.appendChild(modal);
 		document.body.appendChild(overlay);
 
-		const dismiss = messengerMakeDismissable(() => {
-			cleanup();
-			onCancel?.();
-		}, null);
-		closeBtn.addEventListener('click', () => dismiss());
+		closeBtn.addEventListener('click', () => dismiss.immediate());
 		if (!overlay.classList.contains('mapp-modal-overlay--fullscreen')) {
-			overlay.addEventListener('click', (e) => { if (e.target === overlay) dismiss(); });
+			overlay.addEventListener('click', (e) => { if (e.target === overlay) dismiss.immediate(); });
 		}
 
 		requestAnimationFrame(() => caption.focus());
@@ -11090,6 +11465,19 @@ class MessengerCustomMessage {
 		return null;
 	}
 
+	static extractAttachmentFileIds(text) {
+		const parsed = MessengerCustomMessage.parse(text);
+		if (!parsed) return [];
+		if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.IMAGE
+			|| parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.FILE) {
+			return parsed.payload?.fileId ? [parsed.payload.fileId] : [];
+		}
+		if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+			return (parsed.payload?.fileIds || []).filter(Boolean);
+		}
+		return [];
+	}
+
 	static #normalizeForwardImageUrl(u) {
 		if (!u || u.startsWith('blob:') || u.startsWith('data:')) return u || '';
 		try {
@@ -11409,6 +11797,44 @@ class MessengerChatListPreview {
 			return { text: MessengerChatListPreview.lockedPreviewLabel(i18n), locked: true };
 		}
 		return { text: MessengerCustomMessage.toPreview(storedText), locked: false };
+	}
+
+	static buildMediaContent({ storedText, utils, cache }) {
+		if (!storedText || MessengerChatListPreview.isLockedStorage(storedText)) return null;
+		const parsed = MessengerCustomMessage.parse(storedText);
+		if (!parsed) return null;
+		let fileIds = [];
+		let caption = '';
+		if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.IMAGE) {
+			if (!parsed.payload?.fileId) return null;
+			fileIds = [parsed.payload.fileId];
+		} else if (parsed.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+			fileIds = (parsed.payload?.fileIds || []).filter(Boolean);
+			caption = (parsed.payload?.caption || '').trim();
+			if (!fileIds.length) return null;
+		} else {
+			return null;
+		}
+		const frag = document.createDocumentFragment();
+		const thumbs = utils.mk('span', 'mapp-chat-item-preview-thumbs');
+		const thumbMax = 48;
+		for (const fileId of fileIds) {
+			const slot = utils.mk('span', 'mapp-chat-item-preview-thumb-slot mc-image-slot mc-image-slot--pending');
+			const img = document.createElement('img');
+			img.className = 'mapp-chat-item-preview-thumb mc-image-slot--pending';
+			img.alt = '';
+			const url = MessengerFileService.getFileUrl(fileId);
+			if (cache) cache.applyThumbnailSrc(img, url, null, thumbMax);
+			slot.appendChild(img);
+			thumbs.appendChild(slot);
+		}
+		frag.appendChild(thumbs);
+		if (caption) {
+			const capEl = utils.mk('span', 'mapp-chat-item-preview-caption');
+			capEl.textContent = caption;
+			frag.appendChild(capEl);
+		}
+		return frag;
 	}
 }
 
@@ -11781,8 +12207,7 @@ class MessengerImageViewer {
 					});
 					return;
 				}
-				MessengerImageViewer.requestClose();
-				host.forward(msg, url);
+				MessengerImageViewer.closeForAction(() => host.forward(msg, url));
 			});
 		}
 
@@ -11913,10 +12338,23 @@ class MessengerImageViewer {
 		}, { passive: true });
 	}
 
+	static closeForAction(callback) {
+		const navHandle = MessengerImageViewer.#navHandle;
+		MessengerImageViewer.close(false);
+		if (navHandle) {
+			navHandle.closeImmediate();
+		}
+		if (typeof callback === 'function') {
+			try { callback(); } catch (_) {}
+		}
+	}
+
 	static requestClose() {
 		if (!MessengerImageViewer.#overlay) return;
 		if (MessengerImageViewer.#navHandle) {
-			MessengerImageViewer.#navHandle.close(true);
+			MessengerImageViewer.#navHandle.closeImmediate();
+			MessengerImageViewer.#navHandle = null;
+			MessengerImageViewer.close(false);
 			return;
 		}
 		MessengerImageViewer.close(false);
@@ -13798,7 +14236,6 @@ class MessengerSidebar {
 	#archiveFolderId = null;
 	#allChatsRef = [];
 	#activeFolderId = null;
-	#searchMode = null; // { chat } or null
 	#allChats = [];
 	#lastActiveChat = null;
 	#lastI18n = null;
@@ -13920,7 +14357,6 @@ class MessengerSidebar {
 		newChatBtn.innerHTML = this.#icons.pencil();
 		newChatBtn.title = this.#i18n.t('newChat');
 		newChatBtn.addEventListener('click', () => {
-			if (this.#searchMode) this.#exitSearch();
 			onNewChat();
 		});
 
@@ -13937,16 +14373,12 @@ class MessengerSidebar {
 		searchClearBtn.hidden = true;
 		searchClearBtn.title = this.#i18n.t('cancel');
 		searchClearBtn.addEventListener('click', () => {
-			if (this.#searchMode) {
-				this.#exitSearch();
-			} else {
-				searchInput.value = '';
-				searchClearBtn.hidden = true;
-				searchInput.placeholder = this.#i18n.t('searchChats');
-				this.el._filterQuery = '';
-				this.el._onFilter && this.el._onFilter('');
-				this.#collapseSearch();
-			}
+			searchInput.value = '';
+			searchClearBtn.hidden = true;
+			searchInput.placeholder = this.#i18n.t('searchChats');
+			this.el._filterQuery = '';
+			this.el._onFilter && this.el._onFilter('');
+			this.#collapseSearch();
 		});
 		searchWrap.append(searchInput, searchClearBtn);
 
@@ -14012,7 +14444,7 @@ class MessengerSidebar {
 
 		searchInput.addEventListener('input', () => {
 			const q = searchInput.value.trim();
-			searchClearBtn.hidden = !(q || this.#searchMode);
+			searchClearBtn.hidden = !q;
 			const qLower = q.toLowerCase();
 			this.el._filterQuery = qLower.length >= MessengerSidebar.MIN_SEARCH_LEN ? qLower : '';
 			this.el._onFilter && this.el._onFilter(this.el._filterQuery);
@@ -14191,7 +14623,6 @@ class MessengerSidebar {
 
 	#useFolderCarousel() {
 		return this.#isFolderSwipeLayout() &&
-			!this.#searchMode &&
 			this.#folderNavIds().length > 1;
 	}
 
@@ -14480,7 +14911,7 @@ class MessengerSidebar {
 		const targetIdx = this.#folderIndex(folderId);
 		if (targetIdx >= 0 && targetIdx === currentIdx) return;
 
-		if (instant || this.#searchMode || !this.#lastI18n ||
+		if (instant || !this.#lastI18n ||
 			!this.#useFolderCarousel() || targetIdx < 0 || currentIdx < 0) {
 			this.#applyFolderInstant(folderId);
 			return;
@@ -14824,37 +15255,6 @@ class MessengerSidebar {
 		});
 	}
 
-	startSearch(chat, i18n) {
-		this.#searchMode = { chat };
-		const label = i18n.t('searchInChat', chat.name || '');
-		if (this.el.searchRow) this.el.searchRow.classList.remove('mapp-search-row--collapsed');
-		if (this.el.searchWrap) this.el.searchWrap.classList.remove('mapp-search-wrap--collapsed');
-		if (this.el.searchInput) {
-			this.el.searchInput.value = '';
-			this.el.searchInput.placeholder = label;
-			this.el.searchInput.focus();
-		}
-		if (this.el.searchClearBtn) this.el.searchClearBtn.hidden = false;
-		this.#ensureSingleChatPanel();
-		if (this.el.chatListPanel) {
-			this.el.chatListPanel.innerHTML = '';
-			const hint = this.#utils.mk('div', 'mapp-list-empty');
-			hint.textContent = label;
-			this.el.chatListPanel.appendChild(hint);
-		}
-	}
-
-	#exitSearch() {
-		this.#searchMode = null;
-		if (this.el.searchInput) {
-			this.el.searchInput.value = '';
-			this.el.searchInput.placeholder = this.#i18n.t('searchChats');
-		}
-		if (this.el.searchClearBtn) this.el.searchClearBtn.hidden = true;
-		this.el._filterQuery = '';
-		this.el._onFilter && this.el._onFilter('');
-	}
-
 	#filterChatsForFolder(chats, folderId, filterQuery) {
 		const archivedIds = this.#archivedChatIds();
 		let displayChats = chats;
@@ -14908,7 +15308,6 @@ class MessengerSidebar {
 		this.#lastActiveChat = activeChat;
 		this.#lastI18n = i18n;
 		this.#renderFoldersBar();
-		if (this.#searchMode) return;
 
 		if (this.#useFolderCarousel()) {
 			this.#syncFolderCarouselPanels(chats, activeChat, i18n, opts);
@@ -14977,13 +15376,7 @@ class MessengerSidebar {
 				const p = MessengerChatListPreview.getDisplay(chat.lastMessage || '', this.#i18n);
 				return { text: p.text, typing: false, locked: p.locked };
 			})();
-		if (previewInfo.locked && !previewInfo.typing) previewEl.classList.add('mapp-chat-item-preview--locked');
-		if (previewInfo.typing) {
-			previewEl.classList.add('mapp-chat-item-preview--typing');
-			fillTypingIndicator(previewEl, this.#i18n);
-		} else {
-			previewEl.textContent = previewInfo.text;
-		}
+		applyChatListPreviewEl(previewEl, previewInfo, this.#i18n);
 		const badgeWrap = this.#utils.mk('span', 'mapp-badge-wrap');
 		if (chat.unreadCount > 0) {
 			const badge = this.#utils.mk('span', 'mapp-badge');
@@ -15161,13 +15554,7 @@ class MessengerSidebar {
 		const item = this.el.chatList?.querySelector(`[data-chat-id="${chatId}"]`);
 		const previewEl = item?.querySelector('.mapp-chat-item-preview');
 		if (!previewEl || !previewInfo) return;
-		previewEl.classList.toggle('mapp-chat-item-preview--typing', !!previewInfo.typing);
-		previewEl.classList.toggle('mapp-chat-item-preview--locked', !!previewInfo.locked && !previewInfo.typing);
-		if (previewInfo.typing) {
-			fillTypingIndicator(previewEl, this.#i18n);
-		} else {
-			previewEl.textContent = previewInfo.text || '';
-		}
+		applyChatListPreviewEl(previewEl, previewInfo, this.#i18n);
 	}
 
 	updateUnreadBadge(chatId, count, chats) {
@@ -15230,7 +15617,8 @@ class MessengerChatReadGate {
 	shouldMarkRead(chatId, { isActiveChat, isChatVisible }) {
 		if (!chatId || !isActiveChat || !isChatVisible) return false;
 		if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return false;
-		const last = this.#lastEngagement.get(chatId) || 0;
+		if (!this.#lastEngagement.has(chatId)) return true;
+		const last = this.#lastEngagement.get(chatId);
 		return Date.now() - last <= MessengerChatReadGate.IDLE_MS;
 	}
 }
@@ -15246,7 +15634,6 @@ class MessengerAppView {
 	#modal;
 	#api;
 	#fileTransferTypes;
-	#settingsModal;
 	#profileModal;
 	#groupProfileModal;
 	#channelProfileModal;
@@ -15287,7 +15674,7 @@ class MessengerAppView {
 	#keyboardLayoutDestroy = null;
 	static NAV_SESSION_PREFIX = 'mapp.nav.';
 	el = {};
-	constructor(utils, icons, themeManager, i18n, sidebar, panelFactory, modal, api, fileTransferTypes = [], settingsModal = null, profileModal = null, groupProfileModal = null, channelProfileModal = null, botProfileModal = null, avatarBuilder = null, readGate = null) {
+	constructor(utils, icons, themeManager, i18n, sidebar, panelFactory, modal, api, fileTransferTypes = [], profileModal = null, groupProfileModal = null, channelProfileModal = null, botProfileModal = null, avatarBuilder = null, readGate = null) {
 		this.#readGate = readGate || new MessengerChatReadGate();
 		this.#utils = utils;
 		this.#icons = icons;
@@ -15298,7 +15685,6 @@ class MessengerAppView {
 		this.#modal = modal;
 		this.#api = api;
 		this.#fileTransferTypes = fileTransferTypes;
-		this.#settingsModal = settingsModal;
 		this.#profileModal = profileModal;
 		this.#groupProfileModal = groupProfileModal;
 		this.#channelProfileModal = channelProfileModal;
@@ -15322,12 +15708,16 @@ class MessengerAppView {
 		if (isChannelType(chat?.type)) return;
 		const hasUnreadSignal = this.#pendingMarkRead.has(chatId) || (chat?.unreadCount > 0);
 		if (!hasUnreadSignal && !becauseNewMessage) return;
-		if (!this.#readGate.shouldMarkRead(chatId, {
-			isActiveChat: this.#activeChat?.id === chatId,
-			isChatVisible: this.#isChatVisible(chatId),
-		})) return;
+		const canMark = isBotContact(chat)
+			? this.#activeChat?.id === chatId && this.#isChatVisible(chatId)
+				&& (typeof document === 'undefined' || document.visibilityState !== 'hidden')
+			: this.#readGate.shouldMarkRead(chatId, {
+				isActiveChat: this.#activeChat?.id === chatId,
+				isChatVisible: this.#isChatVisible(chatId),
+			});
+		if (!canMark) return;
 		this.#api.markChatRead(chatId).then(() => {
-			this.#pendingMarkRead.delete(chatId);
+			this.acknowledgeMarkRead(chatId);
 		}).catch(() => {});
 	}
 
@@ -15336,14 +15726,31 @@ class MessengerAppView {
 		if (isChannelType(chat?.type)) return false;
 		const hasUnreadSignal = this.#pendingMarkRead.has(chatId) || (chat?.unreadCount > 0);
 		if (!hasUnreadSignal) return false;
+		if (isBotContact(chat)) {
+			return this.#activeChat?.id === chatId && this.#isChatVisible(chatId)
+				&& (typeof document === 'undefined' || document.visibilityState !== 'hidden');
+		}
 		return this.#readGate.shouldMarkRead(chatId, {
 			isActiveChat: this.#activeChat?.id === chatId,
 			isChatVisible: this.#isChatVisible(chatId),
 		});
 	}
 
+	#clearPanelUnreadVisual(chatId) {
+		const clear = (state) => {
+			if (!state) return;
+			state.unreadCount = 0;
+			state.newDividerInserted = false;
+			state.msgArea?.querySelectorAll('.mc-new-msg-divider').forEach(el => el.remove());
+		};
+		if (this.#activeState?.chatId === chatId) clear(this.#activeState);
+		const pooled = this.#panelPool.get(chatId);
+		if (pooled?.state) clear(pooled.state);
+	}
+
 	acknowledgeMarkRead(chatId) {
 		this.#pendingMarkRead.delete(chatId);
+		this.#clearPanelUnreadVisual(chatId);
 	}
 
 	scheduleMarkReadOnSync(chatId) {
@@ -15360,23 +15767,9 @@ class MessengerAppView {
 		this.#markReadSyncTimer.set(chatId, timer);
 	}
 
-	#pushTraceHasDeliveryIssue(trace) {
-		const list = trace?.recipients;
-		if (!Array.isArray(list)) return false;
-		return list.some((r) =>
-			r.action === 'failed' ||
-			r.action === 'no-subscriptions' ||
-			(r.action === 'sent' && r.anyDelivered === false));
-	}
-
 	#handleAdminPushDebug(trace) {
 		if (this.#currentUser?.userType !== 'Admin' || !trace) return;
-		const bootLog = window.AppBootLog;
-		if (!bootLog?.logPushDebug) return;
-		bootLog.logPushDebug(trace, 'push-debug');
-		if (this.#pushTraceHasDeliveryIssue(trace) && bootLog.openModal) {
-			bootLog.openModal({ themeManager: this.#themeManager, i18n: this.#i18n });
-		}
+		window.AppBootLog?.logPushDebug?.(trace, 'push-debug');
 	}
 
 	clearUnread(chatId) {
@@ -15384,6 +15777,7 @@ class MessengerAppView {
 		if (!chat || !chat.unreadCount) return;
 		chat.unreadCount = 0;
 		this.#sidebar.updateUnreadBadge(chatId, 0, this.#chats);
+		this.#clearPanelUnreadVisual(chatId);
 	}
 
 	getChatNotificationInfo(chatId) {
@@ -15443,6 +15837,7 @@ class MessengerAppView {
 			const pending = [...this.#activeState.messages.values()].find((e) => {
 				const d = e.data;
 				if (!d?.isOwn || d.serverId) return false;
+				if (!MessengerUtils.isLocalMessageId(d.id)) return false;
 				const localText = (d.text ?? '').trim();
 				return !!(msgText && localText && localText === msgText);
 			});
@@ -15606,6 +16001,7 @@ class MessengerAppView {
 					},
 					onLogout: async () => {
 						window.AppBootLog?.clear?.();
+						MessengerNavDebugLog.clear();
 						SupraAuthCrypto.clearOnLogout(this.#currentUser?.id);
 						await fetch('/api/auth/logout', {
 							method: 'POST',
@@ -15668,8 +16064,16 @@ class MessengerAppView {
 			},
 		});
 		this.#mobilePopstateHandler = (e) => {
+			const wasInChat = !!(
+				this.el.root?.classList.contains('mapp-show-chat') && this.#activeChat
+			);
+			const hadOverlaysBefore = messengerHasBlockingMobileOverlay();
+
 			messengerHandleNavPopstate(e);
-			if (messengerPopstateWasConsumed()) return;
+			if (messengerPopstateWasConsumed()) {
+				this.#recoverChatListAfterGhostBack(wasInChat, hadOverlaysBefore);
+				return;
+			}
 			if (!MessengerUtils.isMobile()) return;
 			if (MessengerNavHistory.isLeaveSyncPending()) {
 				MessengerNavHistory.clearLeaveSyncPending();
@@ -15685,6 +16089,7 @@ class MessengerAppView {
 				messengerConsumePopstate();
 				return;
 			}
+			this.#recoverChatListAfterGhostBack(wasInChat, hadOverlaysBefore);
 		};
 		window.addEventListener('popstate', this.#mobilePopstateHandler);
 		messengerEnsureRootHistoryGuard();
@@ -15748,12 +16153,31 @@ class MessengerAppView {
 	}
 
 	#showChatListMobile() {
-		if (MessengerUtils.isMobile() && MessengerNavHistory.getDepth() > 0) {
-			MessengerNavHistory.popToRoot();
-			return;
-		}
+		MessengerNavigation.closeTransientLayersImmediate();
 		this.#leaveChatUi();
-		messengerEnsureRootHistoryGuard();
+		if (MessengerUtils.isMobile()) {
+			MessengerNavigation.forceResetToRoot();
+			messengerEnsureRootHistoryGuard();
+		}
+	}
+
+	/** Железная «Назад» в чате без оверлеев: не дать уйти из PWA из‑за рассинхрона history. */
+	#recoverChatListAfterGhostBack(wasInChat, hadOverlaysBefore) {
+		if (!MessengerUtils.isMobile() || !wasInChat) return;
+		if (MessengerNavHistory.shouldDeferRecoverFromPopstate()) return;
+		if (hadOverlaysBefore) return;
+		if (!this.el.root?.classList.contains('mapp-show-chat') || !this.#activeChat) return;
+		if (messengerHasBlockingMobileOverlay()) return;
+		if (MessengerNavHistory.hasLayersAboveChat()) return;
+		messengerConsumePopstate();
+		this.#showChatListMobile();
+	}
+
+	#cleanupStaleMobileOverlays() {
+		MobileBottomSheetMenu.close(false);
+		document.querySelectorAll('.mc-dialog-overlay').forEach(el => el.remove());
+		unlockAppScroll();
+		MessengerNavHistory.closeTransientLayersImmediate();
 	}
 
 	#setEmptyPlaceholderVisible(visible) {
@@ -16194,6 +16618,7 @@ class MessengerAppView {
 			if (c.unreadCount > 0 && this.#activeChat?.id === c.id && this.#isChatVisible(c.id)) {
 				this.#pendingMarkRead.add(c.id);
 				c.unreadCount = 0;
+				this.scheduleMarkReadOnSync(c.id);
 			}
 		}
 		this.#chats = chats;
@@ -16892,7 +17317,7 @@ class MessengerAppView {
 				if (this.#activeChat?.id === chat.id) this.#activeChat.avatar = normalized;
 				this.#renderChatList();
 			},
-			onForwardNavigate: (chatId) => this.#openChatById(chatId),
+			onForwardNavigate: (chatId) => this.#navigateToChatAfterForward(chatId),
 			onDeepLinkNavigate: (href) => this.#navigateDeepLink(href),
 			onNavigateBack: () => this.#navigateBackFromChat(),
 			channelMeta,
@@ -16953,6 +17378,8 @@ class MessengerAppView {
 			return;
 		}
 		if (MessengerUtils.isMobile()) {
+			this.#cleanupStaleMobileOverlays();
+			MessengerImageViewer.close(false);
 			this.#showChatListMobile();
 			return;
 		}
@@ -16963,6 +17390,38 @@ class MessengerAppView {
 		this.#sidebar.setActiveItem(null);
 		this.#renderChatList();
 		this.#persistNavState();
+	}
+
+	#navigateToChatAfterForward(chatId) {
+		if (!chatId) return;
+		MessengerNavHistory.closeTransientLayersImmediate();
+		if (MessengerUtils.isMobile()) {
+			MessengerNavHistory.forceResetToRoot();
+			messengerEnsureRootHistoryGuard();
+		}
+		this.#markPanelStale(chatId);
+		this.#openChatById(chatId);
+		void this.#syncForwardedMessagesIntoPanel(chatId);
+	}
+
+	async #syncForwardedMessagesIntoPanel(chatId) {
+		if (!chatId || !this.#msgService || !this.#api) return;
+		try {
+			const sync = await this.#msgService.syncNewMessages(chatId, this.#api, 50, {
+				markAsRead: this.shouldMarkReadForSync(chatId),
+			});
+			if (!sync.messages?.length || this.#activeState?.chatId !== chatId) return;
+			for (const raw of sync.messages) {
+				const msg = await this.#api.decryptRealtimeMessage(chatId, raw);
+				if (msg.isOwn) {
+					await this.receiveOwnMessage(chatId, msg);
+				} else {
+					this.receiveMessage(chatId, msg);
+				}
+			}
+		} catch (err) {
+			console.warn('[MessengerAppView] syncForwardedMessagesIntoPanel', err);
+		}
 	}
 
 	#openChatById(chatId) {
@@ -17001,6 +17460,12 @@ class MessengerAppView {
 			this.#pendingMarkRead.add(chat.id);
 			chatData.unreadCount = 0;
 			this.#sidebar.updateUnreadBadge(chat.id, 0, this.#chats);
+		}
+		if (this.#isChatVisible(chat.id)) {
+			this.#readGate.recordEngagement(chat.id);
+			if (pendingUnreadCount > 0 || this.#pendingMarkRead.has(chat.id)) {
+				this.scheduleMarkReadOnSync(chat.id);
+			}
 		}
 
 		if (this.#activeState?.chatId === chat.id && this.#isChatVisible(chat.id)) {
@@ -18264,7 +18729,6 @@ class MessengerAppView {
 	}
 
 	openArchiveFolder() {
-		this.#settingsModal?.close?.();
 		this.#sidebar.openArchiveFolder();
 	}
 
@@ -18737,7 +19201,25 @@ class MessengerAppView {
 		if (typing) {
 			return { text: typing, typing: true };
 		}
-		const preview = MessengerChatListPreview.getDisplay(chat.lastMessage || '', this.#i18n);
+		const stored = chat.lastMessage || '';
+		const preview = MessengerChatListPreview.getDisplay(stored, this.#i18n);
+		if (preview.locked) {
+			return { text: preview.text, typing: false, locked: true };
+		}
+		const mediaContent = MessengerChatListPreview.buildMediaContent({
+			storedText: stored,
+			utils: this.#utils,
+			cache: this.#mediaCache,
+		});
+		if (mediaContent) {
+			return {
+				text: preview.text,
+				typing: false,
+				locked: false,
+				media: true,
+				mediaContent,
+			};
+		}
 		return { text: preview.text, typing: false, locked: preview.locked };
 	}
 
@@ -18769,7 +19251,7 @@ class MessengerAppView {
 		this.#setEmptyPlaceholderVisible(true);
 		this.el.chatArea?.querySelectorAll('.mapp-chat-panel').forEach(p => p.remove());
 		this.el.panelPoolHost?.replaceChildren();
-		if (MessengerUtils.isMobile()) {
+		if (MessengerUtils.isMobile() && this.el.root?.classList.contains('mapp-show-chat')) {
 			this.#showChatListMobile();
 		}
 		try {
@@ -19948,6 +20430,7 @@ class MessengerApiClient {
 	async sendMessage(chatId, text, options = {}) {
 		const localId = typeof options === 'string' ? options : options?.localId;
 		const plainOpts = typeof options === 'object' ? options : {};
+		const attachmentFileIds = MessengerCustomMessage.extractAttachmentFileIds(text.trim());
 		if (this.#isPlaintextChatId(chatId)) {
 			MessengerMessageSounds.playOutgoing();
 			const r = await this.call('SendMessage', {
@@ -19958,6 +20441,7 @@ class MessengerApiClient {
 				forwardedFromSenderName: plainOpts?.forwardedFromSenderName || null,
 				replyToTextPreview: plainOpts?.replyToTextPreview || null,
 				encryptionTier: 'basic',
+				attachmentFileIds,
 			});
 			if (!r?.success) throw new Error(r?.error || 'SendMessage failed');
 			return {
@@ -19991,6 +20475,7 @@ class MessengerApiClient {
 			forwardedFromSenderName: plainOpts?.forwardedFromSenderName || null,
 			replyToTextPreview: enc.replyToTextPreview,
 			encryptionTier: enc.encryptionTier,
+			attachmentFileIds,
 		});
 		if (!r?.success) throw new Error(r?.error || 'SendMessage failed');
 		return {
@@ -20017,12 +20502,14 @@ class MessengerApiClient {
 	}
 
 	async editMessage(chatId, messageId, text) {
+		const attachmentFileIds = MessengerCustomMessage.extractAttachmentFileIds(text.trim());
 		const enc = await this.#encryptOutgoing(chatId, text, {});
 		const r = await this.call('EditMessage', {
 			chatId,
 			messageId,
 			text: enc.text,
 			encryptionTier: enc.encryptionTier,
+			attachmentFileIds,
 		});
 		if (!r?.success) throw new Error(r?.error || 'EditMessage failed');
 		return r;
@@ -20123,6 +20610,7 @@ class MessengerApiClient {
 				text: plainText.trim(),
 				forwardedFromSenderName: forwardFrom,
 				encryptionTier: 'basic',
+				attachmentFileIds: MessengerCustomMessage.extractAttachmentFileIds(plainText),
 			});
 				}
 				continue;
@@ -20143,6 +20631,7 @@ class MessengerApiClient {
 					text: enc.text,
 					forwardedFromSenderName: forwardFrom,
 					encryptionTier: enc.encryptionTier,
+					attachmentFileIds: MessengerCustomMessage.extractAttachmentFileIds(plainText),
 				});
 			}
 		}
@@ -20196,7 +20685,7 @@ class MessengerApiClient {
 		if (!r?.sentChatIds?.length) {
 			throw new Error(options.i18n?.t('forwardChatsNotFound') || 'Не удалось переслать ни одному контакту');
 		}
-		return { success: true, sentChatIds: r.sentChatIds };
+		return { success: true, sentChatIds: r.sentChatIds, results: r.results || [] };
 	}
 
 	async markRead(chatId, messageIds = null) {
@@ -20592,6 +21081,7 @@ class MessengerTransport {
 	#wsUrl;
 	#connectionState;
 	#boundChannelHandler = null;
+	#hostPushBridge = null;
 	#useServerChannel = false;
 	#ws = null;
 	#wsReconnectTimer = null;
@@ -20807,15 +21297,15 @@ class MessengerTransport {
 			this.#signalRConnect();
 			return;
 		}
-		const hasTerrasoft = typeof Terrasoft !== 'undefined' &&
-			Terrasoft?.ServerChannel?.on &&
-			Terrasoft?.EventName?.ON_MESSAGE;
-		if (hasTerrasoft) {
+		const host = typeof SupraHost !== 'undefined' ? SupraHost : null;
+		const hasHostChannel = host?.ServerChannel?.on && host?.EventName?.ON_MESSAGE;
+		if (hasHostChannel) {
+			this.#hostPushBridge = host;
 			this.#useServerChannel = true;
 			this.#boundChannelHandler = this.#handleChannelEvent.bind(this);
 			try {
-				Terrasoft.ServerChannel.on(
-					Terrasoft.EventName.ON_MESSAGE,
+				host.ServerChannel.on(
+					host.EventName.ON_MESSAGE,
 					this.#boundChannelHandler,
 					this
 				);
@@ -20981,10 +21471,11 @@ class MessengerTransport {
 			this.#signalRConnection.stop();
 			this.#signalRConnection = null;
 		}
-		if (this.#useServerChannel && this.#boundChannelHandler) {
+		if (this.#useServerChannel && this.#hostPushBridge && this.#boundChannelHandler) {
 			try {
-				Terrasoft.ServerChannel.un(
-					Terrasoft.EventName.ON_MESSAGE,
+				const host = this.#hostPushBridge;
+				host.ServerChannel.un(
+					host.EventName.ON_MESSAGE,
 					this.#boundChannelHandler,
 					this
 				);
@@ -20992,6 +21483,7 @@ class MessengerTransport {
 				console.warn('[MessengerTransport] unsubscribe error', e);
 			}
 			this.#boundChannelHandler = null;
+			this.#hostPushBridge = null;
 		}
 		if (this.#ws) {
 			this.#ws.onclose = null;
@@ -22390,6 +22882,10 @@ class MessengerChatPanel {
 	}
 
 	#restoreDirectHeaderSub(state, chat) {
+		const nameWrap = state.el?.querySelector('.mc-header-name-wrap');
+		const subEl = nameWrap?.querySelector('.mc-header-sub-row .mc-header-sub')
+			|| nameWrap?.querySelector('.mc-header-sub:not(.mc-header-channel-desc)');
+		subEl?.classList.remove('mc-header-sub--typing');
 		this.refreshChatHeaderSub(state, chat, { botMeta: state?.botMeta, channelMeta: state?.channelMeta });
 	}
 
@@ -22913,30 +23409,26 @@ class MessengerChatPanel {
 		const backBtn = this.#utils.mk('button', 'mc-back-btn');
 		backBtn.innerHTML = this.#icons.back();
 		backBtn.addEventListener('click', () => {
-			if (MessengerUtils.isMobile() && MessengerNavHistory.hasLayersAboveChat()) {
-				MessengerNavHistory.back();
+			if (this.#cancelSelectionMode(panelState)) {
 				return;
 			}
-			if (this.#cancelSelectionMode(panelState)) {
+			if (MessengerUtils.isMobile()) {
+				messengerHandleMobileBackFromChat(() => {
+					if (typeof chatCallbacks.onNavigateBack === 'function') {
+						chatCallbacks.onNavigateBack();
+						return;
+					}
+					appEl.root.classList.remove('mapp-show-chat');
+					if (appEl.empty) appEl.empty.hidden = true;
+				});
 				return;
 			}
 			if (typeof chatCallbacks.onNavigateBack === 'function') {
 				chatCallbacks.onNavigateBack();
 				return;
 			}
-			if (MessengerUtils.isMobile()) {
-				if (appEl.root.classList.contains('mapp-show-chat')) {
-					MessengerNavHistory.back();
-				} else if (typeof chatCallbacks.onNavigateBack === 'function') {
-					chatCallbacks.onNavigateBack();
-				} else {
-					appEl.root.classList.remove('mapp-show-chat');
-					if (appEl.empty) appEl.empty.hidden = true;
-				}
-			} else {
-				appEl.root.classList.remove('mapp-show-chat');
-				if (appEl.empty) appEl.empty.hidden = false;
-			}
+			appEl.root.classList.remove('mapp-show-chat');
+			if (appEl.empty) appEl.empty.hidden = false;
 		});
 		const canShow = this.#canShowContactPresence();
 		const avatarPresence = canShow && chat.type === 'direct' && chat.contactUserId
@@ -24428,6 +24920,7 @@ class MessengerChatPanel {
 
 	#finishForward(state, targetChatId) {
 		this.#exitSelectionModeIfActive(state);
+		MessengerNavHistory.closeTransientLayersImmediate();
 		if (targetChatId && typeof state?.onForwardNavigate === 'function') {
 			state.onForwardNavigate(targetChatId);
 		}
@@ -24441,12 +24934,14 @@ class MessengerChatPanel {
 			});
 			return;
 		}
+		MobileBottomSheetMenu.close(false);
+		MessengerImageViewer.close(false);
 		if (!this.#forwardModal) {
 			this.#forwardModal = new MessengerForwardModal(
 				this.#utils, this.#icons, this.#avatarBuilder, this.#api, this.#i18n, this.#themeManager
 			);
 		}
-		this.#exitSelectionModeIfActive(state);
+		this.#dismissSelectionModeForAction(state);
 		const hasPhotoCaption = MessengerCustomMessage.hasPhotoCaption(msg?.text);
 		this.#forwardModal.open(async (contactIds, forwardSettings) => {
 			try {
@@ -24490,7 +24985,7 @@ class MessengerChatPanel {
 				this.#utils, this.#icons, this.#avatarBuilder, this.#api, this.#i18n, this.#themeManager
 			);
 		}
-		this.#exitSelectionModeIfActive(state);
+		this.#dismissSelectionModeForAction(state);
 		const hasPhotoCaption = forwardable.some(m => MessengerCustomMessage.hasPhotoCaption(m?.text));
 		this.#forwardModal.open(async (contactIds, forwardSettings) => {
 			try {
@@ -24660,6 +25155,16 @@ class MessengerChatPanel {
 
 	#exitSelectionModeIfActive(state) {
 		if (state?.selectionMode) this.#exitSelectionMode(state);
+	}
+
+	/** Закрыть режим выбора перед открытием модалки (снять history-слой selection). */
+	#dismissSelectionModeForAction(state) {
+		if (!state?.selectionMode) return;
+		const navHandle = state.selectionNavHandle;
+		this.#exitSelectionMode(state);
+		if (navHandle && MessengerUtils.isMobile()) {
+			try { navHandle.closeImmediate(); } catch (_) {}
+		}
 	}
 
 	#syncSelectionHistoryPop(state) {
@@ -25328,8 +25833,11 @@ class MessengerChatPanel {
 		this.#renderBatch(state, toRender, 'append');
 		const entry = state.messages.get(msg.id);
 		if (entry) {
+			const serverId = msg.serverId
+				|| (!MessengerUtils.isLocalMessageId(msg.id) ? msg.id : null);
 			entry.data = {
 				...msg,
+				serverId,
 				_encText: msg._encText ?? null,
 				_encReplyPreview: msg._encReplyPreview ?? null,
 				text: displayMsg.text,
@@ -25728,7 +26236,7 @@ class MessengerChatView {
 		this.#popstateHandler = () => {
 			if (messengerPopstateWasConsumed()) return;
 			if (!MessengerUtils.isMobile()) return;
-			if (MessengerNavHistory.hasLayersAboveChat()) {
+			if (messengerHasBlockingMobileOverlay()) {
 				MessengerNavHistory.back();
 				return;
 			}
@@ -26398,13 +26906,11 @@ class MessengerChatView {
 		const backBtn = this.#utils.mk('button', 'mc-back-btn');
 		backBtn.innerHTML = this.#icons.back();
 		backBtn.addEventListener('click', () => {
-			if (MessengerUtils.isMobile() && MessengerNavHistory.hasLayersAboveChat()) {
-				MessengerNavHistory.back();
-				return;
-			}
-			if (typeof this.#options.onBack === 'function') {
-				this.#options.onBack();
-			}
+			messengerHandleMobileBackFromChat(() => {
+				if (typeof this.#options.onBack === 'function') {
+					this.#options.onBack();
+				}
+			});
 		});
 		const avatar = this.#avatarBuilder.build(this.#chatMeta.id, this.#chatMeta.name, this.#chatMeta.avatar, 32);
 		const nameEl = this.#utils.mk('div', 'mc-header-name');
@@ -26721,7 +27227,6 @@ class Messenger {
 	#appView;
 	#chatView;
 	#menuBuilder;
-	#settingsModal;
 	#profileModal;
 	#tokenWatcher;
 	#presence;
@@ -26771,15 +27276,6 @@ class Messenger {
 		const sidebarInst = new MessengerSidebar(utilsInst, iconsInst, avatarBuilderInst, i18nInst);
 		sidebarInst.setThemeManager(themeManagerInst);
 		const menuBuilderInst = new MessengerMenuBuilder(utilsInst, i18nInst, themeManagerInst);
-		const settingsModalInst = new MessengerSettingsModal(
-			utilsInst, iconsInst, i18nInst, themeManagerInst, menuBuilderInst,
-			() => this.#onClearMessageCache(),
-			() => this.#onClearAllCache(),
-			apiInst,
-			() => appViewInst.loadFolders(),
-			() => appViewInst.openArchiveFolder(),
-			() => appViewInst.promptCreateFolder(null)
-		);
 		const profileModalInst = new MessengerUserProfileModal(
 			utilsInst, iconsInst, i18nInst, themeManagerInst, menuBuilderInst, avatarBuilderInst,
 			() => this.#onClearMessageCache(),
@@ -26798,7 +27294,7 @@ class Messenger {
 		const appViewInst = new MessengerAppView(
 			utilsInst, iconsInst, themeManagerInst, i18nInst,
 			sidebarInst, panelFactoryInst, modalInst, apiInst, fileTransferTypes,
-			settingsModalInst, profileModalInst, groupProfileModalInst, channelProfileModalInst, botProfileModalInst, avatarBuilderInst,
+			profileModalInst, groupProfileModalInst, channelProfileModalInst, botProfileModalInst, avatarBuilderInst,
 			readGateInst
 		);
 		appViewInst.setMessageService(msgServiceInst);
@@ -26835,7 +27331,6 @@ class Messenger {
 		this.#modal = modalInst;
 		this.#sidebar = sidebarInst;
 		this.#menuBuilder = menuBuilderInst;
-		this.#settingsModal = settingsModalInst;
 		this.#profileModal = profileModalInst;
 		this.#appView = appViewInst;
 		this.#chatView = chatViewInst;

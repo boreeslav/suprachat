@@ -127,7 +127,7 @@
 | Подключено | Зелёный кружок |
 | Офлайн (исчерпаны попытки) | Серый кружок + всплывающая ошибка по клику |
 
-Транспорт: SignalR → WebSocket → Terrasoft ServerChannel (fallback).
+Транспорт: SignalR → WebSocket → SupraHost ServerChannel (fallback).
 
 ## Мобильный UX
 

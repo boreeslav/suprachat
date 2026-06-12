@@ -2057,10 +2057,6 @@
 .mapp-about-version-line {
 	margin-bottom: 0;
 }
-.mapp-about-debug-btn {
-	margin-top: 16px;
-	margin-bottom: 0;
-}
 .mapp-about-version-link {
 	display: inline-block;
 	padding: 0;
@@ -2696,6 +2692,52 @@
 	gap: 5px;
 	opacity: .65;
 	font-style: normal;
+	min-width: 0;
+	flex: 1;
+}
+
+.mapp-chat-item-preview--media {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	flex: 1;
+}
+
+.mapp-chat-item-preview-thumbs {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	flex-shrink: 0;
+}
+
+.mapp-chat-item-preview-thumb-slot {
+	width: 20px;
+	height: 20px;
+	border-radius: 3px;
+	overflow: hidden;
+	flex-shrink: 0;
+	background-color: var(--m-image-slot-bg, rgba(127, 127, 127, .08));
+}
+
+.mapp-chat-item-preview-thumb {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	opacity: 0;
+	transition: opacity .12s ease;
+}
+
+.mapp-chat-item-preview-thumb-slot.mc-image-slot--ready .mapp-chat-item-preview-thumb,
+.mc-image-slot--ready .mapp-chat-item-preview-thumb {
+	opacity: 1;
+}
+
+.mapp-chat-item-preview-caption {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 	min-width: 0;
 	flex: 1;
 }
@@ -4425,6 +4467,11 @@ html.sm-mobile-viewport .mapp-root.mapp-no-ui {
 	align-items: flex-end;
 	justify-content: center;
 	animation: mapp-sheet-overlay-in .2s ease;
+	touch-action: pan-x pinch-zoom;
+}
+
+.mapp-sheet-overlay--closing {
+	pointer-events: none;
 }
 
 @keyframes mapp-sheet-overlay-in {

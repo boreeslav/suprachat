@@ -1,4 +1,2 @@
 # Changelog items before deploy (one per line). Lines starting with # are ignored.
-Диалоги на Android PWA закрываются с первого нажатия (closeImmediate вместо history.back).
-Индикатор «печатает» сбрасывается при получении сообщения; таймаут уменьшен до 5 с.
-Пересылка: модалка закрывается до перехода в чат; history-слой чата обновляется при смене чата.
+
