@@ -1,2 +1,4 @@
 # Changelog items before deploy (one per line). Lines starting with # are ignored.
-Исправлено удаление на Android PWA: пункты нижнего меню закрывают sheet сразу (closeImmediate), без ожидания history.back.
+Диалоги на Android PWA закрываются с первого нажатия (closeImmediate вместо history.back).
+Индикатор «печатает» сбрасывается при получении сообщения; таймаут уменьшен до 5 с.
+Пересылка: модалка закрывается до перехода в чат; history-слой чата обновляется при смене чата.
