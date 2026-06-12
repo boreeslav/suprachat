@@ -3061,7 +3061,7 @@ function messengerMakeDismissable(dismiss, cancelValue, opts = {}) {
 	const close = (result = cancelValue) => {
 		pendingResult = result;
 		if (MessengerNavHistory.isActive() && active && navHandle) {
-			navHandle.close(true);
+			navHandle.closeImmediate();
 			return;
 		}
 		finish(result, false);
@@ -17021,9 +17021,7 @@ class MessengerAppView {
 		this.#persistNavState();
 		this.#sidebar.setActiveItem(chatData.id);
 		if (MessengerUtils.isMobile()) {
-			if (!this.el.root.classList.contains('mapp-show-chat')) {
-				MessengerNavHistory.pushChat(chatData.id);
-			}
+			MessengerNavHistory.pushChat(chatData.id);
 			this.el.root.classList.add('mapp-show-chat');
 			this.#keyboardLayoutDestroy?.apply?.();
 			if (this.#isPhonePortrait()) {
@@ -18597,6 +18595,12 @@ class MessengerAppView {
 		const bumpUnread = opts.bumpUnread !== false;
 		const meId = this.#currentUser?.id;
 		if (meId && msg.senderId === meId) msg.isOwn = true;
+		if (msg.senderId) {
+			this.#updateChatTypingPreview(chatId, msg.senderId, msg.senderName, 'typing', false);
+			this.#forEachPanelState(chatId, state => {
+				this.#panelFactory.updateActivity(state, msg.senderId, msg.senderName, 'typing', false);
+			});
+		}
 		if (msg.senderAvatar) this.#prefetchAvatars([msg.senderAvatar]);
 		this.#markPanelStale(chatId);
 		const isChatVisible = this.#isChatVisible(chatId);
@@ -21265,7 +21269,7 @@ class MessengerForwardModal {
 		this.#themeManager = themeManager;
 	}
 
-	open(onSend, { excludeChatId = null, excludeUserIds = [], hasPhotoCaption = false } = {}) {
+	open(onSend, { excludeChatId = null, excludeUserIds = [], hasPhotoCaption = false, onSuccess = null } = {}) {
 		const selected = new Set();
 		let targets = [];
 		let extraContacts = [];
@@ -21309,7 +21313,7 @@ class MessengerForwardModal {
 			backBtn.innerHTML = this.#icons.back();
 			backBtn.title = this.#i18n.t('back');
 			backBtn.setAttribute('aria-label', this.#i18n.t('back'));
-			backBtn.addEventListener('click', () => close());
+			backBtn.addEventListener('click', () => close.immediate());
 			titleRow.appendChild(backBtn);
 		}
 		const title = this.#utils.mk('div', 'mapp-modal-title');
@@ -21317,7 +21321,7 @@ class MessengerForwardModal {
 		titleRow.appendChild(title);
 		const closeBtn = this.#utils.mk('button', 'mapp-modal-close');
 		closeBtn.innerHTML = '×';
-		closeBtn.addEventListener('click', () => close());
+		closeBtn.addEventListener('click', () => close.immediate());
 		header.append(titleRow, closeBtn);
 
 		const { wrap: searchWrap, input: searchInput } = buildContactSearchBar(
@@ -21481,11 +21485,12 @@ class MessengerForwardModal {
 			if (!selected.size) return;
 			sendBtn.disabled = true;
 			try {
-				await onSend([...selected], {
+				const sendResult = await onSend([...selected], {
 					showSenderName: showSenderField.input.checked,
 					includeCaption: includeCaptionField ? includeCaptionField.input.checked : true,
 				});
-				close();
+				close.immediate();
+				onSuccess?.(sendResult);
 			} catch (e) {
 				console.warn('[MessengerForwardModal] send', e);
 				sendBtn.disabled = false;
@@ -24453,7 +24458,7 @@ class MessengerChatPanel {
 					includeCaption: forwardSettings?.includeCaption,
 					forwardFromName: state.isChannelChat ? (msg.senderName || null) : null,
 				});
-				this.#finishForward(state, result?.sentChatIds?.[0]);
+				return result?.sentChatIds?.[0];
 			} catch (e) {
 				if (e?.code !== 'send-cancelled') {
 					await MessengerDialog.alert({
@@ -24467,6 +24472,7 @@ class MessengerChatPanel {
 			excludeChatId: state.chatId,
 			excludeUserIds: msg.senderId ? [msg.senderId] : [],
 			hasPhotoCaption,
+			onSuccess: (targetChatId) => this.#finishForward(state, targetChatId),
 		});
 	}
 
@@ -24500,7 +24506,7 @@ class MessengerChatPanel {
 						includeCaption: forwardSettings?.includeCaption,
 					}
 				);
-				this.#finishForward(state, result?.sentChatIds?.[0]);
+				return result?.sentChatIds?.[0];
 			} catch (e) {
 				if (e?.code !== 'send-cancelled') {
 					await MessengerDialog.alert({
@@ -24514,6 +24520,7 @@ class MessengerChatPanel {
 			excludeChatId: state.chatId,
 			excludeUserIds: [...new Set(forwardable.map(m => m.senderId).filter(Boolean))],
 			hasPhotoCaption,
+			onSuccess: (targetChatId) => this.#finishForward(state, targetChatId),
 		});
 	}
 
@@ -25306,6 +25313,9 @@ class MessengerChatPanel {
 		});
 	}
 	async appendMsg(state, msg) {
+		if (msg?.senderId) {
+			state.activityTracker?.update(msg.senderId, msg.senderName, 'typing', false);
+		}
 		this.#hideMessagesStatus(state);
 		const msgArea = state.msgArea;
 		const fromBottom = msgArea.scrollHeight - msgArea.scrollTop - msgArea.clientHeight;
@@ -26468,7 +26478,7 @@ class MessengerChatView {
 }
 
 class MessengerActivityTracker {
-	static DEFAULT_TIMEOUT = 10000;
+	static DEFAULT_TIMEOUT = 5000;
 
 	#onChange;
 	#timeout;
