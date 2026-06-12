@@ -2494,7 +2494,6 @@ class MobileBottomSheetMenu {
 			if (navHandle) {
 				pendingAction = action;
 				navHandle.close(true);
-				if (pendingAction === action) pendingAction = null;
 				return;
 			}
 			teardown();
