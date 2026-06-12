@@ -10,11 +10,22 @@ public sealed class ChatFileService
     public ChatFileService(IDataStore store) => _store = store;
 
     public async Task SyncMessageAttachmentsAsync(
-        Guid messageId, Guid chatId, string? text, CancellationToken ct = default)
+        Guid messageId,
+        Guid chatId,
+        string? text,
+        IReadOnlyList<Guid>? attachmentFileIds = null,
+        CancellationToken ct = default)
     {
-        var fileIds = MessageAttachmentParser.ExtractFileIds(text);
+        var fileIds = attachmentFileIds?.Count > 0
+            ? attachmentFileIds
+            : MessageAttachmentParser.ExtractFileIds(text);
+        if (fileIds.Count == 0 && IsEncryptedPayload(text))
+            return;
         await _store.ReplaceMessageFileReferencesAsync(messageId, chatId, fileIds, ct);
     }
+
+    static bool IsEncryptedPayload(string? text) =>
+        !string.IsNullOrEmpty(text) && text.StartsWith("E1:", StringComparison.Ordinal);
 
     public async Task ReleaseMessageAttachmentsAsync(Guid messageId, CancellationToken ct = default)
     {
@@ -73,12 +84,23 @@ public sealed class ChatFileService
 
     public async Task RebuildAllReferencesAsync(CancellationToken ct = default)
     {
+        var existing = await _store.GetAllMessageFileReferencesAsync(ct);
+        var existingByMessage = existing
+            .GroupBy(r => r.MessageId)
+            .ToDictionary(g => g.Key, g => g.Select(r => r.FileId).Distinct().ToList());
+
         await _store.ClearAllMessageFileReferencesAsync(ct);
         var messages = await _store.GetAllMessagesAsync(ct);
         foreach (var message in messages)
         {
             if (message.DeletedForEveryone) continue;
             var fileIds = MessageAttachmentParser.ExtractFileIds(message.Text);
+            if (fileIds.Count == 0
+                && IsEncryptedPayload(message.Text)
+                && existingByMessage.TryGetValue(message.Id, out var preserved))
+            {
+                fileIds = preserved;
+            }
             if (fileIds.Count == 0) continue;
             await _store.AddMessageFileReferencesAsync(message.Id, message.ChatId, fileIds, ct);
         }

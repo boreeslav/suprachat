@@ -190,7 +190,7 @@ MessengerSidebar (click) → MessengerAppView.#openChat
 
 ## Интеграция OtbMessenger (legacy)
 
-Каталог `OtbMessenger/Schemas/` — схемы Creatio (JS/C#): `OtbMessengerService`, `OtbWsMessenger`, `FileUploader`. Standalone SuperMessenger воспроизводит контракт Supra без платформы Terrasoft, но сохраняет совместимость имён методов и формата WS.
+Каталог `OtbMessenger/Schemas/` — схемы Creatio (JS/C#): `OtbMessengerService`, `OtbWsMessenger`, `FileUploader`. Standalone SuperMessenger воспроизводит контракт Supra автономно, без host-платформы SupraHost, но сохраняет совместимость имён методов и формата WS.
 
 ## Деплой
 

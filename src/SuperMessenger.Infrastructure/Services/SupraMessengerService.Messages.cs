@@ -108,6 +108,7 @@ public sealed partial class SupraMessengerService
         string? replyToTextPreview = null,
         string? encryptionTier = null,
         string? clientLocalId = null,
+        IReadOnlyList<Guid>? attachmentFileIds = null,
         CancellationToken ct = default)
     {
         try
@@ -229,7 +230,7 @@ public sealed partial class SupraMessengerService
                 ClientLocalId = normalizedLocalId,
             };
             await _store.SaveMessageAsync(record, ct);
-            await _files.SyncMessageAttachmentsAsync(msgGuid, chatGuid, record.Text, ct);
+            await _files.SyncMessageAttachmentsAsync(msgGuid, chatGuid, record.Text, attachmentFileIds, ct);
 
             var payload = MapNewMessagePayload(record, chat != null && IsChannelChat(chat) ? null : user);
             if (chat != null && IsChannelChat(chat))
@@ -516,7 +517,9 @@ public sealed partial class SupraMessengerService
     }
 
     public async Task<(SupraEditMessageResponse response, SupraWsMessageUpdatedPayload? broadcast)> EditMessageAsync(
-        UserRecord user, string chatId, string messageId, string text, CancellationToken ct = default)
+        UserRecord user, string chatId, string messageId, string text,
+        IReadOnlyList<Guid>? attachmentFileIds = null,
+        CancellationToken ct = default)
     {
         try
         {
@@ -543,7 +546,7 @@ public sealed partial class SupraMessengerService
             message.Text = text.Trim();
             message.EditedOn = DateTime.UtcNow;
             await _store.UpdateMessageAsync(message, ct);
-            await _files.SyncMessageAttachmentsAsync(message.Id, chatGuid, message.Text, ct);
+            await _files.SyncMessageAttachmentsAsync(message.Id, chatGuid, message.Text, attachmentFileIds, ct);
 
             var payload = new SupraWsMessageUpdatedPayload
             {
@@ -654,6 +657,10 @@ public sealed partial class SupraMessengerService
                 ? sourceChat.Name
                 : source.SenderName;
             var text = source.Text;
+            var sourceAttachmentFileIds = (await _store.GetMessageFileReferencesByMessageAsync(msgGuid, ct))
+                .Select(r => r.FileId)
+                .Distinct()
+                .ToList();
             var sentChatIds = new List<string>();
             var broadcasts = new List<(Guid, SupraWsNewMessagePayload)>();
 
@@ -684,6 +691,7 @@ public sealed partial class SupraMessengerService
                     text,
                     replyToMessageId: null,
                     forwardedFromSenderName: forwardFrom,
+                    attachmentFileIds: sourceAttachmentFileIds.Count > 0 ? sourceAttachmentFileIds : null,
                     ct: ct);
 
                 if (sendResp.success && payload != null && Guid.TryParse(targetChatId, out var targetChatGuid))

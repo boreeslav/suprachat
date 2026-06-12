@@ -230,6 +230,7 @@ public sealed class SupraMessengerController : ControllerBase
 
     private async Task<object> HandleSendMessage(UserRecord user, JsonElement data, CancellationToken ct)
     {
+        var attachmentFileIds = GetGuidList(data, "attachmentFileIds");
         var (response, broadcast) = await _messenger.SendMessageAsync(
             user,
             GetString(data, "chatId") ?? "",
@@ -239,6 +240,7 @@ public sealed class SupraMessengerController : ControllerBase
             GetString(data, "replyToTextPreview"),
             GetString(data, "encryptionTier"),
             GetString(data, "localId"),
+            attachmentFileIds.Count > 0 ? attachmentFileIds : null,
             ct);
         if (broadcast != null && Guid.TryParse(broadcast.chatId, out var chatId))
         {
@@ -274,11 +276,13 @@ public sealed class SupraMessengerController : ControllerBase
 
     private async Task<object> HandleEditMessage(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
     {
+        var attachmentFileIds = GetGuidList(data, "attachmentFileIds");
         var (response, broadcast) = await _messenger.EditMessageAsync(
             user,
             GetString(data, "chatId") ?? "",
             GetString(data, "messageId") ?? "",
             GetString(data, "text") ?? "",
+            attachmentFileIds.Count > 0 ? attachmentFileIds : null,
             ct);
         if (broadcast != null && Guid.TryParse(broadcast.chatId, out var chatId))
             await BroadcastMessageUpdatedAsync(chatId, broadcast, ct);
@@ -399,6 +403,7 @@ public sealed class SupraMessengerController : ControllerBase
                 text = el.TryGetProperty("text", out var t) ? t.GetString() ?? "" : "",
                 forwardedFromSenderName = el.TryGetProperty("forwardedFromSenderName", out var f) ? f.GetString() : null,
                 encryptionTier = el.TryGetProperty("encryptionTier", out var e) ? e.GetString() ?? "basic" : "basic",
+                attachmentFileIds = GetGuidStringList(el, "attachmentFileIds"),
             };
             if (!string.IsNullOrWhiteSpace(item.targetChatId) && !string.IsNullOrWhiteSpace(item.text))
                 list.Add(item);
@@ -1069,5 +1074,35 @@ public sealed class SupraMessengerController : ControllerBase
         {
             return [];
         }
+    }
+
+    private static List<Guid> GetGuidList(JsonElement data, string name)
+    {
+        if (data.ValueKind != JsonValueKind.Object) return [];
+        if (!data.TryGetProperty(name, out var p) || p.ValueKind != JsonValueKind.Array) return [];
+        var result = new List<Guid>();
+        foreach (var el in p.EnumerateArray())
+        {
+            if (el.ValueKind == JsonValueKind.String && Guid.TryParse(el.GetString(), out var guid))
+                result.Add(guid);
+        }
+        return result;
+    }
+
+    private static List<string> GetGuidStringList(JsonElement data, string name)
+    {
+        if (data.ValueKind != JsonValueKind.Object) return [];
+        if (!data.TryGetProperty(name, out var p) || p.ValueKind != JsonValueKind.Array) return [];
+        var result = new List<string>();
+        foreach (var el in p.EnumerateArray())
+        {
+            if (el.ValueKind == JsonValueKind.String)
+            {
+                var s = el.GetString();
+                if (!string.IsNullOrWhiteSpace(s) && Guid.TryParse(s, out _))
+                    result.Add(s!);
+            }
+        }
+        return result;
     }
 }

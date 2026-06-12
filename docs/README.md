@@ -48,4 +48,4 @@ SuperMessenger/
 | `wwwroot/messenger/supra-master-unlock.js` | Экран мастер-пароля после входа |
 | `wwwroot/messenger/supra-auth-crypto.js` | Общая логика мастер-пароля для auth |
 | `wwwroot/messenger/supra-messenger.css` | Стили |
-| `wwwroot/messenger/file-uploader.js` | Загрузка файлов (Terrasoft-совместимый) |
+| `wwwroot/messenger/file-uploader.js` | Загрузка файлов (Supra-совместимый) |

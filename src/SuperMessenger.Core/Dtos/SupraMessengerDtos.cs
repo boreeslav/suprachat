@@ -250,6 +250,7 @@ public sealed class SupraBatchForwardItem
     public string text { get; set; } = "";
     public string? forwardedFromSenderName { get; set; }
     public string encryptionTier { get; set; } = "basic";
+    public List<string> attachmentFileIds { get; set; } = [];
 }
 
 public sealed class SupraBatchItemResult
