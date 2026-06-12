@@ -28,7 +28,21 @@ internal sealed class JsonFileCollectionStore<T>
         try
         {
             var json = await File.ReadAllTextAsync(_filePath, ct);
-            return JsonSerializer.Deserialize<List<T>>(json, JsonOptions) ?? [];
+            if (string.IsNullOrWhiteSpace(json))
+                return [];
+
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.ValueKind switch
+            {
+                JsonValueKind.Array => JsonSerializer.Deserialize<List<T>>(json, JsonOptions) ?? [],
+                JsonValueKind.Object =>
+                [
+                    JsonSerializer.Deserialize<T>(json, JsonOptions)
+                        ?? throw new JsonException($"Не удалось прочитать элемент в {_filePath}"),
+                ],
+                JsonValueKind.Null => [],
+                _ => throw new JsonException($"Некорректный формат JSON в {_filePath}: ожидался массив"),
+            };
         }
         finally
         {

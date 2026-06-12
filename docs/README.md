@@ -10,6 +10,7 @@
 | [04-frontend-reference.md](04-frontend-reference.md) | Классы и функции `supra-messenger.js` |
 | [05-encryption.md](05-encryption.md) | E2EE: мастер-пароль, группы, API ключей |
 | [06-network-sync.md](06-network-sync.md) | Сетевая логика: RequestSync, кеш, SignalR, hot path |
+| [07-bot-api.md](07-bot-api.md) | Bot API: REST, WebSocket, примеры интеграции |
 | [../CHANGELOG.md](../CHANGELOG.md) | История изменений по версиям |
 
 ## Быстрый старт

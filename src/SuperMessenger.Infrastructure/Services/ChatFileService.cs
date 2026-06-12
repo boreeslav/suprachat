@@ -102,8 +102,15 @@ public sealed class ChatFileService
         if (dir == null) return;
 
         var baseName = file.Id.ToString();
-        foreach (var path in Directory.EnumerateFiles(dir, $"{baseName}*"))
-            TryDeletePath(path);
+        try
+        {
+            foreach (var path in Directory.EnumerateFiles(dir, $"{baseName}*"))
+                TryDeletePath(path);
+        }
+        catch
+        {
+            // Каталог вложений мог быть удалён — не блокируем удаление сообщения.
+        }
     }
 
     static void TryDeletePath(string? path)

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>SuperMessenger — Bot API</title>
+	<style>
+		:root { font-family: system-ui, sans-serif; line-height: 1.5; color: #1a1a1a; background: #f6f7f9; }
+		body { max-width: 52rem; margin: 0 auto; padding: 1.5rem; }
+		h1, h2 { line-height: 1.2; }
+		a { color: #2563eb; }
+		code, pre { background: #eef1f5; border-radius: 6px; }
+		code { padding: 0.1em 0.35em; font-size: 0.92em; }
+		pre { padding: 1rem; overflow: auto; }
+		.card { background: #fff; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+		table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+		th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #e5e7eb; }
+		th { background: #f3f4f6; }
+	</style>
+</head>
+<body>
+	<h1>Bot API SuperMessenger</h1>
+	<p>HTTP и WebSocket API для ботов: отправка сообщений, получение входящих обновлений.</p>
+
+	<div class="card">
+		<h2>Быстрый старт</h2>
+		<ol>
+			<li>Создайте бота в мессенджере («Мои боты»).</li>
+			<li>Сгенерируйте API-токен в настройках бота.</li>
+			<li>Вызывайте REST или подключите WebSocket с параметрами <code>login</code> и <code>token</code>.</li>
+		</ol>
+		<p><a href="bot-example.html">Интерактивный пример с редактором скрипта →</a></p>
+	</div>
+
+	<div class="card">
+		<h2>Аутентификация</h2>
+		<p>Все методы: <code>login</code> (slug бота) + <code>token</code> (API-токен) <strong>в query string URL</strong>. GET или POST.</p>
+	</div>
+
+	<div class="card">
+		<h2>REST</h2>
+		<table>
+			<thead><tr><th>Метод</th><th>Назначение</th></tr></thead>
+			<tbody>
+				<tr><td><code>GET/POST /api/bot-api/me</code></td><td>Информация о боте</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/sendMessage</code></td><td>Отправить сообщение (<code>userLogin</code> или <code>chatId</code> + <code>text</code>)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/getMessages</code></td><td>Inbox: <code>count</code>, <code>offset</code>, <code>afterMessageId</code></td></tr>
+			</tbody>
+		</table>
+	</div>
+
+	<div class="card">
+		<h2>WebSocket</h2>
+		<pre>wss://&lt;host&gt;/ws/bot?login=&lt;bot&gt;&amp;token=&lt;token&gt;</pre>
+		<p>События: <code>connected</code>, <code>message</code> (поле <code>update</code>). Клиент: <code>{ "action": "ping" }</code>.</p>
+	</div>
+
+	<div class="card">
+		<h2>JavaScript</h2>
+		<pre>&lt;script src="/docs/supra-bot-api.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+const api = new SupraBotApi({ login: 'mybot_bot', token: '...' });
+api.connectWebSocket({ onMessage: (m) => console.log(m) });
+await api.sendMessage({ userLogin: 'user', text: 'Hi' });
+&lt;/script&gt;</pre>
+		<p>Подробнее — в репозитории: <code>docs/07-bot-api.md</code>.</p>
+	</div>
+
+	<div class="card">
+		<h2>Ограничения</h2>
+		<ul>
+			<li>Только незашифрованные исходящие сообщения.</li>
+			<li>Inbox на сервере — 1 сутки.</li>
+			<li>Личный чат по <code>userLogin</code> — только если пользователь уже начал диалог с ботом.</li>
+		</ul>
+	</div>
+</body>
+</html>

@@ -102,4 +102,8 @@ public interface IDataStore
 
     Task<bool> HasBotEngagementAsync(Guid userId, Guid botUserId, CancellationToken ct = default);
     Task SaveBotEngagementAsync(BotEngagementRecord engagement, CancellationToken ct = default);
+
+    Task<IReadOnlyList<BotInboxMessageRecord>> GetBotInboxMessagesAsync(Guid botUserId, CancellationToken ct = default);
+    Task SaveBotInboxMessageAsync(BotInboxMessageRecord message, CancellationToken ct = default);
+    Task DeleteBotInboxMessagesOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default);
 }

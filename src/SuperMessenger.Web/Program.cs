@@ -29,6 +29,10 @@ builder.Services.AddSingleton<AppAppearanceService>(_ => new AppAppearanceServic
 builder.Services.AddSingleton<AppBuildInfoService>();
 builder.Services.AddSingleton<IndexShellRenderer>();
 builder.Services.AddSingleton<SupraMessengerService>();
+builder.Services.AddSingleton<BotApiService>();
+builder.Services.AddSingleton<BotWebSocketManager>();
+builder.Services.AddSingleton<BotInboxNotifier>();
+builder.Services.AddHostedService<BotInboxCleanupService>();
 builder.Services.AddHostedService<ChatFileReferenceBootstrap>();
 builder.Services.AddSingleton<MessengerSyncService>();
 builder.Services.AddSingleton<SupraEncryptionService>();
@@ -57,6 +61,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromDays(14);
         options.Events.OnRedirectToLogin = ctx =>
         {
+            if (ctx.Request.Path.StartsWithSegments("/api/bot-api") ||
+                ctx.Request.Path.StartsWithSegments("/ws/bot"))
+            {
+                ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
             if (ctx.Request.Path.StartsWithSegments("/api") ||
                 ctx.Request.Path.StartsWithSegments("/hubs"))
             {
@@ -68,6 +78,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         };
         options.Events.OnRedirectToAccessDenied = ctx =>
         {
+            if (ctx.Request.Path.StartsWithSegments("/api/bot-api") ||
+                ctx.Request.Path.StartsWithSegments("/ws/bot"))
+            {
+                ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
             if (ctx.Request.Path.StartsWithSegments("/api") ||
                 ctx.Request.Path.StartsWithSegments("/hubs"))
             {
@@ -139,6 +155,8 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 });
 
 app.UseRouting();
+app.UseWebSockets();
+app.UseMiddleware<BotWebSocketMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<ProtectedStaticPageMiddleware>();
@@ -199,7 +217,8 @@ app.MapFallback(async context =>
 {
     var path = context.Request.Path.Value ?? "";
     if (path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase) ||
-        path.StartsWith("/hubs/", StringComparison.OrdinalIgnoreCase))
+        path.StartsWith("/hubs/", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/ws/", StringComparison.OrdinalIgnoreCase))
     {
         context.Response.StatusCode = StatusCodes.Status404NotFound;
         return;

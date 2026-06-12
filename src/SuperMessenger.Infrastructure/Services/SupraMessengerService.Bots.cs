@@ -41,7 +41,7 @@ public sealed partial class SupraMessengerService
         return (true, null);
     }
 
-    static string HashBotToken(string token)
+    public static string HashBotToken(string token)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
         return Convert.ToHexString(bytes);

@@ -24,6 +24,8 @@ public sealed class SupraMessengerController : ControllerBase
     private readonly PushDiagnosticLogStore _pushLog;
     private readonly MessageInfoService _messageInfo;
     private readonly MessengerSyncService _sync;
+    private readonly BotApiService _botApi;
+    private readonly BotInboxNotifier _botInbox;
 
     public SupraMessengerController(
         SupraMessengerService messenger,
@@ -35,7 +37,9 @@ public sealed class SupraMessengerController : ControllerBase
         IDataStore store,
         PushDiagnosticLogStore pushLog,
         MessageInfoService messageInfo,
-        MessengerSyncService sync)
+        MessengerSyncService sync,
+        BotApiService botApi,
+        BotInboxNotifier botInbox)
     {
         _messenger = messenger;
         _current = current;
@@ -47,6 +51,8 @@ public sealed class SupraMessengerController : ControllerBase
         _pushLog = pushLog;
         _messageInfo = messageInfo;
         _sync = sync;
+        _botApi = botApi;
+        _botInbox = botInbox;
     }
 
     [HttpPost("{methodName}")]
@@ -244,10 +250,26 @@ public sealed class SupraMessengerController : ControllerBase
                 _pushLog.Add(pushTrace);
                 response.pushDebug = pushTrace;
             }
+
+            if (response.success &&
+                Guid.TryParse(response.messageId, out var msgGuid))
+            {
+                await NotifyBotInboxAsync(msgGuid, chatId, ct);
+            }
         }
         if (response.success)
             await TouchPresenceAsync(user.Id, ct);
         return response;
+    }
+
+    async Task NotifyBotInboxAsync(Guid messageId, Guid chatId, CancellationToken ct)
+    {
+        var message = await _store.GetMessageByIdAsync(messageId, ct);
+        var chat = await _store.GetChatByIdAsync(chatId, ct);
+        if (message == null || chat == null) return;
+        var inbox = await _botApi.RecordIncomingMessageAsync(message, chat, ct);
+        if (inbox.Count > 0)
+            await _botInbox.NotifyAsync(inbox, ct);
     }
 
     private async Task<object> HandleEditMessage(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
@@ -271,11 +293,19 @@ public sealed class SupraMessengerController : ControllerBase
             GetString(data, "messageId") ?? "",
             GetBool(data, "deleteForEveryone"),
             ct);
-        if (broadcast != null && Guid.TryParse(broadcast.chatId, out var chatId))
+        if (response is SupraDeleteMessageResponse { success: true } && broadcast != null &&
+            Guid.TryParse(broadcast.chatId, out var chatId))
         {
-            var participants = await _messenger.GetAllParticipantUserIdsAsync(chatId, ct);
-            foreach (var uid in participants)
-                await _realtime.SendToUserAsync(uid, broadcast, ct);
+            try
+            {
+                var participants = await _messenger.GetAllParticipantUserIdsAsync(chatId, ct);
+                foreach (var uid in participants)
+                    await _realtime.SendToUserAsync(uid, broadcast, ct);
+            }
+            catch
+            {
+                // Удаление уже сохранено — сбой доставки WS не должен валить запрос.
+            }
         }
         return response;
     }
@@ -305,7 +335,11 @@ public sealed class SupraMessengerController : ControllerBase
         }
 
         foreach (var (chatId, payload) in sideEffects.NewMessageBroadcasts)
+        {
             await BroadcastToAllChatParticipantsAsync(chatId, payload, ct);
+            if (Guid.TryParse(payload.messageId, out var msgGuid))
+                await NotifyBotInboxAsync(msgGuid, chatId, ct);
+        }
 
         foreach (var (payload, senderUserId) in sideEffects.StatusUpdates)
             await _realtime.SendToUserAsync(senderUserId, payload, ct);
@@ -960,7 +994,11 @@ public sealed class SupraMessengerController : ControllerBase
             await _realtime.SendToUserAsync(user.Id, notify, ct);
         if (startMessage != null && response.success &&
             Guid.TryParse(startMessage.chatId, out var chatId))
+        {
             await BroadcastToAllChatParticipantsAsync(chatId, startMessage, ct);
+            if (Guid.TryParse(startMessage.messageId, out var msgGuid))
+                await NotifyBotInboxAsync(msgGuid, chatId, ct);
+        }
         return response;
     }
 

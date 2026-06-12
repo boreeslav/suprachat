@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Bot API — пример</title>
+	<style>
+		:root { font-family: system-ui, sans-serif; line-height: 1.45; color: #111; background: #eef0f3; }
+		body { max-width: 64rem; margin: 0 auto; padding: 1rem 1.25rem 2rem; }
+		h1 { font-size: 1.5rem; }
+		label { display: block; font-weight: 600; margin-top: 0.75rem; font-size: 0.85rem; }
+		input, textarea { width: 100%; box-sizing: border-box; padding: 0.5rem 0.65rem; border: 1px solid #ccc; border-radius: 6px; font: inherit; }
+		textarea { min-height: 12rem; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+		.row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+		@media (max-width: 700px) { .row { grid-template-columns: 1fr; } }
+		.panel { background: #fff; border-radius: 10px; padding: 1rem; margin-top: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+		button { margin-top: 0.75rem; margin-right: 0.5rem; padding: 0.45rem 0.9rem; border: 0; border-radius: 6px; background: #2563eb; color: #fff; font: inherit; cursor: pointer; }
+		button.secondary { background: #64748b; }
+		button.danger { background: #dc2626; }
+		#log { background: #0f172a; color: #e2e8f0; min-height: 14rem; max-height: 24rem; overflow: auto; padding: 0.75rem; border-radius: 8px; font-family: ui-monospace, monospace; font-size: 0.8rem; white-space: pre-wrap; }
+		a { color: #2563eb; }
+		.hint { font-size: 0.85rem; color: #555; margin-top: 0.25rem; }
+	</style>
+</head>
+<body>
+	<p><a href="bots.html">← Документация Bot API</a></p>
+	<h1>Пример: Bot API + WebSocket</h1>
+	<p class="hint">Укажите логин и токен бота, отредактируйте скрипт и нажмите «Запустить». Скрипт использует <code>SupraBotApi</code>.</p>
+
+	<form class="panel row" autocomplete="off" onsubmit="return false">
+		<div>
+			<label for="login">Login бота</label>
+			<input id="login" placeholder="mybot_bot" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore readonly>
+		</div>
+		<div>
+			<label for="token">Token</label>
+			<input id="token" type="password" placeholder="API-токен" autocomplete="new-password" data-lpignore="true" data-1p-ignore readonly>
+		</div>
+	</form>
+
+	<div class="panel">
+		<label for="script">JavaScript (обработчик бота)</label>
+		<textarea id="script"></textarea>
+		<p class="hint">Доступны: <code>api</code> (SupraBotApi), <code>log(...)</code>. По умолчанию — подписка на WS и лог входящих.</p>
+		<button type="button" id="run">Запустить</button>
+		<button type="button" id="stop" class="danger">Остановить</button>
+		<button type="button" id="fetchHistory" class="secondary">getMessages</button>
+		<button type="button" id="sendTest" class="secondary">sendMessage (тест)</button>
+	</div>
+
+	<div class="panel">
+		<label>Журнал</label>
+		<div id="log"></div>
+	</div>
+
+	<script src="supra-bot-api.js"></script>
+	<script>
+		const DEFAULT_SCRIPT = `// Подписка на новые сообщения через WebSocket
+api.connectWebSocket({
+  onConnected: () => log('WebSocket: connected'),
+  onMessage: (update) => {
+    log('Новое сообщение от ' + update.senderLogin + ': ' + update.text);
+    // Пример автоответа в личку:
+    // if (update.chatType === 'direct') {
+    //   api.sendMessage({ userLogin: update.senderLogin, text: 'Получил: ' + update.text });
+    // }
+  },
+  onError: (e) => log('WebSocket error'),
+  onClose: () => log('WebSocket closed'),
+});
+
+log('Скрипт запущен. Ожидание сообщений…');`;
+
+		const STORAGE_KEY = 'supermessenger.bot-example';
+		const logEl = document.getElementById('log');
+		const loginEl = document.getElementById('login');
+		const tokenEl = document.getElementById('token');
+		const scriptEl = document.getElementById('script');
+
+		function loadStored() {
+			try {
+				const raw = localStorage.getItem(STORAGE_KEY);
+				return raw ? JSON.parse(raw) : null;
+			} catch (_) {
+				return null;
+			}
+		}
+
+		function saveStored() {
+			try {
+				localStorage.setItem(STORAGE_KEY, JSON.stringify({
+					login: loginEl.value,
+					token: tokenEl.value,
+					script: scriptEl.value,
+				}));
+			} catch (_) { /* quota / private mode */ }
+		}
+
+		const stored = loadStored();
+		loginEl.value = stored?.login || '';
+		tokenEl.value = stored?.token || '';
+		scriptEl.value = stored?.script || DEFAULT_SCRIPT;
+
+		[loginEl, tokenEl].forEach((el) => {
+			el.addEventListener('focus', () => { el.readOnly = false; }, { once: true });
+		});
+		loginEl.addEventListener('input', saveStored);
+		tokenEl.addEventListener('input', saveStored);
+		scriptEl.addEventListener('input', saveStored);
+
+		let api = null;
+		let stopFn = null;
+
+		function log() {
+			const line = Array.from(arguments).map(String).join(' ').replace(/\\n/g, '\n');
+			const ts = new Date().toLocaleTimeString();
+			logEl.textContent += '[' + ts + '] ' + line + '\n';
+			logEl.scrollTop = logEl.scrollHeight;
+		}
+
+		function credentials() {
+			const login = loginEl.value.trim();
+			const token = tokenEl.value.trim();
+			if (!login || !token) throw new Error('Укажите login и token');
+			return { login, token };
+		}
+
+		function makeApi() {
+			const c = credentials();
+			return new SupraBotApi({ baseUrl: location.origin, login: c.login, token: c.token });
+		}
+
+		document.getElementById('run').addEventListener('click', () => {
+			document.getElementById('stop').click();
+			logEl.textContent = '';
+			saveStored();
+			try {
+				api = makeApi();
+				const runner = new Function('api', 'log', scriptEl.value);
+				runner(api, log);
+				stopFn = () => api && api.disconnectWebSocket();
+			} catch (e) {
+				log('Ошибка: ' + (e.message || e));
+			}
+		});
+
+		document.getElementById('stop').addEventListener('click', () => {
+			if (stopFn) stopFn();
+			stopFn = null;
+			if (api) api.disconnectWebSocket();
+			log('Остановлено');
+		});
+
+		document.getElementById('fetchHistory').addEventListener('click', async () => {
+			try {
+				api = makeApi();
+				const r = await api.getMessages({ count: 10 });
+				log('getMessages: ' + JSON.stringify(r, null, 2));
+			} catch (e) {
+				log('getMessages error: ' + (e.message || e));
+			}
+		});
+
+		document.getElementById('sendTest').addEventListener('click', async () => {
+			const userLogin = prompt('Логин пользователя для sendMessage:');
+			if (!userLogin) return;
+			const text = prompt('Текст сообщения:', 'Тест от Bot API example') || '';
+			try {
+				api = makeApi();
+				const r = await api.sendMessage({ userLogin, text });
+				log('sendMessage: ' + JSON.stringify(r));
+			} catch (e) {
+				log('sendMessage error: ' + (e.message || e));
+			}
+		});
+	</script>
+</body>
+</html>
