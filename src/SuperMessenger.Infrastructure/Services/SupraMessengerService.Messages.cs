@@ -1,3 +1,4 @@
+using System.Text.Json;
 using SuperMessenger.Core.Dtos;
 using SuperMessenger.Core.Entities;
 
@@ -31,6 +32,7 @@ public sealed partial class SupraMessengerService
         SupraChatRecord? chat = null)
     {
         var text = m.DeletedForEveryone ? "" : m.Text;
+        var buttons = m.DeletedForEveryone ? null : ParseButtonsOrNull(m.ButtonsJson);
         return new SupraChatMessageDto
         {
             id = m.Id.ToString(),
@@ -48,7 +50,14 @@ public sealed partial class SupraMessengerService
             editedOn = m.EditedOn,
             deletedForEveryone = m.DeletedForEveryone,
             encryptionTier = NormalizeEncryptionTier(m.EncryptionTier),
+            buttons = buttons,
         };
+    }
+
+    static List<BotMessageButtonDto>? ParseButtonsOrNull(string? json)
+    {
+        var buttons = BotMessageButtonHelper.ParseButtons(json);
+        return buttons.Count > 0 ? buttons : null;
     }
 
     static string NormalizeEncryptionTier(string? tier) =>
@@ -57,6 +66,19 @@ public sealed partial class SupraMessengerService
     SupraWsNewMessagePayload MapNewMessagePayload(SupraChatMessageRecord m, UserRecord? sender)
     {
         var text = m.DeletedForEveryone ? "" : m.Text;
+        var buttons = m.DeletedForEveryone ? null : ParseButtonsOrNull(m.ButtonsJson);
+        BotAssistantReplyMetaDto? assistantReply = null;
+        if (!m.DeletedForEveryone && !string.IsNullOrWhiteSpace(m.AssistantReplyJson))
+        {
+            try
+            {
+                assistantReply = JsonSerializer.Deserialize<BotAssistantReplyMetaDto>(m.AssistantReplyJson);
+            }
+            catch
+            {
+                // ignore malformed metadata
+            }
+        }
         return new SupraWsNewMessagePayload
         {
             chatId = m.ChatId.ToString(),
@@ -75,6 +97,8 @@ public sealed partial class SupraMessengerService
             editedOn = m.EditedOn,
             deletedForEveryone = m.DeletedForEveryone,
             encryptionTier = NormalizeEncryptionTier(m.EncryptionTier),
+            buttons = buttons,
+            assistantReply = assistantReply,
         };
     }
 
@@ -109,11 +133,24 @@ public sealed partial class SupraMessengerService
         string? encryptionTier = null,
         string? clientLocalId = null,
         IReadOnlyList<Guid>? attachmentFileIds = null,
+        IReadOnlyList<BotMessageButtonDto>? buttons = null,
+        string? assistantReplyJson = null,
         CancellationToken ct = default)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(text))
+            var normalizedButtons = default(List<BotMessageButtonDto>);
+            if (buttons != null)
+            {
+                var (validated, buttonsError) = BotMessageButtonHelper.ValidateButtons(buttons.ToList());
+                if (buttonsError != null)
+                    return (new SupraSendMessageResponse { success = false, error = buttonsError }, null);
+                normalizedButtons = validated;
+            }
+
+            var trimmedText = text?.Trim() ?? "";
+            var hasButtons = normalizedButtons != null && normalizedButtons.Count > 0;
+            if (string.IsNullOrEmpty(trimmedText) && !hasButtons)
                 return (new SupraSendMessageResponse { success = false, error = "Текст сообщения пуст" }, null);
 
             var chatGuid = Guid.Parse(chatId);
@@ -219,7 +256,7 @@ public sealed partial class SupraMessengerService
                 ChatId = chatGuid,
                 SenderUserId = user.Id,
                 SenderName = displayName,
-                Text = text.Trim(),
+                Text = trimmedText,
                 Status = "sent",
                 CreatedOn = now,
                 ReplyToMessageId = replyId,
@@ -228,6 +265,8 @@ public sealed partial class SupraMessengerService
                 ForwardedFromSenderName = fwdName,
                 EncryptionTier = isPlaintextChat ? "basic" : NormalizeEncryptionTier(encryptionTier),
                 ClientLocalId = normalizedLocalId,
+                ButtonsJson = hasButtons ? BotMessageButtonHelper.SerializeButtons(normalizedButtons!) : null,
+                AssistantReplyJson = string.IsNullOrWhiteSpace(assistantReplyJson) ? null : assistantReplyJson.Trim(),
             };
             await _store.SaveMessageAsync(record, ct);
             await _files.SyncMessageAttachmentsAsync(msgGuid, chatGuid, record.Text, attachmentFileIds, ct);
@@ -248,6 +287,147 @@ public sealed partial class SupraMessengerService
         catch (Exception ex)
         {
             return (new SupraSendMessageResponse { success = false, error = ex.Message }, null);
+        }
+    }
+
+    static string BuildButtonSourcePreview(SupraChatMessageRecord source)
+    {
+        if (!string.IsNullOrWhiteSpace(source.Text))
+            return TruncatePreview(source.Text);
+
+        var buttons = BotMessageButtonHelper.ParseButtons(source.ButtonsJson);
+        if (buttons.Count > 0)
+            return TruncatePreview(buttons[0].text);
+
+        return "";
+    }
+
+    public async Task<(SupraPressMessageButtonResponse response, SupraWsNewMessagePayload? broadcast)> PressMessageButtonAsync(
+        UserRecord user,
+        string chatId,
+        string sourceMessageId,
+        string buttonId,
+        string? clientLocalId = null,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(sourceMessageId) || string.IsNullOrWhiteSpace(buttonId))
+                return (new SupraPressMessageButtonResponse { success = false, error = "Укажите sourceMessageId и buttonId" }, null);
+
+            if (!Guid.TryParse(chatId, out var chatGuid))
+                return (new SupraPressMessageButtonResponse { success = false, error = "Некорректный chatId" }, null);
+
+            if (!Guid.TryParse(sourceMessageId, out var sourceGuid))
+                return (new SupraPressMessageButtonResponse { success = false, error = "Некорректный sourceMessageId" }, null);
+
+            if (!await _store.IsParticipantAsync(chatGuid, user.Id, ct))
+                throw new UnauthorizedAccessException("Пользователь не является участником чата");
+
+            var normalizedLocalId = string.IsNullOrWhiteSpace(clientLocalId) ? null : clientLocalId.Trim();
+            if (normalizedLocalId != null)
+            {
+                var existing = await _store.GetMessageByClientLocalIdAsync(chatGuid, user.Id, normalizedLocalId, ct);
+                if (existing != null)
+                {
+                    return (new SupraPressMessageButtonResponse
+                    {
+                        success = true,
+                        messageId = existing.Id.ToString(),
+                        text = existing.Text,
+                        replyToMessageId = existing.ReplyToMessageId?.ToString(),
+                        replyToSenderName = existing.ReplyToSenderName,
+                        replyToTextPreview = existing.ReplyToTextPreview,
+                        status = existing.Status,
+                    }, null);
+                }
+            }
+
+            var source = await _store.GetMessageByIdAsync(sourceGuid, ct);
+            if (source == null || source.ChatId != chatGuid || source.DeletedForEveryone)
+                return (new SupraPressMessageButtonResponse { success = false, error = "Сообщение с кнопками не найдено" }, null);
+
+            var sourceButtons = BotMessageButtonHelper.ParseButtons(source.ButtonsJson);
+            if (sourceButtons.Count == 0)
+                return (new SupraPressMessageButtonResponse { success = false, error = "У сообщения нет кнопок" }, null);
+
+            var button = BotMessageButtonHelper.FindButton(sourceButtons, buttonId);
+            if (button == null)
+                return (new SupraPressMessageButtonResponse { success = false, error = "Кнопка не найдена" }, null);
+
+            var sourceSender = await _store.GetUserByIdAsync(source.SenderUserId, ct);
+            if (!IsBotUser(sourceSender))
+                return (new SupraPressMessageButtonResponse { success = false, error = "Кнопки доступны только у сообщений бота" }, null);
+
+            var chat = await _store.GetChatByIdAsync(chatGuid, ct);
+            if (chat != null && IsChannelChat(chat))
+                return (new SupraPressMessageButtonResponse { success = false, error = "Кнопки недоступны в каналах" }, null);
+
+            if (chat != null && string.Equals(chat.Type, "direct", StringComparison.OrdinalIgnoreCase))
+            {
+                var parts = await _store.GetParticipantsByChatAsync(chatGuid, ct);
+                var otherId = parts.FirstOrDefault(p => p.UserId != user.Id)?.UserId;
+                if (otherId.HasValue)
+                {
+                    if (!await CanWriteAsync(user.Id, otherId.Value, ct))
+                        return (new SupraPressMessageButtonResponse { success = false, error = "Пользователь ограничил входящие сообщения" }, null);
+                    if (await IsDirectPairBlockedAsync(user.Id, otherId.Value, ct))
+                    {
+                        return (new SupraPressMessageButtonResponse
+                        {
+                            success = true,
+                            messageId = Guid.NewGuid().ToString(),
+                            text = button.action,
+                            status = "sent",
+                        }, null);
+                    }
+                }
+            }
+
+            var actionText = button.action.Trim();
+            var preview = BuildButtonSourcePreview(source);
+            var buttonPress = new BotMessageButtonPressDto
+            {
+                sourceMessageId = source.Id.ToString(),
+                buttonId = button.id ?? buttonId.Trim(),
+                action = actionText,
+            };
+
+            var msgGuid = Guid.NewGuid();
+            var now = DateTime.UtcNow;
+            var record = new SupraChatMessageRecord
+            {
+                Id = msgGuid,
+                ChatId = chatGuid,
+                SenderUserId = user.Id,
+                SenderName = user.DisplayName,
+                Text = actionText,
+                Status = "sent",
+                CreatedOn = now,
+                ReplyToMessageId = source.Id,
+                ReplyToSenderName = source.SenderName,
+                ReplyToTextPreview = preview,
+                EncryptionTier = "basic",
+                ClientLocalId = normalizedLocalId,
+                ButtonPressJson = BotMessageButtonHelper.SerializeButtonPress(buttonPress),
+            };
+            await _store.SaveMessageAsync(record, ct);
+
+            var payload = MapNewMessagePayload(record, user);
+            return (new SupraPressMessageButtonResponse
+            {
+                success = true,
+                messageId = msgGuid.ToString(),
+                text = actionText,
+                replyToMessageId = source.Id.ToString(),
+                replyToSenderName = source.SenderName,
+                replyToTextPreview = preview,
+                status = "sent",
+            }, payload);
+        }
+        catch (Exception ex)
+        {
+            return (new SupraPressMessageButtonResponse { success = false, error = ex.Message }, null);
         }
     }
 
@@ -474,6 +654,7 @@ public sealed partial class SupraMessengerService
                 success = true,
                 messages = messages,
                 syncIndex = syncEntries,
+                activities = _activities.GetActiveForChat(chatGuid),
                 markedRead = markedRead,
             }, readUpdates);
         }
@@ -517,14 +698,24 @@ public sealed partial class SupraMessengerService
     }
 
     public async Task<(SupraEditMessageResponse response, SupraWsMessageUpdatedPayload? broadcast)> EditMessageAsync(
-        UserRecord user, string chatId, string messageId, string text,
+        UserRecord user, string chatId, string messageId, string? text,
         IReadOnlyList<Guid>? attachmentFileIds = null,
+        IReadOnlyList<BotMessageButtonDto>? buttons = null,
         CancellationToken ct = default)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(text))
-                return (new SupraEditMessageResponse { success = false, error = "Текст сообщения пуст" }, null);
+            if (string.IsNullOrWhiteSpace(text) && buttons == null)
+                return (new SupraEditMessageResponse { success = false, error = "Укажите text и/или buttons" }, null);
+
+            List<BotMessageButtonDto>? normalizedButtons = null;
+            if (buttons != null)
+            {
+                var (validated, buttonsError) = BotMessageButtonHelper.ValidateButtons(buttons.ToList());
+                if (buttonsError != null)
+                    return (new SupraEditMessageResponse { success = false, error = buttonsError }, null);
+                normalizedButtons = validated;
+            }
 
             var chatGuid = Guid.Parse(chatId);
             if (!await _store.IsParticipantAsync(chatGuid, user.Id, ct))
@@ -543,7 +734,16 @@ public sealed partial class SupraMessengerService
             if (message.DeletedForEveryone)
                 return (new SupraEditMessageResponse { success = false, error = "Сообщение удалено" }, null);
 
-            message.Text = text.Trim();
+            if (!string.IsNullOrWhiteSpace(text))
+                message.Text = text.Trim();
+
+            if (buttons != null)
+            {
+                message.ButtonsJson = normalizedButtons != null && normalizedButtons.Count > 0
+                    ? BotMessageButtonHelper.SerializeButtons(normalizedButtons)
+                    : null;
+            }
+
             message.EditedOn = DateTime.UtcNow;
             await _store.UpdateMessageAsync(message, ct);
             await _files.SyncMessageAttachmentsAsync(message.Id, chatGuid, message.Text, attachmentFileIds, ct);
@@ -559,6 +759,7 @@ public sealed partial class SupraMessengerService
                 replyToTextPreview = message.ReplyToTextPreview,
                 forwardedFromSenderName = message.ForwardedFromSenderName,
                 deletedForEveryone = false,
+                buttons = ParseButtonsOrNull(message.ButtonsJson),
             };
             return (new SupraEditMessageResponse { success = true }, payload);
         }

@@ -17,6 +17,12 @@ public sealed class SupraChatRecord
     public string? Description { get; set; }
     /// <summary>Мягкое удаление канала (UTC). Только для Type=channel.</summary>
     public DateTime? DeletedOn { get; set; }
+    /// <summary>Родительская группа для ветки (Type=group_branch).</summary>
+    public Guid? ParentChatId { get; set; }
+    /// <summary>Адрес ветки в URL: /@parentId/branchSlug. Только для Type=group_branch.</summary>
+    public string? BranchSlug { get; set; }
+    /// <summary>Порядок ветки внутри группы (Type=group_branch).</summary>
+    public int BranchOrder { get; set; }
 }
 
 public sealed class SupraChatParticipantRecord
@@ -48,6 +54,12 @@ public sealed class SupraChatMessageRecord
     public string EncryptionTier { get; set; } = "basic";
     /// <summary>Клиентский id для идемпотентной отправки (local_*).</summary>
     public string? ClientLocalId { get; set; }
+    /// <summary>JSON-массив inline-кнопок бота (BotMessageButtonDto).</summary>
+    public string? ButtonsJson { get; set; }
+    /// <summary>JSON метаданных нажатия inline-кнопки (BotMessageButtonPressDto).</summary>
+    public string? ButtonPressJson { get; set; }
+    /// <summary>JSON BotAssistantReplyMetaDto — ответ помощника для вставки в исходный чат.</summary>
+    public string? AssistantReplyJson { get; set; }
 }
 
 public sealed class SupraMessageUserDeletionRecord

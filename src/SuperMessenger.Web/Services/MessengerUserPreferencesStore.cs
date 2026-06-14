@@ -58,6 +58,35 @@ public sealed class MessengerUserPreferencesStore
         }
     }
 
+    public async Task SetAssistantSettingsAsync(
+        Guid userId,
+        bool? enabled,
+        int? autoInsertSeconds,
+        bool? alwaysConfirm,
+        CancellationToken ct = default)
+    {
+        await _lock.WaitAsync(ct);
+        try
+        {
+            var all = await ReadUnlockedAsync(ct);
+            var entry = Find(all, userId);
+            if (entry == null)
+            {
+                entry = new MessengerUserPreferences { UserId = userId };
+                all.Add(entry);
+            }
+            if (enabled.HasValue) entry.AssistantEnabled = enabled.Value;
+            if (autoInsertSeconds.HasValue)
+                entry.AssistantAutoInsertSeconds = Math.Clamp(autoInsertSeconds.Value, 0, 3600);
+            if (alwaysConfirm.HasValue) entry.AssistantAlwaysConfirm = alwaysConfirm.Value;
+            await WriteUnlockedAsync(all, ct);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
     static MessengerUserPreferences? Find(List<MessengerUserPreferences> all, Guid userId) =>
         all.FirstOrDefault(p => p.UserId == userId);
 
@@ -89,4 +118,10 @@ public sealed class MessengerUserPreferences
     public Guid UserId { get; set; }
     /// <summary>Personal override for theme chat background (color + wallpaper).</summary>
     public bool? UseThemeChatBg { get; set; }
+    /// <summary>Включить режим помощников ботов (меню «Боты» у сообщений).</summary>
+    public bool AssistantEnabled { get; set; } = true;
+    /// <summary>Автовставка ответа, если исходный чат открыт (секунды, по умолчанию 180).</summary>
+    public int AssistantAutoInsertSeconds { get; set; } = 180;
+    /// <summary>Всегда спрашивать подтверждение перед вставкой ответа в чат.</summary>
+    public bool AssistantAlwaysConfirm { get; set; }
 }

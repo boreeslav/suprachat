@@ -397,6 +397,14 @@
         </div>
       </div>
     </div>
+    <h3>Функции мессенджера</h3>
+    <div class="field-block">
+      <label class="admin-switch-row" for="enableGroupEncryption">
+        <span>Шифрование групповых чатов</span>
+        <input type="checkbox" id="enableGroupEncryption"/>
+      </label>
+      <p class="hint">По умолчанию группы создаются без шифрования. При включении — ключи группы, доп. пароль, пункт «Шифрование» в меню и настройках группы.</p>
+    </div>
     <div class="panel-actions">
       <button type="button" class="primary" id="saveBranding">Сохранить брендинг</button>
       <span id="appearanceStatus" hidden></span>
@@ -1067,6 +1075,8 @@
       renderThemeEditor();
       const useThemeChatBg = document.getElementById('useThemeChatBg');
       if (useThemeChatBg) useThemeChatBg.checked = appearanceData.useThemeChatBg !== false;
+      const enableGroupEncryption = document.getElementById('enableGroupEncryption');
+      if (enableGroupEncryption) enableGroupEncryption.checked = appearanceData.enableGroupEncryption === true;
       updateThemeChatBgControls();
     }
 
@@ -1096,6 +1106,7 @@
         pwaIconSvgColor: getPwaIconSvgColor(),
         defaultThemeName: document.getElementById('defaultTheme').value,
         useThemeChatBg: document.getElementById('useThemeChatBg').checked,
+        enableGroupEncryption: document.getElementById('enableGroupEncryption')?.checked === true,
         base: readColorGrid(document.getElementById('baseColorsGrid')),
         themes: appearanceData.themes,
       };

@@ -21,6 +21,9 @@ public interface IDataStore
     Task<SupraChatRecord?> GetChannelBySlugAsync(string slug, CancellationToken ct = default);
     Task<bool> IsChannelSlugTakenAsync(string slug, Guid? excludeChatId = null, CancellationToken ct = default);
     Task SaveChatAsync(SupraChatRecord chat, CancellationToken ct = default);
+    Task<IReadOnlyList<SupraChatRecord>> GetGroupBranchesByParentAsync(Guid parentChatId, CancellationToken ct = default);
+    Task<SupraChatRecord?> GetGroupBranchByParentAndSlugAsync(Guid parentChatId, string slug, CancellationToken ct = default);
+    Task<bool> IsGroupBranchSlugTakenAsync(Guid parentChatId, string slug, Guid? excludeChatId = null, CancellationToken ct = default);
 
     Task<IReadOnlyList<SupraChatParticipantRecord>> GetAllParticipantsAsync(CancellationToken ct = default);
     Task<IReadOnlyList<SupraChatParticipantRecord>> GetParticipantsByChatAsync(Guid chatId, CancellationToken ct = default);
@@ -100,10 +103,28 @@ public interface IDataStore
     Task<bool> IsBotSlugTakenAsync(string slug, Guid? excludeBotId = null, CancellationToken ct = default);
     Task SaveBotAsync(BotRecord bot, CancellationToken ct = default);
 
+    Task<BotChatMenuRecord?> GetBotChatMenuAsync(Guid botUserId, Guid chatId, CancellationToken ct = default);
+    Task SaveBotChatMenuAsync(BotChatMenuRecord record, CancellationToken ct = default);
+    Task DeleteBotChatMenuAsync(Guid botUserId, Guid chatId, CancellationToken ct = default);
+
     Task<bool> HasBotEngagementAsync(Guid userId, Guid botUserId, CancellationToken ct = default);
     Task SaveBotEngagementAsync(BotEngagementRecord engagement, CancellationToken ct = default);
 
     Task<IReadOnlyList<BotInboxMessageRecord>> GetBotInboxMessagesAsync(Guid botUserId, CancellationToken ct = default);
     Task SaveBotInboxMessageAsync(BotInboxMessageRecord message, CancellationToken ct = default);
     Task DeleteBotInboxMessagesOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default);
+
+    Task<IReadOnlyList<UserBotAssistantRecord>> GetUserBotAssistantsAsync(Guid userId, CancellationToken ct = default);
+    Task<bool> HasUserBotAssistantAsync(Guid userId, Guid botUserId, CancellationToken ct = default);
+    Task SaveUserBotAssistantAsync(UserBotAssistantRecord record, CancellationToken ct = default);
+    Task DeleteUserBotAssistantAsync(Guid userId, Guid botUserId, CancellationToken ct = default);
+
+    Task<BotAssistantChatMenuRecord?> GetBotAssistantChatMenuAsync(Guid botUserId, Guid chatId, CancellationToken ct = default);
+    Task SaveBotAssistantChatMenuAsync(BotAssistantChatMenuRecord record, CancellationToken ct = default);
+    Task DeleteBotAssistantChatMenuAsync(Guid botUserId, Guid chatId, CancellationToken ct = default);
+
+    Task<BotAssistantSessionRecord?> GetBotAssistantSessionByIdAsync(Guid sessionId, CancellationToken ct = default);
+    Task<IReadOnlyList<BotAssistantSessionRecord>> GetBotAssistantSessionsByUserAsync(Guid userId, CancellationToken ct = default);
+    Task SaveBotAssistantSessionAsync(BotAssistantSessionRecord session, CancellationToken ct = default);
+    Task DeleteBotAssistantSessionsOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default);
 }

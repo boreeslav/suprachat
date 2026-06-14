@@ -39,6 +39,8 @@
 			this._wsSeenIds = new Set();
 			this._wsSyncing = false;
 			this._wsPendingMessages = [];
+			this._wsGeneration = 0;
+			this._wsOpening = false;
 		}
 
 		_authQuery() {
@@ -80,10 +82,69 @@
 		}
 
 		/**
-		 * @param {{ text: string, userLogin?: string, chatId?: string }} params
+		 * @param {{ text?: string, caption?: string, photoFileId?: string, photoFileIds?: string[], documentFileId?: string, userLogin?: string, chatId?: string, buttons?: unknown[] }} params
 		 */
 		sendMessage(params) {
 			return this._request('sendMessage', params, 'POST');
+		}
+
+		/**
+		 * @param {FormData} formData — поле file; chatId в params
+		 * @param {{ chatId: string }} params
+		 */
+		async uploadFile(formData, params) {
+			const qs = new URLSearchParams({ login: this.login, token: this.token });
+			Object.keys(params || {}).forEach((k) => {
+				if (params[k] != null && params[k] !== '') qs.set(k, String(params[k]));
+			});
+			const url = joinUrl(this.baseUrl, 'api/bot-api/uploadFile') + '?' + qs.toString();
+			const res = await fetch(url, { method: 'POST', body: formData });
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok && data && data.error) {
+				const err = new Error(data.error);
+				err.response = data;
+				err.status = res.status;
+				throw err;
+			}
+			return data;
+		}
+
+		getFileUrl(fileId, variant) {
+			const qs = new URLSearchParams({ login: this.login, token: this.token, fileId: String(fileId) });
+			const path = variant === 'preview'
+				? 'getFilePreview'
+				: variant === 'medium'
+					? 'getFileMedium'
+					: 'getFile';
+			return joinUrl(this.baseUrl, 'api/bot-api/' + path) + '?' + qs.toString();
+		}
+
+		/**
+		 * @param {{ activityType: string, active?: boolean, activityMessage?: string, userLogin?: string, chatId?: string }} params
+		 */
+		sendActivity(params) {
+			return this._request('sendActivity', params, 'POST');
+		}
+
+		/**
+		 * @param {{ userLogin?: string, chatId?: string }} params
+		 */
+		getActivity(params) {
+			return this._request('getActivity', params || {}, 'GET');
+		}
+
+		/**
+		 * @param {{ chatId: string, messageId: string, text: string }} params
+		 */
+		editMessage(params) {
+			return this._request('editMessage', params, 'POST');
+		}
+
+		/**
+		 * @param {{ chatId: string, messageId: string, deleteForEveryone?: boolean }} params
+		 */
+		deleteMessage(params) {
+			return this._request('deleteMessage', params, 'POST');
 		}
 
 		/**
@@ -91,6 +152,102 @@
 		 */
 		getMessages(params) {
 			return this._request('getMessages', params || {}, 'GET');
+		}
+
+		getMenu() {
+			return this._request('getMenu', {}, 'GET');
+		}
+
+		/**
+		 * @param {{ menu: { items: Array<{ id?: string, text: string, message?: string, submenu?: unknown[] }> } }} params
+		 */
+		setMenu(params) {
+			return this._request('setMenu', params, 'POST');
+		}
+
+		getChatInfo(params) {
+			return this._request('getChatInfo', params || {}, 'GET');
+		}
+
+		updateGroup(params) {
+			return this._request('updateGroup', params, 'POST');
+		}
+
+		/**
+		 * @param {FormData} formData — должен содержать поле photo; chatId в query через params
+		 */
+		async setGroupAvatar(formData, params) {
+			const qs = new URLSearchParams({ login: this.login, token: this.token });
+			Object.keys(params || {}).forEach((k) => {
+				if (params[k] != null && params[k] !== '') qs.set(k, String(params[k]));
+			});
+			const url = joinUrl(this.baseUrl, 'api/bot-api/setGroupAvatar') + '?' + qs.toString();
+			const res = await fetch(url, { method: 'POST', body: formData });
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok && data && data.error) {
+				const err = new Error(data.error);
+				err.response = data;
+				err.status = res.status;
+				throw err;
+			}
+			return data;
+		}
+
+		removeGroupMember(params) {
+			return this._request('removeGroupMember', params, 'POST');
+		}
+
+		blockGroupMember(params) {
+			return this._request('blockGroupMember', params, 'POST');
+		}
+
+		createGroupBranch(params) {
+			return this._request('createGroupBranch', params, 'POST');
+		}
+
+		updateGroupBranch(params) {
+			return this._request('updateGroupBranch', params, 'POST');
+		}
+
+		deleteGroupBranch(params) {
+			return this._request('deleteGroupBranch', params, 'POST');
+		}
+
+		reorderGroupBranches(params) {
+			return this._request('reorderGroupBranches', params, 'POST');
+		}
+
+		updateChannel(params) {
+			return this._request('updateChannel', params, 'POST');
+		}
+
+		async setChannelAvatar(formData, params) {
+			const qs = new URLSearchParams({ login: this.login, token: this.token });
+			Object.keys(params || {}).forEach((k) => {
+				if (params[k] != null && params[k] !== '') qs.set(k, String(params[k]));
+			});
+			const url = joinUrl(this.baseUrl, 'api/bot-api/setChannelAvatar') + '?' + qs.toString();
+			const res = await fetch(url, { method: 'POST', body: formData });
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok && data && data.error) {
+				const err = new Error(data.error);
+				err.response = data;
+				err.status = res.status;
+				throw err;
+			}
+			return data;
+		}
+
+		removeChannelMember(params) {
+			return this._request('removeChannelMember', params, 'POST');
+		}
+
+		setChannelMemberRole(params) {
+			return this._request('setChannelMemberRole', params, 'POST');
+		}
+
+		getChannelSubscribers(params) {
+			return this._request('getChannelSubscribers', params || {}, 'GET');
 		}
 
 		_clearWsReconnectTimer() {
@@ -173,6 +330,10 @@
 		}
 
 		_openWebSocket() {
+			if (this._wsOpening) return;
+			this._wsOpening = true;
+			const gen = ++this._wsGeneration;
+
 			if (this._ws) {
 				try {
 					this._ws.onopen = null;
@@ -194,10 +355,13 @@
 			let connectedHandled = false;
 
 			ws.onopen = () => {
+				if (gen !== this._wsGeneration) return;
+				this._wsOpening = false;
 				this._wsReconnectAttempt = 0;
 			};
 
 			ws.onmessage = (ev) => {
+				if (gen !== this._wsGeneration) return;
 				let msg;
 				try {
 					msg = JSON.parse(ev.data);
@@ -224,10 +388,13 @@
 			};
 
 			ws.onerror = (e) => {
+				if (gen !== this._wsGeneration) return;
 				if (handlers && handlers.onError) handlers.onError(e);
 			};
 
 			ws.onclose = (e) => {
+				if (gen !== this._wsGeneration) return;
+				this._wsOpening = false;
 				if (handlers && handlers.onClose) handlers.onClose(e);
 				if (this._ws === ws) this._ws = null;
 				if (!this._wsManualClose) this._scheduleWsReconnect();
@@ -281,6 +448,8 @@
 
 		disconnectWebSocket() {
 			this._wsManualClose = true;
+			this._wsOpening = false;
+			this._wsGeneration++;
 			this._clearWsReconnectTimer();
 			if (this._ws) {
 				try {

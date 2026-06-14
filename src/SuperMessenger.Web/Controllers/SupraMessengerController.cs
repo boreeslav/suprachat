@@ -106,6 +106,7 @@ public sealed class SupraMessengerController : ControllerBase
                 GetString(data, "messageId") ?? "",
                 ct),
             "SendMessage" => await HandleSendMessage(user, data, ct),
+            "PressMessageButton" => await HandlePressMessageButton(user, data, ct),
             "EditMessage" => await HandleEditMessage(user, data, ct),
             "DeleteMessage" => await HandleDeleteMessage(user, data, ct),
             "BatchRequest" => await HandleBatchRequest(user, data, ct),
@@ -160,6 +161,19 @@ public sealed class SupraMessengerController : ControllerBase
             "AddGroupMembers" => await HandleAddGroupMembers(user, data, ct),
             "RemoveGroupMember" => await HandleRemoveGroupMember(user, data, ct),
             "SetGroupMemberAdmin" => await HandleSetGroupMemberAdmin(user, data, ct),
+            "CreateGroupBranch" => await HandleCreateGroupBranch(user, data, ct),
+            "DeleteGroupBranch" => await HandleDeleteGroupBranch(user, data, ct),
+            "UpdateGroupBranch" => await HandleUpdateGroupBranch(user, data, ct),
+            "GetGroupBranchLinkPreview" => await _messenger.GetGroupBranchLinkPreviewAsync(
+                user.Id,
+                GetString(data, "parentChatId") ?? "",
+                GetString(data, "slug") ?? "",
+                ct),
+            "ReorderGroupBranches" => await _messenger.ReorderGroupBranchesAsync(
+                user,
+                GetString(data, "parentChatId") ?? GetString(data, "chatId") ?? "",
+                GetStringList(data, "branchIds"),
+                ct),
             "BlockUser" => await HandleBlockUser(user, data, ct),
             "BlockGroup" => await HandleBlockGroup(user, data, ct),
             "CreateChannel" => await HandleCreateChannel(user, data, ct),
@@ -197,6 +211,7 @@ public sealed class SupraMessengerController : ControllerBase
             "GetBotInfo" => await _messenger.GetBotInfoAsync(
                 user.Id,
                 GetString(data, "botUserId") ?? "",
+                GetString(data, "chatId"),
                 ct),
             "UpdateBot" => await HandleUpdateBot(user, data, ct),
             "GetBotLinkPreview" => await _messenger.GetBotLinkPreviewAsync(
@@ -222,6 +237,26 @@ public sealed class SupraMessengerController : ControllerBase
                 user,
                 GetString(data, "botUserId") ?? "",
                 ct),
+            "AddBotAssistant" => await _messenger.AddBotAssistantAsync(
+                user,
+                GetString(data, "botUserId") ?? "",
+                ct),
+            "RemoveBotAssistant" => await _messenger.RemoveBotAssistantAsync(
+                user,
+                GetString(data, "botUserId") ?? "",
+                ct),
+            "GetBotAssistants" => await _messenger.GetBotAssistantsAsync(user.Id, ct),
+            "InvokeBotAssistant" => await HandleInvokeBotAssistant(user, data, ct),
+            "ConfirmAssistantReply" => await _messenger.ConfirmAssistantReplyAsync(
+                user,
+                GetString(data, "sessionId") ?? "",
+                GetString(data, "insertedMessageId") ?? "",
+                ct),
+            "DismissAssistantReply" => await _messenger.DismissAssistantReplyAsync(
+                user,
+                GetString(data, "sessionId") ?? "",
+                ct),
+            "GetPendingAssistantReplies" => await _messenger.GetPendingAssistantRepliesAsync(user.Id, ct),
             _ => new { success = false, error = $"Unknown method: {methodName}" },
         };
 
@@ -241,6 +276,8 @@ public sealed class SupraMessengerController : ControllerBase
             GetString(data, "encryptionTier"),
             GetString(data, "localId"),
             attachmentFileIds.Count > 0 ? attachmentFileIds : null,
+            buttons: null,
+            assistantReplyJson: null,
             ct);
         if (broadcast != null && Guid.TryParse(broadcast.chatId, out var chatId))
         {
@@ -264,6 +301,29 @@ public sealed class SupraMessengerController : ControllerBase
         return response;
     }
 
+    private async Task<object> HandlePressMessageButton(UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var (response, broadcast) = await _messenger.PressMessageButtonAsync(
+            user,
+            GetString(data, "chatId") ?? "",
+            GetString(data, "sourceMessageId") ?? "",
+            GetString(data, "buttonId") ?? "",
+            GetString(data, "localId"),
+            ct);
+        if (broadcast != null && Guid.TryParse(broadcast.chatId, out var chatId))
+        {
+            await BroadcastToAllChatParticipantsAsync(chatId, broadcast, ct);
+            if (response.success &&
+                Guid.TryParse(response.messageId, out var msgGuid))
+            {
+                await NotifyBotInboxAsync(msgGuid, chatId, ct);
+            }
+        }
+        if (response.success)
+            await TouchPresenceAsync(user.Id, ct);
+        return response;
+    }
+
     async Task NotifyBotInboxAsync(Guid messageId, Guid chatId, CancellationToken ct)
     {
         var message = await _store.GetMessageByIdAsync(messageId, ct);
@@ -274,6 +334,67 @@ public sealed class SupraMessengerController : ControllerBase
             await _botInbox.NotifyAsync(inbox, ct);
     }
 
+    private async Task<object> HandleInvokeBotAssistant(UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var plaintextMessages = ParseAssistantInvokeMessages(data);
+        var (response, inboxRecords, broadcasts) = await _messenger.InvokeBotAssistantAsync(
+            user,
+            GetString(data, "sourceChatId") ?? "",
+            GetStringList(data, "messageIds"),
+            GetString(data, "botUserId") ?? "",
+            GetString(data, "menuItemId") ?? "",
+            plaintextMessages,
+            ct);
+
+        foreach (var (chatId, payload) in broadcasts)
+            await BroadcastToAllChatParticipantsAsync(chatId, payload, ct);
+
+        if (inboxRecords.Count > 0)
+            await _botInbox.NotifyAsync(inboxRecords, ct);
+
+        if (response.success)
+            await TouchPresenceAsync(user.Id, ct);
+
+        return response;
+    }
+
+    static List<SupraAssistantInvokeMessageDto> ParseAssistantInvokeMessages(JsonElement data)
+    {
+        if (!data.TryGetProperty("plaintextMessages", out var arr) || arr.ValueKind != JsonValueKind.Array)
+            return [];
+
+        var list = new List<SupraAssistantInvokeMessageDto>();
+        foreach (var item in arr.EnumerateArray())
+        {
+            var dto = new SupraAssistantInvokeMessageDto
+            {
+                text = item.TryGetProperty("text", out var textEl) && textEl.ValueKind == JsonValueKind.String
+                    ? textEl.GetString() ?? ""
+                    : "",
+                senderName = item.TryGetProperty("senderName", out var senderEl) && senderEl.ValueKind == JsonValueKind.String
+                    ? senderEl.GetString()
+                    : null,
+                originalMessageId = item.TryGetProperty("originalMessageId", out var origEl) && origEl.ValueKind == JsonValueKind.String
+                    ? origEl.GetString()
+                    : null,
+            };
+            if (item.TryGetProperty("attachmentFileIds", out var filesEl) && filesEl.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var f in filesEl.EnumerateArray())
+                {
+                    if (f.ValueKind == JsonValueKind.String)
+                    {
+                        var s = f.GetString();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            dto.attachmentFileIds.Add(s);
+                    }
+                }
+            }
+            list.Add(dto);
+        }
+        return list;
+    }
+
     private async Task<object> HandleEditMessage(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
     {
         var attachmentFileIds = GetGuidList(data, "attachmentFileIds");
@@ -281,8 +402,9 @@ public sealed class SupraMessengerController : ControllerBase
             user,
             GetString(data, "chatId") ?? "",
             GetString(data, "messageId") ?? "",
-            GetString(data, "text") ?? "",
+            GetString(data, "text"),
             attachmentFileIds.Count > 0 ? attachmentFileIds : null,
+            ParseButtons(data),
             ct);
         if (broadcast != null && Guid.TryParse(broadcast.chatId, out var chatId))
             await BroadcastMessageUpdatedAsync(chatId, broadcast, ct);
@@ -636,8 +758,9 @@ public sealed class SupraMessengerController : ControllerBase
         var chatId = GetString(data, "chatId") ?? "";
         var activityType = GetString(data, "activityType") ?? "";
         var active = data.TryGetProperty("active", out var a) && a.GetBoolean();
-        var response = _messenger.SendUserActivity(chatId, activityType, active, user);
-        if (response.success && Guid.TryParse(chatId, out var cg))
+        var activityMessage = GetString(data, "activityMessage");
+        var (response, payload) = _messenger.SendUserActivity(chatId, activityType, active, user, activityMessage);
+        if (response.success && payload != null && Guid.TryParse(chatId, out var cg))
         {
             var chat = await _store.GetChatByIdAsync(cg, ct);
             if (chat != null && SupraMessengerService.IsChannelChat(chat))
@@ -646,14 +769,6 @@ public sealed class SupraMessengerController : ControllerBase
                 return response;
             }
 
-            var payload = new SupraWsUserActivityPayload
-            {
-                chatId = chatId,
-                userId = user.Id.ToString(),
-                userName = user.DisplayName,
-                activityType = activityType,
-                active = active,
-            };
             var targets = await _messenger.GetParticipantUserIdsAsync(cg, user.Id, ct);
             await _realtime.BroadcastToChatParticipantsAsync(targets, payload, ct);
         }
@@ -739,9 +854,60 @@ public sealed class SupraMessengerController : ControllerBase
                 requiresCustomGroupPassword = rpProp.GetBoolean();
         }
         var name = GetString(data, "name");
+        string? description = null;
+        if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("description", out _))
+            description = GetString(data, "description");
         var (result, systemEvent) = await _messenger.UpdateGroupAsync(
-            user, chatId, name, allowJoinByLink, requiresCustomGroupPassword, ct);
+            user, chatId, name, allowJoinByLink, requiresCustomGroupPassword, description, ct);
         if (result.success && Guid.TryParse(chatId, out var cg))
+        {
+            await BroadcastGroupUpdatedAsync(cg, ct);
+            if (systemEvent != null)
+                await BroadcastChatMessageAsync(cg, systemEvent, ct);
+        }
+        return result;
+    }
+
+    private async Task<object> HandleCreateGroupBranch(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var parentChatId = GetString(data, "parentChatId") ?? GetString(data, "chatId") ?? "";
+        var (response, notifies) = await _messenger.CreateGroupBranchAsync(
+            user,
+            parentChatId,
+            GetString(data, "name") ?? "",
+            GetString(data, "slug"),
+            ct);
+        if (response.success)
+        {
+            foreach (var (uid, notify) in notifies)
+                await _realtime.SendToUserAsync(uid, notify, ct);
+            if (Guid.TryParse(parentChatId, out var pg))
+                await BroadcastGroupUpdatedAsync(pg, ct);
+        }
+        return response;
+    }
+
+    private async Task<object> HandleDeleteGroupBranch(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var branchChatId = GetString(data, "branchChatId") ?? GetString(data, "chatId") ?? "";
+        var (response, participantIds) = await _messenger.DeleteGroupBranchAsync(user, branchChatId, ct);
+        if (response.success)
+        {
+            foreach (var uid in participantIds)
+                await NotifyChatRemovedAsync(uid, branchChatId, ct);
+        }
+        return response;
+    }
+
+    private async Task<object> HandleUpdateGroupBranch(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var branchChatId = GetString(data, "branchChatId") ?? GetString(data, "chatId") ?? "";
+        string? description = null;
+        if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("description", out _))
+            description = GetString(data, "description");
+        var (result, systemEvent) = await _messenger.UpdateGroupBranchAsync(
+            user, branchChatId, GetString(data, "name"), description, ct);
+        if (result.success && Guid.TryParse(branchChatId, out var cg))
         {
             await BroadcastGroupUpdatedAsync(cg, ct);
             if (systemEvent != null)
@@ -1105,4 +1271,25 @@ public sealed class SupraMessengerController : ControllerBase
         }
         return result;
     }
+
+    private static List<BotMessageButtonDto>? ParseButtons(JsonElement data)
+    {
+        if (data.ValueKind != JsonValueKind.Object) return null;
+        if (!data.TryGetProperty("buttons", out var p) || p.ValueKind != JsonValueKind.Array)
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<BotMessageButtonDto>>(p.GetRawText(), JsonOptions);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 }

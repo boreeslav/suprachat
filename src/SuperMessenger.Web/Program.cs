@@ -28,8 +28,12 @@ builder.Services.AddSingleton<ChatImageProcessingService>();
 builder.Services.AddSingleton<AppAppearanceService>(_ => new AppAppearanceService(dataRoot));
 builder.Services.AddSingleton<AppBuildInfoService>();
 builder.Services.AddSingleton<IndexShellRenderer>();
+builder.Services.AddSingleton<ChatActivityTracker>();
 builder.Services.AddSingleton<SupraMessengerService>();
-builder.Services.AddSingleton<BotApiService>();
+builder.Services.AddSingleton<BotApiService>(sp => new BotApiService(
+    sp.GetRequiredService<IDataStore>(),
+    sp.GetRequiredService<SupraMessengerService>(),
+    sp.GetRequiredService<ChatFileService>()));
 builder.Services.AddSingleton<BotWebSocketManager>();
 builder.Services.AddSingleton<BotInboxNotifier>();
 builder.Services.AddHostedService<BotInboxCleanupService>();

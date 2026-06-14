@@ -47,6 +47,18 @@ public sealed partial class SupraMessengerService
         return Convert.ToHexString(bytes);
     }
 
+    async Task<BotApiMenuDto> ResolveBotMenuAsync(BotRecord bot, string? chatId, CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(chatId) &&
+            Guid.TryParse(chatId.Trim(), out var chatGuid))
+        {
+            var chatMenu = await _store.GetBotChatMenuAsync(bot.BotUserId, chatGuid, ct);
+            if (chatMenu != null)
+                return BotMenuHelper.ParseMenu(chatMenu.MenuJson);
+        }
+        return BotMenuHelper.ParseMenu(bot.MenuJson);
+    }
+
     async Task<(BotRecord? bot, UserRecord? botUser, string? error)> GetBotAccessAsync(
         Guid userId, string botUserId, CancellationToken ct)
     {
@@ -286,7 +298,7 @@ public sealed partial class SupraMessengerService
     }
 
     public async Task<SupraGetBotInfoResponse> GetBotInfoAsync(
-        Guid userId, string botUserId, CancellationToken ct = default)
+        Guid userId, string botUserId, string? chatId = null, CancellationToken ct = default)
     {
         try
         {
@@ -308,6 +320,10 @@ public sealed partial class SupraMessengerService
                 userCount = await CountBotUsersAsync(bot.BotUserId, ct),
                 hasToken = !string.IsNullOrEmpty(bot.TokenHash),
                 isDeleted = IsBotDeleted(bot),
+                menu = await ResolveBotMenuAsync(bot, chatId, ct),
+                assistantMenu = await ResolveAssistantMenuAsync(bot, chatId, ct),
+                isAssistant = await _store.HasUserBotAssistantAsync(userId, bot!.BotUserId, ct),
+                hasAssistantMenu = (await ResolveAssistantMenuAsync(bot, chatId, ct)).items?.Count > 0,
             };
         }
         catch (Exception ex)
@@ -358,6 +374,7 @@ public sealed partial class SupraMessengerService
                 botAvatar = AvatarUrl(botUser),
                 slug = bot.Slug,
                 description = bot.Description,
+                menu = BotMenuHelper.ParseMenu(bot.MenuJson),
             };
             return (new SupraUpdateBotResponse
             {
@@ -394,6 +411,7 @@ public sealed partial class SupraMessengerService
                 botAvatar = AvatarUrl(botUser),
                 slug = bot!.Slug,
                 description = bot.Description,
+                menu = BotMenuHelper.ParseMenu(bot.MenuJson),
             };
             return (new SupraUpdateBotResponse
             {
@@ -497,6 +515,7 @@ public sealed partial class SupraMessengerService
                 isStarted = isStarted,
                 chatId = isStarted && chatId.HasValue ? chatId.Value.ToString() : null,
                 userCount = await CountBotUsersAsync(bot.BotUserId, ct),
+                menu = BotMenuHelper.ParseMenu(bot.MenuJson),
             };
         }
         catch (Exception ex)
@@ -673,6 +692,7 @@ public sealed partial class SupraMessengerService
             botAvatar = AvatarUrl(botUser),
             slug = bot.Slug,
             description = bot.Description,
+            menu = BotMenuHelper.ParseMenu(bot.MenuJson),
         };
     }
 

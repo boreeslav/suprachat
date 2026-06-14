@@ -1,0 +1,143 @@
+import { dirname, join } from "node:path";
+import { loadConfig } from "./config.js";
+import { CursorBridge } from "./cursor-bridge.js";
+import { acquireInstanceLock } from "./instance-lock.js";
+import { AssistantMenuManager } from "./assistant-menu-manager.js";
+import { BotMenuManager } from "./bot-menu-manager.js";
+import { MessageHandler } from "./message-handler.js";
+import { ModelCatalog } from "./model-catalog.js";
+import { ProjectCatalog } from "./project-catalog.js";
+import { installProcessGuard } from "./process-guard.js";
+import { SessionRegistry } from "./session-registry.js";
+import { StateStore } from "./state-store.js";
+import { notifyOwner, OWNER_STARTED_MESSAGE } from "./owner-notify.js";
+import { SupraBotApi } from "./supra-bot-api.js";
+
+installProcessGuard();
+
+function log(...args: unknown[]): void {
+  const ts = new Date().toISOString();
+  console.log(`[${ts}]`, ...args);
+}
+
+process.on("beforeExit", (code) => {
+  console.error(`[lifecycle] beforeExit code=${code}`);
+});
+
+process.on("exit", (code) => {
+  console.error(`[lifecycle] exit code=${code}`);
+});
+
+async function main(): Promise<void> {
+  const config = loadConfig();
+  await acquireInstanceLock(join(dirname(config.stateFile), "bot.pid"));
+  const state = new StateStore(config.stateFile);
+  await state.load();
+
+  const api = new SupraBotApi({
+    baseUrl: config.supra.baseUrl,
+    login: config.supra.login,
+    token: config.supra.token,
+  });
+
+  const me = await api.getMe();
+  if (!me.success) {
+    throw new Error(me.error ?? "Не удалось авторизоваться в Bot API");
+  }
+
+  log(`Бот: ${me.name} (${me.login}), id=${me.botUserId}`);
+
+  const projectCatalog = new ProjectCatalog(
+    config.bot.projects,
+    config.bot.defaultProjectId,
+  );
+  log(
+    `Проекты: ${projectCatalog.listMenuProjects().map((p) => p.name).join(", ")} (default=${projectCatalog.defaultKey})`,
+  );
+  if (config.bot.allowedUser) {
+    log(`Доступ: только @${config.bot.allowedUser}`);
+  }
+
+  const modelCatalog = new ModelCatalog(config.cursor.apiKey, config.cursor.proModel);
+  await modelCatalog.load();
+  log(
+    `Cursor: runtime=${config.cursor.runtime}, defaultModel=${config.cursor.defaultModel}, proModel=${config.cursor.proModel}`,
+  );
+
+  const cursor = new CursorBridge(config.cursor, state, modelCatalog, projectCatalog);
+  const sessions = new SessionRegistry(state, projectCatalog.defaultKey);
+  const menuManager = new BotMenuManager(api, cursor, sessions, modelCatalog, projectCatalog);
+  await menuManager.publishGlobal(true);
+  const assistantMenuManager = new AssistantMenuManager(api, config.bot.assistant);
+  await assistantMenuManager.publishGlobal(true);
+
+  const handler = new MessageHandler(api, cursor, config, menuManager, modelCatalog, projectCatalog, sessions);
+
+  let shuttingDown = false;
+
+  const persistState = () => {
+    const lastId = api.getLastInboxId();
+    if (lastId) state.setLastInboxId(lastId);
+  };
+
+  api.connectWebSocket(
+    {
+      onConnected: (msg) => {
+        log("WebSocket подключён, botUserId=", msg.botUserId);
+        void handler.refreshPublishedActivities();
+      },
+      onMessage: (update) => {
+        persistState();
+        void handler.handle(update).catch((err) => {
+          log("Ошибка обработки сообщения:", err);
+        }).finally(persistState);
+      },
+      onReconnect: (attempt, delayMs) => {
+        log(`WebSocket переподключение #${attempt} через ${delayMs} мс`);
+      },
+      onSyncStart: () => log("Синхронизация пропущенных сообщений…"),
+      onSyncComplete: (n) => {
+        if (n > 0) log(`Догружено пропущенных сообщений: ${n}`);
+        persistState();
+      },
+      onSyncError: (e) => log("Ошибка синхронизации:", e),
+      onError: (e) => log("WebSocket ошибка:", e),
+      onClose: (e) => log(`WebSocket закрыт (code=${e.code})`),
+    },
+    {
+      reconnect: true,
+      syncMissed: true,
+      lastInboxId: state.getLastInboxId(),
+    },
+  );
+
+  const pingTimer = setInterval(() => api.pingWebSocket(), 60_000);
+
+  const shutdown = async (signal: string) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    log(`Остановка (${signal})…`);
+    clearInterval(pingTimer);
+    persistState();
+    api.disconnectWebSocket();
+    await cursor.dispose({ cancelActiveRuns: false });
+    await state.flush();
+    process.exit(0);
+  };
+
+  process.on("SIGINT", () => void shutdown("SIGINT"));
+  process.on("SIGTERM", () => void shutdown("SIGTERM"));
+
+  log("CursorBot запущен. Ожидание сообщений…");
+  void notifyOwner(api, config.bot.allowedUser, OWNER_STARTED_MESSAGE);
+
+  // После WebSocket: восстановление не должно блокировать старт (SDK getRun/stream может завершить процесс).
+  void handler.recoverPendingRuns().catch((err) => {
+    log("Ошибка восстановления pending runs:", err);
+  });
+}
+
+main().catch((err) => {
+  console.error("Фатальная ошибка при старте:", err);
+  process.exit(1);
+});

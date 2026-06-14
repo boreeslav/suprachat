@@ -712,7 +712,7 @@ class SupraCrypto {
 		}
 
 		const type = (chat.type || '').toLowerCase();
-		if (type !== 'direct' && type !== 'group' && type !== 'public_group') return null;
+		if (type !== 'direct' && type !== 'group' && type !== 'public_group' && type !== 'group_branch') return null;
 		if (type === 'direct' && !chat.contactUserId) return null;
 
 		let wrapped = options.wrappedAutoPassword;

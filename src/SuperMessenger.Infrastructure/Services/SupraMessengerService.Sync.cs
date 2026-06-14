@@ -48,6 +48,7 @@ public sealed partial class SupraMessengerService
                 g => g.OrderBy(m => m.CreatedOn).ThenBy(m => m.Id).ToList());
 
         var result = new List<SupraChatDto>();
+        var branchDtoById = new Dictionary<Guid, SupraChatDto>();
         foreach (var chatId in chatIds)
         {
             var chat = allChats.FirstOrDefault(c => c.Id == chatId);
@@ -104,7 +105,7 @@ public sealed partial class SupraMessengerService
                 && participantsByChat.TryGetValue(chatId, out var groupParts)
                 && groupParts.FirstOrDefault(p => p.UserId == userId)?.IsAdmin == true);
 
-            result.Add(new SupraChatDto
+            var dto = new SupraChatDto
             {
                 id = chatId.ToString(),
                 name = name,
@@ -124,8 +125,43 @@ public sealed partial class SupraMessengerService
                 botEngaged = botEngaged,
                 isAdmin = isAdmin,
                 isGroupCreator = isGroupCreator,
-            });
+                parentChatId = chat.ParentChatId?.ToString(),
+                branchSlug = chat.BranchSlug,
+                branchOrder = chat.BranchOrder,
+            };
+
+            if (IsGroupBranchChat(chat))
+            {
+                branchDtoById[chatId] = dto;
+                continue;
+            }
+
+            result.Add(dto);
         }
+
+        foreach (var dto in result)
+        {
+            if (!Guid.TryParse(dto.id, out var rootGuid)) continue;
+            var rootChat = allChats.FirstOrDefault(c => c.Id == rootGuid);
+            if (rootChat == null || !IsRootGroupChat(rootChat)) continue;
+
+            var branches = await BuildBranchDtosForRootAsync(rootGuid, userId, visibleByChat, ct);
+            dto.branches = branches;
+
+            foreach (var branch in branches)
+            {
+                dto.unreadCount += branch.unreadCount;
+                if (branch.lastMessageTime.HasValue &&
+                    (!dto.lastMessageTime.HasValue || branch.lastMessageTime > dto.lastMessageTime))
+                {
+                    dto.lastMessageTime = branch.lastMessageTime;
+                    dto.lastMessage = branch.lastMessage;
+                }
+            }
+        }
+
+        foreach (var branchDto in branchDtoById.Values)
+            result.Add(branchDto);
 
         result = result.OrderByDescending(c => c.lastMessageTime ?? DateTime.MinValue).ToList();
         return new ChatListSnapshot

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist/.build-stamp
+dist.backup.*/
+.env
+data/
+*.log
+.DS_Store

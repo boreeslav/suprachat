@@ -74,6 +74,7 @@ public sealed class AppAppearanceService
                 ? defaults.DefaultThemeName
                 : saved.DefaultThemeName.Trim(),
             UseThemeChatBg = saved.UseThemeChatBg ?? true,
+            EnableGroupEncryption = saved.EnableGroupEncryption ?? false,
             Base = MergeBase(saved.Base, defaults.Base),
             Themes = MergeThemes(saved.Themes, defaults.Themes),
         };
@@ -602,6 +603,7 @@ public sealed class AppAppearanceService
             : "/api/app/sound/outgoing",
         defaultThemeName = s.DefaultThemeName,
         useThemeChatBg = s.UseThemeChatBg ?? true,
+        enableGroupEncryption = s.EnableGroupEncryption ?? false,
         @base = new
         {
             accent = s.Base.Accent,
@@ -863,6 +865,7 @@ public sealed class AppAppearanceSaveRequest
     public string? PwaIconSvgColor { get; set; }
     public string? DefaultThemeName { get; set; }
     public bool? UseThemeChatBg { get; set; }
+    public bool? EnableGroupEncryption { get; set; }
     public AppBaseColorsDto? Base { get; set; }
     public List<AppThemeSettingsDto>? Themes { get; set; }
 }
