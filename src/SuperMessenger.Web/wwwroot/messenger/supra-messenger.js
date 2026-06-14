@@ -69,6 +69,7 @@ class MessengerI18n {
 			searchContacts: 'Поиск контактов…',
 			searchChats: 'Поиск…',
 			writeMessage: 'Написать сообщение…',
+			botMenu: 'Меню бота',
 			theme: 'Тема',
 			themeGroupDark: 'Тёмные темы',
 			themeGroupLight: 'Светлые темы',
@@ -273,6 +274,26 @@ class MessengerI18n {
 			openArchive: 'Открыть архив',
 			writeMessageBtn: 'Написать',
 			savePrivacy: 'Сохранить настройки',
+			assistantTab: 'Помощники ботов',
+			assistantTabHint: 'Подключите бота как помощника из меню «⋯» в шапке чата с ботом (пункт «Добавить помощника»). Тогда в любом личном или групповом чате в меню сообщения появится раздел «Помощники»: выбранные сообщения отправятся боту с командой из его меню. Ответ бота придёт в чат с ботом; клиент вставит его в исходный чат от вашего имени как пересланное сообщение от бота.',
+			assistantEnabled: 'Включить помощников',
+			assistantEnabledHint: 'Показывать пункт «Помощники» в меню сообщений',
+			assistantAutoInsertSeconds: 'Автовставка ответа (сек)',
+			assistantAutoInsertHint: 'Если исходный чат открыт и прошло не больше этого времени — ответ вставляется без подтверждения',
+			assistantAlwaysConfirm: 'Всегда спрашивать перед вставкой',
+			assistantAlwaysConfirmHint: 'Показывать окно с текстом ответа и кнопкой «Отправить в чат»',
+			assistantReplyTitle: 'Ответ помощника',
+			assistantReplyMessage: 'Бот подготовил ответ для чата «{chat}». Отправить его в чат от вашего имени?',
+			assistantReplySend: 'Отправить в чат',
+			assistantReplyDismiss: 'Не отправлять',
+			assistantReplySent: 'Ответ отправлен в чат',
+			assistantMenuBots: 'Помощники',
+			assistantSending: 'Отправка боту…',
+			assistantSendFailed: 'Не удалось отправить боту',
+			botAssistantAdd: 'Добавить помощника',
+			botAssistantRemove: 'Удалить помощника',
+			botAssistantAdded: 'Помощник добавлен',
+			botAssistantRemoved: 'Помощник удалён',
 			statusTextLabel: 'Статус',
 			statusTextPlaceholder: 'Статус…',
 			searchContactsHint: 'Введите имя или логин для поиска',
@@ -349,6 +370,17 @@ class MessengerI18n {
 			groupJoinBtn: 'Вступить',
 			groupJoinDisabled: 'Вступление по ссылке отключено',
 			groupJoinOpenChat: 'Открыть чат',
+			groupBranches: 'Ветки',
+			groupBranchMain: 'Основная',
+			groupBranchCreate: 'Создать ветку',
+			groupBranchNameLabel: 'Название ветки',
+			groupBranchSlugLabel: 'Адрес ветки',
+			groupBranchSlugHint: 'Латиница, цифры, дефис и _. Адрес: /@группа/адрес',
+			groupBranchDelete: 'Удалить ветку',
+			groupBranchDeleteTitle: 'Удалить ветку?',
+			groupBranchDeleteMsg: 'Ветка и все сообщения в ней будут удалены без возможности восстановления.',
+			groupBranchNameLabelShort: 'Название ветки',
+			noGroupBranches: 'Нет веток',
 			clearHistory: 'Очистить историю',
 			clearHistoryTitle: 'Очистить историю?',
 			clearHistoryMsg: 'Сообщения будут удалены без возможности восстановления.',
@@ -558,6 +590,7 @@ class MessengerI18n {
 			searchContacts: 'Search contacts…',
 			searchChats: 'Search…',
 			writeMessage: 'Write a message…',
+			botMenu: 'Bot menu',
 			theme: 'Theme',
 			themeGroupDark: 'Dark themes',
 			themeGroupLight: 'Light themes',
@@ -762,6 +795,26 @@ class MessengerI18n {
 			openArchive: 'Open archive',
 			writeMessageBtn: 'Write',
 			savePrivacy: 'Save privacy settings',
+			assistantTab: 'Bot assistants',
+			assistantTabHint: 'Add a bot as an assistant from the chat header «⋯» menu («Add assistant»). Then in any direct or group chat the message menu will show «Assistants»: selected messages are sent to the bot with a command from its assistant menu. The bot reply arrives in the bot chat; the client inserts it into the source chat from you as a forwarded message from the bot.',
+			assistantEnabled: 'Enable assistants',
+			assistantEnabledHint: 'Show «Assistants» in the message menu',
+			assistantAutoInsertSeconds: 'Auto-insert reply (sec)',
+			assistantAutoInsertHint: 'If the source chat is open and less time has passed — insert without confirmation',
+			assistantAlwaysConfirm: 'Always confirm before insert',
+			assistantAlwaysConfirmHint: 'Show a dialog with the reply and a «Send to chat» button',
+			assistantReplyTitle: 'Assistant reply',
+			assistantReplyMessage: 'The bot prepared a reply for «{chat}». Send it to the chat as you?',
+			assistantReplySend: 'Send to chat',
+			assistantReplyDismiss: 'Don\'t send',
+			assistantReplySent: 'Reply sent to chat',
+			assistantMenuBots: 'Assistants',
+			assistantSending: 'Sending to bot…',
+			assistantSendFailed: 'Failed to send to bot',
+			botAssistantAdd: 'Add assistant',
+			botAssistantRemove: 'Remove assistant',
+			botAssistantAdded: 'Assistant added',
+			botAssistantRemoved: 'Assistant removed',
 			statusTextLabel: 'Status',
 			statusTextPlaceholder: 'Status…',
 			searchContactsHint: 'Type a name or login to search',
@@ -838,6 +891,17 @@ class MessengerI18n {
 			groupJoinBtn: 'Join',
 			groupJoinDisabled: 'Joining by link is disabled',
 			groupJoinOpenChat: 'Open chat',
+			groupBranches: 'Topics',
+			groupBranchMain: 'Main',
+			groupBranchCreate: 'Create topic',
+			groupBranchNameLabel: 'Topic name',
+			groupBranchSlugLabel: 'Topic address',
+			groupBranchSlugHint: 'Latin letters, digits, hyphen and _. Address: /@group/address',
+			groupBranchDelete: 'Delete topic',
+			groupBranchDeleteTitle: 'Delete topic?',
+			groupBranchDeleteMsg: 'The topic and all its messages will be permanently deleted.',
+			groupBranchNameLabelShort: 'Topic name',
+			noGroupBranches: 'No topics',
 			clearHistory: 'Clear history',
 			clearHistoryTitle: 'Clear history?',
 			clearHistoryMsg: 'Messages will be permanently deleted.',
@@ -1038,6 +1102,9 @@ class MessengerIcons {
 	paperclip() {
 		return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`;
 	}
+	menuGrid() {
+		return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`;
+	}
 	fileDoc() {
 		return `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`;
 	}
@@ -1204,6 +1271,15 @@ class MessengerIcons {
 	}
 	robot() {
 		return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>`;
+	}
+	robotMenu() {
+		return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>`;
+	}
+	assistantAdd() {
+		return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/><line x1="19" y1="2" x2="19" y2="8"/><line x1="16" y1="5" x2="22" y2="5"/></svg>`;
+	}
+	assistantRemove() {
+		return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/><line x1="16" y1="5" x2="22" y2="5"/></svg>`;
 	}
 	eraser() {
 		return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16l10-10 7 7-3.5 3.5"/><path d="M6.5 17.5l3-3"/></svg>`;
@@ -1467,9 +1543,11 @@ class MessengerDialog {
 		const {
 			title = '',
 			message = '',
+			preview = '',
 			type = MessengerDialog.TYPE_WARNING,
 			confirmLabel = 'OK',
 			cancelLabel = 'Cancel',
+			stackActions = false,
 			themeManager = null,
 		} = options;
 
@@ -1479,6 +1557,7 @@ class MessengerDialog {
 
 			const dialog = document.createElement('div');
 			dialog.className = 'mc-dialog';
+			if (preview) dialog.classList.add('mc-dialog--with-preview');
 
 			if (themeManager) themeManager.applyChatVars(dialog);
 
@@ -1495,7 +1574,9 @@ class MessengerDialog {
 			msgEl.textContent = message;
 
 			const actions = document.createElement('div');
-			actions.className = 'mc-dialog-actions';
+			actions.className = stackActions
+				? 'mc-dialog-actions mc-dialog-actions--vertical'
+				: 'mc-dialog-actions';
 
 			const cancelBtn = document.createElement('button');
 			cancelBtn.className = 'mc-dialog-btn mc-dialog-btn--cancel';
@@ -1505,10 +1586,20 @@ class MessengerDialog {
 			confirmBtn.className = `mc-dialog-btn ${type === MessengerDialog.TYPE_DANGER ? 'mc-dialog-btn--danger' : 'mc-dialog-btn--confirm'}`;
 			confirmBtn.textContent = confirmLabel;
 
-			actions.append(cancelBtn, confirmBtn);
-
 			if (title) dialog.appendChild(titleEl);
-			dialog.append(msgEl, actions);
+			dialog.append(iconEl, msgEl);
+			if (preview) {
+				const previewEl = document.createElement('div');
+				previewEl.className = 'mc-dialog-preview';
+				previewEl.textContent = preview;
+				dialog.appendChild(previewEl);
+			}
+			if (stackActions) {
+				actions.append(confirmBtn, cancelBtn);
+			} else {
+				actions.append(cancelBtn, confirmBtn);
+			}
+			dialog.append(actions);
 			overlay.appendChild(dialog);
 			document.body.appendChild(overlay);
 
@@ -2039,9 +2130,10 @@ class MessengerMenuBuilder {
 		this.#themeManager = themeManager;
 	}
 
-		buildMenu(items, rootEl) {
+		buildMenu(items, rootEl, options = {}) {
 		const menu = document.createElement('div');
 		menu.className = 'mc-action-menu';
+		if (options.scrollable !== false) menu.classList.add('mc-action-menu--scrollable');
 		this.#themeManager.applyChatVars(menu);
 		if (rootEl) this.#themeManager.applyChatVars(rootEl);
 		items.forEach(def => menu.appendChild(this.#buildItem(def)));
@@ -2156,7 +2248,8 @@ class MessengerMenuBuilder {
 					} else {
 						item.classList.add('mc-action-menu-item--open');
 						submenu.classList.add('mc-action-submenu--open');
-						submenu.style.maxHeight = submenu.scrollHeight + 'px';
+						const maxH = Math.min(submenu.scrollHeight, 240);
+						submenu.style.maxHeight = maxH + 'px';
 					}
 				});
 			}
@@ -2378,8 +2471,10 @@ class MobileBottomSheetMenu {
 		let removeDismiss = () => {};
 		let navHandle = null;
 		let pendingAction = null;
+		let suppressSubmenuUiPop = false;
 
 		const popSheetUiLevel = () => {
+			if (suppressSubmenuUiPop) return;
 			if (stack.length > 1) {
 				stack.pop();
 				render();
@@ -2395,15 +2490,28 @@ class MobileBottomSheetMenu {
 			});
 		};
 
-		const dismissSheetSubmenus = () => {
+		const dismissSheetSubmenuNav = () => {
 			let guard = 24;
-			while (stack.length > 1 && guard-- > 0) {
-				if (!MessengerNavigation.dismissTop({ fromUser: false, reason: 'sheet-close-cascade' })) {
-					while (stack.length > 1) stack.pop();
-					render();
-					break;
-				}
+			while (guard-- > 0) {
+				const navTop = MessengerNavigation.getStackSnapshot().at(-1);
+				if (!navTop || navTop.meta?.overlayKind !== 'sheet-submenu') break;
+				if (!MessengerNavigation.dismissTop({ fromUser: false, reason: 'sheet-close-cascade' })) break;
 			}
+		};
+
+		/** silent=true: полное закрытие — без отрисовки предыдущего уровня (клик по маске). */
+		const dismissSheetSubmenus = ({ silent = false } = {}) => {
+			if (silent) {
+				suppressSubmenuUiPop = true;
+				try {
+					dismissSheetSubmenuNav();
+					while (stack.length > 1) stack.pop();
+				} finally {
+					suppressSubmenuUiPop = false;
+				}
+				return;
+			}
+			dismissSheetSubmenuNav();
 		};
 
 		const render = () => {
@@ -2510,7 +2618,7 @@ class MobileBottomSheetMenu {
 		const teardown = () => {
 			removeDismiss();
 			removeDismiss = () => {};
-			dismissSheetSubmenus();
+			dismissSheetSubmenus({ silent: true });
 			overlay.classList.add('mapp-sheet-overlay--closing');
 			overlay.style.pointerEvents = 'none';
 			unlockAppScroll();
@@ -2531,20 +2639,26 @@ class MobileBottomSheetMenu {
 			e.stopImmediatePropagation();
 		};
 
+		const closeSheetFullyImmediate = () => {
+			suppressSubmenuUiPop = true;
+			try {
+				if (navHandle) navHandle.closeImmediate();
+				else teardown();
+			} finally {
+				suppressSubmenuUiPop = false;
+			}
+		};
+
 		const dismissOverlayNow = () => {
 			if (!overlay.isConnected) return;
 			overlay.classList.add('mapp-sheet-overlay--closing');
 			overlay.style.pointerEvents = 'none';
-			dismissSheetSubmenus();
-			if (navHandle) {
-				navHandle.closeImmediate();
-			} else {
-				teardown();
-			}
+			dismissSheetSubmenus({ silent: true });
+			closeSheetFullyImmediate();
 		};
 
 		const requestClose = () => {
-			dismissSheetSubmenus();
+			dismissSheetSubmenus({ silent: true });
 			if (navHandle) {
 				navHandle.close(true);
 				return;
@@ -2554,12 +2668,10 @@ class MobileBottomSheetMenu {
 
 		const runItem = (action) => {
 			const act = typeof action === 'function' ? action : null;
-			dismissSheetSubmenus();
-			if (navHandle) {
-				navHandle.closeImmediate();
-			} else {
-				teardown();
-			}
+			dismissSheetSubmenus({ silent: true });
+			// Sheet уже снят до popstate — иначе #recoverChatListAfterGhostBack считает это «назад» из чата.
+			MessengerNavigation.deferRecoverFromPopstate(500);
+			closeSheetFullyImmediate();
 			if (act) {
 				requestAnimationFrame(() => {
 					try { act(); } catch (_) {}
@@ -2808,6 +2920,68 @@ function buildGroupProfileUrl(chatId) {
 	return id ? `${messengerDisplayOrigin()}/@${encodeURIComponent(id)}` : null;
 }
 
+function buildGroupBranchProfileUrl(parentChatId, slug) {
+	const parent = String(parentChatId || '').trim();
+	const s = String(slug || '').trim();
+	if (!parent || !s) return null;
+	return `${messengerDisplayOrigin()}/@${encodeURIComponent(parent)}/${encodeURIComponent(s)}`;
+}
+
+function isRootGroupChat(chat) {
+	return (chat?.type === 'group' || chat?.type === 'public_group') && !chat?.parentChatId;
+}
+
+function isMessengerGroupChatType(type) {
+	return type === 'group' || type === 'public_group' || type === 'group_branch';
+}
+
+function isGroupBranchChat(chat) {
+	return chat?.type === 'group_branch' || !!chat?.parentChatId;
+}
+
+function normalizeGroupChatsTree(chats) {
+	if (!Array.isArray(chats) || !chats.length) return chats || [];
+	const list = chats.map(c => ({ ...c }));
+	const parentsById = new Map();
+	for (const c of list) {
+		if (isRootGroupChat(c)) {
+			if (!Array.isArray(c.branches)) c.branches = c.branches ? [...c.branches] : [];
+			parentsById.set(c.id, c);
+		}
+	}
+	for (const branchChat of list) {
+		if (!branchChat.parentChatId && branchChat.type !== 'group_branch') continue;
+		const parentId = branchChat.parentChatId;
+		if (!parentId) continue;
+		const parent = parentsById.get(parentId);
+		if (!parent) continue;
+		const entry = {
+			id: branchChat.id,
+			name: branchChat.name || '',
+			slug: branchChat.branchSlug || '',
+			avatar: branchChat.avatar || null,
+			lastMessage: branchChat.lastMessage || '',
+			lastMessageTime: branchChat.lastMessageTime || null,
+			unreadCount: branchChat.unreadCount || 0,
+			order: branchChat.branchOrder ?? 0,
+		};
+		const branches = parent.branches || [];
+		const idx = branches.findIndex(b => b.id === entry.id);
+		if (idx >= 0) branches[idx] = { ...branches[idx], ...entry };
+		else branches.push(entry);
+		parent.branches = branches.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+	}
+	return list;
+}
+
+function canManageGroupBranches(chat) {
+	return isRootGroupChat(chat) && (chat.isAdmin || chat.isGroupCreator);
+}
+
+function isVisibleRootChatItem(chat) {
+	return !chat?.parentChatId && chat?.type !== 'group_branch';
+}
+
 function buildChannelProfileUrl(slug) {
 	const s = String(slug || '').trim();
 	return s ? `${messengerDisplayOrigin()}/@${encodeURIComponent(s)}` : null;
@@ -2835,6 +3009,15 @@ function parseMessengerDeepLink(href) {
 	if (!normalized || !messengerLinkHostsMatch(normalized)) return null;
 	try {
 		const parsed = new URL(normalized);
+		const branchMatch = parsed.pathname.match(/^\/@([^/]+)\/([^/]+)$/i);
+		if (branchMatch) {
+			const parentChatId = decodeURIComponent(branchMatch[1]);
+			const slug = decodeURIComponent(branchMatch[2]);
+			const messageId = (parsed.searchParams.get('m') || '').trim() || null;
+			if (isGroupChatId(parentChatId)) {
+				return { type: 'groupBranch', parentChatId, slug, messageId };
+			}
+		}
 		const pathMatch = parsed.pathname.match(/^\/@([^/]+)$/i);
 		if (!pathMatch) return null;
 		const slug = decodeURIComponent(pathMatch[1]);
@@ -2872,6 +3055,522 @@ function isChannelType(type) {
 
 function isBotContact(chat) {
 	return !!chat?.isBotContact;
+}
+
+function normalizeBotMenuItems(menu) {
+	const items = menu?.items;
+	return Array.isArray(items) ? items.filter(it => it && String(it.text || '').trim()) : [];
+}
+
+function botMenuItemsToSheetItems(items, onSelect, closeMenu, { onSpecialItem } = {}) {
+	return (items || []).map(item => {
+		const label = String(item.text || '').trim();
+		if (!label) return null;
+		const itemId = String(item.id || '').trim();
+		if (itemId === '_assistant_add' || itemId === '_assistant_remove') {
+			return {
+				label,
+				action: () => {
+					closeMenu?.();
+					onSpecialItem?.(itemId);
+				},
+			};
+		}
+		const submenu = item.submenu;
+		if (Array.isArray(submenu) && submenu.length) {
+			const children = botMenuItemsToSheetItems(submenu, onSelect, closeMenu, { onSpecialItem });
+			if (!children.length) return null;
+			return { label, children };
+		}
+		const message = String(item.message || '').trim();
+		if (!message) return null;
+		return {
+			label,
+			action: () => {
+				onSelect(message);
+			},
+		};
+	}).filter(Boolean);
+}
+
+const BOT_ASSISTANT_ADD_ID = '_assistant_add';
+const BOT_ASSISTANT_REMOVE_ID = '_assistant_remove';
+
+function buildBotComposerMenuItems(menu) {
+	return normalizeBotMenuItems(menu).slice();
+}
+
+const ASSISTANT_CONTENT_TYPES = new Set(['text', 'photo', 'collage', 'file']);
+
+function detectAssistantContentType(text) {
+	const t = String(text || '').trim();
+	if (t.includes('type="photo_album"')) return 'collage';
+	if (t.includes('type="image"')) return 'photo';
+	if (t.includes('type="file"')) return 'file';
+	return 'text';
+}
+
+function detectAssistantContentTypesFromMessages(msgs) {
+	const types = new Set();
+	for (const msg of msgs || []) {
+		const sample = String(msg?.text || '');
+		const encSample = String(msg?._encText || '');
+		const probe = sample.includes('<mc-content') ? sample : encSample;
+		types.add(detectAssistantContentType(probe));
+	}
+	if (!types.size) types.add('text');
+	return types;
+}
+
+function parseAssistantMenuContentTypes(message) {
+	const raw = String(message || '').trim();
+	const at = raw.indexOf('@');
+	if (at < 0) return null;
+	const tail = raw.slice(at + 1);
+	const types = tail.split(',').map(t => t.trim().toLowerCase()).filter(t => ASSISTANT_CONTENT_TYPES.has(t));
+	return types.length ? types : null;
+}
+
+function assistantMenuItemMatchesContent(item, selectedTypes) {
+	const allowed = parseAssistantMenuContentTypes(item?.message);
+	if (!allowed?.length) return true;
+	for (const t of selectedTypes) {
+		if (!allowed.includes(t)) return false;
+	}
+	return true;
+}
+
+class MessengerBotAssistantManager {
+	#api;
+	#i18n;
+	#themeManager;
+	#assistants = [];
+	#prefs = { assistantEnabled: true, assistantAutoInsertSeconds: 180, assistantAlwaysConfirm: false };
+	#activeChatId = null;
+	#confirmModalOpen = false;
+	#dismissedSessionIds = new Set();
+	#finishedSessionIds = new Set();
+	#onBotMessageSent = null;
+
+	#icons;
+
+	constructor(api, i18n, themeManager, icons) {
+		this.#api = api;
+		this.#i18n = i18n;
+		this.#themeManager = themeManager;
+		this.#icons = icons;
+	}
+
+	get prefs() { return { ...this.#prefs }; }
+	get assistants() { return this.#assistants.slice(); }
+
+	setOnBotMessageSent(handler) {
+		this.#onBotMessageSent = typeof handler === 'function' ? handler : null;
+	}
+
+	setActiveChatId(chatId) {
+		this.#activeChatId = chatId || null;
+	}
+
+	async loadPreferences() {
+		try {
+			const r = await fetch('/api/profile/assistant-preferences', { credentials: 'same-origin' });
+			if (!r.ok) return;
+			const data = await r.json();
+			this.#prefs = {
+				assistantEnabled: data.assistantEnabled !== false,
+				assistantAutoInsertSeconds: Number(data.assistantAutoInsertSeconds) || 180,
+				assistantAlwaysConfirm: !!data.assistantAlwaysConfirm,
+			};
+		} catch (_) { /* ignore */ }
+	}
+
+	async savePreferences(patch) {
+		const r = await fetch('/api/profile/assistant-preferences', {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			credentials: 'same-origin',
+			body: JSON.stringify(patch),
+		});
+		if (!r.ok) throw new Error('Save failed');
+		const data = await r.json();
+		this.#prefs = {
+			assistantEnabled: data.assistantEnabled !== false,
+			assistantAutoInsertSeconds: Number(data.assistantAutoInsertSeconds) || 180,
+			assistantAlwaysConfirm: !!data.assistantAlwaysConfirm,
+		};
+	}
+
+	async refreshAssistants() {
+		try {
+			const r = await this.#api.getBotAssistants();
+			this.#assistants = (r?.success && Array.isArray(r.assistants)) ? r.assistants : [];
+		} catch (_) {
+			this.#assistants = [];
+		}
+	}
+
+	shouldShowInMessageMenu(chat) {
+		if (!this.#prefs.assistantEnabled) return false;
+		if (!chat || chat.isChannelChat || chat.type === 'channel') return false;
+		return this.#assistants.some(a => normalizeBotMenuItems(a.assistantMenu).length > 0);
+	}
+
+	buildMessageMenuBotsItem(msgs, state, closeMenu) {
+		if (!this.shouldShowInMessageMenu(state)) return null;
+		const eligible = (msgs || []).filter(m => this.#api.canAssistantMessage(m));
+		if (!eligible.length) return null;
+
+		const botIcon = this.#icons?.robotMenu?.() || '';
+		const botChildren = this.#assistants.map(bot => {
+			const children = this.#buildAssistantCommandItems(bot, state, eligible, closeMenu);
+			if (!children.length) return null;
+			return { icon: botIcon, label: bot.name || bot.slug || 'Bot', children };
+		}).filter(Boolean);
+
+		if (!botChildren.length) return null;
+		if (botChildren.length === 1) {
+			return botChildren[0];
+		}
+		return {
+			icon: botIcon,
+			label: this.#i18n.t('assistantMenuBots'),
+			children: botChildren,
+		};
+	}
+
+	#buildAssistantCommandItems(bot, state, eligible, closeMenu, items = bot.assistantMenu?.items) {
+		const selectedTypes = detectAssistantContentTypesFromMessages(eligible);
+		return (items || []).map(item => {
+			const label = String(item?.text || '').trim();
+			if (!label) return null;
+			if (item.submenu?.length) {
+				const children = this.#buildAssistantCommandItems(bot, state, eligible, closeMenu, item.submenu);
+				if (!children.length) return null;
+				return { label, children };
+			}
+			if (!assistantMenuItemMatchesContent(item, selectedTypes)) return null;
+			const menuItemId = item.id || item.message || label;
+			return {
+				label,
+				action: () => {
+					const finishSelection = () => closeMenu?.();
+					finishSelection();
+					void this.#invokeAssistant(state, eligible, bot, menuItemId, finishSelection);
+				},
+			};
+		}).filter(Boolean);
+	}
+
+	async #invokeAssistant(state, msgs, bot, menuItemId, finishSelection = null) {
+		if (!menuItemId || !bot?.botUserId) return;
+		try {
+			const plaintextMessages = [];
+			for (const msg of msgs) {
+				const prepared = await this.#api.prepareAssistantMessage(state.chatId, msg);
+				if (prepared) plaintextMessages.push(prepared);
+			}
+			if (!plaintextMessages.length) throw new Error(this.#i18n.t('assistantSendFailed'));
+			const r = await this.#api.invokeBotAssistant({
+				sourceChatId: state.chatId,
+				messageIds: msgs.map(m => m.id),
+				botUserId: bot.botUserId,
+				menuItemId,
+				plaintextMessages,
+			});
+			if (!r?.success) throw new Error(r?.error || this.#i18n.t('assistantSendFailed'));
+			if (r.message) {
+				await this.#onBotMessageSent?.(r.message, bot);
+			}
+		} catch (e) {
+			await MessengerDialog.alert({
+				title: this.#i18n.t('assistantSendFailed'),
+				message: e?.message || '',
+				type: MessengerDialog.TYPE_DANGER,
+				themeManager: this.#themeManager,
+			});
+		} finally {
+			finishSelection?.();
+		}
+	}
+
+	async handleBotSpecialMenuItem(itemId, botUserId) {
+		try {
+			if (itemId === BOT_ASSISTANT_ADD_ID) {
+				const r = await this.#api.addBotAssistant(botUserId);
+				if (!r?.success) throw new Error(r?.error || 'Failed');
+				await this.refreshAssistants();
+				MessengerDialog.showNotice(this.#i18n.t('botAssistantAdded'), this.#i18n.t('confirm'), null, this.#themeManager);
+				return true;
+			}
+			if (itemId === BOT_ASSISTANT_REMOVE_ID) {
+				const r = await this.#api.removeBotAssistant(botUserId);
+				if (!r?.success) throw new Error(r?.error || 'Failed');
+				await this.refreshAssistants();
+				MessengerDialog.showNotice(this.#i18n.t('botAssistantRemoved'), this.#i18n.t('confirm'), null, this.#themeManager);
+				return true;
+			}
+		} catch (e) {
+			await MessengerDialog.alert({
+				title: this.#i18n.t('assistantSendFailed'),
+				message: e?.message || '',
+				type: MessengerDialog.TYPE_DANGER,
+				themeManager: this.#themeManager,
+			});
+			return true;
+		}
+		return false;
+	}
+
+	async handleReplyPending(payload) {
+		if (!payload?.sessionId || !this.#prefs.assistantEnabled) return;
+		await this.#deliverReply(payload);
+	}
+
+	async processPendingOnConnect() {
+		try {
+			const r = await this.#api.getPendingAssistantReplies();
+			for (const item of r?.replies || []) {
+				await this.#deliverReply(item);
+			}
+		} catch (_) { /* ignore */ }
+	}
+
+	#isSessionClosed(sessionId) {
+		return this.#dismissedSessionIds.has(sessionId) || this.#finishedSessionIds.has(sessionId);
+	}
+
+	async #deliverReply(payload) {
+		const sessionId = payload?.sessionId;
+		if (!sessionId || this.#isSessionClosed(sessionId)) return;
+
+		const needConfirm = this.#shouldConfirm(payload);
+		if (needConfirm) {
+			await this.#showConfirmModal(payload);
+			return;
+		}
+		await this.#insertReply(payload);
+	}
+
+	#shouldConfirm(payload) {
+		if (this.#prefs.assistantAlwaysConfirm) return true;
+		const maxSec = Math.max(0, Number(this.#prefs.assistantAutoInsertSeconds) || 180);
+		const ageMs = Date.now() - new Date(payload.repliedOn).getTime();
+		if (ageMs > maxSec * 1000) return true;
+		if (payload.sourceChatId !== this.#activeChatId) return true;
+		return false;
+	}
+
+	async #dismissReply(payload) {
+		const sessionId = payload?.sessionId;
+		if (!sessionId || this.#isSessionClosed(sessionId)) return;
+		this.#dismissedSessionIds.add(sessionId);
+		try {
+			await this.#api.dismissAssistantReply(sessionId);
+		} catch (_) { /* ignore — локально уже не показываем */ }
+	}
+
+	async #showConfirmModal(payload) {
+		const sessionId = payload?.sessionId;
+		if (!sessionId || this.#confirmModalOpen || this.#isSessionClosed(sessionId)) return;
+		this.#confirmModalOpen = true;
+		const chatLabel = payload.sourceChatName || payload.sourceChatId || '';
+		const preview = String(payload.text || '').trim();
+		let confirmed = false;
+		try {
+			confirmed = await MessengerDialog.confirm({
+				title: this.#i18n.t('assistantReplyTitle'),
+				message: this.#i18n.t('assistantReplyMessage').replace('{chat}', chatLabel),
+				preview,
+				type: MessengerDialog.TYPE_INFO,
+				confirmLabel: this.#i18n.t('assistantReplySend'),
+				cancelLabel: this.#i18n.t('assistantReplyDismiss'),
+				stackActions: true,
+				themeManager: this.#themeManager,
+			});
+		} finally {
+			this.#confirmModalOpen = false;
+		}
+		if (this.#isSessionClosed(sessionId)) return;
+		if (confirmed) {
+			await this.#insertReply(payload);
+			return;
+		}
+		await this.#dismissReply(payload);
+	}
+
+	async #insertReply(payload) {
+		const sessionId = payload?.sessionId;
+		if (!sessionId || this.#isSessionClosed(sessionId)) return;
+		try {
+			const sent = await this.#api.sendMessage(payload.sourceChatId, payload.text || '', {
+				forwardedFromSenderName: payload.botName || '',
+			});
+			if (sent?.id) {
+				await this.#api.confirmAssistantReply(payload.sessionId, sent.id);
+				this.#finishedSessionIds.add(sessionId);
+			}
+			if (payload.sourceChatId === this.#activeChatId) {
+				MessengerDialog.showNotice(this.#i18n.t('assistantReplySent'), this.#i18n.t('confirm'), null, this.#themeManager);
+			}
+		} catch (e) {
+			await MessengerDialog.alert({
+				title: this.#i18n.t('assistantSendFailed'),
+				message: e?.message || '',
+				type: MessengerDialog.TYPE_DANGER,
+				themeManager: this.#themeManager,
+			});
+		}
+	}
+
+	applyAssistantMenuUpdated(payload = {}) {
+		const botUserId = payload.botUserId;
+		if (!botUserId) return;
+		const menu = payload.assistantMenu;
+		if (!menu) return;
+		const idx = this.#assistants.findIndex(a => a.botUserId === botUserId);
+		if (idx >= 0) this.#assistants[idx] = { ...this.#assistants[idx], assistantMenu: menu };
+	}
+}
+
+const MESSAGE_BUTTON_COLORS = new Set(['default', 'primary', 'secondary', 'danger', 'success']);
+
+function normalizeMessageButtons(buttons) {
+	if (!Array.isArray(buttons)) return [];
+	return buttons.map((btn, idx) => {
+		if (!btn) return null;
+		const text = String(btn.text || '').trim();
+		const action = String(btn.action || '').trim();
+		if (!text || !action) return null;
+		let id = String(btn.id ?? '').trim();
+		if (!id) id = String(idx);
+		const colorRaw = String(btn.color || 'default').trim().toLowerCase();
+		const color = MESSAGE_BUTTON_COLORS.has(colorRaw) ? colorRaw : 'default';
+		return { id, text, action, color };
+	}).filter(Boolean);
+}
+
+function presentContextActionMenu(sheetItems, {
+	utils,
+	themeManager,
+	i18n,
+	icons,
+	title = '',
+	anchorEl = null,
+	clientX,
+	clientY,
+	forcePopup = false,
+	onClose,
+} = {}) {
+	if (!sheetItems?.length) return () => {};
+
+	const dismiss = () => {
+		onClose?.();
+	};
+
+	if (!forcePopup && isMobileSheetMenu()) {
+		MobileBottomSheetMenu.open({
+			title,
+			items: sheetItems,
+			themeManager,
+			i18n,
+			icons,
+			onClose: dismiss,
+		});
+		return () => {
+			if (MobileBottomSheetMenu.isOpen()) MobileBottomSheetMenu.close(false);
+			else dismiss();
+		};
+	}
+
+	document.querySelectorAll('.mc-msg-context-menu').forEach(m => m.remove());
+	const mk = utils?.mk || ((tag, cls) => {
+		const el = document.createElement(tag);
+		if (cls) el.className = cls;
+		return el;
+	});
+	const menu = mk('div', 'mc-msg-context-menu mapp-chat-context-menu');
+	themeManager?.applyChatVars?.(menu);
+
+	const closeMenu = () => {
+		menu.remove();
+		dismiss();
+	};
+
+	const addItem = (icon, label, danger, action, { truncate = false } = {}) => {
+		const item = mk('div', 'mapp-context-menu-item');
+		if (danger) item.classList.add('mapp-context-menu-item--danger');
+		if (truncate) item.classList.add('mapp-context-menu-item--truncate');
+		if (icon) {
+			const ic = mk('span', 'mapp-context-menu-item-icon');
+			ic.innerHTML = icon;
+			item.appendChild(ic);
+		}
+		const lbl = mk('span', 'mapp-context-menu-item-label');
+		lbl.textContent = label;
+		item.appendChild(lbl);
+		item.addEventListener('click', () => { closeMenu(); action(); });
+		menu.appendChild(item);
+	};
+
+	sheetItems.forEach(def => {
+		if (def.children?.length) {
+			const subItem = mk('div', 'mapp-context-menu-item mapp-context-menu-item--sub');
+			const ic = mk('span', 'mapp-context-menu-item-icon');
+			ic.innerHTML = def.icon || '';
+			const lbl = mk('span');
+			lbl.textContent = def.label;
+			const arrow = mk('span', 'mapp-context-menu-arrow');
+			arrow.textContent = '›';
+			subItem.append(ic, lbl, arrow);
+			const subMenu = mk('div', 'mapp-context-submenu');
+			def.children.forEach(child => {
+				const cItem = mk('div', 'mapp-context-menu-item');
+				if (child.danger) cItem.classList.add('mapp-context-menu-item--danger');
+				const cLbl = mk('span');
+				cLbl.textContent = child.label;
+				cItem.appendChild(cLbl);
+				cItem.addEventListener('click', () => { closeMenu(); child.action?.(); });
+				subMenu.appendChild(cItem);
+			});
+			subItem.appendChild(subMenu);
+			subItem.addEventListener('mouseenter', () => subMenu.classList.add('mapp-context-submenu--open'));
+			subItem.addEventListener('mouseleave', () => subMenu.classList.remove('mapp-context-submenu--open'));
+			menu.appendChild(subItem);
+		} else {
+			addItem(def.icon, def.label, def.danger, def.action, { truncate: !!def.truncate });
+		}
+	});
+
+	document.body.appendChild(menu);
+
+	let x = clientX;
+	let y = clientY;
+	if (anchorEl instanceof HTMLElement) {
+		const rect = anchorEl.getBoundingClientRect();
+		const mw = menu.offsetWidth;
+		const mh = menu.offsetHeight;
+		x = rect.left;
+		y = rect.top - mh - 8;
+		if (y < 4) y = rect.bottom + 8;
+		if (x + mw > window.innerWidth) x = window.innerWidth - mw - 4;
+		if (x < 4) x = 4;
+	} else if (typeof x !== 'number' || typeof y !== 'number') {
+		x = 4;
+		y = 4;
+	} else {
+		const mw = menu.offsetWidth;
+		const mh = menu.offsetHeight;
+		if (x + mw > window.innerWidth) x = window.innerWidth - mw - 4;
+		if (y + mh > window.innerHeight) y = window.innerHeight - mh - 4;
+		if (x < 4) x = 4;
+		if (y < 4) y = 4;
+	}
+
+	menu.style.left = x + 'px';
+	menu.style.top = y + 'px';
+	attachMenuDismiss(menu, closeMenu);
+	return closeMenu;
 }
 
 function botPreviewIsStarted(chat) {
@@ -2915,7 +3614,7 @@ function channelMetaCanPost(meta) {
 	return channelRoleCanPost(meta.myRole);
 }
 
-function fillTypingIndicator(el, i18n) {
+function fillTypingIndicator(el, i18n, customText) {
 	if (!el) return;
 	el.replaceChildren();
 	const dots = document.createElement('span');
@@ -2923,8 +3622,24 @@ function fillTypingIndicator(el, i18n) {
 	dots.innerHTML = '<span></span><span></span><span></span>';
 	const text = document.createElement('span');
 	text.className = 'mc-typing-inline-text';
-	text.textContent = i18n.t('typingShort');
+	text.textContent = (customText || '').trim() || i18n.t('typingShort');
 	el.append(dots, text);
+}
+
+const THOUGHTS_MARKER = '⟦мысли⟧';
+
+function parseThoughtMessage(text) {
+	const raw = String(text || '');
+	if (!raw.startsWith(THOUGHTS_MARKER)) return null;
+	const body = raw.slice(THOUGHTS_MARKER.length).replace(/^\s*\n?/, '').trim();
+	return { label: 'Мысли', body };
+}
+
+function formatActivityDisplay(activity, i18n) {
+	if (!activity) return '';
+	const msg = (activity.activityMessage || '').trim();
+	if (msg) return msg;
+	return i18n.tActivity(activity.activityType, activity.userName);
 }
 
 function applyChatListPreviewEl(previewEl, previewInfo, i18n) {
@@ -2934,7 +3649,7 @@ function applyChatListPreviewEl(previewEl, previewInfo, i18n) {
 	previewEl.classList.toggle('mapp-chat-item-preview--media', !!previewInfo.media);
 	previewEl.replaceChildren();
 	if (previewInfo.typing) {
-		fillTypingIndicator(previewEl, i18n);
+		fillTypingIndicator(previewEl, i18n, previewInfo.typingText);
 		return;
 	}
 	if (previewInfo.mediaContent) {
@@ -3170,7 +3885,18 @@ const MessengerNavigation = (() => {
 		closeImmediate() {
 			if (!layer || layers.indexOf(layer) < 0) return;
 			logNav('close-immediate', { layerId: layer.id });
+			const closedDepth = layer.depth;
 			popLayerImmediate(layer, false, 'close-immediate');
+			if (isHistoryActive() && closedDepth > 0 &&
+				readDepth(history.state) >= closedDepth) {
+				historySyncSuppress++;
+				// Оверлей уже снят до popstate — иначе recoverChatListAfterGhostBack уводит в список чатов.
+				deferRecoverFromPopstate(400);
+				try {
+					history.back();
+					return;
+				} catch (_) {}
+			}
 			writeHistoryFromStack();
 		},
 	});
@@ -3361,7 +4087,14 @@ const MessengerNavigation = (() => {
 			const dialogOverlays = document.querySelectorAll('.mc-dialog-overlay');
 			if (dialogOverlays.length > 0) {
 				const top = layers[layers.length - 1];
-				if (!messengerNavLayerIsDialog(top)) {
+				if (messengerNavLayerIsDialog(top)) {
+					// Нормальное закрытие через popLayer ниже.
+				} else if (messengerTryDismissTopDialog()) {
+					writeHistoryFromStack();
+					this.consumePopstate();
+					logNav('popstate-dialog-dismiss');
+					return true;
+				} else {
 					dialogOverlays[dialogOverlays.length - 1].remove();
 					writeHistoryFromStack();
 					this.consumePopstate();
@@ -3465,12 +4198,7 @@ function messengerHandleMobileBackFromChat(onNavigateBack) {
 		return;
 	}
 	MessengerNavigation.logNav('chat-header-back', { stack: MessengerNavigation.getStackSnapshot() });
-	if (MobileBottomSheetMenu.isOpen()) {
-		MobileBottomSheetMenu.close(true);
-		return;
-	}
-	if (MessengerMediaOverlays.dismissOnPopstate()) return;
-	if (MessengerNavigation.dismissTop({ fromUser: true, reason: 'back-button' })) return;
+	if (messengerDismissTopOverlayBeforeBack()) return;
 	if (MessengerNavigation.hasLayersAboveChat()) {
 		MessengerNavigation.back();
 		return;
@@ -3515,7 +4243,7 @@ function messengerMakeDismissable(dismiss, cancelValue, opts = {}) {
 	const close = (result = cancelValue) => {
 		pendingResult = result;
 		if (active && navHandle) {
-			navHandle.closeImmediate();
+			navHandle.close(true);
 			return;
 		}
 		finish(result, false);
@@ -3553,6 +4281,18 @@ function messengerTryDismissTopDialog() {
 	dialogs[dialogs.length - 1].remove();
 	MessengerNavigation.logNav('dialog-orphan-close');
 	return true;
+}
+
+/** Закрыть верхний блокирующий оверлей (диалог, sheet, media, nav-слой). */
+function messengerDismissTopOverlayBeforeBack() {
+	if (messengerTryDismissTopDialog()) return true;
+	if (MobileBottomSheetMenu.isOpen()) {
+		MobileBottomSheetMenu.close(true);
+		return true;
+	}
+	if (MessengerMediaOverlays.dismissOnPopstate()) return true;
+	if (MessengerNavigation.dismissTop({ fromUser: true, reason: 'back-button' })) return true;
+	return false;
 }
 
 function messengerHandleNavPopstate(event) {
@@ -4599,7 +5339,7 @@ function bindTapAction(el, handler, { stopPropagation = false } = {}) {
 
 function bindChatHeaderProfileClick(hitEl, chat, callbacks) {
 	if (!hitEl || !chat || !callbacks) return;
-	const isGroup = chat.type === 'group' || chat.type === 'public_group';
+	const isGroup = chat.type === 'group' || chat.type === 'public_group' || chat.type === 'group_branch';
 	const isChannel = isChannelType(chat.type);
 	const canOpen = (isGroup && callbacks.onShowGroupProfile)
 		|| (isChannel && (callbacks.onChannelAbout || callbacks.onShowChannelProfile))
@@ -5671,6 +6411,187 @@ function buildFolderSettingsPanel({ utils, icons, i18n, api, themeManager, onCha
 	return section;
 }
 
+function buildGroupBranchSettingsPanel({
+	utils, icons, i18n, api, themeManager, parentChatId, onChanged, onBranchCreated,
+}) {
+	const section = utils.mk('div', 'mapp-folder-settings mapp-group-branch-settings');
+	const title = utils.mk('div', 'mapp-folder-settings-title');
+	title.textContent = i18n.t('groupBranches');
+	const hint = utils.mk('div', 'mapp-folder-settings-hint');
+	hint.textContent = i18n.t('folderSettingsHint');
+	const list = utils.mk('div', 'mapp-folder-settings-list');
+	section.append(title, hint, list);
+
+	let branches = [];
+
+	const render = () => {
+		list.innerHTML = '';
+		if (!branches.length) {
+			const empty = utils.mk('div', 'mapp-list-empty');
+			empty.textContent = i18n.t('noGroupBranches');
+			list.appendChild(empty);
+		} else {
+			branches.forEach(branch => {
+				const row = utils.mk('div', 'mapp-folder-settings-item');
+				row.draggable = true;
+				row.dataset.branchId = branch.id;
+				const grip = utils.mk('span', 'mapp-folder-settings-grip');
+				grip.textContent = '⋮⋮';
+				const nameEl = utils.mk('span', 'mapp-folder-settings-name');
+				nameEl.textContent = branch.name || branch.slug || '';
+				nameEl.title = i18n.t('folderRename');
+				nameEl.addEventListener('click', () => {
+					if (nameEl.isContentEditable) return;
+					const prevName = branch.name || '';
+					nameEl.contentEditable = 'true';
+					nameEl.classList.add('mapp-folder-settings-name--editing');
+					nameEl.focus();
+					const range = document.createRange();
+					range.selectNodeContents(nameEl);
+					const sel = window.getSelection();
+					sel?.removeAllRanges();
+					sel?.addRange(range);
+
+					const finish = async (save) => {
+						if (!nameEl.isContentEditable) return;
+						nameEl.contentEditable = 'false';
+						nameEl.classList.remove('mapp-folder-settings-name--editing');
+						const next = nameEl.textContent.trim();
+						if (!save || !next || next === prevName) {
+							nameEl.textContent = prevName || branch.slug || '';
+							return;
+						}
+						try {
+							await api.updateGroupBranch(branch.id, { name: next });
+							branch.name = next;
+							await reload();
+							onChanged?.();
+						} catch (e) {
+							console.warn('[GroupBranchSettings] rename error', e);
+							nameEl.textContent = prevName || branch.slug || '';
+						}
+					};
+
+					const onBlur = () => finish(true);
+					const onKeyDown = (e) => {
+						if (e.key === 'Enter') {
+							e.preventDefault();
+							nameEl.removeEventListener('blur', onBlur);
+							nameEl.removeEventListener('keydown', onKeyDown);
+							finish(true);
+						} else if (e.key === 'Escape') {
+							e.preventDefault();
+							nameEl.removeEventListener('blur', onBlur);
+							nameEl.removeEventListener('keydown', onKeyDown);
+							finish(false);
+						}
+					};
+					nameEl.addEventListener('blur', onBlur);
+					nameEl.addEventListener('keydown', onKeyDown);
+				});
+				const deleteBtn = utils.mk('button', 'mapp-folder-settings-delete');
+				deleteBtn.type = 'button';
+				deleteBtn.innerHTML = icons.close();
+				deleteBtn.title = i18n.t('groupBranchDelete');
+				deleteBtn.addEventListener('click', async () => {
+					const confirmed = await MessengerDialog.confirm({
+						title: i18n.t('groupBranchDeleteTitle'),
+						message: i18n.t('groupBranchDeleteMsg'),
+						type: MessengerDialog.TYPE_DANGER,
+						confirmLabel: i18n.t('confirm'),
+						cancelLabel: i18n.t('cancel'),
+						themeManager,
+					});
+					if (!confirmed) return;
+					try {
+						await api.deleteGroupBranch(branch.id);
+						await reload();
+						onChanged?.();
+					} catch (e) {
+						console.warn('[GroupBranchSettings] delete error', e);
+					}
+				});
+				row.append(grip, nameEl, deleteBtn);
+				row.addEventListener('dragstart', e => {
+					row.classList.add('mapp-folder-settings-item--dragging');
+					e.dataTransfer.setData('text/plain', branch.id);
+				});
+				row.addEventListener('dragend', () => row.classList.remove('mapp-folder-settings-item--dragging'));
+				row.addEventListener('dragover', e => { e.preventDefault(); row.classList.add('mapp-folder-settings-item--over'); });
+				row.addEventListener('dragleave', () => row.classList.remove('mapp-folder-settings-item--over'));
+				row.addEventListener('drop', async e => {
+					e.preventDefault();
+					row.classList.remove('mapp-folder-settings-item--over');
+					const fromId = e.dataTransfer.getData('text/plain');
+					if (!fromId || fromId === branch.id) return;
+					const fromIdx = branches.findIndex(b => b.id === fromId);
+					const toIdx = branches.findIndex(b => b.id === branch.id);
+					if (fromIdx < 0 || toIdx < 0) return;
+					const [moved] = branches.splice(fromIdx, 1);
+					branches.splice(toIdx, 0, moved);
+					render();
+					try {
+						await api.reorderGroupBranches(parentChatId, branches.map(b => b.id));
+						onChanged?.();
+					} catch (err) {
+						console.warn('[GroupBranchSettings] reorder error', err);
+						await reload();
+					}
+				});
+				list.appendChild(row);
+			});
+		}
+		const createBtn = utils.mk('button', 'mapp-btn mapp-btn-primary mapp-btn-block mapp-btn-settings-wide mapp-folder-settings-create-btn');
+		createBtn.type = 'button';
+		createBtn.textContent = i18n.t('groupBranchCreate');
+		createBtn.addEventListener('click', async () => {
+			const name = await MessengerDialog.prompt({
+				title: i18n.t('groupBranchCreate'),
+				placeholder: i18n.t('groupBranchNameLabel'),
+				confirmLabel: i18n.t('ok'),
+				cancelLabel: i18n.t('cancel'),
+				themeManager,
+			});
+			if (!name?.trim()) return;
+			try {
+				const r = await api.createGroupBranch(parentChatId, name.trim());
+				if (MessengerThemeManager.isAdminGroupEncryptionEnabled()) {
+					api.distributeMissingGroupKeys(r.chatId).catch(() => {});
+				}
+				onChanged?.();
+				onBranchCreated?.(r);
+				await reload();
+			} catch (e) {
+				await MessengerDialog.alert({
+					title: i18n.t('groupSaveError'),
+					message: e.message || '',
+					type: MessengerDialog.TYPE_DANGER,
+					themeManager,
+				});
+			}
+		});
+		list.appendChild(createBtn);
+	};
+
+	const reload = async () => {
+		try {
+			const data = await api.getGroupInfo(parentChatId);
+			if (!data?.success) throw new Error(data?.error || 'GetGroupInfo failed');
+			branches = (data.branches || []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+			render();
+		} catch (e) {
+			console.warn('[GroupBranchSettings] load error', e);
+		}
+	};
+
+	reload();
+	if (themeManager) {
+		themeManager.applyChatVars(section);
+		themeManager.applyAppVars(section);
+	}
+	return section;
+}
+
 function buildMessengerAppSettingsMenuItems({
 	themeManager,
 	icons,
@@ -5906,6 +6827,7 @@ class MessengerUserProfileModal {
 		const accountView = mkView('account');
 		const pwdPanel = mkView('password');
 		const privacyPanel = mkView('privacy');
+		const assistantPanel = mkView('assistant');
 		const invitesPanel = mkView('invites');
 		const channelsPanel = mkView('channels');
 		const botsPanel = mkView('bots');
@@ -5929,6 +6851,7 @@ class MessengerUserProfileModal {
 			account: this.#i18n.t('accountTab'),
 			password: this.#i18n.t('securityTab'),
 			privacy: this.#i18n.t('privacy'),
+			assistant: this.#i18n.t('assistantTab'),
 			invites: this.#i18n.t('invitationsTab'),
 			channels: this.#i18n.t('channelsTab'),
 			bots: this.#i18n.t('botsTab'),
@@ -5940,7 +6863,7 @@ class MessengerUserProfileModal {
 		};
 
 		const allViews = [
-			homeView, accountView, pwdPanel, privacyPanel, invitesPanel, channelsPanel, botsPanel,
+			homeView, accountView, pwdPanel, privacyPanel, assistantPanel, invitesPanel, channelsPanel, botsPanel,
 			chatSettingsPanel, foldersPanel, aboutPanel, helpPanel, settingsPanel,
 		];
 
@@ -6017,6 +6940,67 @@ class MessengerUserProfileModal {
 		allowWriteRow.sel.addEventListener('change', savePrivacy);
 		privacyPanel.appendChild(privacyScroll);
 		viewsEl.appendChild(privacyPanel);
+
+		const assistantScroll = document.createElement('div');
+		assistantScroll.className = 'mapp-profile-tab-scroll mapp-profile-form-page';
+		const assistantCard = mkUiCard(this.#i18n.t('assistantTab'));
+		const assistantHint = document.createElement('div');
+		assistantHint.className = 'mapp-input-hint mapp-group-section-hint';
+		assistantHint.textContent = this.#i18n.t('assistantTabHint');
+		let assistantPrefs = { assistantEnabled: true, assistantAutoInsertSeconds: 180, assistantAlwaysConfirm: false };
+		try {
+			const ar = await fetch('/api/profile/assistant-preferences', { credentials: 'same-origin' });
+			if (ar.ok) assistantPrefs = await ar.json();
+		} catch (_) { /* ignore */ }
+		const { row: assistantEnabledRow, input: assistantEnabledChk } = mkToggleField(
+			this.#i18n.t('assistantEnabled'),
+			{ checked: assistantPrefs.assistantEnabled !== false, sublabel: this.#i18n.t('assistantEnabledHint') },
+		);
+		const { row: assistantConfirmRow, input: assistantConfirmChk } = mkToggleField(
+			this.#i18n.t('assistantAlwaysConfirm'),
+			{ checked: !!assistantPrefs.assistantAlwaysConfirm, sublabel: this.#i18n.t('assistantAlwaysConfirmHint') },
+		);
+		const autoInsertRow = document.createElement('div');
+		autoInsertRow.className = 'mapp-ui-form-row';
+		const autoInsertLabel = document.createElement('label');
+		autoInsertLabel.className = 'mapp-toggle-label';
+		autoInsertLabel.textContent = this.#i18n.t('assistantAutoInsertSeconds');
+		const autoInsertHint = document.createElement('div');
+		autoInsertHint.className = 'mapp-input-hint';
+		autoInsertHint.textContent = this.#i18n.t('assistantAutoInsertHint');
+		const autoInsertInput = document.createElement('input');
+		autoInsertInput.type = 'number';
+		autoInsertInput.min = '0';
+		autoInsertInput.max = '3600';
+		autoInsertInput.step = '30';
+		autoInsertInput.className = 'mapp-ui-input mapp-ui-input--narrow';
+		autoInsertInput.value = String(assistantPrefs.assistantAutoInsertSeconds ?? 180);
+		autoInsertRow.append(autoInsertLabel, autoInsertInput, autoInsertHint);
+		const assistantMsg = mkStatusMsg();
+		const saveAssistantPrefs = async () => {
+			const r = await fetch('/api/profile/assistant-preferences', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'same-origin',
+				body: JSON.stringify({
+					assistantEnabled: assistantEnabledChk.checked,
+					assistantAutoInsertSeconds: Math.max(0, Math.min(3600, parseInt(autoInsertInput.value, 10) || 180)),
+					assistantAlwaysConfirm: assistantConfirmChk.checked,
+				}),
+			});
+			if (!r.ok) showStatus(assistantMsg, 'Error', false);
+			else {
+				assistantPrefs = await r.json();
+				showStatus(assistantMsg, this.#i18n.t('saved'), true);
+			}
+		};
+		assistantEnabledChk.addEventListener('change', saveAssistantPrefs);
+		assistantConfirmChk.addEventListener('change', saveAssistantPrefs);
+		autoInsertInput.addEventListener('change', saveAssistantPrefs);
+		assistantCard.append(assistantHint, assistantEnabledRow, autoInsertRow, assistantConfirmRow, assistantMsg);
+		assistantScroll.appendChild(assistantCard);
+		assistantPanel.appendChild(assistantScroll);
+		viewsEl.appendChild(assistantPanel);
 
 		const invitesScroll = document.createElement('div');
 		invitesScroll.className = 'mapp-profile-tab-scroll mapp-profile-form-page';
@@ -6553,6 +7537,7 @@ class MessengerUserProfileModal {
 			mkNavRow(this.#i18n.t('accountTab'), 'account'),
 			mkNavRow(this.#i18n.t('securityTab'), 'password'),
 			mkNavRow(this.#i18n.t('privacy'), 'privacy'),
+			mkNavRow(this.#i18n.t('assistantTab'), 'assistant'),
 			mkNavRow(this.#i18n.t('invitationsTab'), 'invites'),
 			mkNavRow(this.#i18n.t('channelsTab'), 'channels'),
 			mkNavRow(this.#i18n.t('botsTab'), 'bots'),
@@ -7347,7 +8332,7 @@ class MessengerGroupProfileModal {
 		}
 
 		const canEdit = !!info.canEdit;
-		if (canEdit) {
+		if (canEdit && MessengerThemeManager.isAdminGroupEncryptionEnabled()) {
 			this.#api.distributeMissingGroupKeys(chat.id).catch(() => {});
 		}
 		const content = this.#utils.mk('div', 'mapp-group-profile-content');
@@ -7412,12 +8397,54 @@ class MessengerGroupProfileModal {
 		applyStandardFieldInput(nameInput);
 		nameInput.value = info.name || chat.name || '';
 		nameInput.disabled = !canEdit;
-		const nameField = mkProfileField(this.#i18n.t('groupNameLabel'), nameInput);
+		const nameLabel = info.isBranch
+			? this.#i18n.t('groupBranchNameLabelShort')
+			: this.#i18n.t('groupNameLabel');
+		const nameField = mkProfileField(nameLabel, nameInput);
 		headText.appendChild(nameField);
 		head.append(avatarSlot, headText);
 		content.appendChild(head);
 
+		let savedDescription = (info.description || '').trim();
+		if (info.isBranch) {
+			const descInput = document.createElement('textarea');
+			descInput.rows = 3;
+			applyStandardFieldInput(descInput);
+			descInput.value = info.description || '';
+			descInput.disabled = !canEdit;
+			const descField = mkProfileField(this.#i18n.t('channelDescriptionLabel'), descInput);
+			content.appendChild(descField);
+			if (canEdit) {
+				descInput.addEventListener('input', () => {
+					clearTimeout(saveTimer);
+					saveTimer = setTimeout(() => {
+						const desc = descInput.value.trim();
+						if (desc !== savedDescription) persistGroupSettings({ description: desc });
+					}, 600);
+				});
+				descInput.addEventListener('blur', () => {
+					clearTimeout(saveTimer);
+					const desc = descInput.value.trim();
+					if (desc !== savedDescription) persistGroupSettings({ description: desc });
+				});
+			}
+		}
+
+		if (!info.isBranch && canEdit) {
+			content.appendChild(buildGroupBranchSettingsPanel({
+				utils: this.#utils,
+				icons: this.#icons,
+				i18n: this.#i18n,
+				api: this.#api,
+				themeManager: this.#themeManager,
+				parentChatId: chat.id,
+				onChanged: () => callbacks.onBranchesChanged?.(),
+				onBranchCreated: (r) => callbacks.onBranchCreated?.(r),
+			}));
+		}
+
 		let savedRequiresExtra = !!info.requiresCustomGroupPassword;
+		if (!info.isBranch && MessengerThemeManager.isAdminGroupEncryptionEnabled()) {
 		const encCard = mkUiCard(this.#i18n.t('passwordSectionMaster'));
 		const encHint = this.#utils.mk('div', 'mapp-input-hint mapp-group-section-hint');
 		encHint.textContent = this.#i18n.t('groupExtraPasswordToggleHint');
@@ -7471,6 +8498,7 @@ class MessengerGroupProfileModal {
 		});
 		encCard.appendChild(setPwdBtn);
 		content.appendChild(encCard);
+		}
 
 		let savedName = (info.name || chat.name || '').trim();
 		let savedAllowJoinByLink = !!info.allowJoinByLink;
@@ -7494,8 +8522,11 @@ class MessengerGroupProfileModal {
 			const titleRow = panelEl.querySelector('.mc-panel-window-title-row');
 			const existingQr = panelEl.querySelector('.mc-panel-window-qr-btn');
 			if (enabled && !existingQr && titleRow) {
+				const link = info.isBranch && info.parentChatId && info.branchSlug
+					? buildGroupBranchProfileUrl(info.parentChatId, info.branchSlug)
+					: buildGroupProfileUrl(chat.id);
 				const qrBtn = createProfileQrButton({
-					link: buildGroupProfileUrl(chat.id),
+					link,
 					qrTitle: this.#i18n.t('qrGroupTitle'),
 					icons: this.#icons,
 					i18n: this.#i18n,
@@ -7507,34 +8538,45 @@ class MessengerGroupProfileModal {
 			}
 		};
 
-		const persistGroupSettings = async ({ name, allowJoinByLink: linkFlag, requiresCustomGroupPassword: extraFlag, photo } = {}) => {
+		const persistGroupSettings = async ({ name, allowJoinByLink: linkFlag, requiresCustomGroupPassword: extraFlag, photo, description } = {}) => {
 			if (!canEdit || saving) return;
 			const nextName = name != null ? String(name).trim() : savedName;
 			const nextLink = linkFlag != null ? !!linkFlag : savedAllowJoinByLink;
 			const nextExtra = extraFlag != null ? !!extraFlag : savedRequiresExtra;
+			const nextDescription = description != null ? String(description).trim() : savedDescription;
 			const nameChanged = nextName && nextName !== savedName;
 			const linkChanged = nextLink !== savedAllowJoinByLink;
 			const extraChanged = nextExtra !== savedRequiresExtra;
-			if (!nameChanged && !linkChanged && !extraChanged && !photo) return;
+			const descriptionChanged = info.isBranch && description != null && nextDescription !== savedDescription;
+			if (!nameChanged && !linkChanged && !extraChanged && !photo && !descriptionChanged) return;
 
 			saving = true;
 			try {
-				if (nameChanged || linkChanged || extraChanged) {
-					await this.#api.updateGroup(chat.id, {
-						...(nameChanged ? { name: nextName } : {}),
-						...(linkChanged ? { allowJoinByLink: nextLink } : {}),
-						...(extraChanged ? { requiresCustomGroupPassword: nextExtra } : {}),
-					});
-					if (nameChanged) savedName = nextName;
-					if (linkChanged) {
-						savedAllowJoinByLink = nextLink;
-						allowJoinByLink = nextLink;
-						updateHeaderQr(nextLink);
-					}
-					if (extraChanged) {
-						savedRequiresExtra = nextExtra;
-						const meta = this.#api.chatMeta(chat.id);
-						if (meta) meta.requiresCustomGroupPassword = nextExtra;
+				if (nameChanged || linkChanged || extraChanged || descriptionChanged) {
+					if (info.isBranch) {
+						await this.#api.updateGroupBranch(chat.id, {
+							...(nameChanged ? { name: nextName } : {}),
+							...(descriptionChanged ? { description: nextDescription } : {}),
+						});
+						if (nameChanged) savedName = nextName;
+						if (descriptionChanged) savedDescription = nextDescription;
+					} else {
+						await this.#api.updateGroup(chat.id, {
+							...(nameChanged ? { name: nextName } : {}),
+							...(linkChanged ? { allowJoinByLink: nextLink } : {}),
+							...(extraChanged ? { requiresCustomGroupPassword: nextExtra } : {}),
+						});
+						if (nameChanged) savedName = nextName;
+						if (linkChanged) {
+							savedAllowJoinByLink = nextLink;
+							allowJoinByLink = nextLink;
+							updateHeaderQr(nextLink);
+						}
+						if (extraChanged) {
+							savedRequiresExtra = nextExtra;
+							const meta = this.#api.chatMeta(chat.id);
+							if (meta) meta.requiresCustomGroupPassword = nextExtra;
+						}
 					}
 				}
 				if (photo) {
@@ -7568,11 +8610,11 @@ class MessengerGroupProfileModal {
 		};
 
 		const linkCard = mkUiCard(this.#i18n.t('groupInviteLink'));
-		linkCard.hidden = !allowJoinByLink;
+		linkCard.hidden = info.isBranch || !allowJoinByLink;
 		const linkSection = this.#utils.mk('div', 'mapp-group-link-section mapp-group-link-section--in-card');
 
 		const renderGroupLinkSection = () => {
-			linkCard.hidden = !allowJoinByLink;
+			linkCard.hidden = info.isBranch || !allowJoinByLink;
 			if (!allowJoinByLink) return;
 			const groupLink = buildGroupProfileUrl(chat.id);
 			linkSection.innerHTML = '';
@@ -7616,6 +8658,20 @@ class MessengerGroupProfileModal {
 		};
 
 		if (canEdit) {
+			nameInput.addEventListener('input', () => {
+				clearTimeout(saveTimer);
+				saveTimer = setTimeout(() => {
+					const name = nameInput.value.trim();
+					if (name && name !== savedName) persistGroupSettings({ name });
+				}, 600);
+			});
+			nameInput.addEventListener('blur', () => {
+				clearTimeout(saveTimer);
+				const name = nameInput.value.trim();
+				if (name && name !== savedName) persistGroupSettings({ name });
+			});
+		}
+		if (canEdit && !info.isBranch) {
 			const accessCard = mkUiCard(this.#i18n.t('groupJoinByLink'));
 			const { row: joinLinkRow, input: joinLinkChk } = mkToggleField(
 				this.#i18n.t('groupJoinByLink'),
@@ -7631,18 +8687,6 @@ class MessengerGroupProfileModal {
 				renderGroupLinkSection();
 				updateHeaderQr(allowJoinByLink);
 				persistGroupSettings({ allowJoinByLink });
-			});
-			nameInput.addEventListener('input', () => {
-				clearTimeout(saveTimer);
-				saveTimer = setTimeout(() => {
-					const name = nameInput.value.trim();
-					if (name && name !== savedName) persistGroupSettings({ name });
-				}, 600);
-			});
-			nameInput.addEventListener('blur', () => {
-				clearTimeout(saveTimer);
-				const name = nameInput.value.trim();
-				if (name && name !== savedName) persistGroupSettings({ name });
 			});
 		}
 		linkCard.appendChild(linkSection);
@@ -7843,12 +8887,16 @@ class MessengerGroupProfileModal {
 			panelContent.appendChild(statusBar);
 		}
 
+		const branchProfileLink = info.isBranch && info.parentChatId && info.branchSlug
+			? buildGroupBranchProfileUrl(info.parentChatId, info.branchSlug)
+			: buildGroupProfileUrl(chat.id);
+		const showProfileQr = info.isBranch || allowJoinByLink;
 		const panel = this.#menuBuilder.buildWindow(
-			this.#i18n.t('groupProfile'),
+			info.isBranch ? (info.name || chat.name || this.#i18n.t('groupProfile')) : this.#i18n.t('groupProfile'),
 			panelContent,
 			() => this.close(),
-			allowJoinByLink ? {
-				profileLink: buildGroupProfileUrl(chat.id),
+			showProfileQr ? {
+				profileLink: branchProfileLink,
 				qrTitle: this.#i18n.t('qrGroupTitle'),
 				icons: this.#icons,
 				i18n: this.#i18n,
@@ -9355,6 +10403,70 @@ class MessengerBotProfileModal {
 	}
 }
 
+class MessengerBotMenuButton {
+	#utils;
+	#icons;
+	#i18n;
+	#themeManager;
+	#items;
+	#onSelect;
+	#onSpecialItem;
+	#btnEl = null;
+	#closeMenu = null;
+
+	constructor(utils, icons, i18n, themeManager, items, onSelect, onSpecialItem = null) {
+		this.#utils = utils;
+		this.#icons = icons;
+		this.#i18n = i18n;
+		this.#themeManager = themeManager;
+		this.#items = items;
+		this.#onSelect = onSelect;
+		this.#onSpecialItem = onSpecialItem;
+	}
+
+	closePopup() {
+		this.#closeMenu?.();
+		this.#closeMenu = null;
+	}
+
+	build() {
+		const wrap = this.#utils.mk('div', 'mc-bot-menu-wrap');
+		const btn = this.#utils.mk('button', 'mc-bot-menu-btn');
+		btn.type = 'button';
+		btn.setAttribute('aria-label', this.#i18n.t('botMenu') || 'Меню бота');
+		btn.innerHTML = this.#icons.menuGrid();
+		this.#btnEl = btn;
+
+		btn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			if (this.#closeMenu) {
+				this.closePopup();
+				return;
+			}
+			const sheetItems = botMenuItemsToSheetItems(
+				this.#items,
+				this.#onSelect,
+				() => this.closePopup(),
+				{ onSpecialItem: this.#onSpecialItem },
+			);
+			if (!sheetItems.length) return;
+
+			this.#closeMenu = presentContextActionMenu(sheetItems, {
+				utils: this.#utils,
+				themeManager: this.#themeManager,
+				i18n: this.#i18n,
+				icons: this.#icons,
+				title: this.#i18n.t('botMenu') || 'Меню бота',
+				anchorEl: btn,
+				onClose: () => { this.#closeMenu = null; },
+			});
+		});
+
+		wrap.append(btn);
+		return wrap;
+	}
+}
+
 class MessengerAttachMenu {
 	#utils;
 	#icons;
@@ -10693,6 +11805,7 @@ class MessengerThemeManager {
 	static #configuredThemes = null;
 	static #defaultThemeName = null;
 	static #adminUseThemeChatBg = true;
+	static #adminEnableGroupEncryption = false;
 	static #userUseThemeChatBg = null;
 	static #instances = new Set();
 	static THEME_VAR_SELECTORS = [
@@ -10724,7 +11837,7 @@ class MessengerThemeManager {
 	#themeStyleEl = null;
 	#lastThemeCss = '';
 
-	static configure({ themes, defaultThemeName, useThemeChatBg } = {}) {
+	static configure({ themes, defaultThemeName, useThemeChatBg, enableGroupEncryption } = {}) {
 		let republish = false;
 		if (Array.isArray(themes) && themes.length) {
 			MessengerThemeManager.#configuredThemes = themes;
@@ -10738,6 +11851,12 @@ class MessengerThemeManager {
 			if (MessengerThemeManager.#adminUseThemeChatBg !== next) {
 				MessengerThemeManager.#adminUseThemeChatBg = next;
 				republish = true;
+			}
+		}
+		if (enableGroupEncryption !== undefined) {
+			const next = enableGroupEncryption === true;
+			if (MessengerThemeManager.#adminEnableGroupEncryption !== next) {
+				MessengerThemeManager.#adminEnableGroupEncryption = next;
 			}
 		}
 		if (republish) {
@@ -10773,6 +11892,17 @@ class MessengerThemeManager {
 
 	static isAdminUseThemeChatBgEnabled() {
 		return MessengerThemeManager.#adminUseThemeChatBg;
+	}
+
+	static isAdminGroupEncryptionEnabled() {
+		return MessengerThemeManager.#adminEnableGroupEncryption;
+	}
+
+	static shouldShowChatEncryptionMenu(chat) {
+		if (!chat) return false;
+		const isGroup = chat.type === 'group' || chat.type === 'public_group' || chat.type === 'group_branch';
+		if (isGroup && !MessengerThemeManager.isAdminGroupEncryptionEnabled()) return false;
+		return true;
 	}
 
 	static #effectiveUseThemeChatBg() {
@@ -11711,6 +12841,7 @@ function bindLongPressAction(el, onLongPress) {
 		startX = e.clientX;
 		startY = e.clientY;
 		clearTimer();
+		try { el.setPointerCapture(e.pointerId); } catch (_) {}
 		pressTimer = setTimeout(() => {
 			pressTimer = null;
 			suppressNextClick = true;
@@ -11725,8 +12856,14 @@ function bindLongPressAction(el, onLongPress) {
 		if (dx * dx + dy * dy > SLOP_PX * SLOP_PX) clearTimer();
 	});
 
-	el.addEventListener('pointerup', clearTimer);
-	el.addEventListener('pointercancel', clearTimer);
+	const releasePointer = (e) => {
+		clearTimer();
+		if (el.hasPointerCapture?.(e.pointerId)) {
+			try { el.releasePointerCapture(e.pointerId); } catch (_) {}
+		}
+	};
+	el.addEventListener('pointerup', releasePointer);
+	el.addEventListener('pointercancel', releasePointer);
 
 	el.addEventListener('click', (e) => {
 		if (!suppressNextClick) return;
@@ -12977,6 +14114,7 @@ class MessengerCache {
 			_encReplyPreview: encReply,
 			bodyEnc: null,
 			_lc: 0,
+			buttons: normalizeMessageButtons(msg.buttons),
 		};
 	}
 
@@ -13071,6 +14209,7 @@ class MessengerCache {
 			editedOn: r.editedOn ? new Date(r.editedOn) : null,
 			deletedForEveryone: !!r.deletedForEveryone,
 			encryptionTier: r.encryptionTier || 'basic',
+			buttons: normalizeMessageButtons(r.buttons),
 		};
 		if (tier === 'protected') {
 			if (SupraCrypto.isEncrypted(r.text)) msg._encText = r.text;
@@ -13948,10 +15087,11 @@ class MessengerMessageService {
 				messages: newMsgs,
 				reconcile: reconcile || { historyCleared: false, removedIds: [] },
 				markedRead: !!panel.markedRead,
+				activities: panel.activities || [],
 			};
 		} catch (err) {
 			console.warn('[MessengerMessageService] syncNewMessages error:', err);
-			return { messages: [], reconcile: { historyCleared: false, removedIds: [] }, markedRead: false };
+			return { messages: [], reconcile: { historyCleared: false, removedIds: [] }, markedRead: false, activities: [] };
 		}
 	}
 	async initialLoad(chatId, api, pageSize = 20) {
@@ -14080,6 +15220,7 @@ class MessengerMessageService {
 	async syncRecentFromServer(chatId, api, pageSize = 50, { markAsRead = false } = {}) {
 		let reconcile = { historyCleared: false, removedIds: [] };
 		let markedRead = false;
+		let activities = [];
 		try {
 			const lastId = await this.#cache.getLastMessageId(chatId);
 			const panel = await api.syncChatPanel(chatId, {
@@ -14089,6 +15230,7 @@ class MessengerMessageService {
 			});
 			if (!panel?.success) throw new Error(panel?.error || 'SyncChatPanel failed');
 			markedRead = !!panel.markedRead;
+			activities = panel.activities || [];
 			if (panel.messages?.length) await this.ingest(chatId, panel.messages, api);
 			reconcile = await this.reconcileWithServerIndex(chatId, api, lastId, panel.syncIndex)
 				|| reconcile;
@@ -14100,6 +15242,7 @@ class MessengerMessageService {
 			historyCleared: !!reconcile.historyCleared,
 			removedIds: reconcile.removedIds || [],
 			markedRead,
+			activities,
 		};
 	}
 
@@ -14110,8 +15253,15 @@ class MessengerMessageService {
 	}
 
 	async syncChatAfterOffline(chatId, api) {
-		const { messages, reconcile } = await this.syncNewMessages(chatId, api, 50);
-		return { messages, reconcile };
+		const result = await this.syncRecentFromServer(chatId, api, 50);
+		return {
+			messages: result.all || [],
+			reconcile: {
+				historyCleared: result.historyCleared,
+				removedIds: result.removedIds || [],
+			},
+			activities: result.activities || [],
+		};
 	}
 
 	async getLastCachedMessageId(chatId) {
@@ -14239,6 +15389,7 @@ class MessengerSidebar {
 	#allChats = [];
 	#lastActiveChat = null;
 	#lastI18n = null;
+	#expandedGroupId = null;
 	#folderTabPos = [];
 	#folderSliderAnimateNext = false;
 	#folderTrackAnimating = false;
@@ -14921,6 +16072,7 @@ class MessengerSidebar {
 
 	#applyFolderInstant(folderId) {
 		const prevId = this.#activeFolderId;
+		this.#expandedGroupId = null;
 		this.#activeFolderId = folderId;
 		this.#folderSliderAnimateNext = false;
 		this.#renderFoldersBar();
@@ -15274,11 +16426,52 @@ class MessengerSidebar {
 			displayChats = displayChats.filter(c => !archivedIds.has(c.id));
 		}
 		displayChats = displayChats.filter(c => !shouldHideBotFromChatList(c));
+		displayChats = displayChats.filter(c => isVisibleRootChatItem(c));
 		return displayChats.slice().sort((a, b) => {
 			const ta = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
 			const tb = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
 			return tb - ta;
 		});
+	}
+
+	#getBranchesForGroup(chat) {
+		if (!chat?.id) return [];
+		const parentId = String(chat.id).toLowerCase();
+		let branches = Array.isArray(chat.branches) ? [...chat.branches] : [];
+		if (!branches.length) {
+			branches = this.#allChatsRef
+				.filter(c => String(c.parentChatId || '').toLowerCase() === parentId && isGroupBranchChat(c))
+				.map(c => ({
+					id: c.id,
+					name: c.name || '',
+					slug: c.branchSlug || '',
+					avatar: c.avatar || null,
+					lastMessage: c.lastMessage || '',
+					lastMessageTime: c.lastMessageTime || null,
+					unreadCount: c.unreadCount || 0,
+					order: c.branchOrder ?? 0,
+				}));
+		}
+		return branches.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+	}
+
+	#refreshChatListPanels() {
+		if (!this.#lastI18n) return;
+		if (this.#useFolderCarousel()) {
+			this.#syncFolderCarouselPanels(
+				this.#allChatsRef,
+				this.#lastActiveChat,
+				this.#lastI18n
+			);
+		} else if (this.el.chatListPanel) {
+			this.#renderPanelContent(
+				this.el.chatListPanel,
+				this.#activeFolderId,
+				this.#allChatsRef,
+				this.#lastActiveChat,
+				this.#lastI18n
+			);
+		}
 	}
 
 	#renderPanelContent(panelEl, folderId, chats, activeChat, i18n, opts = {}) {
@@ -15299,7 +16492,73 @@ class MessengerSidebar {
 
 		displayChats.forEach(chat => {
 			panelEl.appendChild(this.#buildChatItem(chat, activeChat));
+			const branches = this.#getBranchesForGroup(chat);
+			if (this.#expandedGroupId === chat.id && branches.length > 0) {
+				const branchWrap = this.#utils.mk('div', 'mapp-chat-branch-list');
+				branchWrap.appendChild(this.#buildBranchItem(chat, activeChat, { isMain: true }));
+				branches.forEach(branch => {
+					const branchChat = this.#allChatsRef.find(c => c.id === branch.id) || {
+						id: branch.id,
+						name: branch.name,
+						type: 'group_branch',
+						avatar: branch.avatar || null,
+						parentChatId: chat.id,
+						branchSlug: branch.slug,
+						lastMessage: branch.lastMessage || '',
+						lastMessageTime: branch.lastMessageTime || null,
+						unreadCount: branch.unreadCount || 0,
+					};
+					branchWrap.appendChild(this.#buildBranchItem(branchChat, activeChat, { isMain: false }));
+				});
+				panelEl.appendChild(branchWrap);
+			}
 		});
+	}
+
+	collapseExpandedGroup() {
+		if (!this.#expandedGroupId) return;
+		this.#expandedGroupId = null;
+		this.#refreshChatListPanels();
+	}
+
+	#buildBranchItem(chat, activeChat, { isMain = false } = {}) {
+		const item = this.#utils.mk('div', 'mapp-chat-item mapp-chat-item--branch');
+		if (activeChat?.id === chat.id) item.classList.add('mapp-chat-item--active');
+		item.dataset.chatId = chat.id;
+		const displayName = isMain
+			? (this.#i18n.t('groupBranchMain') + (chat.name ? ` · ${chat.name}` : ''))
+			: (chat.name || this.#i18n.t('unnamed'));
+		const avatar = this.#avatarBuilder.build(chat.id, displayName, chat.avatar || null, 40);
+		const info = this.#utils.mk('div', 'mapp-chat-item-info');
+		const row1 = this.#utils.mk('div', 'mapp-chat-item-row');
+		const nameEl = this.#utils.mk('span', 'mapp-chat-item-name');
+		nameEl.textContent = displayName;
+		const timeEl = this.#utils.mk('span', 'mapp-chat-item-time');
+		timeEl.textContent = chat.lastMessageTime ? this.#utils.formatListTime(chat.lastMessageTime) : '';
+		row1.append(nameEl, timeEl);
+		const row2 = this.#utils.mk('div', 'mapp-chat-item-row');
+		const previewEl = this.#utils.mk('span', 'mapp-chat-item-preview');
+		const previewInfo = this.#formatChatPreview
+			? this.#formatChatPreview(chat)
+			: (() => {
+				const p = MessengerChatListPreview.getDisplay(chat.lastMessage || '', this.#i18n);
+				return { text: p.text, typing: false, locked: p.locked };
+			})();
+		applyChatListPreviewEl(previewEl, previewInfo, this.#i18n);
+		const badgeWrap = this.#utils.mk('span', 'mapp-badge-wrap');
+		if (chat.unreadCount > 0) {
+			const badge = this.#utils.mk('span', 'mapp-badge');
+			if (isChatNotificationMuted(chat.id)) badge.classList.add('mapp-badge--muted');
+			badge.textContent = chat.unreadCount > 99 ? '99+' : chat.unreadCount;
+			badgeWrap.appendChild(badge);
+		}
+		row2.append(previewEl, badgeWrap);
+		info.append(row1, row2);
+		item.append(avatar, info);
+		bindTapAction(item, () => {
+			if (this.el._onChatSelect) this.el._onChatSelect(chat);
+		});
+		return item;
 	}
 
 	renderChatList(chats, activeChat, i18n, opts = {}) {
@@ -15355,11 +16614,24 @@ class MessengerSidebar {
 		const timeEl = this.#utils.mk('span', 'mapp-chat-item-time');
 		timeEl.textContent = chat.lastMessageTime ? this.#utils.formatListTime(chat.lastMessageTime) : '';
 		const isGroupChat = chat.type === 'group' || chat.type === 'public_group';
+		const branches = this.#getBranchesForGroup(chat);
+		const hasBranches = isRootGroupChat(chat) && branches.length > 0;
+		const isExpanded = hasBranches && this.#expandedGroupId === chat.id;
+		if (hasBranches) {
+			item.classList.add('mapp-chat-item--has-branches');
+			if (isExpanded) item.classList.add('mapp-chat-item--expanded');
+		}
 		if (isGroupChat) {
 			const typeIcon = this.#utils.mk('span', 'mapp-chat-item-type-icon');
 			typeIcon.innerHTML = this.#icons.groupUsers();
 			typeIcon.title = this.#i18n.t('sectionLabels')?.group || 'group';
-			row1.append(typeIcon, nameEl, timeEl);
+			if (hasBranches) {
+				const chevron = this.#utils.mk('span', 'mapp-chat-item-branch-chevron');
+				chevron.textContent = isExpanded ? '▾' : '▸';
+				row1.append(typeIcon, chevron, nameEl, timeEl);
+			} else {
+				row1.append(typeIcon, nameEl, timeEl);
+			}
 		} else if (isBotContact(chat)) {
 			const typeIcon = this.#utils.mk('span', 'mapp-chat-item-type-icon');
 			typeIcon.innerHTML = this.#icons.robot();
@@ -15388,6 +16660,12 @@ class MessengerSidebar {
 		info.append(row1, row2);
 		item.append(avatar, info);
 		bindTapAction(item, () => {
+			if (hasBranches) {
+				const wasExpanded = this.#expandedGroupId === chat.id;
+				this.#expandedGroupId = wasExpanded ? null : chat.id;
+				this.#refreshChatListPanels();
+				return;
+			}
 			if (this.el._onChatSelect) this.el._onChatSelect(chat);
 		});
 
@@ -15421,7 +16699,7 @@ class MessengerSidebar {
 		document.querySelectorAll('.mapp-chat-context-menu').forEach(m => m.remove());
 		MobileBottomSheetMenu.close(false);
 
-		const isGroup = chat.type === 'group' || chat.type === 'public_group';
+		const isGroup = chat.type === 'group' || chat.type === 'public_group' || chat.type === 'group_branch';
 		const sheetItems = [];
 
 		const pushItem = (icon, label, danger, action) => {
@@ -15435,6 +16713,15 @@ class MessengerSidebar {
 			pushItem(this.#icons.profile(), profileLabel, false, () => {
 				this.#onChatAction?.('showProfile', chat);
 			});
+		} else {
+			pushItem(this.#icons.profile(), this.#i18n.t('groupProfile'), false, () => {
+				this.#onChatAction?.('showGroupProfile', chat);
+			});
+			if (canManageGroupBranches(chat)) {
+				pushItem(this.#icons.folder(), this.#i18n.t('groupBranchCreate'), false, () => {
+					this.#onChatAction?.('createGroupBranch', chat);
+				});
+			}
 		}
 		pushItem(this.#icons.eraser(), this.#i18n.t('clearHistory'), false, () => {
 			this.#onChatAction?.('clearHistory', chat);
@@ -15639,6 +16926,7 @@ class MessengerAppView {
 	#channelProfileModal;
 	#botProfileModal;
 	#avatarBuilder;
+	#assistantMgr = null;
 	#presence = null;
 	#connectionStateMgr = null;
 	#onClearChatCache = null;
@@ -15665,6 +16953,7 @@ class MessengerAppView {
 	/** @type {Map<string, { state: object, chat: object, stale: boolean }>} */
 	#panelPool = new Map();
 	#panelPoolOrder = [];
+	#panelOpenSeq = 0;
 	#msgService = null;
 	#mediaCache = null;
 	/** @type {Map<string, { users: Map<string, { userName: string, timer: number }> }>} */
@@ -15697,6 +16986,72 @@ class MessengerAppView {
 
 	getReadGate() {
 		return this.#readGate;
+	}
+
+	setAssistantManager(mgr) {
+		this.#assistantMgr = mgr;
+		mgr?.setOnBotMessageSent?.((body, bot) => this.applyAssistantBotMessage(body, bot));
+	}
+
+	#ensureBotChatInList(chatId, bot = null) {
+		if (!chatId || this.#chats.some(c => c.id === chatId)) return;
+		const meta = this.#api.chatMeta(chatId);
+		const chat = meta ? { ...meta } : {
+			id: chatId,
+			name: bot?.name || 'Bot',
+			type: 'direct',
+			contactUserId: bot?.botUserId || null,
+			avatar: bot?.avatar || null,
+			unreadCount: 0,
+		};
+		this.#chats.unshift(chat);
+		this.#api.syncChatsMeta?.(this.#chats);
+		this.#renderChatList();
+	}
+
+	async applyAssistantBotMessage(body, bot = null) {
+		if (!body?.chatId || !body.messageId) return;
+		this.#ensureBotChatInList(body.chatId, bot);
+		await this.#applyRealtimeNewMessage(body);
+	}
+
+	async #applyRealtimeNewMessage(body) {
+		const meId = this.#currentUser?.id;
+		const rawMsg = {
+			id: body.messageId,
+			senderId: body.senderId,
+			senderName: body.senderName,
+			senderAvatar: body.senderAvatar || null,
+			text: body.text,
+			timestamp: new Date(body.timestamp),
+			status: body.status || 'sent',
+			isOwn: !!(meId && body.senderId === meId),
+			replyToMessageId: body.replyToMessageId || null,
+			replyToSenderName: body.replyToSenderName || null,
+			replyToTextPreview: body.replyToTextPreview || null,
+			forwardedFromSenderName: body.forwardedFromSenderName || null,
+			editedOn: body.editedOn ? new Date(body.editedOn) : null,
+			deletedForEveryone: !!body.deletedForEveryone,
+			encryptionTier: body.encryptionTier || 'basic',
+			buttons: normalizeMessageButtons(body.buttons),
+		};
+		const listPreviewSource = {
+			text: body.text,
+			_encText: (typeof SupraCrypto !== 'undefined' && SupraCrypto.isEncrypted(body.text))
+				? body.text : null,
+			deletedForEveryone: !!body.deletedForEveryone,
+			encryptionTier: body.encryptionTier || 'basic',
+		};
+		const chatId = body.chatId;
+		const msg = await this.#api.decryptRealtimeMessage(chatId, rawMsg);
+		if (msg.isOwn) {
+			await this.#msgService.ingestOwnFromRealtime(chatId, rawMsg, this.#api);
+			await this.receiveOwnMessage(chatId, msg, listPreviewSource);
+		} else {
+			await this.#msgService.ingestOne(chatId, rawMsg, this.#api);
+			this.receiveMessage(chatId, msg, listPreviewSource);
+		}
+		this.#mediaCache?.prefetchMessageImages?.(msg.text);
 	}
 
 	isChatVisibleForRead(chatId) {
@@ -15783,7 +17138,7 @@ class MessengerAppView {
 	getChatNotificationInfo(chatId) {
 		const chat = this.#chats.find(c => c.id === chatId);
 		if (!chat) return null;
-		const isGroup = chat.type === 'group' || chat.type === 'public_group';
+		const isGroup = chat.type === 'group' || chat.type === 'public_group' || chat.type === 'group_branch';
 		return { isGroup, name: chat.name || '' };
 	}
 
@@ -15967,6 +17322,8 @@ class MessengerAppView {
 		});
 		this.#sidebar.setOnChatAction(async (action, chat, extra) => {
 			if (action === 'showProfile') await this.#showContactProfile(chat);
+			else if (action === 'showGroupProfile') await this.#showGroupProfile(chat);
+			else if (action === 'createGroupBranch') await this.#createGroupBranch(chat);
 			else if (action === 'clearHistory') await this.#clearChatHistory(chat);
 			else if (action === 'blockUser') await this.#blockUser(chat);
 			else if (action === 'blockGroup') await this.#blockGroup(chat);
@@ -16549,13 +17906,17 @@ class MessengerAppView {
 			const activeId = this.#activeState.chatId;
 			try {
 				const markAsRead = this.shouldMarkReadForSync(activeId);
-				const { reconcile, markedRead } = await msgService.syncNewMessages(activeId, api, 50, { markAsRead });
-				if (markedRead) this.acknowledgeMarkRead(activeId);
-				if (reconcile?.historyCleared) {
+				const result = await msgService.syncRecentFromServer(activeId, api, 50, { markAsRead });
+				if (result.markedRead) this.acknowledgeMarkRead(activeId);
+				this.applyChatActivities(activeId, result.activities);
+				if (result.historyCleared) {
 					this.handleHistoryCleared(activeId);
 				} else {
-					for (const id of reconcile?.removedIds || []) {
+					for (const id of result.removedIds || []) {
 						this.deleteMessage(activeId, id, id);
+					}
+					if (this.#isChatVisible(activeId) && this.#activeState?.chatId === activeId) {
+						this.#panelFactory.reconcilePanelAfterSync(this.#activeState, activeId, result.all || []);
 					}
 				}
 			} catch (e) {
@@ -16614,19 +17975,20 @@ class MessengerAppView {
 
 	setChats(chats) {
 		this.#chatsBootLoading = false;
-		for (const c of chats) {
+		const normalized = normalizeGroupChatsTree(chats);
+		for (const c of normalized) {
 			if (c.unreadCount > 0 && this.#activeChat?.id === c.id && this.#isChatVisible(c.id)) {
 				this.#pendingMarkRead.add(c.id);
 				c.unreadCount = 0;
 				this.scheduleMarkReadOnSync(c.id);
 			}
 		}
-		this.#chats = chats;
-		this.#api?.syncChatsMeta?.(chats);
-		if (this.#currentUser?.id && chats?.length) {
-			MessengerOfflineStore.saveChats(this.#currentUser.id, chats);
+		this.#chats = normalized;
+		this.#api?.syncChatsMeta?.(normalized);
+		if (this.#currentUser?.id && normalized?.length) {
+			MessengerOfflineStore.saveChats(this.#currentUser.id, normalized);
 		}
-		for (const c of chats || []) {
+		for (const c of normalized || []) {
 			if (!isChannelType(c.type)) continue;
 			const existing = MessengerOfflineStore.loadChannelMeta(c.id);
 			MessengerOfflineStore.saveChannelMeta(c.id, {
@@ -16728,6 +18090,9 @@ class MessengerAppView {
 			botUserId: chat.contactUserId || chat.botPreview?.botUserId || null,
 			name: chat.name || '',
 			avatar: chat.avatar || null,
+			menu: chat.botMenu || chat.botPreview?.menu || null,
+			isAssistant: !!chat.isAssistant,
+			hasAssistantMenu: !!chat.hasAssistantMenu,
 		};
 	}
 
@@ -16736,7 +18101,7 @@ class MessengerAppView {
 		try {
 			let info = null;
 			if (chat.contactUserId) {
-				info = await this.#api.getBotInfo(chat.contactUserId);
+				info = await this.#api.getBotInfo(chat.contactUserId, chat.id);
 			}
 			if (!info?.success && chat.botSlug) {
 				info = await this.#api.getBotLinkPreview(chat.botSlug);
@@ -16748,26 +18113,42 @@ class MessengerAppView {
 				botUserId: info.botUserId || chat.contactUserId || null,
 				name: info.name || chat.name || '',
 				avatar: info.avatar ?? chat.avatar ?? null,
+				menu: info.menu || null,
+				isAssistant: !!info.isAssistant,
+				hasAssistantMenu: !!info.hasAssistantMenu,
 			};
 			chat.botDescription = meta.description;
+			chat.botMenu = meta.menu;
+			chat.isAssistant = meta.isAssistant;
+			chat.hasAssistantMenu = meta.hasAssistantMenu;
 			if (meta.slug) chat.botSlug = meta.slug;
 			if (meta.name) chat.name = meta.name;
 			if (meta.avatar !== undefined) chat.avatar = meta.avatar;
 			if (this.#activeChat?.id === chat.id || this.#activeChat?.contactUserId === chat.contactUserId) {
 				Object.assign(this.#activeChat, {
 					botDescription: meta.description,
+					botMenu: meta.menu,
+					isAssistant: meta.isAssistant,
+					hasAssistantMenu: meta.hasAssistantMenu,
 					botSlug: meta.slug || this.#activeChat.botSlug,
 					name: meta.name || this.#activeChat.name,
 					avatar: meta.avatar ?? this.#activeChat.avatar,
 				});
 			}
-			this.#panelFactory.refreshChatHeaderSub(
-				this.#activeState?.chatId === chat.id
-					? this.#activeState
-					: this.#panelPool.get(chat.id)?.state,
-				chat,
-				{ botMeta: meta },
-			);
+			const panelState = this.#activeState?.chatId === chat.id
+				? this.#activeState
+				: this.#panelPool.get(chat.id)?.state;
+			if (panelState?.isBotChat) {
+				panelState.botMeta = { ...(panelState.botMeta || {}), ...meta };
+				if (panelState._headerMenuCallbacks) {
+					panelState._headerMenuCallbacks.botMeta = panelState.botMeta;
+				}
+			}
+			this.#panelFactory.refreshChatHeaderSub(panelState, chat, { botMeta: meta });
+			if (panelState?.isBotChat) {
+				this.#panelFactory.refreshBotComposerMenu(panelState, meta.menu);
+				this.#panelFactory.refreshChatHeaderMenu(panelState, chat);
+			}
 			return meta;
 		} catch (e) {
 			console.warn('[MessengerAppView] refreshBotMetaFromServer', e);
@@ -17041,27 +18422,46 @@ class MessengerAppView {
 			}
 			this.#panelFactory.loadHistory(chat.id, entry.state);
 		} else {
-			this.#relayoutActivePanel(entry.state);
-			if (chat.deepLinkMessageId) {
-				const anchorId = chat.deepLinkMessageId;
-				delete chat.deepLinkMessageId;
-				void this.#panelFactory.scrollToQuotedMessage(entry.state, anchorId);
-			}
-			if (this.shouldMarkReadForSync(chat.id)) {
-				this.#api.markChatRead(chat.id).then(() => {
-					this.acknowledgeMarkRead(chat.id);
-				}).catch(() => {});
-			}
+			void this.#refreshParkedPanelOnActivate(chat, entry.state);
 		}
 		this.#panelFactory.syncImageViewerActionHost(entry.state);
 		global.ThemeChatBg?.paint?.();
 	}
 
-	#createAndOpenPanel(chat, pendingUnreadCount) {
-		return this.#createAndOpenPanelAsync(chat, pendingUnreadCount);
+	async #refreshParkedPanelOnActivate(chat, state) {
+		const chatId = chat.id;
+		try {
+			if (state._syncInFlightPromise) {
+				try { await state._syncInFlightPromise; } catch { /* ignore */ }
+			}
+			await this.#panelFactory.appendPendingMessagesFromCache(chatId, state);
+			if (this.#api.getCrypto()?.isUnlocked) {
+				await this.#panelFactory.refreshEncryptedMessagesDisplay(state, chatId);
+			}
+			void this.#panelFactory.backgroundSyncPanelMessages(chatId, state);
+		} catch (e) {
+			console.warn('[MessengerAppView] refreshParkedPanelOnActivate', e);
+		}
+		if (this.#activeState?.chatId !== chatId) return;
+		this.#relayoutActivePanel(state);
+		if (chat.deepLinkMessageId) {
+			const anchorId = chat.deepLinkMessageId;
+			delete chat.deepLinkMessageId;
+			void this.#panelFactory.scrollToQuotedMessage(state, anchorId);
+		}
+		if (this.shouldMarkReadForSync(chatId)) {
+			this.#api.markChatRead(chatId).then(() => {
+				this.acknowledgeMarkRead(chatId);
+			}).catch(() => {});
+		}
 	}
 
-	async #createAndOpenPanelAsync(chat, pendingUnreadCount) {
+	#createAndOpenPanel(chat, pendingUnreadCount, openSeq) {
+		return this.#createAndOpenPanelAsync(chat, pendingUnreadCount, openSeq);
+	}
+
+	async #createAndOpenPanelAsync(chat, pendingUnreadCount, openSeq) {
+		this.el.empty.hidden = true;
 		let channelMeta = null;
 		let botMeta = null;
 		if (isChannelType(chat.type)) {
@@ -17076,31 +18476,26 @@ class MessengerAppView {
 				this.#panelFactory.syncChannelComposer(state);
 				this.#panelFactory.refreshChatHeaderSub(state, chat, { channelMeta: fresh });
 			};
-			if (typeof navigator === 'undefined' || navigator.onLine !== false) {
-				const fresh = await this.#refreshChannelMetaFromServer(chat).catch(() => null);
-				if (fresh?.success) channelMeta = fresh;
-			} else {
-				void this.#refreshChannelMetaFromServer(chat).then(applyFreshMeta);
-			}
+			void this.#refreshChannelMetaFromServer(chat).then(applyFreshMeta);
 		} else if (isBotContact(chat)) {
 			botMeta = this.#resolveBotMeta(chat);
-			if (typeof navigator === 'undefined' || navigator.onLine !== false) {
-				const fresh = await this.#refreshBotMetaFromServer(chat).catch(() => null);
-				if (fresh) botMeta = { ...botMeta, ...fresh };
-			} else {
-				void this.#refreshBotMetaFromServer(chat).then((fresh) => {
-					if (!fresh) return;
-					const state = this.#activeState?.chatId === chat.id
-						? this.#activeState
-						: this.#panelPool.get(chat.id)?.state;
-					if (state) {
-						state.botMeta = { ...state.botMeta, ...fresh };
-						this.#panelFactory.refreshChatHeaderSub(state, chat, { botMeta: state.botMeta });
-					}
-				});
-			}
+			void this.#refreshBotMetaFromServer(chat).then((fresh) => {
+				if (!fresh) return;
+				const state = this.#activeState?.chatId === chat.id
+					? this.#activeState
+					: this.#panelPool.get(chat.id)?.state;
+				if (!state) return;
+				state.botMeta = { ...(state.botMeta || {}), ...fresh };
+				if (state._headerMenuCallbacks) {
+					state._headerMenuCallbacks.botMeta = state.botMeta;
+				}
+				this.#panelFactory.refreshChatHeaderSub(state, chat, { botMeta: state.botMeta });
+				if (state.isBotChat) {
+					this.#panelFactory.refreshBotComposerMenu(state, fresh.menu);
+					this.#panelFactory.refreshChatHeaderMenu(state, chat);
+				}
+			});
 		}
-		this.el.empty.hidden = true;
 		const onThemeApply = (theme) => {
 			this.#themeManager.applyTheme(theme);
 		};
@@ -17278,6 +18673,7 @@ class MessengerAppView {
 			currentUser: this.#currentUser,
 			onShowProfile: (c) => this.#showContactProfile(c),
 			onShowGroupProfile: (c) => this.#showGroupProfile(c),
+			onCreateGroupBranch: (c) => this.#createGroupBranch(c),
 			onChatEncryptionSetPassword: (c) => this.#setChatEncryptionPassword(c),
 			onChatEncryptionRemovePassword: (c) => this.#removeChatEncryptionPassword(c),
 			onChatEncryptionHasPassword: (c) => !!this.#api.getCrypto()?.getCustomPassword(c?.id),
@@ -17309,6 +18705,7 @@ class MessengerAppView {
 			onChatPreviewRefresh: () => {
 				this.refreshChatListPreview(chat.id).catch(() => {});
 			},
+			onApplyActivities: (activities) => this.applyChatActivities(chat.id, activities),
 			onChannelAvatarUpdate: (avatar) => {
 				if (!avatar) return;
 				const normalized = messengerPublicChannelAvatarUrl(avatar, chat.id);
@@ -17352,6 +18749,10 @@ class MessengerAppView {
 		if (chat.deepLinkMessageId) {
 			state.pendingAnchorMessageId = chat.deepLinkMessageId;
 			delete chat.deepLinkMessageId;
+		}
+		if (openSeq !== this.#panelOpenSeq || this.#activeChat?.id !== chat.id) {
+			this.#parkPanelEntry(state, chat);
+			return;
 		}
 		this.#activeState = state;
 		this.el.chatArea.appendChild(state.el);
@@ -17448,10 +18849,15 @@ class MessengerAppView {
 			contactUserId: chat.contactUserId || existing.contactUserId,
 			isAdmin: chat.isAdmin ?? existing.isAdmin,
 			isGroupCreator: chat.isGroupCreator ?? existing.isGroupCreator,
+			parentChatId: chat.parentChatId || existing.parentChatId,
+			branchSlug: chat.branchSlug || existing.branchSlug,
+			branches: chat.branches || existing.branches,
 		};
 	}
 
 	async #openChat(chat) {
+		this.#assistantMgr?.setActiveChatId(chat?.id || null);
+		this.#sidebar?.collapseExpandedGroup?.();
 		this.#api?.syncChatsMeta?.(this.#chats);
 		const chatData = this.#mergeChatForOpen(chat);
 		void this.#ensureChatKeysInBackground(chatData);
@@ -17520,7 +18926,8 @@ class MessengerAppView {
 		if (this.#activeState?.chatId !== chatData.id) {
 			this.#parkActivePanel();
 		}
-		await this.#createAndOpenPanel(chatData, pendingUnreadCount);
+		const openSeq = ++this.#panelOpenSeq;
+		await this.#createAndOpenPanel(chatData, pendingUnreadCount, openSeq);
 	}
 
 	#ensureChatKeysInBackground(chatData) {
@@ -17528,7 +18935,8 @@ class MessengerAppView {
 		const chatId = chatData.id;
 		void (async () => {
 			try {
-				if (chatData.type === 'direct' || this.#isGroupChat(chatData)) {
+				if (chatData.type === 'direct'
+					|| (this.#isGroupChat(chatData) && MessengerThemeManager.isAdminGroupEncryptionEnabled())) {
 					const keysCreated = await this.#api.ensureChatEncryptionKeys(chatData);
 					if (keysCreated) {
 						const pooled = this.#panelPool.get(chatId);
@@ -17541,7 +18949,8 @@ class MessengerAppView {
 						}
 					}
 				}
-				if (this.#isGroupChat(chatData) && !chatData.hasGroupAutoKey
+				if (this.#isGroupChat(chatData) && MessengerThemeManager.isAdminGroupEncryptionEnabled()
+					&& !chatData.hasGroupAutoKey
 					&& this.#activeState?.chatId === chatId) {
 					await MessengerDialog.alert({
 						title: this.#i18n.t('masterPasswordLock'),
@@ -17562,6 +18971,7 @@ class MessengerAppView {
 		} else {
 			this.#chats.unshift(chat);
 		}
+		this.#chats = normalizeGroupChatsTree(this.#chats);
 		this.#api?.syncChatsMeta?.(this.#chats);
 		if (this.#currentUser?.id) {
 			MessengerOfflineStore.saveChats(this.#currentUser.id, this.#chats);
@@ -17597,7 +19007,60 @@ class MessengerAppView {
 	}
 
 	#isGroupChat(chat) {
-		return chat?.type === 'group' || chat?.type === 'public_group';
+		return chat?.type === 'group' || chat?.type === 'public_group' || chat?.type === 'group_branch';
+	}
+
+	async #openBranchAfterCreate(r) {
+		if (!r?.chatId) return;
+		try {
+			await this.requestSyncBundle(this.#msgService, this.#api);
+		} catch (e) {
+			console.warn('[MessengerAppView] openBranchAfterCreate sync', e);
+		}
+		let branchChat = this.#chats.find(c => c.id === r.chatId);
+		if (!branchChat) {
+			branchChat = {
+				id: r.chatId,
+				name: r.name || '',
+				type: 'group_branch',
+				parentChatId: r.parentChatId || null,
+				branchSlug: r.slug || null,
+				avatar: r.avatar || null,
+				lastMessage: '',
+				lastMessageTime: null,
+				unreadCount: 0,
+			};
+			this.#chats.push(branchChat);
+			this.#chats = normalizeGroupChatsTree(this.#chats);
+		}
+		this.#renderChatList();
+		this.#openChat(this.#chats.find(c => c.id === r.chatId) || branchChat);
+	}
+
+	async #createGroupBranch(chat) {
+		if (!chat?.id || !canManageGroupBranches(chat)) return;
+		const name = await MessengerDialog.prompt({
+			title: this.#i18n.t('groupBranchCreate'),
+			placeholder: this.#i18n.t('groupBranchNameLabel'),
+			confirmLabel: this.#i18n.t('ok'),
+			cancelLabel: this.#i18n.t('cancel'),
+			themeManager: this.#themeManager,
+		});
+		if (!name?.trim()) return;
+		try {
+			const r = await this.#api.createGroupBranch(chat.id, name.trim());
+			if (MessengerThemeManager.isAdminGroupEncryptionEnabled()) {
+				this.#api.distributeMissingGroupKeys(r.chatId).catch(() => {});
+			}
+			await this.#openBranchAfterCreate(r);
+		} catch (e) {
+			await MessengerDialog.alert({
+				title: this.#i18n.t('groupSaveError'),
+				message: e.message || '',
+				type: MessengerDialog.TYPE_DANGER,
+				themeManager: this.#themeManager,
+			});
+		}
 	}
 
 	#chatEncryptionStatusText(chat) {
@@ -17713,6 +19176,11 @@ class MessengerAppView {
 		if (!this.#groupProfileModal || !chat?.id) return;
 		await this.#groupProfileModal.open(this.el.root, chat, {
 			onUpdated: (meta) => this.updateChatMeta(chat.id, meta),
+			onBranchesChanged: async () => {
+				await this.requestSyncBundle(this.#msgService, this.#api);
+				this.#renderChatList();
+			},
+			onBranchCreated: (r) => this.#openBranchAfterCreate(r),
 			onUserBlocked: async (blockedUserId) => {
 				const direct = this.#chats.find(c =>
 					c.type === 'direct' && c.contactUserId === blockedUserId);
@@ -18107,6 +19575,87 @@ class MessengerAppView {
 		});
 	}
 
+	applyBotUpdated(payload = {}) {
+		const botUserId = payload.botUserId;
+		if (!botUserId) return;
+		const scopedChatId = payload.chatId || null;
+		const menu = payload.menu || null;
+		const description = payload.description;
+		const name = payload.botName;
+		const avatar = payload.botAvatar;
+		const slug = payload.slug;
+
+		const matchesBot = (chat) =>
+			chat.isBotContact &&
+			(chat.contactUserId === botUserId || chat.botPreview?.botUserId === botUserId) &&
+			(!scopedChatId || chat.id === scopedChatId);
+
+		for (const chat of this.#chats) {
+			if (!matchesBot(chat)) continue;
+			if (description != null) chat.botDescription = description;
+			if (menu !== undefined) chat.botMenu = menu;
+			if (name) chat.name = name;
+			if (avatar !== undefined) chat.avatar = avatar;
+			if (slug) chat.botSlug = slug;
+		}
+
+		if (matchesBot(this.#activeChat)) {
+			if (description != null) this.#activeChat.botDescription = description;
+			if (menu !== undefined) this.#activeChat.botMenu = menu;
+			if (name) this.#activeChat.name = name;
+			if (avatar !== undefined) this.#activeChat.avatar = avatar;
+			if (slug) this.#activeChat.botSlug = slug;
+		}
+
+		this.#renderChatList();
+
+		const activeIsBot = this.#activeChat && matchesBot(this.#activeChat);
+		if (!activeIsBot || !this.#activeState) return;
+
+		if (this.#activeState.botMeta) {
+			if (description != null) this.#activeState.botMeta.description = description;
+			if (menu !== undefined) this.#activeState.botMeta.menu = menu;
+			if (name) this.#activeState.botMeta.name = name;
+			if (avatar !== undefined) this.#activeState.botMeta.avatar = avatar;
+			if (slug) this.#activeState.botMeta.slug = slug;
+		}
+
+		this.#panelFactory.refreshChatHeaderSub(this.#activeState, this.#activeChat, {
+			botMeta: this.#activeState.botMeta,
+		});
+		if (menu !== undefined) {
+			this.#panelFactory.refreshBotComposerMenu(this.#activeState, menu);
+		}
+	}
+
+	applyBotAssistantUpdated(payload = {}) {
+		this.#assistantMgr?.applyAssistantMenuUpdated(payload);
+		const botUserId = payload.botUserId;
+		if (!botUserId || !this.#activeChat?.isBotContact || !this.#activeState?.isBotChat) return;
+		if (this.#activeChat.contactUserId !== botUserId) return;
+		if (!payload.assistantMenu) return;
+		const hasMenu = normalizeBotMenuItems(payload.assistantMenu).length > 0;
+		this.#activeChat.hasAssistantMenu = hasMenu;
+		if (this.#activeState.botMeta) {
+			this.#activeState.botMeta.hasAssistantMenu = hasMenu;
+		}
+		if (this.#activeState._headerMenuCallbacks) {
+			this.#activeState._headerMenuCallbacks.botMeta = this.#activeState.botMeta;
+		}
+		this.#panelFactory.refreshChatHeaderMenu(this.#activeState, this.#activeChat);
+	}
+
+	async handleAssistantReplyPending(payload) {
+		await this.#assistantMgr?.handleReplyPending(payload);
+	}
+
+	async initAssistantFeatures() {
+		if (!this.#assistantMgr) return;
+		await this.#assistantMgr.loadPreferences();
+		await this.#assistantMgr.refreshAssistants();
+		await this.#assistantMgr.processPendingOnConnect();
+	}
+
 	updateChatMeta(chatId, { name, avatar, contactStatusText, requiresCustomGroupPassword } = {}) {
 		const c = this.#chats.find(x => x.id === chatId);
 		if (c) {
@@ -18190,7 +19739,7 @@ class MessengerAppView {
 		};
 		try {
 			if (chat.contactUserId) {
-				const p = await this.#api.getBotInfo(chat.contactUserId);
+				const p = await this.#api.getBotInfo(chat.contactUserId, chat.id);
 				if (p?.success) {
 					info = {
 						name: p.name || info.name,
@@ -18322,6 +19871,11 @@ class MessengerAppView {
 	async #navigateDeepLink(href) {
 		const target = parseMessengerDeepLink(href);
 		if (!target) return false;
+		if (target.type === 'groupBranch') {
+			await this.openGroupBranchBySlug(target.parentChatId, target.slug);
+			normalizeAppUrl();
+			return true;
+		}
 		if (target.type === 'group') {
 			await this.openGroupByChatId(target.chatId);
 			normalizeAppUrl();
@@ -18487,7 +20041,7 @@ class MessengerAppView {
 	}
 
 	async #clearChatHistory(chat) {
-		const isGroup = chat.type === 'group' || chat.type === 'public_group';
+		const isGroup = chat.type === 'group' || chat.type === 'public_group' || chat.type === 'group_branch';
 		const isDirect = chat.type === 'direct';
 
 		let alsoDeleteForOther = false;
@@ -18977,6 +20531,52 @@ class MessengerAppView {
 		}
 	}
 
+	async openGroupBranchBySlug(parentChatId, slug) {
+		if (!parentChatId || !slug) return;
+		const existing = this.#chats.find(c =>
+			c.id && c.branchSlug === slug && (c.parentChatId === parentChatId || c.id === parentChatId));
+		if (existing && existing.type === 'group_branch') {
+			normalizeAppUrl();
+			this.#openChat(existing);
+			return;
+		}
+		try {
+			const preview = await this.#api.getGroupBranchLinkPreview(parentChatId, slug);
+			if (!preview?.success) return;
+			if (!preview.isMember) {
+				normalizeAppUrl();
+				await MessengerDialog.alert({
+					title: this.#i18n.t('groupProfile'),
+					message: this.#i18n.t('groupJoinDisabled'),
+					type: MessengerDialog.TYPE_INFO,
+					themeManager: this.#themeManager,
+				});
+				return;
+			}
+			const chat = {
+				id: preview.chatId,
+				name: preview.name || '',
+				type: 'group_branch',
+				avatar: preview.avatar || null,
+				parentChatId: preview.parentChatId || parentChatId,
+				branchSlug: preview.slug || slug,
+			};
+			if (!this.#chats.find(c => c.id === chat.id)) {
+				this.#chats.push({
+					...chat,
+					lastMessage: '',
+					lastMessageTime: null,
+					unreadCount: 0,
+				});
+				this.#renderChatList();
+			}
+			normalizeAppUrl();
+			this.#openChat(chat);
+		} catch (e) {
+			console.warn('[MessengerAppView] openGroupBranchBySlug error', e);
+		}
+	}
+
 	async #openGroupJoinModal(preview) {
 		lockAppScroll();
 		const overlay = this.#utils.mk('div', 'mapp-modal-overlay');
@@ -19159,20 +20759,42 @@ class MessengerAppView {
 	async syncAfterReconnect(msgService, api) {
 		try {
 			await this.requestSyncBundle(msgService, api);
+			await this.#assistantMgr?.processPendingOnConnect();
+			const chatId = this.#activeState?.chatId;
+			if (chatId && this.#isChatVisible(chatId)) {
+				await this.#panelFactory.backgroundSyncPanelMessages(chatId, this.#activeState);
+			}
 		} catch (e) {
 			console.warn('[MessengerAppView] syncAfterReconnect', e);
 		}
 	}
-	receiveActivity(chatId, userId, userName, activityType, active) {
+	receiveActivity(chatId, userId, userName, activityType, active, activityMessage = null, expiresAt = null) {
 		const chat = this.#chats.find(c => c.id === chatId);
 		if (isChannelType(chat?.type)) return;
-		this.#updateChatTypingPreview(chatId, userId, userName, activityType, active);
+		const expiresAtMs = expiresAt ? Date.parse(expiresAt) : null;
+		this.#updateChatTypingPreview(chatId, userId, userName, activityType, active, activityMessage, expiresAtMs);
 		this.#forEachPanelState(chatId, state => {
-			this.#panelFactory.updateActivity(state, userId, userName, activityType, active);
+			this.#panelFactory.updateActivity(state, userId, userName, activityType, active, activityMessage, expiresAtMs);
 		});
 	}
 
-	#updateChatTypingPreview(chatId, userId, userName, activityType, active) {
+	applyChatActivities(chatId, activities) {
+		if (!activities?.length) return;
+		for (const a of activities) {
+			if (!a?.userId || !a?.activityType) continue;
+			this.receiveActivity(
+				chatId,
+				a.userId,
+				a.userName || '',
+				a.activityType,
+				true,
+				a.activityMessage || null,
+				a.expiresAt || null
+			);
+		}
+	}
+
+	#updateChatTypingPreview(chatId, userId, userName, activityType, active, activityMessage = null, expiresAtMs = null) {
 		if (activityType !== 'typing') return;
 		const chat = this.#chats.find(c => c.id === chatId);
 		if (!chat || isChannelType(chat.type)) return;
@@ -19184,11 +20806,14 @@ class MessengerAppView {
 		const existing = st.users.get(userId);
 		if (existing?.timer) clearTimeout(existing.timer);
 		if (active) {
+			const ttl = expiresAtMs != null
+				? Math.max(1000, expiresAtMs - Date.now())
+				: MessengerActivityTracker.DEFAULT_TIMEOUT;
 			const timer = setTimeout(
-				() => this.#updateChatTypingPreview(chatId, userId, userName, activityType, false),
-				MessengerActivityTracker.DEFAULT_TIMEOUT
+				() => this.#updateChatTypingPreview(chatId, userId, userName, activityType, false, null),
+				ttl
 			);
-			st.users.set(userId, { userName, timer });
+			st.users.set(userId, { userName, activityMessage: activityMessage || null, timer });
 		} else {
 			st.users.delete(userId);
 		}
@@ -19199,7 +20824,7 @@ class MessengerAppView {
 	#formatChatListPreview(chat) {
 		const typing = this.#getChatTypingPreview(chat);
 		if (typing) {
-			return { text: typing, typing: true };
+			return { text: typing.text, typing: true, typingText: typing.typingText };
 		}
 		const stored = chat.lastMessage || '';
 		const preview = MessengerChatListPreview.getDisplay(stored, this.#i18n);
@@ -19227,9 +20852,29 @@ class MessengerAppView {
 		if (chat?.type !== 'direct') return null;
 		const st = this.#chatTypingState.get(chat.id);
 		if (!st?.users?.size) return null;
-		return this.#i18n.t('typingShort');
+		const users = [...st.users.values()];
+		if (users.length === 1) {
+			const msg = (users[0].activityMessage || '').trim();
+			return { text: msg || this.#i18n.t('typingShort'), typingText: msg || null };
+		}
+		return { text: this.#i18n.t('typingShort'), typingText: null };
 	}
 	addChat(chat) {
+		if (chat?.parentChatId || chat?.type === 'group_branch') {
+			const idx = this.#chats.findIndex(c => c.id === chat.id);
+			if (idx >= 0) {
+				this.#chats[idx] = { ...this.#chats[idx], ...chat };
+			} else {
+				this.#chats.push(chat);
+			}
+			this.#chats = normalizeGroupChatsTree(this.#chats);
+			this.#api?.syncChatsMeta?.(this.#chats);
+			if (this.#currentUser?.id) {
+				MessengerOfflineStore.saveChats(this.#currentUser.id, this.#chats);
+			}
+			this.#renderChatList();
+			return;
+		}
 		const idx = this.#chats.findIndex(c => c.id === chat.id);
 		if (idx >= 0) {
 			this.#chats[idx] = { ...this.#chats[idx], ...chat };
@@ -19306,7 +20951,24 @@ class MessengerApiClient {
 		this.#currentUserId = userId;
 	}
 
+	#mapBranchDto(b) {
+		if (!b) return null;
+		return {
+			id: b.id,
+			name: b.name || '',
+			slug: b.slug || '',
+			avatar: b.avatar || null,
+			lastMessage: b.lastMessage || '',
+			lastMessageTime: b.lastMessageTime ? new Date(b.lastMessageTime) : null,
+			unreadCount: b.unreadCount || 0,
+			order: b.order ?? 0,
+		};
+	}
+
 	#mapChatDto(c) {
+		const branches = Array.isArray(c.branches)
+			? c.branches.map(b => this.#mapBranchDto(b)).filter(Boolean)
+			: undefined;
 		return {
 			id: c.id,
 			name: c.name,
@@ -19324,6 +20986,12 @@ class MessengerApiClient {
 			isBotContact: !!c.isBotContact,
 			botSlug: c.botSlug || null,
 			botEngaged: !!c.botEngaged,
+			isAdmin: !!c.isAdmin,
+			isGroupCreator: !!c.isGroupCreator,
+			parentChatId: c.parentChatId || null,
+			branchSlug: c.branchSlug || null,
+			branchOrder: c.branchOrder ?? 0,
+			branches,
 		};
 	}
 
@@ -19338,7 +21006,12 @@ class MessengerApiClient {
 	}
 
 	#isPlaintextChatId(chatId) {
-		return this.#isChannelChatId(chatId) || this.#isBotChatId(chatId);
+		if (this.#isChannelChatId(chatId) || this.#isBotChatId(chatId)) return true;
+		if (!MessengerThemeManager.isAdminGroupEncryptionEnabled()) {
+			const chat = this.#chatsMeta.get(chatId);
+			if (chat && (isMessengerGroupChatType(chat.type) || isGroupBranchChat(chat))) return true;
+		}
+		return false;
 	}
 
 	#updateChatsMeta(chats) {
@@ -19486,7 +21159,8 @@ class MessengerApiClient {
 	chatUsesExtraPasswordMode(chatId) {
 		const chat = this.#chatsMeta.get(chatId);
 		if (!chat) return !!this.#crypto?.isExtraEncryptionEnabled(chatId);
-		const isGroup = chat.type === 'group' || chat.type === 'public_group';
+		const isGroup = chat.type === 'group' || chat.type === 'public_group' || chat.type === 'group_branch';
+		if (isGroup && !MessengerThemeManager.isAdminGroupEncryptionEnabled()) return false;
 		return !!this.#crypto?.isExtraEncryptionEnabled(chatId)
 			|| (isGroup && !!chat.requiresCustomGroupPassword);
 	}
@@ -19715,6 +21389,7 @@ class MessengerApiClient {
 
 	async distributeMissingGroupKeys(chatId, options = {}) {
 		if (!this.#crypto || !this.#currentUserId) return;
+		if (this.#isPlaintextChatId(chatId)) return;
 		const force = !!options.force;
 		if (!force) {
 			const last = this.#distributeLastAt.get(chatId) || 0;
@@ -19828,7 +21503,8 @@ class MessengerApiClient {
 			if (!otherId) return false;
 			if (!this.#shouldIssueFreshChatKeys(missing, 2)) return false;
 			await this.#setupGroupKeys(chatId, [otherId]);
-		} else if (type === 'group' || type === 'public_group') {
+		} else if (isMessengerGroupChatType(type)) {
+			if (!MessengerThemeManager.isAdminGroupEncryptionEnabled()) return false;
 			const info = await this.getGroupInfo(chatId);
 			const participantIds = (info.members || [])
 				.map(m => m.id)
@@ -19934,7 +21610,7 @@ class MessengerApiClient {
 		}
 
 		const type = (chat.type || '').toLowerCase();
-		if (type === 'group' || type === 'public_group') {
+		if (isMessengerGroupChatType(type)) {
 			return this.#ensureGroupChatEncryptionKeys(chat, options);
 		}
 		if (type !== 'direct') return false;
@@ -19979,6 +21655,7 @@ class MessengerApiClient {
 	}
 
 	async #ensureGroupChatEncryptionKeys(chat, options = {}) {
+		if (!MessengerThemeManager.isAdminGroupEncryptionEnabled()) return false;
 		const chatId = chat.id;
 		const shouldDistribute = options.distribute !== false;
 		if (options.force) {
@@ -20382,6 +22059,12 @@ class MessengerApiClient {
 				id: e.id,
 				timestamp: new Date(e.timestamp),
 			})),
+			activities: (r.activities || []).map(a => ({
+				userId: a.userId,
+				userName: a.userName || '',
+				activityType: a.activityType,
+				activityMessage: a.activityMessage || null,
+			})),
 		};
 	}
 
@@ -20420,6 +22103,7 @@ class MessengerApiClient {
 			editedOn: m.editedOn ? new Date(m.editedOn) : null,
 			deletedForEveryone: !!m.deletedForEveryone,
 			encryptionTier: m.encryptionTier || 'basic',
+			buttons: normalizeMessageButtons(m.buttons),
 		}));
 		if (!chatId || !this.#crypto) return mapped;
 		const out = [];
@@ -20495,6 +22179,29 @@ class MessengerApiClient {
 		};
 	}
 
+	async pressMessageButton(chatId, sourceMessageId, buttonId, options = {}) {
+		const localId = options?.localId || null;
+		MessengerMessageSounds.playOutgoing();
+		const r = await this.call('PressMessageButton', {
+			chatId,
+			sourceMessageId,
+			buttonId,
+			localId,
+		});
+		if (!r?.success) throw new Error(r?.error || 'PressMessageButton failed');
+		return {
+			id: r.messageId,
+			status: r.status || 'sent',
+			text: r.text || '',
+			timestamp: new Date(),
+			isOwn: true,
+			encryptionTier: 'basic',
+			replyToMessageId: r.replyToMessageId || sourceMessageId,
+			replyToSenderName: r.replyToSenderName || null,
+			replyToTextPreview: r.replyToTextPreview || null,
+		};
+	}
+
 	getOutgoingEncryptionTier(chatId) {
 		if (this.#crypto?.getCustomPassword(chatId)) return 'protected';
 		if (this.#crypto?.isSessionSendBasicOnly(chatId)) return 'basic';
@@ -20503,6 +22210,17 @@ class MessengerApiClient {
 
 	async editMessage(chatId, messageId, text) {
 		const attachmentFileIds = MessengerCustomMessage.extractAttachmentFileIds(text.trim());
+		if (this.#isPlaintextChatId(chatId)) {
+			const r = await this.call('EditMessage', {
+				chatId,
+				messageId,
+				text: text.trim(),
+				encryptionTier: 'basic',
+				attachmentFileIds,
+			});
+			if (!r?.success) throw new Error(r?.error || 'EditMessage failed');
+			return r;
+		}
 		const enc = await this.#encryptOutgoing(chatId, text, {});
 		const r = await this.call('EditMessage', {
 			chatId,
@@ -20750,15 +22468,17 @@ class MessengerApiClient {
 			isGroupCreator: true,
 		};
 		this.#chatsMeta.set(chat.id, chat);
-		try {
-			const setup = await this.#setupGroupKeys(chat.id, participantContactIds, groupOptions);
-			chat.hasGroupAutoKey = true;
-			if (setup?.missingCount > 0) {
-				chat.keySetupWarning = setup.missingCount;
+		if (MessengerThemeManager.isAdminGroupEncryptionEnabled()) {
+			try {
+				const setup = await this.#setupGroupKeys(chat.id, participantContactIds, groupOptions);
+				chat.hasGroupAutoKey = true;
+				if (setup?.missingCount > 0) {
+					chat.keySetupWarning = setup.missingCount;
+				}
+			} catch (e) {
+				console.warn('[MessengerApiClient] createGroup setup keys', e);
+				chat.keySetupError = e;
 			}
-		} catch (e) {
-			console.warn('[MessengerApiClient] createGroup setup keys', e);
-			chat.keySetupError = e;
 		}
 		return chat;
 	}
@@ -20843,6 +22563,41 @@ class MessengerApiClient {
 		const data = await r.json().catch(() => ({}));
 		if (!r.ok) throw new Error(data.error || 'Upload failed');
 		return data;
+	}
+
+	async createGroupBranch(parentChatId, name, slug) {
+		const payload = { parentChatId, name };
+		if (slug) payload.slug = slug;
+		const r = await this.call('CreateGroupBranch', payload);
+		if (!r?.success) throw new Error(r?.error || 'CreateGroupBranch failed');
+		return r;
+	}
+
+	async deleteGroupBranch(branchChatId) {
+		const r = await this.call('DeleteGroupBranch', { branchChatId });
+		if (!r?.success) throw new Error(r?.error || 'DeleteGroupBranch failed');
+		return r;
+	}
+
+	async updateGroupBranch(branchChatId, { name, description } = {}) {
+		const payload = { branchChatId };
+		if (name != null) payload.name = name;
+		if (description != null) payload.description = description;
+		const r = await this.call('UpdateGroupBranch', payload);
+		if (!r?.success) throw new Error(r?.error || 'UpdateGroupBranch failed');
+		return r;
+	}
+
+	async getGroupBranchLinkPreview(parentChatId, slug) {
+		const r = await this.call('GetGroupBranchLinkPreview', { parentChatId, slug });
+		if (!r?.success) throw new Error(r?.error || 'GetGroupBranchLinkPreview failed');
+		return r;
+	}
+
+	async reorderGroupBranches(parentChatId, branchIds) {
+		const r = await this.call('ReorderGroupBranches', { parentChatId, branchIds });
+		if (!r?.success) throw new Error(r?.error || 'ReorderGroupBranches failed');
+		return r;
 	}
 
 	async addGroupMembers(chatId, memberIds) {
@@ -20943,8 +22698,10 @@ class MessengerApiClient {
 		return this.call('GetMyBots', {});
 	}
 
-	async getBotInfo(botUserId) {
-		return this.call('GetBotInfo', { botUserId });
+	async getBotInfo(botUserId, chatId = null) {
+		const payload = { botUserId };
+		if (chatId) payload.chatId = chatId;
+		return this.call('GetBotInfo', payload);
 	}
 
 	async updateBot(botUserId, fields) {
@@ -20992,6 +22749,63 @@ class MessengerApiClient {
 		return this.call('GenerateBotToken', { botUserId });
 	}
 
+	async addBotAssistant(botUserId) {
+		return this.call('AddBotAssistant', { botUserId });
+	}
+
+	async removeBotAssistant(botUserId) {
+		return this.call('RemoveBotAssistant', { botUserId });
+	}
+
+	async getBotAssistants() {
+		return this.call('GetBotAssistants', {});
+	}
+
+	async invokeBotAssistant(payload) {
+		return this.call('InvokeBotAssistant', payload);
+	}
+
+	async confirmAssistantReply(sessionId, insertedMessageId) {
+		return this.call('ConfirmAssistantReply', { sessionId, insertedMessageId });
+	}
+
+	async dismissAssistantReply(sessionId) {
+		return this.call('DismissAssistantReply', { sessionId });
+	}
+
+	async getPendingAssistantReplies() {
+		return this.call('GetPendingAssistantReplies', {});
+	}
+
+	canAssistantMessage(msg) {
+		if (!msg || msg.deletedForEveryone || msg.isVirtual) return false;
+		if (MessengerCustomMessage.isSystemEvent(msg) || MessengerCustomMessage.isDateSeparator(msg)) return false;
+		const tier = (msg.encryptionTier || 'basic').toLowerCase();
+		if (tier === 'protected') return false;
+		if (msg._locked || msg.text === SupraCrypto.LOCKED_PREVIEW || msg.text === SupraCrypto.LOCKED_OTHER) return false;
+		if (SupraCrypto.isEncrypted(msg.text)) return true;
+		const text = String(msg.text || '').trim();
+		if (text) return true;
+		return MessengerCustomMessage.extractAttachmentFileIds(text).length > 0;
+	}
+
+	async prepareAssistantMessage(chatId, msg) {
+		const mapped = await this.mapCachedMessage(chatId, { ...msg });
+		if (!mapped || mapped._locked) return null;
+		const text = String(mapped.text || '').trim();
+		if (SupraCrypto.isEncrypted(text) || text === SupraCrypto.LOCKED_PREVIEW || text === SupraCrypto.LOCKED_OTHER) {
+			return null;
+		}
+		const attachmentFileIds = MessengerCustomMessage.extractAttachmentFileIds(text);
+		if (!text && !attachmentFileIds.length) return null;
+		return {
+			text,
+			senderName: mapped.senderName || msg.senderName || '',
+			originalMessageId: msg.id,
+			attachmentFileIds,
+		};
+	}
+
 	async getChannelSubscribers(chatId, page = 1, pageSize = 10, query = '') {
 		return this.call('GetChannelSubscribers', { chatId, page, pageSize, query });
 	}
@@ -21035,7 +22849,7 @@ class MessengerApiClient {
 
 	async promptGroupCustomPassword(chat, i18n) {
 		if (!chat?.id) return true;
-		const isGroup = chat.type === 'group' || chat.type === 'public_group';
+		const isGroup = chat.type === 'group' || chat.type === 'public_group' || chat.type === 'group_branch';
 		if (isGroup && !chat.requiresCustomGroupPassword) return true;
 		if (this.#crypto?.getCustomPassword(chat.id)) return true;
 		const pwd = await MessengerDialog.promptPassword({
@@ -21457,9 +23271,12 @@ class MessengerTransport {
 		}
 		if (!body || typeof body !== 'object') return;
 		const type = body.type;
-		if (!body.chatId && type !== 'SupraPresenceUpdate' && type !== 'SupraChatHistoryCleared' &&
+		const eventChatId = body.chatId || body.sourceChatId;
+		if (!eventChatId && type !== 'SupraPresenceUpdate' && type !== 'SupraChatHistoryCleared' &&
 			type !== 'SupraProfileUpdated' && type !== 'SupraAppearanceUpdated' &&
-			type !== 'SupraLoginChanged' && type !== 'SupraSyncHint') return;
+			type !== 'SupraLoginChanged' && type !== 'SupraSyncHint' &&
+			type !== 'SupraAssistantReplyPending' && type !== 'SupraBotAssistantUpdated') return;
+		if (!body.chatId && eventChatId) body.chatId = eventChatId;
 		this.#onMessage(body);
 	}
 	destroy() {
@@ -22228,6 +24045,7 @@ class MessengerMessageRenderer {
 
 	static SHORT_MSG_MAX_LEN = 25;
 	static SHORT_MSG_END_PADDING_PX = 25;
+	static WIDE_MSG_MIN_LEN = 200;
 
 	#plainMessageText(msg) {
 		if (!msg?.text || msg.deletedForEveryone) return null;
@@ -22249,12 +24067,62 @@ class MessengerMessageRenderer {
 		return [...plain].length < MessengerMessageRenderer.SHORT_MSG_MAX_LEN;
 	}
 
+	#plainMessageTextForWidth(msg) {
+		const thought = parseThoughtMessage(msg?.text);
+		if (thought) return thought.body;
+		return this.#plainMessageText(msg);
+	}
+
+	#isWideMessageText(msg) {
+		const plain = this.#plainMessageTextForWidth(msg);
+		if (plain == null) return false;
+		return [...plain].length >= MessengerMessageRenderer.WIDE_MSG_MIN_LEN;
+	}
+
 	#syncShortEndPadding(bubble, msg) {
 		if (!bubble) return;
 		const short = this.#isShortMessageText(msg);
 		bubble.querySelectorAll('.mc-msg-text').forEach(textEl => {
 			textEl.classList.toggle('mc-msg-text--short-end', short);
 		});
+	}
+
+	#syncWideBubble(bubble, msg) {
+		if (!bubble) return;
+		const isMediaBubble = bubble.classList.contains('mc-image-bubble')
+			|| bubble.classList.contains('mc-photo-album-bubble')
+			|| bubble.classList.contains('mc-file-bubble');
+		bubble.classList.toggle('mc-bubble--wide', !isMediaBubble && this.#isWideMessageText(msg));
+	}
+
+	#buildMessageButtons(msg, isMine, renderOpts) {
+		if (isMine || msg.deletedForEveryone) return null;
+		const buttons = normalizeMessageButtons(msg.buttons);
+		if (!buttons.length) return null;
+		const wrap = this.#utils.mk('div', 'mc-msg-buttons');
+		for (const btn of buttons) {
+			const btnEl = this.#utils.mk('button', `mc-msg-btn mc-msg-btn--${btn.color || 'default'}`);
+			btnEl.type = 'button';
+			btnEl.textContent = btn.text;
+			btnEl.dataset.buttonId = btn.id;
+			if (typeof renderOpts?.onButtonPress === 'function') {
+				btnEl.addEventListener('click', e => {
+					e.preventDefault();
+					e.stopPropagation();
+					renderOpts.onButtonPress(msg, btn, btnEl);
+				});
+			} else {
+				btnEl.disabled = true;
+			}
+			wrap.appendChild(btnEl);
+		}
+		return wrap;
+	}
+
+	#syncMessageButtons(contentWrap, msg, isMine, renderOpts) {
+		contentWrap?.querySelector('.mc-msg-buttons')?.remove();
+		const btnWrap = this.#buildMessageButtons(msg, isMine, renderOpts);
+		if (btnWrap) contentWrap.appendChild(btnWrap);
 	}
 
 	#isLockedMsg(msg) {
@@ -22291,6 +24159,18 @@ class MessengerMessageRenderer {
 		const parsed = MessengerCustomMessage.parse(msg.text);
 		if (parsed) {
 			this.#customRenderer.render(bubble, parsed, { channelPublic });
+			return;
+		}
+		const thought = parseThoughtMessage(msg.text);
+		if (thought) {
+			const wrap = this.#utils.mk('div', 'mc-msg-thoughts');
+			const label = this.#utils.mk('div', 'mc-msg-thoughts-label');
+			label.textContent = thought.label;
+			const textEl = this.#utils.mk('div', 'mc-msg-text mc-msg-text--thoughts');
+			textEl.textContent = thought.body;
+			wrap.append(label, textEl);
+			const footer = bubble.querySelector('.mc-msg-footer');
+			bubble.insertBefore(wrap, footer || null);
 			return;
 		}
 		const textEl = this.#utils.mk('div', 'mc-msg-text');
@@ -22506,9 +24386,13 @@ class MessengerMessageRenderer {
 		this.#syncTierLock(footer, msg, isMine);
 		bubble.appendChild(footer);
 		this.#syncShortEndPadding(bubble, msg);
-		if (isMine) row.append(bubble);
-		else if (avatar) row.append(avatar, bubble);
-		else row.append(bubble);
+		this.#syncWideBubble(bubble, msg);
+		const contentWrap = this.#utils.mk('div', 'mc-msg-content');
+		contentWrap.appendChild(bubble);
+		this.#syncMessageButtons(contentWrap, msg, isMine, renderOpts);
+		if (isMine) row.append(contentWrap);
+		else if (avatar) row.append(avatar, contentWrap);
+		else row.append(contentWrap);
 		return row;
 	}
 
@@ -22523,6 +24407,7 @@ class MessengerMessageRenderer {
 		if (oldFwd) oldFwd.remove();
 		const oldText = bubble.querySelector('.mc-msg-text');
 		if (oldText) oldText.remove();
+		bubble.querySelector('.mc-msg-thoughts')?.remove();
 		bubble.querySelector('.mc-photo-collage')?.remove();
 		bubble.querySelectorAll('.mc-image-slot-wrap, .mc-photo-collage-cell').forEach(el => el.remove());
 		bubble.querySelector('.mc-bubble-image')?.remove();
@@ -22563,6 +24448,9 @@ class MessengerMessageRenderer {
 			editedEl.remove();
 		}
 		this.#syncShortEndPadding(bubble, msg);
+		this.#syncWideBubble(bubble, msg);
+		const contentWrap = entry.el.querySelector('.mc-msg-content') || entry.el;
+		this.#syncMessageButtons(contentWrap, msg, !!entry?.el?.classList?.contains('mc-msg-row--mine'), renderOpts);
 	}
 	setStatusIcon(el, status) {
 		el.innerHTML = '';
@@ -22596,7 +24484,7 @@ class MessengerMessageRenderer {
 		if (!textEl) return;
 		const unique = [...new Map(activities.map(a => [a.userId, a])).values()];
 		if (unique.length === 1) {
-			textEl.textContent = i18n.tActivity(unique[0].activityType, unique[0].userName);
+			textEl.textContent = formatActivityDisplay(unique[0], i18n);
 		} else if (unique.length <= 3) {
 			textEl.textContent = unique.map(u => u.userName).join(', ') +
 				' ' + (i18n.locale === 'ru' ? 'печатают' : 'are typing');
@@ -22690,16 +24578,43 @@ class MessengerMessageRenderer {
 			field.placeholder = this.#i18n.t('writeMessage');
 			const attachBtn = area.querySelector('.mc-attach-btn');
 			if (attachBtn) attachBtn.disabled = !connected;
+			const botMenuBtn = area.querySelector('.mc-bot-menu-btn');
+			if (botMenuBtn) botMenuBtn.disabled = !connected;
 		};
+		const composerNodes = [];
+		const botMeta = fileOptions?.botMeta || null;
+		const botMenuItems = buildBotComposerMenuItems(fileOptions?.botMenu);
+		if (botMenuItems.length) {
+			const botUserId = botMeta?.botUserId || fileOptions?.botUserId || null;
+			const botMenuBtn = new MessengerBotMenuButton(
+				this.#utils,
+				this.#icons,
+				this.#i18n,
+				fileOptions.themeManager || null,
+				botMenuItems,
+				(message) => {
+					if (!isSendAllowed()) return;
+					field.value = message;
+					doSend();
+				},
+				async (itemId) => {
+					if (!botUserId || !fileOptions?.onBotAssistantAction) return;
+					const handled = await fileOptions.onBotAssistantAction(itemId, botUserId);
+					if (handled) fileOptions.onBotMenuRefresh?.();
+				},
+			);
+			composerNodes.push(botMenuBtn.build());
+			area._botMenuButton = botMenuBtn;
+		}
 		if (fileOptions && Array.isArray(fileOptions.types) && fileOptions.types.length > 0) {
 			const attachMenu = new MessengerAttachMenu(
 				this.#utils, this.#icons, this.#i18n, fileOptions.types,
 				(type) => fileOptions.onFileUpload && fileOptions.onFileUpload(type, chatId, msgArea)
 			);
-			area.append(attachMenu.build(), field, btn);
-		} else {
-			area.append(field, btn);
+			composerNodes.push(attachMenu.build());
 		}
+		composerNodes.push(field, btn);
+		area.append(...composerNodes);
 		if (connectionStateMgr) {
 			connectionStateMgr.subscribe(applyConnectionState);
 		} else {
@@ -22847,6 +24762,7 @@ class MessengerChatPanel {
 	#forwardModal = null;
 	#readGate = null;
 	#chatVisibleFn = null;
+	#assistantMgr = null;
 	constructor(utils, icons, avatarBuilder, msgRenderer, themeManager, i18n, api, pageSize = 20, cache = null, presence = null) {
 		this.#utils = utils;
 		this.#icons = icons;
@@ -22863,16 +24779,82 @@ class MessengerChatPanel {
 	}
 	setPresenceManager(presence) { this.#presence = presence; }
 	setConnectionStateManager(mgr) { this.#connectionStateMgr = mgr; }
+	setAssistantManager(mgr) { this.#assistantMgr = mgr; }
 
 	#msgRenderOpts(state) {
-		return { channelPublic: messengerChannelUsesPublicFiles(state) };
+		return {
+			channelPublic: messengerChannelUsesPublicFiles(state),
+			onButtonPress: (msg, btn, btnEl) => this.#onMessageButtonPress(state, msg, btn, btnEl),
+		};
+	}
+
+	async #onMessageButtonPress(state, msg, btn, btnEl) {
+		if (!state || !msg?.id || !btn?.id || btnEl?.disabled) return;
+		if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) {
+			MessengerDialog.showNotice(
+				this.#i18n.t('offlineSendBlocked'),
+				this.#i18n.t('close'),
+				null,
+				this.#themeManager
+			);
+			return;
+		}
+		btnEl.disabled = true;
+		btnEl.classList.add('mc-msg-btn--busy');
+		const preview = msg.text?.trim()
+			|| normalizeMessageButtons(msg.buttons).map(b => b.text).filter(Boolean).join(' · ')
+			|| btn.text;
+		const localMsg = {
+			id: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+			serverId: null,
+			chatId: state.chatId,
+			senderId: state.currentUser?.id ?? 'me',
+			senderName: state.currentUser?.name ?? '',
+			senderAvatar: state.currentUser?.avatar ?? null,
+			text: btn.action,
+			timestamp: new Date(),
+			status: 'sending',
+			isOwn: true,
+			isVirtual: false,
+			encryptionTier: 'basic',
+			replyToMessageId: msg.id,
+			replyToSenderName: msg.senderName || null,
+			replyToTextPreview: preview,
+		};
+		try {
+			await this.appendMsg(state, localMsg);
+			state.onChatPreviewRefresh?.();
+			const serverMsg = await this.#api.pressMessageButton(state.chatId, msg.id, btn.id, {
+				localId: localMsg.id,
+			});
+			if (serverMsg?.id) {
+				const confirmed = {
+					...localMsg,
+					id: serverMsg.id,
+					serverId: serverMsg.id,
+					status: serverMsg.status || 'sent',
+					text: serverMsg.text || btn.action,
+					replyToMessageId: serverMsg.replyToMessageId || msg.id,
+					replyToSenderName: serverMsg.replyToSenderName || msg.senderName || null,
+					replyToTextPreview: serverMsg.replyToTextPreview || preview,
+				};
+				this.updateMsgStatus(state, localMsg.id, confirmed.status);
+				await this.confirmServerMessage(state, localMsg.id, confirmed);
+				state.onChatPreviewRefresh?.();
+			}
+		} catch (e) {
+			console.warn('[MessengerChatPanel] pressMessageButton error:', e);
+			this.updateMsgStatus(state, localMsg.id, 'error');
+			btnEl.disabled = false;
+			btnEl.classList.remove('mc-msg-btn--busy');
+		}
 	}
 
 	#formatActivityText(activities, i18n) {
 		if (!activities?.length) return '';
 		const unique = [...new Map(activities.map(a => [a.userId, a])).values()];
 		if (unique.length === 1) {
-			return i18n.tActivity(unique[0].activityType, unique[0].userName);
+			return formatActivityDisplay(unique[0], i18n);
 		}
 		if (unique.length <= 3) {
 			return unique.map(u => u.userName).join(', ')
@@ -22889,11 +24871,33 @@ class MessengerChatPanel {
 		this.refreshChatHeaderSub(state, chat, { botMeta: state?.botMeta, channelMeta: state?.channelMeta });
 	}
 
+	#getBotHeaderDescElement(state) {
+		const nameWrap = state?.el?.querySelector('.mc-header-name-wrap');
+		if (!nameWrap) return null;
+		const subRow = nameWrap.querySelector('.mc-header-sub-row');
+		if (subRow) {
+			return subRow.querySelector('.mc-header-channel-desc')
+				|| subRow.querySelector('.mc-header-sub');
+		}
+		return nameWrap.querySelector('.mc-header-channel-desc')
+			|| nameWrap.querySelector('.mc-header-sub:not(.mc-header-channel-desc)');
+	}
+
+	#cleanupOrphanBotHeaderDesc(state) {
+		const nameWrap = state?.el?.querySelector('.mc-header-name-wrap');
+		if (!nameWrap) return;
+		nameWrap.querySelectorAll(':scope > .mc-header-channel-desc, :scope > .mc-header-sub.mc-header-channel-desc').forEach(el => {
+			if (!el.closest('.mc-header-sub-row')) el.remove();
+		});
+	}
+
 	#ensureChatHeaderSubElement(state, chat) {
 		const nameWrap = state.el?.querySelector('.mc-header-name-wrap');
 		if (!nameWrap) return null;
-		const isChannelOrBot = isChannelType(chat.type) || isBotContact(chat);
-		if (isChannelOrBot) {
+		if (isBotContact(chat)) {
+			return this.#getBotHeaderDescElement(state);
+		}
+		if (isChannelType(chat.type)) {
 			let el = nameWrap.querySelector('.mc-header-channel-desc');
 			if (!el) {
 				el = this.#utils.mk('div', 'mc-header-sub mc-header-channel-desc');
@@ -22930,13 +24934,16 @@ class MessengerChatPanel {
 
 		const connState = this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING;
 		const isDirect = chat.type === 'direct' && !isBotContact(chat);
-		const isChannelOrBot = isChannelType(chat.type) || isBotContact(chat);
 		const nameWrap = state.el.querySelector('.mc-header-name-wrap');
 		if (!nameWrap) return;
 
 		if (connState !== MessengerConnectionStateManager.STATE_CONNECTING && isDirect) {
 			const subEl = nameWrap.querySelector('.mc-header-sub-row .mc-header-sub');
 			if (subEl?.classList.contains('mc-header-sub--typing')) return;
+		}
+		if (connState !== MessengerConnectionStateManager.STATE_CONNECTING && isBotContact(chat)) {
+			const descEl = this.#getBotHeaderDescElement(state);
+			if (descEl?.classList.contains('mc-header-sub--typing')) return;
 		}
 
 		if (connState === MessengerConnectionStateManager.STATE_CONNECTING) {
@@ -22949,7 +24956,35 @@ class MessengerChatPanel {
 
 		const text = this.#resolveChatHeaderSubText(state, chat, { botMeta, channelMeta });
 
-		if (isChannelOrBot) {
+		if (isBotContact(chat)) {
+			this.#cleanupOrphanBotHeaderDesc(state);
+			const subRow = nameWrap.querySelector('.mc-header-sub-row');
+			if (!subRow) return;
+			let descEl = this.#getBotHeaderDescElement(state);
+			const activityBar = subRow.querySelector('.mc-activity-bar');
+			if (!descEl) {
+				descEl = this.#utils.mk('div', 'mc-header-sub');
+				if (activityBar) subRow.insertBefore(descEl, activityBar);
+				else subRow.appendChild(descEl);
+			}
+			descEl.classList.remove('mc-header-sub--typing');
+			if (text) {
+				descEl.classList.add('mc-header-channel-desc');
+				descEl.textContent = text;
+			} else {
+				descEl.classList.remove('mc-header-channel-desc');
+				descEl.textContent = this.#i18n.t('typeLabels')?.bot || 'бот';
+			}
+			if (state._composerChat) {
+				state._composerChat = {
+					...state._composerChat,
+					botDescription: (botMeta ?? state?.botMeta)?.description ?? state._composerChat.botDescription,
+				};
+			}
+			return;
+		}
+
+		if (isChannelType(chat.type)) {
 			let descEl = nameWrap.querySelector('.mc-header-channel-desc');
 			if (!text) {
 				descEl?.remove();
@@ -22960,12 +24995,6 @@ class MessengerChatPanel {
 				nameWrap.appendChild(descEl);
 			}
 			descEl.textContent = text;
-			if (isBotContact(chat) && state._composerChat) {
-				state._composerChat = {
-					...state._composerChat,
-					botDescription: (botMeta ?? state?.botMeta)?.description ?? state._composerChat.botDescription,
-				};
-			}
 			return;
 		}
 
@@ -22981,6 +25010,18 @@ class MessengerChatPanel {
 		const typing = (activities || []).filter(a => a.activityType === 'typing');
 		const isDirect = chat?.type === 'direct';
 		if (isDirect && isBotContact(chat)) {
+			this.#cleanupOrphanBotHeaderDesc(state);
+			const descEl = this.#getBotHeaderDescElement(state);
+			if (descEl) {
+				if (typing.length) {
+					descEl.classList.add('mc-header-sub--typing');
+					const custom = (typing[0]?.activityMessage || '').trim();
+					fillTypingIndicator(descEl, this.#i18n, custom || null);
+				} else {
+					descEl.classList.remove('mc-header-sub--typing');
+					this.refreshBotHeaderSub(state, chat, state.botMeta);
+				}
+			}
 			this.#msgRenderer.updateActivityBar(activityBar, [], this.#i18n);
 			return;
 		}
@@ -22989,7 +25030,8 @@ class MessengerChatPanel {
 			if (subEl) {
 				if (typing.length) {
 					subEl.classList.add('mc-header-sub--typing');
-					fillTypingIndicator(subEl, this.#i18n);
+					const custom = (typing[0]?.activityMessage || '').trim();
+					fillTypingIndicator(subEl, this.#i18n, custom || null);
 				} else {
 					this.#restoreDirectHeaderSub(state, chat);
 				}
@@ -23067,6 +25109,104 @@ class MessengerChatPanel {
 			);
 		oldInput.replaceWith(newInput);
 		state.inputField = needsStart ? null : newInput.querySelector('.mc-input-field');
+	}
+
+	refreshBotComposerMenu(state, menu) {
+		if (!state?.isBotChat || !state.el) return;
+		const oldInput = state.el.querySelector('.mc-input-area');
+		if (!oldInput?.querySelector('.mc-input-field')) return;
+
+		if (state.botMeta) state.botMeta.menu = menu || null;
+		if (state._composerChat) {
+			state._composerChat.botMenu = menu || null;
+			state._composerChat.hasAssistantMenu = !!state.botMeta?.hasAssistantMenu;
+			state._composerChat.isAssistant = !!state.botMeta?.isAssistant;
+		}
+		if (state._composerFileOptions) {
+			state._composerFileOptions.botMenu = menu || null;
+			if (state.botMeta) state._composerFileOptions.botMeta = state.botMeta;
+		}
+
+		const hasMenu = normalizeBotMenuItems(menu).length > 0;
+		const menuWrap = oldInput.querySelector('.mc-bot-menu-wrap');
+		if (!hasMenu) {
+			menuWrap?.remove();
+			oldInput._botMenuButton?.closePopup?.();
+			delete oldInput._botMenuButton;
+			return;
+		}
+		const botMenuItems = buildBotComposerMenuItems(menu);
+		if (menuWrap) {
+			oldInput._botMenuButton?.closePopup?.();
+			const field = oldInput.querySelector('.mc-input-field');
+			const onSend = state._composerOnSend;
+			const msgArea = state.msgArea;
+			const chatId = state.chatId;
+			const botUserId = state.botMeta?.botUserId || null;
+			const botMenuBtn = new MessengerBotMenuButton(
+				this.#utils,
+				this.#icons,
+				this.#i18n,
+				this.#themeManager,
+				botMenuItems,
+				(message) => {
+					if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) return;
+					if (!field || !onSend) return;
+					field.value = message;
+					onSend(chatId, field, msgArea);
+					field.style.height = '';
+					field.rows = 1;
+				},
+				async (itemId) => {
+					if (!botUserId) return;
+					const handled = await this.#assistantMgr?.handleBotSpecialMenuItem(itemId, botUserId);
+					if (handled) state._composerFileOptions?.onBotMenuRefresh?.();
+				},
+			);
+			const newWrap = botMenuBtn.build();
+			menuWrap.replaceWith(newWrap);
+			oldInput._botMenuButton = botMenuBtn;
+			return;
+		}
+
+		if (!state._composerOnSend) return;
+		const newInput = this.#msgRenderer.buildInputArea(
+			state.chatId,
+			state.msgArea,
+			state._composerOnSend,
+			state._composerOnActivity,
+			state._composerFileOptions,
+			this.#connectionStateMgr
+		);
+		oldInput.replaceWith(newInput);
+		state.inputField = newInput.querySelector('.mc-input-field');
+	}
+
+	refreshChatHeaderMenu(state, chat) {
+		if (!state?.el || !chat) return;
+		const menuWrap = state.el.querySelector('.mc-menu-wrap');
+		const oldMenu = menuWrap?.querySelector('.mc-menu');
+		if (!menuWrap || !oldMenu) return;
+		const callbacks = {
+			...(state._botChatCallbacks || {}),
+			...(state._headerMenuCallbacks || {}),
+			botMeta: state.botMeta,
+		};
+		const wasOpen = oldMenu.classList.contains('mc-menu--open');
+		oldMenu._dismissCleanup?.();
+		oldMenu._dismissCleanup = null;
+		const newMenu = this.#buildChatMenu(chat, callbacks);
+		if (wasOpen) {
+			newMenu.classList.add('mc-menu--open');
+			newMenu._dismissCleanup = attachMenuDismiss(newMenu, () => {
+				newMenu.classList.remove('mc-menu--open');
+				newMenu.closeSubmenus?.();
+			});
+		}
+		oldMenu.replaceWith(newMenu);
+		if (state._headerMenuCallbacks) {
+			state._headerMenuCallbacks.botMeta = state.botMeta;
+		}
 	}
 
 	#buildBotStubInput(chat, panelState, chatCallbacks) {
@@ -23202,6 +25342,8 @@ class MessengerChatPanel {
 
 	#shouldOfferEnterPassword(state, msg, row = null) {
 		if (typeof state.onEnterExtraPassword !== 'function') return false;
+		const chat = this.#api.chatMeta(state.chatId);
+		if (!MessengerThemeManager.shouldShowChatEncryptionMenu(chat || { type: 'direct' })) return false;
 		if (this.#api.getCrypto()?.getCustomPassword(state.chatId)) return false;
 		const m = this.#resolveRowMessage(state, row, msg);
 		const tier = (m?.encryptionTier || 'basic').toLowerCase();
@@ -23412,23 +25554,20 @@ class MessengerChatPanel {
 			if (this.#cancelSelectionMode(panelState)) {
 				return;
 			}
+			const leaveChat = () => {
+				if (typeof chatCallbacks.onNavigateBack === 'function') {
+					chatCallbacks.onNavigateBack();
+					return;
+				}
+				appEl.root.classList.remove('mapp-show-chat');
+				if (appEl.empty) appEl.empty.hidden = MessengerUtils.isMobile();
+			};
 			if (MessengerUtils.isMobile()) {
-				messengerHandleMobileBackFromChat(() => {
-					if (typeof chatCallbacks.onNavigateBack === 'function') {
-						chatCallbacks.onNavigateBack();
-						return;
-					}
-					appEl.root.classList.remove('mapp-show-chat');
-					if (appEl.empty) appEl.empty.hidden = true;
-				});
+				messengerHandleMobileBackFromChat(leaveChat);
 				return;
 			}
-			if (typeof chatCallbacks.onNavigateBack === 'function') {
-				chatCallbacks.onNavigateBack();
-				return;
-			}
-			appEl.root.classList.remove('mapp-show-chat');
-			if (appEl.empty) appEl.empty.hidden = false;
+			if (messengerDismissTopOverlayBeforeBack()) return;
+			leaveChat();
 		});
 		const canShow = this.#canShowContactPresence();
 		const avatarPresence = canShow && chat.type === 'direct' && chat.contactUserId
@@ -23456,11 +25595,18 @@ class MessengerChatPanel {
 			}
 		} else if (isBotHeader) {
 			nameWrap.append(nameEl);
+			activityBar = this.#msgRenderer.buildActivityBar();
+			const subRow = this.#utils.mk('div', 'mc-header-sub-row');
 			if (botDescription) {
 				const descEl = this.#utils.mk('div', 'mc-header-sub mc-header-channel-desc');
 				descEl.textContent = botDescription;
-				nameWrap.append(descEl);
+				subRow.append(descEl, activityBar);
+			} else {
+				const subEl = this.#utils.mk('div', 'mc-header-sub');
+				subEl.textContent = this.#i18n.t('typeLabels').bot || 'бот';
+				subRow.append(subEl, activityBar);
 			}
+			nameWrap.append(subRow);
 		} else {
 			const subEl = this.#utils.mk('div', 'mc-header-sub');
 			if (chat.type === 'direct') {
@@ -23485,10 +25631,34 @@ class MessengerChatPanel {
 			onShowGroupProfile: chatCallbacks.onShowGroupProfile,
 			onChannelAbout: chatCallbacks.onChannelAbout,
 		});
+		const botMeta = chatCallbacks.botMeta;
+		const panelStateRef = { current: null };
+		const refreshBotAssistantUi = async () => {
+			if (!botMeta?.botUserId) return;
+			try {
+				const info = await this.#api.getBotInfo(botMeta.botUserId, chat.id);
+				if (!info?.success) return;
+				botMeta.isAssistant = !!info.isAssistant;
+				botMeta.hasAssistantMenu = !!info.hasAssistantMenu;
+				botMeta.menu = info.menu ?? botMeta.menu;
+				const state = panelStateRef.current;
+				if (state) {
+					state.botMeta = botMeta;
+					this.refreshBotComposerMenu(state, botMeta.menu);
+					this.refreshChatHeaderMenu(state, chat);
+				}
+			} catch (_) { /* ignore */ }
+		};
+		const headerMenuCallbacks = {
+			...chatCallbacks,
+			botMeta,
+			onBotAssistantAction: (itemId, botUserId) => this.#assistantMgr?.handleBotSpecialMenuItem(itemId, botUserId),
+			onBotMenuRefresh: refreshBotAssistantUi,
+		};
 		const menuWrap = this.#utils.mk('div', 'mc-menu-wrap');
 		const dotsBtn = this.#utils.mk('button', 'mc-dots-btn');
 		dotsBtn.innerHTML = this.#icons.dots();
-		const dropdown = this.#buildChatMenu(chat, chatCallbacks);
+		const dropdown = this.#buildChatMenu(chat, headerMenuCallbacks);
 		dotsBtn.addEventListener('click', e => {
 			e.stopPropagation();
 			if (isMobileSheetMenu()) {
@@ -23498,7 +25668,7 @@ class MessengerChatPanel {
 				dropdown._dismissCleanup = null;
 				MobileBottomSheetMenu.open({
 					title: chat.name || '',
-					items: this.#buildChatMenuSheetItems(chat, chatCallbacks),
+					items: this.#buildChatMenuSheetItems(chat, headerMenuCallbacks),
 					themeManager: this.#themeManager,
 					i18n: this.#i18n,
 				});
@@ -23518,7 +25688,7 @@ class MessengerChatPanel {
 		});
 		menuWrap.append(dotsBtn, dropdown);
 		header.append(info, menuWrap);
-		const activityTracker = (isChannelHeader || isBotHeader) ? null : new MessengerActivityTracker(activities => {
+		const activityTracker = isChannelHeader ? null : new MessengerActivityTracker(activities => {
 			this.#applyChatActivityUi(panelState, activityBar, activities, chat);
 		});
 		const msgArea = this.#utils.mk('div', 'mc-messages');
@@ -23544,9 +25714,19 @@ class MessengerChatPanel {
 			: (type, active) => this.#api.sendActivity(chat.id, type, active).catch(() => {});
 		const replyBar = this.#buildReplyBar();
 		const selectBar = this.#buildSelectionBar();
-		const fileOptions = fileTransferTypes.length > 0 ? {
-			types: fileTransferTypes,
+		const channelMeta = chatCallbacks.channelMeta;
+		const hasAssistantMenu = isBotHeader && !!botMeta?.hasAssistantMenu;
+		const hasBotMenu = isBotHeader && normalizeBotMenuItems(botMeta?.menu).length > 0;
+		const hasFileTransfer = fileTransferTypes.length > 0;
+		const fileOptions = (hasFileTransfer || hasBotMenu) ? {
+			types: hasFileTransfer ? fileTransferTypes : [],
 			chatId: chat.id,
+			botMenu: isBotHeader ? (botMeta?.menu || null) : null,
+			botMeta: isBotHeader ? botMeta : null,
+			botUserId: botMeta?.botUserId || chat.contactUserId || null,
+			onBotAssistantAction: (itemId, botUserId) => this.#assistantMgr?.handleBotSpecialMenuItem(itemId, botUserId),
+			onBotMenuRefresh: refreshBotAssistantUi,
+			themeManager: this.#themeManager,
 			onFileUpload: (type, cId, mArea) => {
 				if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) return;
 				this.exitSelectionForNavigation(panelState);
@@ -23576,8 +25756,6 @@ class MessengerChatPanel {
 				});
 			},
 		} : null;
-		const channelMeta = chatCallbacks.channelMeta;
-		const botMeta = chatCallbacks.botMeta;
 		const isChannel = isChannelType(chat.type);
 		const canPostChannel = isChannel && channelMetaCanPost(channelMeta);
 		const needsBotStart = botChatNeedsStart(chat);
@@ -23665,6 +25843,9 @@ class MessengerChatPanel {
 			onChatPreviewRefresh: typeof chatCallbacks.onChatPreviewRefresh === 'function'
 				? chatCallbacks.onChatPreviewRefresh
 				: null,
+			onApplyActivities: typeof chatCallbacks.onApplyActivities === 'function'
+				? chatCallbacks.onApplyActivities
+				: null,
 			onChannelAvatarUpdate: typeof chatCallbacks.onChannelAvatarUpdate === 'function'
 				? chatCallbacks.onChannelAvatarUpdate
 				: null,
@@ -23684,6 +25865,8 @@ class MessengerChatPanel {
 			_composerFileOptions: fileOptions,
 		};
 		panelState = state;
+		panelStateRef.current = state;
+		state._headerMenuCallbacks = headerMenuCallbacks;
 		this.refreshChatHeaderSub(state, chat, { botMeta, channelMeta });
 		if (isGroupChat && !state.groupCanModerate) {
 			void this.#resolveGroupCanDeleteForEveryone(state);
@@ -23884,7 +26067,7 @@ class MessengerChatPanel {
 
 	#buildChatMenu(chat, callbacks = {}) {
 		const menu = this.#utils.mk('div', 'mc-menu');
-		const isGroup = chat.type === 'group' || chat.type === 'public_group';
+		const isGroup = chat.type === 'group' || chat.type === 'public_group' || chat.type === 'group_branch';
 		const isChannel = isChannelType(chat.type);
 
 		const addItem = (icon, labelKey, labelFallback, danger, action) => {
@@ -23906,13 +26089,36 @@ class MessengerChatPanel {
 
 		if (isGroup && typeof callbacks.onShowGroupProfile === 'function') {
 			addItem(this.#icons.profile(), 'groupProfile', this.#i18n.t('groupProfile'), false, () => callbacks.onShowGroupProfile(chat));
-		} else if (isBotContact(chat) && typeof callbacks.onShowProfile === 'function') {
+		}
+		if (canManageGroupBranches(chat) && typeof callbacks.onCreateGroupBranch === 'function') {
+			addItem(this.#icons.folder(), 'groupBranchCreate', this.#i18n.t('groupBranchCreate'), false, () => callbacks.onCreateGroupBranch(chat));
+		}
+		if (!isGroup && isBotContact(chat) && typeof callbacks.onShowProfile === 'function') {
 			addItem(this.#icons.profile(), 'showBotProfile', this.#i18n.t('showBotProfile'), false, () => callbacks.onShowProfile(chat));
 		} else if (!isGroup && typeof callbacks.onShowProfile === 'function') {
 			addItem(this.#icons.profile(), 'showProfile', 'Профиль', false, () => callbacks.onShowProfile(chat));
 		}
 
-		if (!isBotContact(chat)) {
+		if (!isGroup && isBotContact(chat) && callbacks.botMeta?.hasAssistantMenu) {
+			const isAssistant = !!callbacks.botMeta?.isAssistant;
+			const botUserId = callbacks.botMeta?.botUserId || chat.contactUserId || null;
+			addItem(
+				isAssistant ? this.#icons.assistantRemove() : this.#icons.assistantAdd(),
+				isAssistant ? 'botAssistantRemove' : 'botAssistantAdd',
+				this.#i18n.t(isAssistant ? 'botAssistantRemove' : 'botAssistantAdd'),
+				false,
+				async () => {
+					if (!botUserId || typeof callbacks.onBotAssistantAction !== 'function') return;
+					const handled = await callbacks.onBotAssistantAction(
+						isAssistant ? BOT_ASSISTANT_REMOVE_ID : BOT_ASSISTANT_ADD_ID,
+						botUserId,
+					);
+					if (handled) callbacks.onBotMenuRefresh?.();
+				},
+			);
+		}
+
+		if (!isBotContact(chat) && MessengerThemeManager.shouldShowChatEncryptionMenu(chat)) {
 			this.#appendChatEncryptionMenu(menu, chat, callbacks, addItem);
 		}
 
@@ -23946,7 +26152,7 @@ class MessengerChatPanel {
 
 	#buildChatMenuSheetItems(chat, callbacks = {}) {
 		const items = [];
-		const isGroup = chat.type === 'group' || chat.type === 'public_group';
+		const isGroup = chat.type === 'group' || chat.type === 'public_group' || chat.type === 'group_branch';
 		const isChannel = isChannelType(chat.type);
 
 		const pushItem = (icon, labelKey, labelFallback, danger, action) => {
@@ -23965,13 +26171,36 @@ class MessengerChatPanel {
 
 		if (isGroup && typeof callbacks.onShowGroupProfile === 'function') {
 			pushItem(this.#icons.profile(), 'groupProfile', this.#i18n.t('groupProfile'), false, () => callbacks.onShowGroupProfile(chat));
-		} else if (isBotContact(chat) && typeof callbacks.onShowProfile === 'function') {
+		}
+		if (canManageGroupBranches(chat) && typeof callbacks.onCreateGroupBranch === 'function') {
+			pushItem(this.#icons.folder(), 'groupBranchCreate', this.#i18n.t('groupBranchCreate'), false, () => callbacks.onCreateGroupBranch(chat));
+		}
+		if (!isGroup && isBotContact(chat) && typeof callbacks.onShowProfile === 'function') {
 			pushItem(this.#icons.profile(), 'showBotProfile', this.#i18n.t('showBotProfile'), false, () => callbacks.onShowProfile(chat));
 		} else if (!isGroup && typeof callbacks.onShowProfile === 'function') {
 			pushItem(this.#icons.profile(), 'showProfile', 'Профиль', false, () => callbacks.onShowProfile(chat));
 		}
 
-		if (!isBotContact(chat)) {
+		if (!isGroup && isBotContact(chat) && callbacks.botMeta?.hasAssistantMenu) {
+			const isAssistant = !!callbacks.botMeta?.isAssistant;
+			const botUserId = callbacks.botMeta?.botUserId || chat.contactUserId || null;
+			pushItem(
+				isAssistant ? this.#icons.assistantRemove() : this.#icons.assistantAdd(),
+				isAssistant ? 'botAssistantRemove' : 'botAssistantAdd',
+				this.#i18n.t(isAssistant ? 'botAssistantRemove' : 'botAssistantAdd'),
+				false,
+				async () => {
+					if (!botUserId || typeof callbacks.onBotAssistantAction !== 'function') return;
+					const handled = await callbacks.onBotAssistantAction(
+						isAssistant ? BOT_ASSISTANT_REMOVE_ID : BOT_ASSISTANT_ADD_ID,
+						botUserId,
+					);
+					if (handled) callbacks.onBotMenuRefresh?.();
+				},
+			);
+		}
+
+		if (!isBotContact(chat) && MessengerThemeManager.shouldShowChatEncryptionMenu(chat)) {
 			const encChildren = this.#buildChatEncryptionSheetChildren(chat, callbacks);
 			if (encChildren.length) {
 				items.push({
@@ -24621,7 +26850,7 @@ class MessengerChatPanel {
 			if (state.selectionMode || currentMsg.deletedForEveryone) return;
 			e.preventDefault();
 			e.stopPropagation();
-			this.#enterSelectionMode(state, currentMsg.id);
+			this.#enterSelectionMode(state, currentMsg.id, row);
 		});
 	}
 
@@ -24680,6 +26909,12 @@ class MessengerChatPanel {
 			if (forwardable.length) {
 				push(this.#icons.forward(), 'msgActionForward', false, () => this.#forwardSelectedMessages(state, forwardable));
 			}
+			const botsItem = this.#assistantMgr?.buildMessageMenuBotsItem(
+				msgs,
+				state,
+				() => this.#cancelSelectionMode(state),
+			);
+			if (botsItem) sheetItems.push(botsItem);
 			const copyable = msgs.filter(m => MessengerCustomMessage.hasCopyableText(m));
 			if (copyable.length) {
 				push(this.#icons.copy(), 'msgActionCopy', false, () => this.#copySelectedMessagesText(copyable, state));
@@ -24721,6 +26956,8 @@ class MessengerChatPanel {
 			if (this.#api.canForwardMessage(msg)) {
 				push(this.#icons.forward(), 'msgActionForward', false, () => this.#forwardMessage(state, msg));
 			}
+			const botsItem = this.#assistantMgr?.buildMessageMenuBotsItem([msg], state, () => {});
+			if (botsItem) sheetItems.push(botsItem);
 			if (state.isChannelChat && state.channelSlug && msg.id) {
 				push(this.#icons.forward(), 'channelShareMessage', false, async () => {
 					const link = buildChannelMessageUrl(state.channelSlug, msg.id);
@@ -24770,73 +27007,28 @@ class MessengerChatPanel {
 			return;
 		}
 
-		document.querySelectorAll('.mc-msg-context-menu').forEach(m => m.remove());
-		const menu = this.#utils.mk('div', 'mc-msg-context-menu mapp-chat-context-menu');
-		this.#themeManager?.applyChatVars?.(menu);
-		const closeMenu = () => {
-			menu.remove();
-			dismissMenuHighlight();
-		};
-		const addItem = (icon, label, danger, action, { truncate = false } = {}) => {
-			const item = this.#utils.mk('div', 'mapp-context-menu-item');
-			if (danger) item.classList.add('mapp-context-menu-item--danger');
-			if (truncate) item.classList.add('mapp-context-menu-item--truncate');
-			if (icon) {
-				const ic = this.#utils.mk('span', 'mapp-context-menu-item-icon');
-				ic.innerHTML = icon;
-				item.appendChild(ic);
-			}
-			const lbl = this.#utils.mk('span', 'mapp-context-menu-item-label');
-			lbl.textContent = label;
-			item.appendChild(lbl);
-			item.addEventListener('click', () => { closeMenu(); action(); });
-			menu.appendChild(item);
-		};
-		sheetItems.forEach(def => {
-			if (def.children?.length) {
-				const subItem = this.#utils.mk('div', 'mapp-context-menu-item mapp-context-menu-item--sub');
-				const ic = this.#utils.mk('span', 'mapp-context-menu-item-icon');
-				ic.innerHTML = def.icon || '';
-				const lbl = this.#utils.mk('span');
-				lbl.textContent = def.label;
-				const arrow = this.#utils.mk('span', 'mapp-context-menu-arrow');
-				arrow.textContent = '›';
-				subItem.append(ic, lbl, arrow);
-				const subMenu = this.#utils.mk('div', 'mapp-context-submenu');
-				def.children.forEach(child => {
-					const cItem = this.#utils.mk('div', 'mapp-context-menu-item');
-					if (child.danger) cItem.classList.add('mapp-context-menu-item--danger');
-					const cLbl = this.#utils.mk('span');
-					cLbl.textContent = child.label;
-					cItem.appendChild(cLbl);
-					cItem.addEventListener('click', () => { closeMenu(); child.action?.(); });
-					subMenu.appendChild(cItem);
-				});
-				subItem.appendChild(subMenu);
-				subItem.addEventListener('mouseenter', () => subMenu.classList.add('mapp-context-submenu--open'));
-				subItem.addEventListener('mouseleave', () => subMenu.classList.remove('mapp-context-submenu--open'));
-				menu.appendChild(subItem);
-			} else {
-				addItem(def.icon, def.label, def.danger, def.action, { truncate: !!def.truncate });
-			}
-		});
-		document.body.appendChild(menu);
-		let x = e.clientX;
-		let y = e.clientY;
+		let anchorEl = null;
+		let clientX = e.clientX;
+		let clientY = e.clientY;
 		if (!forcePopup && e.currentTarget instanceof HTMLElement) {
-			const rect = e.currentTarget.getBoundingClientRect();
-			x = rect.left;
-			y = rect.top;
+			anchorEl = e.currentTarget;
+			const rect = anchorEl.getBoundingClientRect();
+			clientX = rect.left;
+			clientY = rect.top;
 		}
-		const mw = menu.offsetWidth;
-		const mh = menu.offsetHeight;
-		if (x + mw > window.innerWidth) x = window.innerWidth - mw - 4;
-		if (y + mh > window.innerHeight) y = window.innerHeight - mh - 4;
-		if (x < 4) x = 4;
-		if (y < 4) y = 4;
-		menu.style.left = x + 'px';
-		menu.style.top = y + 'px';
-		attachMenuDismiss(menu, closeMenu);
+
+		presentContextActionMenu(sheetItems, {
+			utils: this.#utils,
+			themeManager: this.#themeManager,
+			i18n: this.#i18n,
+			icons: this.#icons,
+			title,
+			anchorEl,
+			clientX,
+			clientY,
+			forcePopup,
+			onClose: dismissMenuHighlight,
+		});
 	}
 
 	#showSelectionActionsMenu(e, state) {
@@ -25117,18 +27309,57 @@ class MessengerChatPanel {
 		row.querySelector('.mc-msg-select-check')?.remove();
 	}
 
-	#enterSelectionMode(state, initialId) {
+	#getPanelInputArea(state) {
+		return state.el?.querySelector('.mc-input-area') ?? null;
+	}
+
+	#preserveMsgAreaScrollAnchor(msgArea, anchorRow, mutate) {
+		if (!msgArea || typeof mutate !== 'function') {
+			mutate?.();
+			return;
+		}
+		const savedTop = msgArea.scrollTop;
+		const savedHeight = msgArea.scrollHeight;
+		const savedClient = msgArea.clientHeight;
+		const anchorTop = anchorRow ? (anchorRow.offsetTop - savedTop) : null;
+		mutate();
+		const apply = () => {
+			void msgArea.offsetHeight;
+			if (anchorRow && anchorTop != null) {
+				const maxScroll = Math.max(0, msgArea.scrollHeight - msgArea.clientHeight);
+				msgArea.scrollTop = Math.min(Math.max(0, anchorRow.offsetTop - anchorTop), maxScroll);
+				return;
+			}
+			const fromBottom = savedHeight - savedTop - savedClient;
+			const maxScroll = Math.max(0, msgArea.scrollHeight - msgArea.clientHeight);
+			msgArea.scrollTop = Math.min(Math.max(0, msgArea.scrollHeight - msgArea.clientHeight - fromBottom), maxScroll);
+		};
+		requestAnimationFrame(() => requestAnimationFrame(apply));
+	}
+
+	#setSelectionChromeVisible(state, visible) {
+		if (!state) return;
+		const inputArea = this.#getPanelInputArea(state);
+		if (inputArea) inputArea.hidden = visible;
+		if (state.selectBar) state.selectBar.hidden = !visible;
+		if (visible) state.inputField?.blur();
+	}
+
+	#enterSelectionMode(state, initialId, anchorRow = null) {
+		if (state.selectionMode) return;
 		state.selectionMode = true;
 		state.selectedIds.clear();
 		if (initialId) state.selectedIds.add(initialId);
-		state.selectBar.hidden = false;
-		MessengerMessageHighlight.clear(state.msgArea);
-		state.msgArea.querySelectorAll('.mc-msg-row').forEach(row => {
-			const id = row.dataset.msgId;
-			if (!id) return;
-			this.#enableRowSelectionUi(row, state.selectedIds.has(id));
+		this.#preserveMsgAreaScrollAnchor(state.msgArea, anchorRow, () => {
+			MessengerMessageHighlight.clear(state.msgArea);
+			this.#setSelectionChromeVisible(state, true);
+			state.msgArea.querySelectorAll('.mc-msg-row').forEach(row => {
+				const id = row.dataset.msgId;
+				if (!id) return;
+				this.#enableRowSelectionUi(row, state.selectedIds.has(id));
+			});
+			this.#updateSelectionBar(state);
 		});
-		this.#updateSelectionBar(state);
 		if (MessengerUtils.isMobile() && !state.selectionNavHandle) {
 			try {
 				state.selectionNavHandle = MessengerNavHistory.pushEphemeral(() => {
@@ -25143,18 +27374,21 @@ class MessengerChatPanel {
 	}
 
 	#exitSelectionMode(state) {
+		if (!state?.selectionMode) return;
 		state.selectionMode = false;
 		state.selectedIds.clear();
-		state.selectBar.hidden = true;
 		state.selectionHistoryPushed = false;
 		state.selectionNavHandle = null;
-		state.msgArea.querySelectorAll('.mc-msg-row').forEach(row => {
-			this.#disableRowSelectionUi(row);
+		this.#preserveMsgAreaScrollAnchor(state.msgArea, null, () => {
+			this.#setSelectionChromeVisible(state, false);
+			state.msgArea.querySelectorAll('.mc-msg-row').forEach(row => {
+				this.#disableRowSelectionUi(row);
+			});
 		});
 	}
 
 	#exitSelectionModeIfActive(state) {
-		if (state?.selectionMode) this.#exitSelectionMode(state);
+		this.#dismissSelectionModeForAction(state);
 	}
 
 	/** Закрыть режим выбора перед открытием модалки (снять history-слой selection). */
@@ -25247,7 +27481,7 @@ class MessengerChatPanel {
 		} catch (e) {
 			console.warn('[MessengerChatPanel] bulk delete', e);
 		}
-		this.#exitSelectionMode(state);
+		this.#exitSelectionModeIfActive(state);
 	}
 
 	applyMessageUpdated(state, payload) {
@@ -25261,6 +27495,7 @@ class MessengerChatPanel {
 		if (payload.deletedForEveryone) {
 			data.deletedForEveryone = true;
 			data.text = '';
+			data.buttons = [];
 		} else {
 			const patched = {
 				...data,
@@ -25271,6 +27506,9 @@ class MessengerChatPanel {
 				replyToTextPreview: payload.replyToTextPreview || data.replyToTextPreview,
 				forwardedFromSenderName: payload.forwardedFromSenderName || data.forwardedFromSenderName,
 				encryptionTier: payload.encryptionTier || data.encryptionTier,
+				buttons: payload.buttons !== undefined
+					? normalizeMessageButtons(payload.buttons)
+					: normalizeMessageButtons(data.buttons),
 			};
 			data = await this.#api.messageForDisplay(patched, state.chatId);
 			if (payload.editedOn) data.editedOn = new Date(payload.editedOn);
@@ -25453,11 +27691,13 @@ class MessengerChatPanel {
 					pendingNew.push(msg);
 				}
 			}
-			if (!pendingNew.length) return;
-			pendingNew.sort(MessengerUtils.compareMessages);
-			for (const msg of pendingNew) {
-				await this.appendMsg(state, msg);
+			if (pendingNew.length) {
+				pendingNew.sort(MessengerUtils.compareMessages);
+				for (const msg of pendingNew) {
+					await this.appendMsg(state, msg);
+				}
 			}
+			this.#reconcileVisibleOrderAfterSync(state, chatId, all);
 		} catch (e) {
 			console.warn('[MessengerChatPanel] appendPendingMessagesFromCache error', e);
 		}
@@ -25467,6 +27707,9 @@ class MessengerChatPanel {
 	}
 	backgroundSyncPanelMessages(chatId, state) {
 		return this.#backgroundSyncPanelMessages(chatId, state);
+	}
+	reconcilePanelAfterSync(state, chatId, all) {
+		this.#reconcileVisibleOrderAfterSync(state, chatId, all);
 	}
 	#reconcileVisibleOrderAfterSync(state, chatId, all) {
 		const expectedIds = MessengerUtils.getExpectedVisibleMessageIds(all, state.cacheTopIdx);
@@ -25565,6 +27808,7 @@ class MessengerChatPanel {
 					chatId, this.#api, this.#pageSize, { markAsRead }
 				);
 				if (result.markedRead) state.onMarkReadAcknowledged?.();
+				state.onApplyActivities?.(result.activities);
 				if (result.historyCleared) {
 					state.msgArea.querySelectorAll('[data-msg-id]').forEach(el => el.remove());
 					state.messages.clear();
@@ -25630,6 +27874,7 @@ class MessengerChatPanel {
 				chatId, this.#api, this.#pageSize, { markAsRead }
 			);
 			if (result.markedRead) state.onMarkReadAcknowledged?.();
+			state.onApplyActivities?.(result.activities);
 			state.topLoader.hidden = true;
 			if (result.historyCleared) {
 				state.msgArea.querySelectorAll('[data-msg-id]').forEach(el => el.remove());
@@ -25986,9 +28231,9 @@ class MessengerChatPanel {
 		const el = found.entry.el.querySelector('.mc-msg-status');
 		if (el) this.#msgRenderer.setStatusIcon(el, status);
 	}
-	updateActivity(state, userId, userName, activityType, active) {
+	updateActivity(state, userId, userName, activityType, active, activityMessage = null, expiresAtMs = null) {
 		if (state.isChannelChat) return;
-		state.activityTracker?.update(userId, userName, activityType, active);
+		state.activityTracker?.update(userId, userName, activityType, active, activityMessage, expiresAtMs);
 	}
 	deleteMessage(state, storedId, originalId) {
 		const found = this.#findEntry(state, storedId) ?? this.#findEntry(state, originalId);
@@ -26383,8 +28628,17 @@ class MessengerChatView {
 			onUpdateData: (id, fresh, el) => {
 				const entry = this.#messages.get(id);
 				if (entry) {
+					const prev = entry.data;
 					entry.data = fresh;
 					if (entry.el) entry.el._msgData = fresh;
+					if (entry.el && prev && (
+						prev.text !== fresh.text
+						|| prev.replyToTextPreview !== fresh.replyToTextPreview
+						|| !!prev._locked !== !!fresh._locked
+						|| SupraCrypto.isEncrypted(prev.text)
+					)) {
+						this.#msgRenderer.updateMsgContent(entry, fresh, null);
+					}
 				} else if (el) {
 					el._msgData = fresh;
 				}
@@ -26445,6 +28699,7 @@ class MessengerChatView {
 			this._syncInFlight = true;
 			try {
 				const result = await this.#msgService.syncRecentFromServer(chatId, this.#api, this.#pageSize);
+				this.applyChatActivities(result.activities);
 				if (result.historyCleared) {
 					this.el.messages.querySelectorAll('[data-msg-id]').forEach(el => el.remove());
 					this.#messages.clear();
@@ -26634,6 +28889,7 @@ class MessengerChatView {
 		if (payload.deletedForEveryone) {
 			data.deletedForEveryone = true;
 			data.text = '';
+			data.buttons = [];
 		} else {
 			const patched = {
 				...data,
@@ -26644,6 +28900,9 @@ class MessengerChatView {
 				replyToTextPreview: payload.replyToTextPreview || data.replyToTextPreview,
 				forwardedFromSenderName: payload.forwardedFromSenderName || data.forwardedFromSenderName,
 				encryptionTier: payload.encryptionTier || data.encryptionTier,
+				buttons: payload.buttons !== undefined
+					? normalizeMessageButtons(payload.buttons)
+					: normalizeMessageButtons(data.buttons),
 			};
 			data = await this.#api.messageForDisplay(patched, this.#chatMeta.id);
 			if (payload.editedOn) data.editedOn = new Date(payload.editedOn);
@@ -26673,9 +28932,30 @@ class MessengerChatView {
 			this.#scrollCleanup = MessengerUtils.scrollToBottom(this.el.messages);
 		}
 	}
-	receiveActivity(userId, userName, activityType, active) {
+	receiveActivity(userId, userName, activityType, active, activityMessage = null, expiresAt = null) {
 		if (!activityType) return;
-		this.#activityTracker?.update(userId, userName, activityType, !!active);
+		const expiresAtMs = expiresAt ? Date.parse(expiresAt) : null;
+		this.#activityTracker?.update(userId, userName, activityType, !!active, activityMessage, expiresAtMs);
+	}
+
+	applyChatActivities(activities) {
+		if (!activities?.length) return;
+		for (const a of activities) {
+			if (!a?.userId || !a?.activityType) continue;
+			this.receiveActivity(
+				a.userId,
+				a.userName || '',
+				a.activityType,
+				true,
+				a.activityMessage || null,
+				a.expiresAt || null
+			);
+		}
+	}
+
+	reconcileAfterSync(all) {
+		if (!all?.length) return;
+		this.#reconcileVisibleOrderAfterSync(all);
 	}
 	async #attachFileUploadMessage(localId, serverMsg, el, packedText) {
 		if (!serverMsg?.id || !el) return;
@@ -26984,7 +29264,7 @@ class MessengerChatView {
 }
 
 class MessengerActivityTracker {
-	static DEFAULT_TIMEOUT = 5000;
+	static DEFAULT_TIMEOUT = 300000;
 
 	#onChange;
 	#timeout;
@@ -26995,18 +29275,22 @@ class MessengerActivityTracker {
 		this.#timeout = timeout;
 	}
 
-	update(userId, userName, activityType, active) {
+	update(userId, userName, activityType, active, activityMessage = null, expiresAtMs = null) {
 		const key = `${userId}:${activityType}`;
 		if (!active) {
 			this.#clear(key);
 			return;
 		}
 		if (this.#activities.has(key)) clearTimeout(this.#activities.get(key).timer);
-		const timer = setTimeout(() => this.#clear(key), this.#timeout);
+		const ttl = expiresAtMs != null
+			? Math.max(1000, expiresAtMs - Date.now())
+			: this.#timeout;
+		const timer = setTimeout(() => this.#clear(key), ttl);
 		this.#activities.set(key, {
 			userId,
 			userName,
 			activityType,
+			activityMessage: activityMessage || null,
 			timer
 		});
 		this.#notify();
@@ -27024,11 +29308,13 @@ class MessengerActivityTracker {
 		const list = [...this.#activities.values()].map(({
 			userId,
 			userName,
-			activityType
+			activityType,
+			activityMessage
 		}) => ({
 			userId,
 			userName,
 			activityType,
+			activityMessage: activityMessage || null,
 		}));
 		this.#onChange(list);
 	}
@@ -27270,6 +29556,8 @@ class Messenger {
 			utilsInst, iconsInst, avatarBuilderInst, msgRendererInst,
 			themeManagerInst, i18nInst, apiInst, 20, cacheInst, presenceInst
 		);
+		const assistantMgrInst = new MessengerBotAssistantManager(apiInst, i18nInst, themeManagerInst, iconsInst);
+		panelFactoryInst.setAssistantManager(assistantMgrInst);
 		const modalInst = new MessengerNewChatModal(
 			utilsInst, iconsInst, avatarBuilderInst, apiInst, i18nInst, themeManagerInst
 		);
@@ -27299,6 +29587,7 @@ class Messenger {
 		);
 		appViewInst.setMessageService(msgServiceInst);
 		appViewInst.setMediaCache(cacheInst);
+		appViewInst.setAssistantManager(assistantMgrInst);
 		panelFactoryInst.setReadEngagement(
 			readGateInst,
 			(chatId) => appViewInst.isChatVisibleForRead(chatId)
@@ -27343,6 +29632,7 @@ class Messenger {
 			appViewInst.setOnClearChatCache(chatId => this.clearChatCache(chatId));
 			panelFactoryInst.setPresenceManager(presenceInst);
 			panelFactoryInst.setConnectionStateManager(connectionStateInst);
+			void appViewInst.initAssistantFeatures();
 		} else {
 			chatViewInst.setConnectionStateManager(connectionStateInst);
 		}
@@ -27568,17 +29858,15 @@ class Messenger {
 				await this.#appView.syncAfterReconnect(this.#msgService, this.#api);
 			} else if (this.#chatView.chatMeta?.id) {
 				const chatId = this.#chatView.chatMeta.id;
-				const { messages, reconcile } = await this.#msgService.syncChatAfterOffline(chatId, this.#api);
-				for (const msg of messages) {
-					if (this.#chatView.chatMeta?.id !== chatId) break;
-					await this.#chatView.receiveMessage(msg);
-				}
-				if (reconcile?.historyCleared) {
+				const result = await this.#msgService.syncChatAfterOffline(chatId, this.#api);
+				this.#chatView.applyChatActivities(result.activities);
+				if (result.reconcile?.historyCleared) {
 					this.#chatView.handleHistoryCleared?.();
 				} else {
-					for (const id of reconcile?.removedIds || []) {
+					for (const id of result.reconcile?.removedIds || []) {
 						this.#chatView.deleteMessage(id, id);
 					}
+					this.#chatView.reconcileAfterSync(result.messages || []);
 				}
 			}
 		} catch (e) {
@@ -27695,6 +29983,7 @@ class Messenger {
 					editedOn: body.editedOn ? new Date(body.editedOn) : null,
 					deletedForEveryone: !!body.deletedForEveryone,
 					encryptionTier: body.encryptionTier || 'basic',
+					buttons: normalizeMessageButtons(body.buttons),
 				};
 				const listPreviewSource = {
 					text: body.text,
@@ -27789,6 +30078,8 @@ class Messenger {
 						contactUserId: body.contactUserId || null,
 						isBotContact: !!body.isBotContact,
 						botSlug: body.botSlug || null,
+						parentChatId: body.parentChatId || null,
+						branchSlug: body.branchSlug || null,
 						lastMessage: '',
 						lastMessageTime: null,
 						unreadCount: 0,
@@ -27797,10 +30088,13 @@ class Messenger {
 			case 'SupraUserActivity': {
 				const activityChatMeta = this.#api.chatMeta(body.chatId);
 				if (isChannelType(activityChatMeta?.type)) break;
+				const activityMessage = body.activityMessage || null;
 				if (this.#mode === Messenger.MODE_APP)
-					this.#appView.receiveActivity(body.chatId, body.userId, body.userName, body.activityType, body.active);
+					this.#appView.receiveActivity(
+						body.chatId, body.userId, body.userName, body.activityType, body.active, activityMessage);
 				else if (this.#chatView.chatMeta?.id === body.chatId)
-					this.#chatView.receiveActivity(body.userId, body.userName, body.activityType, body.active);
+					this.#chatView.receiveActivity(
+						body.userId, body.userName, body.activityType, body.active, activityMessage);
 				break;
 			}
 			case 'SupraMessageUpdated': {
@@ -27892,6 +30186,24 @@ class Messenger {
 						avatar: chatAvatar ?? null,
 						channelSlug: slug ?? null,
 					});
+				}
+				break;
+			}
+			case 'SupraBotUpdated': {
+				if (this.#mode === Messenger.MODE_APP) {
+					this.#appView.applyBotUpdated(body);
+				}
+				break;
+			}
+			case 'SupraBotAssistantUpdated': {
+				if (this.#mode === Messenger.MODE_APP) {
+					this.#appView.applyBotAssistantUpdated?.(body);
+				}
+				break;
+			}
+			case 'SupraAssistantReplyPending': {
+				if (this.#mode === Messenger.MODE_APP) {
+					void this.#appView.handleAssistantReplyPending?.(body);
 				}
 				break;
 			}

@@ -25,6 +25,7 @@ public sealed class BotInboxCleanupService : BackgroundService
             {
                 var cutoff = DateTime.UtcNow - BotApiService.InboxRetention;
                 await _store.DeleteBotInboxMessagesOlderThanAsync(cutoff, stoppingToken);
+                await _store.DeleteBotAssistantSessionsOlderThanAsync(cutoff, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

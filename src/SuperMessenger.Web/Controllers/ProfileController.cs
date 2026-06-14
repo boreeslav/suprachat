@@ -202,6 +202,43 @@ public sealed class ProfileController : ControllerBase
         return Ok(new { useThemeChatBg = req.UseThemeChatBg });
     }
 
+    [HttpGet("assistant-preferences")]
+    public async Task<IActionResult> GetAssistantPreferences(CancellationToken ct)
+    {
+        var user = await _current.GetCurrentUserAsync(ct);
+        if (user == null) return Unauthorized();
+        var prefs = await _messengerPrefs.GetAsync(user.Id, ct);
+        return Ok(new
+        {
+            assistantEnabled = prefs.AssistantEnabled,
+            assistantAutoInsertSeconds = prefs.AssistantAutoInsertSeconds,
+            assistantAlwaysConfirm = prefs.AssistantAlwaysConfirm,
+        });
+    }
+
+    [HttpPut("assistant-preferences")]
+    public async Task<IActionResult> UpdateAssistantPreferences(
+        [FromBody] AssistantPreferencesRequest req,
+        CancellationToken ct)
+    {
+        var user = await _current.GetCurrentUserAsync(ct);
+        if (user == null) return Unauthorized();
+        if (req == null) return BadRequest();
+        await _messengerPrefs.SetAssistantSettingsAsync(
+            user.Id,
+            req.AssistantEnabled,
+            req.AssistantAutoInsertSeconds,
+            req.AssistantAlwaysConfirm,
+            ct);
+        var prefs = await _messengerPrefs.GetAsync(user.Id, ct);
+        return Ok(new
+        {
+            assistantEnabled = prefs.AssistantEnabled,
+            assistantAutoInsertSeconds = prefs.AssistantAutoInsertSeconds,
+            assistantAlwaysConfirm = prefs.AssistantAlwaysConfirm,
+        });
+    }
+
     [HttpPut("privacy")]
     public async Task<IActionResult> UpdatePrivacy(
         [FromBody] PrivacySettingsRequest req,
@@ -389,6 +426,13 @@ public sealed class MasterPasswordLinkRequest
 public sealed class ChatPreferencesRequest
 {
     public bool UseThemeChatBg { get; set; }
+}
+
+public sealed class AssistantPreferencesRequest
+{
+    public bool? AssistantEnabled { get; set; }
+    public int? AssistantAutoInsertSeconds { get; set; }
+    public bool? AssistantAlwaysConfirm { get; set; }
 }
 
 public sealed class PrivacySettingsRequest

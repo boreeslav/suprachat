@@ -20,6 +20,22 @@ public sealed class SupraChatDto
     public bool botEngaged { get; set; }
     public bool isAdmin { get; set; }
     public bool isGroupCreator { get; set; }
+    public string? parentChatId { get; set; }
+    public string? branchSlug { get; set; }
+    public int branchOrder { get; set; }
+    public List<SupraGroupBranchDto>? branches { get; set; }
+}
+
+public sealed class SupraGroupBranchDto
+{
+    public string id { get; set; } = "";
+    public string name { get; set; } = "";
+    public string slug { get; set; } = "";
+    public string? avatar { get; set; }
+    public string lastMessage { get; set; } = "";
+    public DateTime? lastMessageTime { get; set; }
+    public int unreadCount { get; set; }
+    public int order { get; set; }
 }
 
 public sealed class SupraContactDto
@@ -60,6 +76,7 @@ public sealed class SupraChatMessageDto
     public DateTime? editedOn { get; set; }
     public bool deletedForEveryone { get; set; }
     public string encryptionTier { get; set; } = "basic";
+    public List<BotMessageButtonDto>? buttons { get; set; }
 }
 
 public sealed class SupraGetCurrentUserResponse
@@ -159,12 +176,22 @@ public sealed class SupraGetMessageSyncIndexResponse
     public string? error { get; set; }
 }
 
+public sealed class SupraChatActivityDto
+{
+    public string userId { get; set; } = "";
+    public string userName { get; set; } = "";
+    public string activityType { get; set; } = "";
+    public string? activityMessage { get; set; }
+    public DateTime? expiresAt { get; set; }
+}
+
 /// <summary>Единый ответ для открытия/синхронизации панели чата: сообщения, индекс reconcile и прочтение.</summary>
 public sealed class SupraSyncChatPanelResponse
 {
     public bool success { get; set; }
     public List<SupraChatMessageDto> messages { get; set; } = [];
     public List<SupraMessageSyncEntryDto> syncIndex { get; set; } = [];
+    public List<SupraChatActivityDto> activities { get; set; } = [];
     public bool markedRead { get; set; }
     public string? error { get; set; }
 }
@@ -229,6 +256,8 @@ public sealed class SupraWsNewMessagePayload
     public DateTime? editedOn { get; set; }
     public bool deletedForEveryone { get; set; }
     public string encryptionTier { get; set; } = "basic";
+    public List<BotMessageButtonDto>? buttons { get; set; }
+    public BotAssistantReplyMetaDto? assistantReply { get; set; }
 }
 
 public sealed class SupraEditMessageResponse
@@ -290,6 +319,7 @@ public sealed class SupraWsMessageUpdatedPayload
     public string? replyToTextPreview { get; set; }
     public string? forwardedFromSenderName { get; set; }
     public bool deletedForEveryone { get; set; }
+    public List<BotMessageButtonDto>? buttons { get; set; }
 }
 
 public sealed class SupraWsDeleteMessagePayload
@@ -325,6 +355,8 @@ public sealed class SupraWsNewChatPayload
     public string? contactUserId { get; set; }
     public bool isBotContact { get; set; }
     public string? botSlug { get; set; }
+    public string? parentChatId { get; set; }
+    public string? branchSlug { get; set; }
 }
 
 public sealed class SupraWsUserActivityPayload
@@ -335,6 +367,7 @@ public sealed class SupraWsUserActivityPayload
     public string userName { get; set; } = "";
     public string activityType { get; set; } = "";
     public bool active { get; set; }
+    public string? activityMessage { get; set; }
 }
 
 public sealed class SupraWsChatHistoryClearedPayload
@@ -437,7 +470,18 @@ public sealed class SupraGetGroupInfoResponse
     public bool allowJoinByLink { get; set; }
     public bool requiresCustomGroupPassword { get; set; }
     public bool hasGroupAutoKey { get; set; }
+    public string? parentChatId { get; set; }
+    public string? branchSlug { get; set; }
+    public bool isBranch { get; set; }
+    public string? description { get; set; }
+    public List<SupraGroupBranchDto> branches { get; set; } = [];
     public string? error { get; set; }
+}
+
+public sealed class SupraReorderGroupBranchesRequest
+{
+    public string parentChatId { get; set; } = "";
+    public List<string> branchIds { get; set; } = [];
 }
 
 public sealed class SupraGetGroupLinkPreviewResponse
@@ -460,6 +504,30 @@ public sealed class SupraUpdateGroupResponse
     public string? avatar { get; set; }
     public bool allowJoinByLink { get; set; }
     public bool requiresCustomGroupPassword { get; set; }
+    public string? description { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraCreateGroupBranchResponse
+{
+    public bool success { get; set; }
+    public string? chatId { get; set; }
+    public string? name { get; set; }
+    public string? slug { get; set; }
+    public string? avatar { get; set; }
+    public string? parentChatId { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class SupraGetGroupBranchLinkPreviewResponse
+{
+    public bool success { get; set; }
+    public string? chatId { get; set; }
+    public string? parentChatId { get; set; }
+    public string? name { get; set; }
+    public string? slug { get; set; }
+    public string? avatar { get; set; }
+    public bool isMember { get; set; }
     public string? error { get; set; }
 }
 
@@ -672,6 +740,10 @@ public sealed class SupraGetBotInfoResponse
     public int userCount { get; set; }
     public bool hasToken { get; set; }
     public bool isDeleted { get; set; }
+    public BotApiMenuDto? menu { get; set; }
+    public BotApiMenuDto? assistantMenu { get; set; }
+    public bool isAssistant { get; set; }
+    public bool hasAssistantMenu { get; set; }
     public string? error { get; set; }
 }
 
@@ -733,6 +805,7 @@ public sealed class SupraGetBotLinkPreviewResponse
     public bool isStarted { get; set; }
     public string? chatId { get; set; }
     public int userCount { get; set; }
+    public BotApiMenuDto? menu { get; set; }
     public string? error { get; set; }
 }
 
@@ -751,4 +824,7 @@ public sealed class SupraWsBotUpdatedPayload
     public string? botAvatar { get; set; }
     public string? slug { get; set; }
     public string? description { get; set; }
+    public BotApiMenuDto? menu { get; set; }
+    /// <summary>Если задан — меню относится только к этому чату (per-session override).</summary>
+    public string? chatId { get; set; }
 }

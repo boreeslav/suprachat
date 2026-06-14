@@ -13,5 +13,11 @@ public sealed class BotInboxMessageRecord
     public string SenderLogin { get; set; } = "";
     public string SenderName { get; set; } = "";
     public string Text { get; set; } = "";
+    public Guid? ReplyToMessageId { get; set; }
+    public string? ReplyToSenderName { get; set; }
+    public string? ReplyToTextPreview { get; set; }
+    public string? ButtonPressJson { get; set; }
+    /// <summary>JSON BotAssistantSessionDto — вызов помощника из другого чата.</summary>
+    public string? AssistantSessionJson { get; set; }
     public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
 }

@@ -17,8 +17,10 @@ param(
 $ErrorActionPreference = "Stop"
 $Root = Split-Path $PSScriptRoot -Parent
 $DeployDir = $PSScriptRoot
+$script:DeployRoot = $Root
 
 . (Join-Path $DeployDir 'deploy.config.ps1')
+. (Join-Path $DeployDir 'publish-deploy-status.ps1')
 
 Write-Host ""
 Write-Host "Loading deploy configuration..." -ForegroundColor DarkGray
@@ -57,10 +59,12 @@ if ([string]::IsNullOrWhiteSpace($AdminLogin)) { throw 'Admin login is required 
 if ([string]::IsNullOrWhiteSpace($AdminPassword)) { throw 'Admin password is required (SM_DEPLOY_ADMIN_PASSWORD)' }
 
 Write-Host "  Target: ${ServerUser}@${ServerHost}:${AppPort}" -ForegroundColor DarkGray
+Send-DeployStatus started @("${ServerUser}@${ServerHost}:${AppPort}")
 
 function Write-Step([string]$Message) {
     Write-Host ""
     Write-Host ("[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $Message) -ForegroundColor Cyan
+    Publish-DeployStatus $Message
 }
 
 function Resolve-PuttyExe([string]$Name) {
@@ -96,7 +100,7 @@ function Ensure-PuttyHostKey([string]$Plink, [string]$Remote) {
 function Invoke-ServerHttpCheck([string]$Plink, [string]$Remote, [string]$BashCommand, [string]$Label) {
     & $Plink -pw $ServerPassword -batch $Remote $BashCommand 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
-        throw "${Label} failed on server (127.0.0.1:${AppPort})"
+        throw "$Label failed on server (127.0.0.1:$AppPort)"
     }
 }
 
@@ -106,6 +110,7 @@ function Build-ClientAssets([string]$MessengerDir) {
         throw "Client assets build script not found: $buildScript"
     }
     Write-Host "  Minifying client scripts (esbuild)..." -ForegroundColor DarkGray
+    Send-DeployStatus minify_client
     & powershell -NoProfile -ExecutionPolicy Bypass -File $buildScript
     if ($LASTEXITCODE -ne 0) { throw "build-client-assets.ps1 failed: $LASTEXITCODE" }
     $minMessenger = Join-Path $MessengerDir "supra-messenger.min.js"
@@ -121,6 +126,7 @@ function Build-WebCryptoBundle([string]$MessengerDir) {
         throw "Web Crypto build script not found: $buildScript"
     }
     Write-Host "  Building vendor assets (webcrypto, signalr)..." -ForegroundColor DarkGray
+    Send-DeployStatus vendor_build
     & powershell -NoProfile -ExecutionPolicy Bypass -File $buildScript
     if ($LASTEXITCODE -ne 0) { throw "build-webcrypto.ps1 failed: $LASTEXITCODE" }
     $bundle = Join-Path $cryptoDir "vendor\supra-webcrypto.bundle.js"
@@ -139,6 +145,7 @@ function Copy-ProjectSources([string]$DestRoot) {
     $srcTo = Join-Path $DestRoot "src"
     New-Item -ItemType Directory -Path $srcTo -Force | Out-Null
     Write-Host "  Copying src/ (skip bin, obj, .vs)..."
+    Send-DeployStatus copy_sources
     $null = robocopy $srcFrom $srcTo /E /XD bin obj .vs /NFL /NDL /NJH /NJS /NP
     if ($LASTEXITCODE -ge 8) { throw "robocopy failed: $LASTEXITCODE" }
 }
@@ -151,7 +158,52 @@ function Build-DeployTree([string]$BuildDir) {
     Copy-ProjectSources $BuildDir
     $webProjectDir = Join-Path $BuildDir "src\SuperMessenger.Web"
     $releaseInfo = Update-DeployRelease -Root $Root -WebProjectDir $webProjectDir
+    $script:DeployAppVersion = $releaseInfo.Version
+    Send-DeployStatus release_version @($releaseInfo.Version)
     Update-AssetUrls $BuildDir -AppVersion $releaseInfo.Version
+}
+
+function Invoke-RemoteDeployStream {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Plink,
+        [Parameter(Mandatory = $true)]
+        [string]$Remote,
+        [Parameter(Mandatory = $true)]
+        [string]$RemoteCmd
+    )
+
+    Send-DeployStatus remote_wait
+
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $Plink
+    $psi.Arguments = "-pw $ServerPassword -batch $Remote $RemoteCmd"
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.CreateNoWindow = $true
+
+    $proc = [Diagnostics.Process]::Start($psi)
+    if (-not $proc) { throw 'Failed to start plink for remote deploy' }
+
+    while (-not $proc.StandardOutput.EndOfStream) {
+        $line = $proc.StandardOutput.ReadLine()
+        if ($null -eq $line) { continue }
+        Write-Host $line
+        Publish-RemoteDeployLine $line
+    }
+
+    $stderr = $proc.StandardError.ReadToEnd()
+    if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+        foreach ($eline in ($stderr -split "`r?`n")) {
+            if (-not $eline.Trim()) { continue }
+            Write-Host $eline
+            Publish-RemoteDeployLine $eline
+        }
+    }
+
+    $proc.WaitForExit()
+    return $proc.ExitCode
 }
 
 function Write-BuildManifest([string]$WwwRoot, [long]$BuildNumber, [string]$AppVersion) {
@@ -272,6 +324,11 @@ if (-not (Test-Path $TmpDeployDir)) {
     New-Item -ItemType Directory -Path $TmpDeployDir -Force | Out-Null
 }
 
+$script:DeployAppVersion = ''
+
+Reset-DeployStatusPublisher
+
+try {
 Write-Step "Build deploy tree (tmp/deploy)"
 . (Join-Path $DeployDir 'apply-release.ps1')
 if (Test-Path $BuildDir) { Remove-Item $BuildDir -Recurse -Force }
@@ -284,6 +341,7 @@ tar -czf $ArchivePath *
 Pop-Location
 $archiveMb = [math]::Round((Get-Item $ArchivePath).Length / 1MB, 2)
 Write-Host "  Archive size: $archiveMb MB (path: $ArchivePath)" -ForegroundColor DarkGray
+Send-DeployStatus archive_ready @($archiveMb)
 Build-RemoteScript $shPath
 $remote = "${ServerUser}@${ServerHost}"
 
@@ -303,18 +361,20 @@ Ensure-PuttyHostKey $plink $remote
 Write-Step "Upload archive"
 & $pscp -pw $ServerPassword -batch $ArchivePath "${remote}:/tmp/$ArchiveName"
 if ($LASTEXITCODE -ne 0) { throw "pscp archive failed: $LASTEXITCODE" }
+Send-DeployStatus archive_uploaded
 
 Write-Step "Upload deploy script"
 & $pscp -pw $ServerPassword -batch $shPath "${remote}:/tmp/sm-deploy.sh"
 if ($LASTEXITCODE -ne 0) { throw "pscp script failed: $LASTEXITCODE" }
+Send-DeployStatus script_uploaded
 
 Write-Step "Remote deploy (live output)"
 Write-Host "  First Docker build: 5-20 min. Output streams below." -ForegroundColor Yellow
 Write-Host ""
 
 $remoteCmd = "chmod +x /tmp/sm-deploy.sh; bash /tmp/sm-deploy.sh"
-& $plink -pw $ServerPassword -batch $remote $remoteCmd
-if ($LASTEXITCODE -ne 0) { throw "plink deploy failed: $LASTEXITCODE" }
+$remoteExit = Invoke-RemoteDeployStream -Plink $plink -Remote $remote -RemoteCmd $remoteCmd
+if ($remoteExit -ne 0) { throw "plink deploy failed: $remoteExit" }
 
 Write-Step "Verify HTTP"
 # docker-compose binds APP_PORT to 127.0.0.1 only; checks must run on the server (or via PUBLIC_URL).
@@ -362,3 +422,10 @@ if (-not [string]::IsNullOrWhiteSpace($PublicUrl)) {
 $doneUrl = if (-not [string]::IsNullOrWhiteSpace($PublicUrl)) { $PublicUrl.Trim().TrimEnd('/') } else { "${serverAppBase} on ${ServerHost}" }
 Write-Step "Done: $doneUrl"
 Write-Host "  Admin: $AdminLogin"
+$ver = if ($script:DeployAppVersion) { $script:DeployAppVersion } else { '?' }
+Send-DeployStatus done @($doneUrl, $ver)
+} catch {
+    $err = $_.Exception.Message
+    Send-DeployStatus failed @($err)
+    throw
+}

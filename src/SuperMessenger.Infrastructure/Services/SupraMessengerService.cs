@@ -9,11 +9,13 @@ public sealed partial class SupraMessengerService
 {
     private readonly IDataStore _store;
     private readonly ChatFileService _files;
+    private readonly ChatActivityTracker _activities;
 
-    public SupraMessengerService(IDataStore store, ChatFileService files)
+    public SupraMessengerService(IDataStore store, ChatFileService files, ChatActivityTracker activities)
     {
         _store = store;
         _files = files;
+        _activities = activities;
     }
 
     private static string? AvatarUrl(UserRecord? user) => AvatarUrlHelper.ForUser(user);
@@ -65,7 +67,8 @@ public sealed partial class SupraMessengerService
 
     public static bool IsGroupChat(SupraChatRecord chat) =>
         string.Equals(chat.Type, "group", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(chat.Type, "public_group", StringComparison.OrdinalIgnoreCase);
+        string.Equals(chat.Type, "public_group", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(chat.Type, "group_branch", StringComparison.OrdinalIgnoreCase);
 
     async Task<bool> IsGroupModeratorAsync(Guid userId, SupraChatRecord? chat, CancellationToken ct)
     {
@@ -80,7 +83,32 @@ public sealed partial class SupraMessengerService
         Guid userId, SupraChatRecord? chat, Guid senderUserId, CancellationToken ct)
     {
         if (senderUserId == userId) return true;
-        return await IsGroupModeratorAsync(userId, chat, ct);
+        if (await IsGroupModeratorAsync(userId, chat, ct)) return true;
+
+        if (chat != null && IsChannelChat(chat))
+        {
+            var me = (await _store.GetParticipantsByChatAsync(chat.Id, ct))
+                .FirstOrDefault(p => p.UserId == userId);
+            if (me != null)
+            {
+                var role = ResolveParticipantRole(me, chat);
+                if (ChannelRoles.CanManageMembers(role))
+                    return true;
+            }
+        }
+
+        if (chat != null && string.Equals(chat.Type, "direct", StringComparison.OrdinalIgnoreCase))
+        {
+            var deleter = await _store.GetUserByIdAsync(userId, ct);
+            if (IsBotUser(deleter))
+            {
+                var parts = await _store.GetParticipantsByChatAsync(chat.Id, ct);
+                var otherId = parts.FirstOrDefault(p => p.UserId != userId)?.UserId;
+                if (otherId == senderUserId) return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Инфо о чате для пуш-уведомления: групповой ли и его название (для групп).</summary>
@@ -486,22 +514,33 @@ public sealed partial class SupraMessengerService
         }
     }
 
-    public SupraSendActivityResponse SendUserActivity(string chatId, string activityType, bool active, UserRecord user)
+    public (SupraSendActivityResponse response, SupraWsUserActivityPayload? broadcast) SendUserActivity(
+        string chatId,
+        string activityType,
+        bool active,
+        UserRecord user,
+        string? activityMessage = null)
     {
         try
         {
-            if (!Guid.TryParse(chatId, out _))
-                return new SupraSendActivityResponse { success = false, error = "Некорректный chatId" };
+            if (!Guid.TryParse(chatId, out var chatGuid))
+                return (new SupraSendActivityResponse { success = false, error = "Некорректный chatId" }, null);
             if (string.IsNullOrWhiteSpace(activityType))
-                return new SupraSendActivityResponse { success = false, error = "activityType не может быть пустым" };
+                return (new SupraSendActivityResponse { success = false, error = "activityType не может быть пустым" }, null);
 
-            return new SupraSendActivityResponse { success = true };
+            _activities.Set(chatGuid, user.Id, user.DisplayName, activityType, active, activityMessage);
+            var payload = _activities.BuildPayload(
+                chatGuid, user.Id, user.DisplayName, activityType, active, activityMessage);
+            return (new SupraSendActivityResponse { success = true }, payload);
         }
         catch (Exception ex)
         {
-            return new SupraSendActivityResponse { success = false, error = ex.Message };
+            return (new SupraSendActivityResponse { success = false, error = ex.Message }, null);
         }
     }
+
+    public List<SupraChatActivityDto> GetUserActivitiesInChat(Guid chatId, Guid userId) =>
+        _activities.GetActiveForUserInChat(chatId, userId);
 
     public async Task<List<Guid>> GetParticipantUserIdsAsync(Guid chatId, Guid excludeUserId, CancellationToken ct = default)
     {
@@ -676,25 +715,63 @@ public sealed partial class SupraMessengerService
                 return (new SupraSimpleResponse { success = false, error = "Нет доступа" }, false, []);
 
             var chat = await _store.GetChatByIdAsync(chatGuid, ct);
-            var wasCreator = chat != null && IsGroupChat(chat) && chat.CreatorUserId == user.Id;
+            if (chat != null && IsGroupChat(chat))
+            {
+                var rootId = await ResolveRootGroupIdAsync(chatGuid, ct);
+                chat = await _store.GetChatByIdAsync(rootId, ct);
+                chatGuid = rootId;
+                var family = await GetGroupFamilyChatsAsync(rootId, ct);
+                var wasCreator = chat != null && chat.CreatorUserId == user.Id;
+
+                foreach (var familyChat in family)
+                {
+                    await _store.DeleteParticipantAsync(familyChat.Id, user.Id, ct);
+                    await _store.DeleteFolderMembersByChatAsync(user.Id, familyChat.Id, ct);
+                }
+
+                if (wasCreator && chat != null)
+                    await TransferGroupCreatorAsync(chat, ct);
+
+                var remaining = (await _store.GetParticipantsByChatAsync(chatGuid, ct))
+                    .Select(p => p.UserId).ToList();
+
+                if (remaining.Count == 0)
+                {
+                    foreach (var familyChat in family)
+                    {
+                        if (IsGroupBranchChat(familyChat))
+                            await DeleteBranchChatFullyAsync(familyChat, ct);
+                        else
+                        {
+                            await _files.ReleaseChatAttachmentsAsync(familyChat.Id, ct);
+                            await _store.DeleteChatAsync(familyChat.Id, ct);
+                        }
+                    }
+                    return (new SupraSimpleResponse { success = true }, true, []);
+                }
+
+                return (new SupraSimpleResponse { success = true }, false, remaining);
+            }
+
+            var wasCreatorLegacy = chat != null && IsGroupChat(chat) && chat.CreatorUserId == user.Id;
 
             await _store.DeleteParticipantAsync(chatGuid, user.Id, ct);
             await _store.DeleteFolderMembersByChatAsync(user.Id, chatGuid, ct);
 
-            if (wasCreator && chat != null)
+            if (wasCreatorLegacy && chat != null)
                 await TransferGroupCreatorAsync(chat, ct);
 
-            var remaining = (await _store.GetParticipantsByChatAsync(chatGuid, ct))
+            var remainingLegacy = (await _store.GetParticipantsByChatAsync(chatGuid, ct))
                 .Select(p => p.UserId).ToList();
 
-            if (remaining.Count == 0)
+            if (remainingLegacy.Count == 0)
             {
                 await _files.ReleaseChatAttachmentsAsync(chatGuid, ct);
                 await _store.DeleteChatAsync(chatGuid, ct);
                 return (new SupraSimpleResponse { success = true }, true, []);
             }
 
-            return (new SupraSimpleResponse { success = true }, false, remaining);
+            return (new SupraSimpleResponse { success = true }, false, remainingLegacy);
         }
         catch (Exception ex)
         {
@@ -1009,6 +1086,13 @@ public sealed partial class SupraMessengerService
                 allowJoinByLink = chat.AllowJoinByLink,
                 requiresCustomGroupPassword = chat.RequiresCustomGroupPassword,
                 hasGroupAutoKey = await _store.GetChatMemberKeyAsync(chat.Id, userId, ct) != null,
+                parentChatId = chat.ParentChatId?.ToString(),
+                branchSlug = chat.BranchSlug,
+                isBranch = IsGroupBranchChat(chat),
+                description = chat.Description,
+                branches = IsRootGroupChat(chat)
+                    ? await BuildBranchDtosForRootAsync(chat.Id, userId, new Dictionary<Guid, List<SupraChatMessageRecord>>(), ct)
+                    : [],
             };
         }
         catch (Exception ex)
@@ -1019,7 +1103,7 @@ public sealed partial class SupraMessengerService
 
     public async Task<(SupraUpdateGroupResponse response, SupraWsNewMessagePayload? systemEvent)> UpdateGroupNameAsync(
         UserRecord user, string chatId, string name, CancellationToken ct = default)
-        => await UpdateGroupAsync(user, chatId, name, null, null, ct);
+        => await UpdateGroupAsync(user, chatId, name, null, null, null, ct);
 
     public async Task<(SupraUpdateGroupResponse response, SupraWsNewMessagePayload? systemEvent)> UpdateGroupAsync(
         UserRecord user,
@@ -1027,6 +1111,7 @@ public sealed partial class SupraMessengerService
         string? name,
         bool? allowJoinByLink,
         bool? requiresCustomGroupPassword = null,
+        string? description = null,
         CancellationToken ct = default)
     {
         try
@@ -1063,6 +1148,12 @@ public sealed partial class SupraMessengerService
                 await _store.SaveChatAsync(chat, ct);
             }
 
+            if (description != null && !string.Equals(chat!.Description ?? "", description.Trim(), StringComparison.Ordinal))
+            {
+                chat.Description = description.Trim();
+                await _store.SaveChatAsync(chat, ct);
+            }
+
             return (new SupraUpdateGroupResponse
             {
                 success = true,
@@ -1070,6 +1161,7 @@ public sealed partial class SupraMessengerService
                 avatar = GroupAvatarUrl(chat),
                 allowJoinByLink = chat.AllowJoinByLink,
                 requiresCustomGroupPassword = chat.RequiresCustomGroupPassword,
+                description = chat.Description,
             }, systemEvent);
         }
         catch (Exception ex)
@@ -1087,7 +1179,7 @@ public sealed partial class SupraMessengerService
                 return new SupraGetGroupLinkPreviewResponse { success = false, error = "Некорректный chatId" };
 
             var chat = await _store.GetChatByIdAsync(chatGuid, ct);
-            if (chat == null || !IsGroupChat(chat))
+            if (chat == null || !IsRootGroupChat(chat))
                 return new SupraGetGroupLinkPreviewResponse { success = false, error = "Группа не найдена" };
 
             var isMember = await _store.IsParticipantAsync(chatGuid, userId, ct);
@@ -1119,7 +1211,7 @@ public sealed partial class SupraMessengerService
                 return (new SupraCreateChatResponse { success = false, error = "Некорректный chatId" }, null);
 
             var chat = await _store.GetChatByIdAsync(chatGuid, ct);
-            if (chat == null || !IsGroupChat(chat))
+            if (chat == null || !IsRootGroupChat(chat))
                 return (new SupraCreateChatResponse { success = false, error = "Группа не найдена" }, null);
             if (!chat.AllowJoinByLink)
                 return (new SupraCreateChatResponse { success = false, error = "Вступление по ссылке отключено" }, null);
@@ -1139,13 +1231,18 @@ public sealed partial class SupraMessengerService
 
             await ClearChatRestrictionAsync(chatGuid, user.Id, ct);
 
-            await _store.SaveParticipantAsync(new SupraChatParticipantRecord
+            var family = await GetGroupFamilyChatsAsync(chatGuid, ct);
+            foreach (var familyChat in family)
             {
-                Id = Guid.NewGuid(),
-                ChatId = chatGuid,
-                UserId = user.Id,
-                IsAdmin = false,
-            }, ct);
+                if (await _store.IsParticipantAsync(familyChat.Id, user.Id, ct)) continue;
+                await _store.SaveParticipantAsync(new SupraChatParticipantRecord
+                {
+                    Id = Guid.NewGuid(),
+                    ChatId = familyChat.Id,
+                    UserId = user.Id,
+                    IsAdmin = false,
+                }, ct);
+            }
 
             return (new SupraCreateChatResponse
             {
@@ -1206,23 +1303,30 @@ public sealed partial class SupraMessengerService
             if (!me!.IsAdmin)
                 return new SupraSimpleResponse { success = false, error = "Только администратор может добавлять участников" };
 
+            var rootId = await ResolveRootGroupIdAsync(chat!.Id, ct);
+            var family = await GetGroupFamilyChatsAsync(rootId, ct);
+
             foreach (var idStr in memberIds)
             {
                 if (!Guid.TryParse(idStr, out var pid) || pid == user.Id) continue;
-                if (await _store.IsParticipantAsync(chat!.Id, pid, ct)) continue;
-                if (await IsGroupAddBlockedForUserAsync(pid, chat.Id, ct)) continue;
+                if (await IsGroupAddBlockedForUserAsync(pid, rootId, ct)) continue;
                 var target = await _store.GetUserByIdAsync(pid, ct);
                 if (target == null || !target.IsActive) continue;
-                await ClearChatRestrictionAsync(chat.Id, pid, ct);
+                await ClearChatRestrictionAsync(rootId, pid, ct);
                 await _store.DeleteUserBlockAsync(user.Id, pid, ct);
                 await _store.DeleteUserBlockAsync(pid, user.Id, ct);
-                await _store.SaveParticipantAsync(new SupraChatParticipantRecord
+
+                foreach (var familyChat in family)
                 {
-                    Id = Guid.NewGuid(),
-                    ChatId = chat.Id,
-                    UserId = pid,
-                    IsAdmin = false,
-                }, ct);
+                    if (await _store.IsParticipantAsync(familyChat.Id, pid, ct)) continue;
+                    await _store.SaveParticipantAsync(new SupraChatParticipantRecord
+                    {
+                        Id = Guid.NewGuid(),
+                        ChatId = familyChat.Id,
+                        UserId = pid,
+                        IsAdmin = false,
+                    }, ct);
+                }
             }
 
             return new SupraSimpleResponse { success = true };
@@ -1252,9 +1356,19 @@ public sealed partial class SupraMessengerService
             if (!await _store.IsParticipantAsync(chat.Id, targetId, ct))
                 return new SupraSimpleResponse { success = false, error = "Участник не найден" };
 
-            await _store.DeleteParticipantAsync(chat.Id, targetId, ct);
-            await _store.DeleteFolderMembersByChatAsync(targetId, chat.Id, ct);
-            await SetChatRestrictionAsync(chat.Id, targetId, ChatRestrictionKinds.Excluded, ct);
+            var targetPart = (await _store.GetParticipantsByChatAsync(chat.Id, ct))
+                .FirstOrDefault(p => p.UserId == targetId);
+            if (targetPart?.IsAdmin == true)
+                return new SupraSimpleResponse { success = false, error = "Нельзя удалить администратора группы" };
+
+            var rootId = await ResolveRootGroupIdAsync(chat!.Id, ct);
+            var family = await GetGroupFamilyChatsAsync(rootId, ct);
+            foreach (var familyChat in family)
+            {
+                await _store.DeleteParticipantAsync(familyChat.Id, targetId, ct);
+                await _store.DeleteFolderMembersByChatAsync(targetId, familyChat.Id, ct);
+            }
+            await SetChatRestrictionAsync(rootId, targetId, ChatRestrictionKinds.Excluded, ct);
             return new SupraSimpleResponse { success = true };
         }
         catch (Exception ex)
@@ -1290,6 +1404,8 @@ public sealed partial class SupraMessengerService
 
             part.IsAdmin = isAdmin;
             await _store.SaveParticipantAsync(part, ct);
+            var rootId = await ResolveRootGroupIdAsync(chat!.Id, ct);
+            await SyncParticipantAdminToFamilyAsync(rootId, targetId, isAdmin, ct);
             var kind = isAdmin ? "groupAdminGranted" : "groupAdminRevoked";
             var systemEvent = await InsertGroupSystemEventAsync(chat, user, kind,
                 new Dictionary<string, string?>

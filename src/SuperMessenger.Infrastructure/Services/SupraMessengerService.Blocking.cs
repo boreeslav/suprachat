@@ -149,18 +149,64 @@ public sealed partial class SupraMessengerService
             if (chat == null || !IsGroupChat(chat))
                 return (new SupraSimpleResponse { success = false, error = "Группа не найдена" }, null);
 
-            if (!await _store.IsParticipantAsync(chatGuid, user.Id, ct))
+            var rootId = await ResolveRootGroupIdAsync(chatGuid, ct);
+            if (!await _store.IsParticipantAsync(rootId, user.Id, ct))
                 return (new SupraSimpleResponse { success = false, error = "Вы не в этой группе" }, null);
 
-            await SetChatRestrictionAsync(chatGuid, user.Id, ChatRestrictionKinds.Blocked, ct);
-            await _store.DeleteParticipantAsync(chatGuid, user.Id, ct);
-            await _store.DeleteFolderMembersByChatAsync(user.Id, chatGuid, ct);
+            var family = await GetGroupFamilyChatsAsync(rootId, ct);
+            foreach (var familyChat in family)
+            {
+                await SetChatRestrictionAsync(familyChat.Id, user.Id, ChatRestrictionKinds.Blocked, ct);
+                await _store.DeleteParticipantAsync(familyChat.Id, user.Id, ct);
+                await _store.DeleteFolderMembersByChatAsync(user.Id, familyChat.Id, ct);
+            }
 
-            return (new SupraSimpleResponse { success = true }, chatGuid.ToString());
+            return (new SupraSimpleResponse { success = true }, rootId.ToString());
         }
         catch (Exception ex)
         {
             return (new SupraSimpleResponse { success = false, error = ex.Message }, null);
+        }
+    }
+
+    public async Task<SupraSimpleResponse> BlockGroupMemberAsync(
+        UserRecord user, string chatId, string memberUserId, CancellationToken ct = default)
+    {
+        try
+        {
+            var (chat, me, error) = await GetGroupAccessAsync(user.Id, chatId, ct);
+            if (error != null)
+                return new SupraSimpleResponse { success = false, error = error };
+            if (!me!.IsAdmin)
+                return new SupraSimpleResponse { success = false, error = "Только администратор может блокировать участников" };
+            if (!Guid.TryParse(memberUserId, out var targetId))
+                return new SupraSimpleResponse { success = false, error = "Некорректный userId" };
+            if (targetId == chat!.CreatorUserId)
+                return new SupraSimpleResponse { success = false, error = "Нельзя заблокировать создателя группы" };
+            if (targetId == user.Id)
+                return new SupraSimpleResponse { success = false, error = "Нельзя заблокировать себя" };
+            if (!await _store.IsParticipantAsync(chat.Id, targetId, ct))
+                return new SupraSimpleResponse { success = false, error = "Участник не найден" };
+
+            var targetPart = (await _store.GetParticipantsByChatAsync(chat.Id, ct))
+                .FirstOrDefault(p => p.UserId == targetId);
+            if (targetPart?.IsAdmin == true)
+                return new SupraSimpleResponse { success = false, error = "Нельзя заблокировать администратора группы" };
+
+            var rootId = await ResolveRootGroupIdAsync(chat.Id, ct);
+            var family = await GetGroupFamilyChatsAsync(rootId, ct);
+            foreach (var familyChat in family)
+            {
+                await SetChatRestrictionAsync(familyChat.Id, targetId, ChatRestrictionKinds.Blocked, ct);
+                await _store.DeleteParticipantAsync(familyChat.Id, targetId, ct);
+                await _store.DeleteFolderMembersByChatAsync(targetId, familyChat.Id, ct);
+            }
+
+            return new SupraSimpleResponse { success = true };
+        }
+        catch (Exception ex)
+        {
+            return new SupraSimpleResponse { success = false, error = ex.Message };
         }
     }
 }

@@ -7,6 +7,10 @@ public sealed class BotRecord
     public Guid OwnerUserId { get; set; }
     public string Slug { get; set; } = "";
     public string Description { get; set; } = "";
+    /// <summary>JSON меню бота для UI (BotApiMenuDto).</summary>
+    public string MenuJson { get; set; } = "";
+    /// <summary>JSON меню помощника (BotApiMenuDto) — пункты в меню «Боты» у сообщений.</summary>
+    public string AssistantMenuJson { get; set; } = "";
     /// <summary>SHA-256 hex текущего API-токена (plaintext показывается только при генерации).</summary>
     public string? TokenHash { get; set; }
     public DateTime CreatedOn { get; set; } = DateTime.UtcNow;

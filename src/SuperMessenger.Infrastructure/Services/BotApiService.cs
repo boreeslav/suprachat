@@ -6,18 +6,23 @@ using SuperMessenger.Core.Entities;
 
 namespace SuperMessenger.Infrastructure.Services;
 
-public sealed class BotApiService
+public sealed partial class BotApiService
 {
     public static readonly TimeSpan InboxRetention = TimeSpan.FromDays(1);
     const int MaxMessageBatch = 100;
 
     private readonly IDataStore _store;
     private readonly SupraMessengerService _messenger;
+    private readonly ChatFileService _files;
 
-    public BotApiService(IDataStore store, SupraMessengerService messenger)
+    public BotApiService(
+        IDataStore store,
+        SupraMessengerService messenger,
+        ChatFileService files)
     {
         _store = store;
         _messenger = messenger;
+        _files = files;
     }
 
     public async Task<(UserRecord botUser, BotRecord bot)?> AuthenticateAsync(
@@ -60,6 +65,102 @@ public sealed class BotApiService
             login = bot.Slug,
             name = botUser.DisplayName,
             description = bot.Description,
+            menu = BotMenuHelper.ParseMenu(bot.MenuJson),
+        };
+    }
+
+    public async Task<BotApiGetMenuResponse> GetMenuAsync(BotRecord bot, string? chatId, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        return new BotApiGetMenuResponse
+        {
+            success = true,
+            menu = await ResolveMenuAsync(bot, chatId, ct),
+            chatId = string.IsNullOrWhiteSpace(chatId) ? null : chatId.Trim(),
+        };
+    }
+
+    public async Task<(BotApiSetMenuResponse response, SupraWsBotUpdatedPayload? updated)> SetMenuAsync(
+        UserRecord botUser,
+        BotRecord bot,
+        BotApiMenuDto? menu,
+        string? chatId,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var (normalized, error) = BotMenuHelper.ValidateMenu(menu);
+            if (error != null)
+                return (new BotApiSetMenuResponse { success = false, error = error }, null);
+
+            var menuJson = BotMenuHelper.SerializeMenu(normalized!);
+            string? scopeChatId = null;
+
+            if (!string.IsNullOrWhiteSpace(chatId))
+            {
+                if (!Guid.TryParse(chatId.Trim(), out var chatGuid))
+                    return (new BotApiSetMenuResponse { success = false, error = "Некорректный chatId" }, null);
+
+                if (!await _store.IsParticipantAsync(chatGuid, botUser.Id, ct))
+                    return (new BotApiSetMenuResponse { success = false, error = "Бот не участник чата" }, null);
+
+                await _store.SaveBotChatMenuAsync(new BotChatMenuRecord
+                {
+                    BotUserId = botUser.Id,
+                    ChatId = chatGuid,
+                    MenuJson = menuJson,
+                    UpdatedOn = DateTime.UtcNow,
+                }, ct);
+                scopeChatId = chatGuid.ToString();
+            }
+            else
+            {
+                bot.MenuJson = menuJson;
+                await _store.SaveBotAsync(bot, ct);
+            }
+
+            var payload = await BuildBotUpdatedPayloadAsync(botUser, bot, scopeChatId, ct);
+            return (new BotApiSetMenuResponse
+            {
+                success = true,
+                menu = normalized,
+                chatId = scopeChatId,
+            }, payload);
+        }
+        catch (Exception ex)
+        {
+            return (new BotApiSetMenuResponse { success = false, error = ex.Message }, null);
+        }
+    }
+
+    public async Task<BotApiMenuDto> ResolveMenuAsync(
+        BotRecord bot, string? chatId, CancellationToken ct = default)
+    {
+        if (!string.IsNullOrWhiteSpace(chatId) &&
+            Guid.TryParse(chatId.Trim(), out var chatGuid))
+        {
+            var chatMenu = await _store.GetBotChatMenuAsync(bot.BotUserId, chatGuid, ct);
+            if (chatMenu != null)
+                return BotMenuHelper.ParseMenu(chatMenu.MenuJson);
+        }
+        return BotMenuHelper.ParseMenu(bot.MenuJson);
+    }
+
+    public async Task<SupraWsBotUpdatedPayload?> BuildBotUpdatedPayloadAsync(
+        UserRecord botUser,
+        BotRecord bot,
+        string? chatId,
+        CancellationToken ct = default)
+    {
+        return new SupraWsBotUpdatedPayload
+        {
+            botUserId = botUser.Id.ToString(),
+            botName = botUser.DisplayName,
+            botAvatar = AvatarUrlHelper.ForUser(botUser),
+            slug = bot.Slug,
+            description = bot.Description,
+            menu = await ResolveMenuAsync(bot, chatId, ct),
+            chatId = string.IsNullOrWhiteSpace(chatId) ? null : chatId.Trim(),
         };
     }
 
@@ -68,77 +169,69 @@ public sealed class BotApiService
         string text,
         string? userLogin,
         string? chatId,
+        IReadOnlyList<BotMessageButtonDto>? buttons = null,
+        string? caption = null,
+        string? photoFileId = null,
+        IReadOnlyList<string>? photoFileIds = null,
+        string? documentFileId = null,
+        IReadOnlyList<string>? attachmentFileIds = null,
         CancellationToken ct = default)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(text))
+            var hasButtons = buttons != null && buttons.Count > 0;
+            var hasMediaParams = !string.IsNullOrWhiteSpace(photoFileId)
+                || photoFileIds is { Count: > 0 }
+                || !string.IsNullOrWhiteSpace(documentFileId)
+                || attachmentFileIds is { Count: > 0 };
+
+            var (target, targetError) = await ResolveTargetChatAsync(botUser, userLogin, chatId, requireChannelPostRights: true, ct);
+            if (target == null)
+                return (new BotApiSendMessageResponse { success = false, error = targetError }, null);
+
+            var (messageText, fileIds, mediaError) = await BuildOutgoingMediaTextAsync(
+                botUser,
+                target.ChatId,
+                text,
+                caption,
+                photoFileId,
+                photoFileIds,
+                documentFileId,
+                attachmentFileIds,
+                ct);
+            if (mediaError != null)
+                return (new BotApiSendMessageResponse { success = false, error = mediaError }, null);
+
+            var trimmedText = messageText?.Trim() ?? "";
+            if (string.IsNullOrEmpty(trimmedText) && !hasButtons)
                 return (new BotApiSendMessageResponse { success = false, error = "Текст сообщения пуст" }, null);
 
-            if (SupraMessengerService.IsEncryptedPayload(text))
+            if (!string.IsNullOrEmpty(trimmedText) && SupraMessengerService.IsEncryptedPayload(trimmedText))
                 return (new BotApiSendMessageResponse { success = false, error = "Боты отправляют только незашифрованные сообщения" }, null);
 
-            var hasUser = !string.IsNullOrWhiteSpace(userLogin);
-            var hasChat = !string.IsNullOrWhiteSpace(chatId);
-            if (hasUser == hasChat)
-                return (new BotApiSendMessageResponse { success = false, error = "Укажите userLogin или chatId" }, null);
-
-            string resolvedChatId;
-            if (hasUser)
+            List<BotMessageButtonDto>? normalizedButtons = null;
+            if (buttons != null)
             {
-                var target = await _store.GetUserByLoginAsync(userLogin!.Trim(), ct);
-                if (target == null || !target.IsActive || SupraMessengerService.IsBotUser(target))
-                    return (new BotApiSendMessageResponse { success = false, error = "Пользователь не найден" }, null);
-
-                var directChatId = await FindDirectChatAsync(botUser.Id, target.Id, ct);
-                if (!directChatId.HasValue)
-                {
-                    return (new BotApiSendMessageResponse
-                    {
-                        success = false,
-                        error = "Чат с пользователем не найден. Пользователь должен сначала начать диалог с ботом",
-                    }, null);
-                }
-
-                resolvedChatId = directChatId.Value.ToString();
-            }
-            else
-            {
-                if (!Guid.TryParse(chatId, out var chatGuid))
-                    return (new BotApiSendMessageResponse { success = false, error = "Некорректный chatId" }, null);
-
-                if (!await _store.IsParticipantAsync(chatGuid, botUser.Id, ct))
-                    return (new BotApiSendMessageResponse { success = false, error = "Бот не является участником чата" }, null);
-
-                var chat = await _store.GetChatByIdAsync(chatGuid, ct);
-                if (chat == null)
-                    return (new BotApiSendMessageResponse { success = false, error = "Чат не найден" }, null);
-
-                if (SupraMessengerService.IsChannelChat(chat) &&
-                    !await _messenger.CanUserPostToChannelAsync(botUser.Id, chatGuid, ct))
-                {
-                    return (new BotApiSendMessageResponse
-                    {
-                        success = false,
-                        error = "Нет права публиковать в этом канале (нужна роль admin или author)",
-                    }, null);
-                }
-
-                resolvedChatId = chatGuid.ToString();
+                var (validated, buttonsError) = BotMessageButtonHelper.ValidateButtons(buttons.ToList());
+                if (buttonsError != null)
+                    return (new BotApiSendMessageResponse { success = false, error = buttonsError }, null);
+                normalizedButtons = validated;
             }
 
             var (sendResp, broadcast) = await _messenger.SendMessageAsync(
                 botUser,
-                resolvedChatId,
-                text.Trim(),
+                target.ChatIdString,
+                trimmedText,
                 encryptionTier: "basic",
+                attachmentFileIds: fileIds.Count > 0 ? fileIds : null,
+                buttons: normalizedButtons,
                 ct: ct);
 
             return (new BotApiSendMessageResponse
             {
                 success = sendResp.success,
                 messageId = sendResp.messageId,
-                chatId = resolvedChatId,
+                chatId = target.ChatIdString,
                 error = sendResp.error,
             }, broadcast);
         }
@@ -146,6 +239,253 @@ public sealed class BotApiService
         {
             return (new BotApiSendMessageResponse { success = false, error = ex.Message }, null);
         }
+    }
+
+    public async Task<(BotApiSendActivityResponse response, SupraWsUserActivityPayload? broadcast)> SendActivityAsync(
+        UserRecord botUser,
+        string? userLogin,
+        string? chatId,
+        string activityType,
+        bool active,
+        string? activityMessage = null,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var (target, targetError) = await ResolveTargetChatAsync(botUser, userLogin, chatId, requireChannelPostRights: false, ct);
+            if (target == null)
+                return (new BotApiSendActivityResponse { success = false, error = targetError }, null);
+
+            var (response, payload) = _messenger.SendUserActivity(
+                target.ChatIdString, activityType, active, botUser, activityMessage);
+            if (!response.success)
+                return (new BotApiSendActivityResponse { success = false, error = response.error }, null);
+
+            return (new BotApiSendActivityResponse
+            {
+                success = true,
+                chatId = target.ChatIdString,
+            }, payload);
+        }
+        catch (Exception ex)
+        {
+            return (new BotApiSendActivityResponse { success = false, error = ex.Message }, null);
+        }
+    }
+
+    public async Task<BotApiGetActivityResponse> GetActivityAsync(
+        UserRecord botUser,
+        string? userLogin,
+        string? chatId,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var (target, targetError) = await ResolveTargetChatAsync(botUser, userLogin, chatId, requireChannelPostRights: false, ct);
+            if (target == null)
+                return new BotApiGetActivityResponse { success = false, error = targetError };
+
+            if (!Guid.TryParse(target.ChatIdString, out var chatGuid))
+                return new BotApiGetActivityResponse { success = false, error = "Некорректный chatId" };
+
+            var activities = _messenger.GetUserActivitiesInChat(chatGuid, botUser.Id)
+                .Select(a => new BotApiActivityDto
+                {
+                    activityType = a.activityType,
+                    activityMessage = a.activityMessage,
+                    active = true,
+                    expiresAt = a.expiresAt?.ToString("O"),
+                })
+                .ToList();
+
+            return new BotApiGetActivityResponse
+            {
+                success = true,
+                chatId = target.ChatIdString,
+                activities = activities,
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BotApiGetActivityResponse { success = false, error = ex.Message };
+        }
+    }
+
+    public async Task<(BotApiEditMessageResponse response, SupraWsMessageUpdatedPayload? broadcast)> EditMessageAsync(
+        UserRecord botUser,
+        string chatId,
+        string messageId,
+        string? text,
+        IReadOnlyList<BotMessageButtonDto>? buttons = null,
+        string? caption = null,
+        string? photoFileId = null,
+        IReadOnlyList<string>? photoFileIds = null,
+        string? documentFileId = null,
+        IReadOnlyList<string>? attachmentFileIds = null,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var hasMediaParams = !string.IsNullOrWhiteSpace(photoFileId)
+                || photoFileIds is { Count: > 0 }
+                || !string.IsNullOrWhiteSpace(documentFileId)
+                || attachmentFileIds is { Count: > 0 };
+
+            if (string.IsNullOrWhiteSpace(text) && buttons == null && !hasMediaParams)
+                return (new BotApiEditMessageResponse { success = false, error = "Укажите text и/или buttons" }, null);
+
+            if (!Guid.TryParse(chatId, out var chatGuid))
+                return (new BotApiEditMessageResponse { success = false, error = "Некорректный chatId" }, null);
+
+            if (!await _store.IsParticipantAsync(chatGuid, botUser.Id, ct))
+                return (new BotApiEditMessageResponse { success = false, error = "Бот не является участником чата" }, null);
+
+            string? trimmedText = null;
+            IReadOnlyList<Guid>? fileIds = null;
+            if (hasMediaParams || !string.IsNullOrWhiteSpace(text) || !string.IsNullOrWhiteSpace(caption))
+            {
+                var (messageText, builtFileIds, mediaError) = await BuildOutgoingMediaTextAsync(
+                    botUser,
+                    chatGuid,
+                    text,
+                    caption,
+                    photoFileId,
+                    photoFileIds,
+                    documentFileId,
+                    attachmentFileIds,
+                    ct);
+                if (mediaError != null)
+                    return (new BotApiEditMessageResponse { success = false, error = mediaError }, null);
+                trimmedText = string.IsNullOrWhiteSpace(messageText) ? null : messageText.Trim();
+                fileIds = builtFileIds.Count > 0 ? builtFileIds : null;
+            }
+
+            if (trimmedText != null && SupraMessengerService.IsEncryptedPayload(trimmedText))
+                return (new BotApiEditMessageResponse { success = false, error = "Боты редактируют только незашифрованные сообщения" }, null);
+
+            List<BotMessageButtonDto>? normalizedButtons = null;
+            if (buttons != null)
+            {
+                var (validated, buttonsError) = BotMessageButtonHelper.ValidateButtons(buttons.ToList());
+                if (buttonsError != null)
+                    return (new BotApiEditMessageResponse { success = false, error = buttonsError }, null);
+                normalizedButtons = validated;
+            }
+
+            var (response, broadcast) = await _messenger.EditMessageAsync(
+                botUser,
+                chatGuid.ToString(),
+                messageId,
+                trimmedText,
+                attachmentFileIds: fileIds,
+                buttons: normalizedButtons,
+                ct);
+
+            return (new BotApiEditMessageResponse
+            {
+                success = response.success,
+                chatId = chatGuid.ToString(),
+                messageId = response.success ? messageId : null,
+                error = response.error,
+            }, broadcast);
+        }
+        catch (Exception ex)
+        {
+            return (new BotApiEditMessageResponse { success = false, error = ex.Message }, null);
+        }
+    }
+
+    public async Task<(BotApiDeleteMessageResponse response, SupraWsDeleteMessagePayload? broadcast)> DeleteMessageAsync(
+        UserRecord botUser,
+        string chatId,
+        string messageId,
+        bool deleteForEveryone,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            if (!Guid.TryParse(chatId, out var chatGuid))
+                return (new BotApiDeleteMessageResponse { success = false, error = "Некорректный chatId" }, null);
+
+            if (!await _store.IsParticipantAsync(chatGuid, botUser.Id, ct))
+                return (new BotApiDeleteMessageResponse { success = false, error = "Бот не является участником чата" }, null);
+
+            var (response, broadcast, hideLocally) = await _messenger.DeleteMessageAsync(
+                botUser,
+                chatGuid.ToString(),
+                messageId,
+                deleteForEveryone,
+                ct);
+
+            string? deleteScope = null;
+            if (response.success)
+                deleteScope = deleteForEveryone && !hideLocally && broadcast != null ? "everyone" : "self";
+
+            return (new BotApiDeleteMessageResponse
+            {
+                success = response.success,
+                chatId = chatGuid.ToString(),
+                messageId = response.success ? messageId : null,
+                deleteScope = deleteScope,
+                error = response.error,
+            }, broadcast);
+        }
+        catch (Exception ex)
+        {
+            return (new BotApiDeleteMessageResponse { success = false, error = ex.Message }, null);
+        }
+    }
+
+    async Task<(BotApiTargetChat? target, string? error)> ResolveTargetChatAsync(
+        UserRecord botUser,
+        string? userLogin,
+        string? chatId,
+        bool requireChannelPostRights,
+        CancellationToken ct)
+    {
+        var hasUser = !string.IsNullOrWhiteSpace(userLogin);
+        var hasChat = !string.IsNullOrWhiteSpace(chatId);
+        if (hasUser == hasChat)
+            return (null, "Укажите userLogin или chatId");
+
+        if (hasUser)
+        {
+            var target = await _store.GetUserByLoginAsync(userLogin!.Trim(), ct);
+            if (target == null || !target.IsActive || SupraMessengerService.IsBotUser(target))
+                return (null, "Пользователь не найден");
+
+            var directChatId = await FindDirectChatAsync(botUser.Id, target.Id, ct);
+            if (!directChatId.HasValue)
+            {
+                return (null, "Чат с пользователем не найден. Пользователь должен сначала начать диалог с ботом");
+            }
+
+            return (new BotApiTargetChat(directChatId.Value), null);
+        }
+
+        if (!Guid.TryParse(chatId, out var chatGuid))
+            return (null, "Некорректный chatId");
+
+        if (!await _store.IsParticipantAsync(chatGuid, botUser.Id, ct))
+            return (null, "Бот не является участником чата");
+
+        var chat = await _store.GetChatByIdAsync(chatGuid, ct);
+        if (chat == null)
+            return (null, "Чат не найден");
+
+        if (requireChannelPostRights &&
+            SupraMessengerService.IsChannelChat(chat) &&
+            !await _messenger.CanUserPostToChannelAsync(botUser.Id, chatGuid, ct))
+        {
+            return (null, "Нет права публиковать в этом канале (нужна роль admin или author)");
+        }
+
+        return (new BotApiTargetChat(chatGuid), null);
+    }
+
+    sealed record BotApiTargetChat(Guid ChatId)
+    {
+        public string ChatIdString => ChatId.ToString();
     }
 
     public async Task<BotApiGetMessagesResponse> GetMessagesAsync(
@@ -224,6 +564,10 @@ public sealed class BotApiService
                 SenderLogin = sender?.Login ?? "",
                 SenderName = message.SenderName,
                 Text = message.Text,
+                ReplyToMessageId = message.ReplyToMessageId,
+                ReplyToSenderName = message.ReplyToSenderName,
+                ReplyToTextPreview = message.ReplyToTextPreview,
+                ButtonPressJson = message.ButtonPressJson,
                 CreatedOn = message.CreatedOn,
             };
             await _store.SaveBotInboxMessageAsync(inbox, ct);
@@ -247,18 +591,4 @@ public sealed class BotApiService
         return null;
     }
 
-    public static BotApiMessageDto MapInboxDto(BotInboxMessageRecord m) =>
-        new()
-        {
-            id = m.Id.ToString(),
-            messageId = m.MessageId.ToString(),
-            chatId = m.ChatId.ToString(),
-            chatType = m.ChatType,
-            chatName = m.ChatName,
-            senderId = m.SenderUserId.ToString(),
-            senderLogin = m.SenderLogin,
-            senderName = m.SenderName,
-            text = m.Text,
-            timestamp = m.CreatedOn,
-        };
 }

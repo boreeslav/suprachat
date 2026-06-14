@@ -465,6 +465,7 @@
 			themes,
 			defaultThemeName: data.defaultThemeName,
 			useThemeChatBg: data.useThemeChatBg !== false,
+			enableGroupEncryption: data.enableGroupEncryption === true,
 		});
 		global.MessengerThemeManager?.refreshThemeChatBg?.();
 		return true;

@@ -1,0 +1,52 @@
+{
+  "allowedUser": "your_login",
+  "defaultProjectId": "super-messenger",
+  "projects": [
+    {
+      "id": "super-messenger",
+      "name": "SuperMessenger",
+      "path": ".."
+    },
+    {
+      "id": "other-app",
+      "name": "Other App",
+      "path": "C:\\tsroot\\OtherApp"
+    }
+  ],
+  "assistant": {
+    "actions": {
+      "describe": {
+        "mode": "ask",
+        "prompt": "Кратко опиши, что в сообщении(ях): тип контента (текст, одна картинка, несколько картинок, файл), суть текста.",
+        "replyPrefix": "📋 "
+      },
+      "reply": {
+        "mode": "agent",
+        "prompt": "Подготовь ответ, который пользователь сможет вставить обратно в исходный чат. Ответ должен быть готов к отправке как есть.",
+        "replyPrefix": ""
+      }
+    },
+    "contentTypes": {
+      "text": { "label": "текст", "hint": "Текстовое сообщение" },
+      "photo": { "label": "фото", "hint": "Одно изображение" },
+      "collage": { "label": "коллаж", "hint": "Несколько изображений" },
+      "file": { "label": "файл", "hint": "Файловое вложение" }
+    },
+    "menu": {
+      "items": [
+        {
+          "id": "describe_ask",
+          "text": "Описать (ask)",
+          "action": "describe",
+          "for": ["text", "photo", "collage", "file"]
+        },
+        {
+          "id": "reply_auto",
+          "text": "Ответить в чат (auto)",
+          "action": "reply",
+          "for": ["text"]
+        }
+      ]
+    }
+  }
+}

@@ -43,8 +43,28 @@
 			<thead><tr><th>Метод</th><th>Назначение</th></tr></thead>
 			<tbody>
 				<tr><td><code>GET/POST /api/bot-api/me</code></td><td>Информация о боте</td></tr>
-				<tr><td><code>GET/POST /api/bot-api/sendMessage</code></td><td>Отправить сообщение (<code>userLogin</code> или <code>chatId</code> + <code>text</code>)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/sendMessage</code></td><td>Отправить сообщение: текст, фото, коллаж, файл, кнопки</td></tr>
+				<tr><td><code>POST /api/bot-api/uploadFile</code></td><td>Загрузить файл (multipart <code>file</code>, query <code>chatId</code>)</td></tr>
+				<tr><td><code>GET /api/bot-api/getFile</code></td><td>Скачать файл по <code>fileId</code></td></tr>
+				<tr><td><code>GET /api/bot-api/getFilePreview</code></td><td>Превью изображения</td></tr>
+				<tr><td><code>GET /api/bot-api/getFileMedium</code></td><td>Средний размер изображения</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/sendActivity</code></td><td>Индикатор активности: <code>typing</code>, <code>active</code></td></tr>
+				<tr><td><code>GET/POST /api/bot-api/editMessage</code></td><td>Редактировать своё сообщение (<code>chatId</code>, <code>messageId</code>, <code>text</code>)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/deleteMessage</code></td><td>Удалить сообщение (<code>chatId</code>, <code>messageId</code>)</td></tr>
 				<tr><td><code>GET/POST /api/bot-api/getMessages</code></td><td>Inbox: <code>count</code>, <code>offset</code>, <code>afterMessageId</code></td></tr>
+				<tr><td><code>GET/POST /api/bot-api/getChatInfo</code></td><td>Информация о группе/канале и права бота</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/updateGroup</code></td><td>Название, описание группы (админ)</td></tr>
+				<tr><td><code>POST /api/bot-api/setGroupAvatar</code></td><td>Аватар группы, multipart <code>photo</code> (админ)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/removeGroupMember</code></td><td>Исключить участника (админ)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/blockGroupMember</code></td><td>Заблокировать участника (админ)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/createGroupBranch</code></td><td>Создать ветку (админ)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/updateGroupBranch</code></td><td>Изменить ветку (админ)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/deleteGroupBranch</code></td><td>Удалить ветку (админ)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/updateChannel</code></td><td>Название, описание канала (admin/owner)</td></tr>
+				<tr><td><code>POST /api/bot-api/setChannelAvatar</code></td><td>Аватар канала, multipart <code>photo</code></td></tr>
+				<tr><td><code>GET/POST /api/bot-api/removeChannelMember</code></td><td>Снять admin/author (не владельца)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/setChannelMemberRole</code></td><td>Назначить роль в канале</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/getChannelSubscribers</code></td><td>Список подписчиков</td></tr>
 			</tbody>
 		</table>
 	</div>
@@ -72,6 +92,7 @@ await api.sendMessage({ userLogin: 'user', text: 'Hi' });
 			<li>Только незашифрованные исходящие сообщения.</li>
 			<li>Inbox на сервере — 1 сутки.</li>
 			<li>Личный чат по <code>userLogin</code> — только если пользователь уже начал диалог с ботом.</li>
+			<li>Управление группами/каналами — бот должен быть участником с ролью администратора (или author для публикации в канале).</li>
 		</ul>
 	</div>
 </body>
