@@ -456,6 +456,14 @@ public sealed class SupraGroupMemberDto
     public bool isCreator { get; set; }
 }
 
+public sealed class SupraGroupBotMenuDto
+{
+    public string botUserId { get; set; } = "";
+    public string name { get; set; } = "";
+    public string? avatar { get; set; }
+    public BotApiMenuDto? menu { get; set; }
+}
+
 public sealed class SupraGetGroupInfoResponse
 {
     public bool success { get; set; }
@@ -475,6 +483,7 @@ public sealed class SupraGetGroupInfoResponse
     public bool isBranch { get; set; }
     public string? description { get; set; }
     public List<SupraGroupBranchDto> branches { get; set; } = [];
+    public SupraGroupBotMenuDto? groupBotMenu { get; set; }
     public string? error { get; set; }
 }
 
@@ -826,5 +835,14 @@ public sealed class SupraWsBotUpdatedPayload
     public string? description { get; set; }
     public BotApiMenuDto? menu { get; set; }
     /// <summary>Если задан — меню относится только к этому чату (per-session override).</summary>
+    public string? chatId { get; set; }
+}
+
+public sealed class SupraWsBotGroupUpdatedPayload
+{
+    public string type { get; set; } = "SupraBotGroupUpdated";
+    public string botUserId { get; set; } = "";
+    public BotApiMenuDto? groupMenu { get; set; }
+    /// <summary>Если задан — меню относится только к этой группе/ветке.</summary>
     public string? chatId { get; set; }
 }

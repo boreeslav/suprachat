@@ -1093,6 +1093,7 @@ public sealed partial class SupraMessengerService
                 branches = IsRootGroupChat(chat)
                     ? await BuildBranchDtosForRootAsync(chat.Id, userId, new Dictionary<Guid, List<SupraChatMessageRecord>>(), ct)
                     : [],
+                groupBotMenu = await ResolveGroupBotMenuForChatAsync(chat!, ct),
             };
         }
         catch (Exception ex)

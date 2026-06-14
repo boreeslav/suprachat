@@ -11,6 +11,8 @@ public sealed class BotRecord
     public string MenuJson { get; set; } = "";
     /// <summary>JSON меню помощника (BotApiMenuDto) — пункты в меню «Боты» у сообщений.</summary>
     public string AssistantMenuJson { get; set; } = "";
+    /// <summary>JSON меню группы (BotApiMenuDto) — кнопка в composer группы/ветки, если бот — админ.</summary>
+    public string GroupMenuJson { get; set; } = "";
     /// <summary>SHA-256 hex текущего API-токена (plaintext показывается только при генерации).</summary>
     public string? TokenHash { get; set; }
     public DateTime CreatedOn { get; set; } = DateTime.UtcNow;

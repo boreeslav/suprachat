@@ -28,3 +28,19 @@ public sealed class BotApiSetMenuResponse
     public string? chatId { get; set; }
     public string? error { get; set; }
 }
+
+public sealed class BotApiGetGroupMenuResponse
+{
+    public bool success { get; set; }
+    public BotApiMenuDto? groupMenu { get; set; }
+    public string? chatId { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class BotApiSetGroupMenuResponse
+{
+    public bool success { get; set; }
+    public BotApiMenuDto? groupMenu { get; set; }
+    public string? chatId { get; set; }
+    public string? error { get; set; }
+}

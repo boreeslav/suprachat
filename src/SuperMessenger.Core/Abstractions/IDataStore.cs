@@ -107,6 +107,10 @@ public interface IDataStore
     Task SaveBotChatMenuAsync(BotChatMenuRecord record, CancellationToken ct = default);
     Task DeleteBotChatMenuAsync(Guid botUserId, Guid chatId, CancellationToken ct = default);
 
+    Task<BotGroupChatMenuRecord?> GetBotGroupChatMenuAsync(Guid botUserId, Guid chatId, CancellationToken ct = default);
+    Task SaveBotGroupChatMenuAsync(BotGroupChatMenuRecord record, CancellationToken ct = default);
+    Task DeleteBotGroupChatMenuAsync(Guid botUserId, Guid chatId, CancellationToken ct = default);
+
     Task<bool> HasBotEngagementAsync(Guid userId, Guid botUserId, CancellationToken ct = default);
     Task SaveBotEngagementAsync(BotEngagementRecord engagement, CancellationToken ct = default);
 

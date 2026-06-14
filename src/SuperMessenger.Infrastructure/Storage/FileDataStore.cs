@@ -26,6 +26,7 @@ public sealed class FileDataStore : IDataStore
     private readonly JsonFileCollectionStore<BotInboxMessageRecord> _botInbox;
     private readonly JsonFileCollectionStore<UserBotAssistantRecord> _userBotAssistants;
     private readonly JsonFileCollectionStore<BotAssistantChatMenuRecord> _botAssistantChatMenus;
+    private readonly JsonFileCollectionStore<BotGroupChatMenuRecord> _botGroupChatMenus;
     private readonly JsonFileCollectionStore<BotAssistantSessionRecord> _botAssistantSessions;
 
     public FileDataStore(string dataRoot)
@@ -52,6 +53,7 @@ public sealed class FileDataStore : IDataStore
         _botInbox = new(Path.Combine(dataRoot, "bot-inbox.json"));
         _userBotAssistants = new(Path.Combine(dataRoot, "user-bot-assistants.json"));
         _botAssistantChatMenus = new(Path.Combine(dataRoot, "bot-assistant-chat-menus.json"));
+        _botGroupChatMenus = new(Path.Combine(dataRoot, "bot-group-chat-menus.json"));
         _botAssistantSessions = new(Path.Combine(dataRoot, "bot-assistant-sessions.json"));
     }
 
@@ -700,6 +702,28 @@ public sealed class FileDataStore : IDataStore
         var kept = list.Where(m => !(m.BotUserId == botUserId && m.ChatId == chatId)).ToList();
         if (kept.Count == list.Count) return;
         await _botAssistantChatMenus.WriteAllAsync(kept, ct);
+    }
+
+    public async Task<BotGroupChatMenuRecord?> GetBotGroupChatMenuAsync(
+        Guid botUserId, Guid chatId, CancellationToken ct = default)
+        => (await _botGroupChatMenus.ReadAllAsync(ct)).FirstOrDefault(m =>
+            m.BotUserId == botUserId && m.ChatId == chatId);
+
+    public async Task SaveBotGroupChatMenuAsync(BotGroupChatMenuRecord record, CancellationToken ct = default)
+    {
+        var list = await _botGroupChatMenus.ReadAllAsync(ct);
+        var idx = list.FindIndex(m => m.BotUserId == record.BotUserId && m.ChatId == record.ChatId);
+        if (idx >= 0) list[idx] = record;
+        else list.Add(record);
+        await _botGroupChatMenus.WriteAllAsync(list, ct);
+    }
+
+    public async Task DeleteBotGroupChatMenuAsync(Guid botUserId, Guid chatId, CancellationToken ct = default)
+    {
+        var list = await _botGroupChatMenus.ReadAllAsync(ct);
+        var kept = list.Where(m => !(m.BotUserId == botUserId && m.ChatId == chatId)).ToList();
+        if (kept.Count == list.Count) return;
+        await _botGroupChatMenus.WriteAllAsync(kept, ct);
     }
 
     public async Task<BotAssistantSessionRecord?> GetBotAssistantSessionByIdAsync(

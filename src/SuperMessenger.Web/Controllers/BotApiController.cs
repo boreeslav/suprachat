@@ -419,6 +419,40 @@ public sealed class BotApiController : ControllerBase
         return Ok(response);
     }
 
+    [HttpGet("getGroupMenu")]
+    [HttpPost("getGroupMenu")]
+    public async Task<IActionResult> GetGroupMenu(CancellationToken ct)
+    {
+        var p = await ReadParamsAsync(ct);
+        var auth = await AuthenticateParamsAsync(p, ct);
+        if (auth == null)
+            return Unauthorized(new BotApiGetGroupMenuResponse { success = false, error = "Unauthorized" });
+
+        var (_, bot) = auth.Value;
+        return Ok(await _botApi.GetGroupMenuAsync(bot, p.chatId, ct));
+    }
+
+    [HttpGet("setGroupMenu")]
+    [HttpPost("setGroupMenu")]
+    public async Task<IActionResult> SetGroupMenu(CancellationToken ct)
+    {
+        var p = await ReadParamsAsync(ct);
+        var auth = await AuthenticateParamsAsync(p, ct);
+        if (auth == null)
+            return Unauthorized(new BotApiSetGroupMenuResponse { success = false, error = "Unauthorized" });
+
+        var (botUser, bot) = auth.Value;
+        var menu = p.groupMenu ?? p.menu;
+        var (response, payload) = await _botApi.SetGroupMenuAsync(botUser, bot, menu, p.chatId, ct);
+        if (!response.success)
+            return BadRequest(response);
+
+        if (payload != null)
+            await BroadcastBotGroupUpdatedAsync(payload, ct);
+
+        return Ok(response);
+    }
+
     [HttpGet("assistantReply")]
     [HttpPost("assistantReply")]
     public async Task<IActionResult> AssistantReply(CancellationToken ct)
@@ -850,6 +884,7 @@ public sealed class BotApiController : ControllerBase
             result.attachmentFileIds = FirstNonEmptyList(result.attachmentFileIds, ParseStringList(root, "attachmentFileIds"));
             result.menu = ParseMenu(root);
             result.assistantMenu = ParseAssistantMenu(root);
+            result.groupMenu = ParseGroupMenu(root);
             result.buttons = ParseButtons(root);
         }
         catch
@@ -1021,9 +1056,59 @@ public sealed class BotApiController : ControllerBase
         }
     }
 
+    async Task BroadcastBotGroupUpdatedAsync(SupraWsBotGroupUpdatedPayload payload, CancellationToken ct)
+    {
+        if (!Guid.TryParse(payload.botUserId, out var botUserId)) return;
+
+        var store = HttpContext.RequestServices.GetRequiredService<Core.Abstractions.IDataStore>();
+        var bot = await store.GetBotByUserIdAsync(botUserId, ct);
+        if (bot == null) return;
+
+        await _realtime.SendToUserAsync(bot.OwnerUserId, payload, ct);
+
+        if (!string.IsNullOrWhiteSpace(payload.chatId) &&
+            Guid.TryParse(payload.chatId, out var chatGuid))
+        {
+            var participants = await GetAllChatParticipantIdsAsync(chatGuid, ct);
+            foreach (var uid in participants.Where(id => id != botUserId))
+                await _realtime.SendToUserAsync(uid, payload, ct);
+
+            var chat = await store.GetChatByIdAsync(chatGuid, ct);
+            if (chat != null && SupraMessengerService.IsRootGroupChat(chat))
+            {
+                var branches = await store.GetGroupBranchesByParentAsync(chatGuid, ct);
+                foreach (var branch in branches)
+                {
+                    var branchParticipants = await GetAllChatParticipantIdsAsync(branch.Id, ct);
+                    foreach (var uid in branchParticipants.Where(id => id != botUserId))
+                        await _realtime.SendToUserAsync(uid, payload, ct);
+                }
+            }
+            return;
+        }
+
+        var allChats = await store.GetChatsAsync(ct);
+        var allParts = await store.GetAllParticipantsAsync(ct);
+        foreach (var chat in allChats.Where(c => SupraMessengerService.IsGroupChat(c)))
+        {
+            var parts = allParts.Where(p => p.ChatId == chat.Id).ToList();
+            var botPart = parts.FirstOrDefault(p => p.UserId == botUserId && p.IsAdmin);
+            if (botPart == null) continue;
+            foreach (var p in parts.Where(p => p.UserId != botUserId))
+                await _realtime.SendToUserAsync(p.UserId, payload, ct);
+        }
+    }
+
     static BotApiMenuDto? ParseAssistantMenu(JsonElement root)
     {
         if (root.TryGetProperty("assistantMenu", out var menuEl))
+            return DeserializeMenu(menuEl);
+        return null;
+    }
+
+    static BotApiMenuDto? ParseGroupMenu(JsonElement root)
+    {
+        if (root.TryGetProperty("groupMenu", out var menuEl))
             return DeserializeMenu(menuEl);
         return null;
     }
@@ -1121,5 +1206,6 @@ public sealed class BotApiController : ControllerBase
         public string? fileId { get; set; }
         public string? sessionId { get; set; }
         public BotApiMenuDto? assistantMenu { get; set; }
+        public BotApiMenuDto? groupMenu { get; set; }
     }
 }
