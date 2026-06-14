@@ -71,6 +71,7 @@ class MessengerI18n {
 			writeMessage: 'Написать сообщение…',
 			botMenu: 'Меню бота',
 			groupBotMenu: 'Меню группы',
+			groupBotMenuBots: 'Боты',
 			theme: 'Тема',
 			themeGroupDark: 'Тёмные темы',
 			themeGroupLight: 'Светлые темы',
@@ -593,6 +594,7 @@ class MessengerI18n {
 			writeMessage: 'Write a message…',
 			botMenu: 'Bot menu',
 			groupBotMenu: 'Group menu',
+			groupBotMenuBots: 'Bots',
 			theme: 'Theme',
 			themeGroupDark: 'Dark themes',
 			themeGroupLight: 'Light themes',
@@ -3100,6 +3102,32 @@ const BOT_ASSISTANT_REMOVE_ID = '_assistant_remove';
 
 function buildBotComposerMenuItems(menu) {
 	return normalizeBotMenuItems(menu).slice();
+}
+
+function normalizeGroupBotMenus(menus) {
+	if (!Array.isArray(menus)) return [];
+	return menus.filter(bot =>
+		bot?.botUserId && normalizeBotMenuItems(bot.menu).length > 0
+	);
+}
+
+function buildGroupBotMenuSheetItems(bots, onSelect, closeMenu) {
+	const normalized = normalizeGroupBotMenus(bots);
+	const botEntries = normalized.map(bot => {
+		const children = botMenuItemsToSheetItems(
+			normalizeBotMenuItems(bot.menu),
+			onSelect,
+			closeMenu,
+		);
+		if (!children.length) return null;
+		return {
+			label: String(bot.name || '').trim() || 'Bot',
+			children,
+		};
+	}).filter(Boolean);
+	if (!botEntries.length) return [];
+	if (botEntries.length === 1) return botEntries[0].children;
+	return botEntries;
 }
 
 const ASSISTANT_CONTENT_TYPES = new Set(['text', 'photo', 'collage', 'file']);
@@ -10458,6 +10486,68 @@ class MessengerBotMenuButton {
 				i18n: this.#i18n,
 				icons: this.#icons,
 				title: this.#i18n.t(this.#titleKey) || this.#i18n.t('botMenu') || 'Меню',
+				anchorEl: btn,
+				onClose: () => { this.#closeMenu = null; },
+			});
+		});
+
+		wrap.append(btn);
+		return wrap;
+	}
+}
+
+class MessengerGroupBotMenuButton {
+	#utils;
+	#icons;
+	#i18n;
+	#themeManager;
+	#bots;
+	#onSelect;
+	#closeMenu = null;
+
+	constructor(utils, icons, i18n, themeManager, bots, onSelect) {
+		this.#utils = utils;
+		this.#icons = icons;
+		this.#i18n = i18n;
+		this.#themeManager = themeManager;
+		this.#bots = bots;
+		this.#onSelect = onSelect;
+	}
+
+	closePopup() {
+		this.#closeMenu?.();
+		this.#closeMenu = null;
+	}
+
+	build() {
+		const wrap = this.#utils.mk('div', 'mc-bot-menu-wrap mc-group-bot-menu-wrap');
+		const btn = this.#utils.mk('button', 'mc-bot-menu-btn');
+		btn.type = 'button';
+		btn.setAttribute('aria-label', this.#i18n.t('groupBotMenu') || 'Меню группы');
+		btn.innerHTML = this.#icons.menuGrid();
+
+		btn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			if (this.#closeMenu) {
+				this.closePopup();
+				return;
+			}
+			const sheetItems = buildGroupBotMenuSheetItems(
+				this.#bots,
+				this.#onSelect,
+				() => this.closePopup(),
+			);
+			if (!sheetItems.length) return;
+
+			const multi = normalizeGroupBotMenus(this.#bots).length > 1;
+			this.#closeMenu = presentContextActionMenu(sheetItems, {
+				utils: this.#utils,
+				themeManager: this.#themeManager,
+				i18n: this.#i18n,
+				icons: this.#icons,
+				title: multi
+					? (this.#i18n.t('groupBotMenuBots') || this.#i18n.t('groupBotMenu') || 'Боты')
+					: (this.#i18n.t('groupBotMenu') || 'Меню группы'),
 				anchorEl: btn,
 				onClose: () => { this.#closeMenu = null; },
 			});
@@ -18097,42 +18187,50 @@ class MessengerAppView {
 		};
 	}
 
-	#resolveGroupBotMeta(chat) {
-		if (!this.#isGroupChat(chat)) return null;
-		const meta = chat.groupBotMenu || null;
-		if (!meta || !normalizeBotMenuItems(meta.menu).length) return null;
-		return meta;
+	#resolveGroupBotMenus(chat) {
+		if (!this.#isGroupChat(chat)) return [];
+		return normalizeGroupBotMenus(chat.groupBotMenus || (chat.groupBotMenu ? [chat.groupBotMenu] : []));
+	}
+
+	#applyGroupBotMenusToState(chat, menus, panelState = null) {
+		const normalized = normalizeGroupBotMenus(menus);
+		chat.groupBotMenus = normalized;
+		chat.groupBotMenu = normalized.length === 1 ? normalized[0] : null;
+		if (this.#activeChat?.id === chat.id) {
+			this.#activeChat.groupBotMenus = normalized;
+			this.#activeChat.groupBotMenu = chat.groupBotMenu;
+		}
+		const state = panelState
+			|| (this.#activeState?.chatId === chat.id ? this.#activeState : this.#panelPool.get(chat.id)?.state);
+		if (!state || (!state.isGroupChat && !state.isGroupBranchChat)) return normalized;
+		state.groupBotMenus = normalized;
+		if (state._composerChat) {
+			state._composerChat.groupBotMenus = normalized;
+			state._composerChat.groupBotMenu = chat.groupBotMenu;
+		}
+		if (state._composerFileOptions) {
+			state._composerFileOptions.groupBotMenus = normalized;
+		}
+		this.#panelFactory.refreshGroupBotComposerMenu(state, normalized);
+		return normalized;
+	}
+
+	async #loadGroupBotMenusForChat(chat) {
+		if (!this.#isGroupChat(chat)) return [];
+		try {
+			const info = await this.#api.getGroupInfo(chat.id);
+			if (!info?.success) return [];
+			return normalizeGroupBotMenus(info.groupBotMenus
+				|| (info.groupBotMenu ? [info.groupBotMenu] : []));
+		} catch (e) {
+			console.warn('[MessengerAppView] loadGroupBotMenusForChat', e);
+			return [];
+		}
 	}
 
 	async #refreshGroupBotMetaFromServer(chat) {
-		if (!this.#isGroupChat(chat)) return null;
-		try {
-			const info = await this.#api.getGroupInfo(chat.id);
-			if (!info?.success) return null;
-			const meta = info.groupBotMenu && normalizeBotMenuItems(info.groupBotMenu.menu).length
-				? info.groupBotMenu
-				: null;
-			chat.groupBotMenu = meta;
-			if (this.#activeChat?.id === chat.id) {
-				this.#activeChat.groupBotMenu = meta;
-			}
-			const panelState = this.#activeState?.chatId === chat.id
-				? this.#activeState
-				: this.#panelPool.get(chat.id)?.state;
-			if (panelState && (panelState.isGroupChat || panelState.isGroupBranchChat)) {
-				panelState.groupBotMeta = meta;
-				if (panelState._composerChat) panelState._composerChat.groupBotMenu = meta;
-				if (panelState._composerFileOptions) {
-					panelState._composerFileOptions.groupBotMenu = meta?.menu || null;
-					panelState._composerFileOptions.groupBotMeta = meta;
-				}
-				this.#panelFactory.refreshGroupBotComposerMenu(panelState, meta?.menu || null);
-			}
-			return meta;
-		} catch (e) {
-			console.warn('[MessengerAppView] refreshGroupBotMetaFromServer', e);
-			return null;
-		}
+		const menus = await this.#loadGroupBotMenusForChat(chat);
+		return this.#applyGroupBotMenusToState(chat, menus);
 	}
 
 	async #refreshBotMetaFromServer(chat) {
@@ -18465,6 +18563,9 @@ class MessengerAppView {
 		}
 		this.#panelFactory.syncImageViewerActionHost(entry.state);
 		global.ThemeChatBg?.paint?.();
+		if (this.#isGroupChat(chat)) {
+			void this.#refreshGroupBotMetaFromServer(chat);
+		}
 	}
 
 	async #refreshParkedPanelOnActivate(chat, state) {
@@ -18503,6 +18604,11 @@ class MessengerAppView {
 		this.el.empty.hidden = true;
 		let channelMeta = null;
 		let botMeta = null;
+		let groupBotMenusPreloaded = [];
+		if (this.#isGroupChat(chat)) {
+			groupBotMenusPreloaded = await this.#loadGroupBotMenusForChat(chat);
+			this.#applyGroupBotMenusToState(chat, groupBotMenusPreloaded);
+		}
 		if (isChannelType(chat.type)) {
 			channelMeta = this.#resolveChannelMeta(chat);
 			const applyFreshMeta = (fresh) => {
@@ -18534,8 +18640,6 @@ class MessengerAppView {
 					this.#panelFactory.refreshChatHeaderMenu(state, chat);
 				}
 			});
-		} else if (this.#isGroupChat(chat)) {
-			void this.#refreshGroupBotMetaFromServer(chat);
 		}
 		const onThemeApply = (theme) => {
 			this.#themeManager.applyTheme(theme);
@@ -18760,7 +18864,11 @@ class MessengerAppView {
 			onNavigateBack: () => this.#navigateBackFromChat(),
 			channelMeta,
 			botMeta,
-			groupBotMeta: this.#isGroupChat(chat) ? this.#resolveGroupBotMeta(chat) : null,
+			groupBotMenus: this.#isGroupChat(chat)
+				? (groupBotMenusPreloaded.length
+					? groupBotMenusPreloaded
+					: this.#resolveGroupBotMenus(chat))
+				: [],
 			onShowChannelProfile: (c) => this.#showChannelProfile(c),
 			onChannelAbout: (c) => this.#openChannelAboutModal(c),
 			onChannelShare: (c) => this.#shareChannel(c),
@@ -18800,6 +18908,9 @@ class MessengerAppView {
 		this.el.chatArea.appendChild(state.el);
 		this.#panelFactory.loadHistory(chat.id, state);
 		this.#refreshActiveChatHeader();
+		if (groupBotMenusPreloaded.length) {
+			this.#panelFactory.refreshGroupBotComposerMenu(state, groupBotMenusPreloaded);
+		}
 		global.ThemeChatBg?.paint?.();
 	}
 
@@ -19689,40 +19800,15 @@ class MessengerAppView {
 	}
 
 	applyBotGroupUpdated(payload = {}) {
-		const botUserId = payload.botUserId;
-		if (!botUserId) return;
-		const scopedChatId = payload.chatId || null;
-		const groupMenu = payload.groupMenu || null;
 		const activeChat = this.#activeChat;
 		if (!activeChat || !this.#isGroupChat(activeChat)) return;
+		const scopedChatId = payload.chatId || null;
 		if (scopedChatId
 			&& activeChat.id !== scopedChatId
 			&& activeChat.parentChatId !== scopedChatId) {
 			return;
 		}
-		if (!scopedChatId && this.#activeState?.groupBotMeta?.botUserId !== botUserId) {
-			void this.#refreshGroupBotMetaFromServer(activeChat);
-			return;
-		}
-
-		const meta = normalizeBotMenuItems(groupMenu).length
-			? {
-				botUserId,
-				name: this.#activeState?.groupBotMeta?.name || '',
-				avatar: this.#activeState?.groupBotMeta?.avatar ?? null,
-				menu: groupMenu,
-			}
-			: null;
-
-		activeChat.groupBotMenu = meta;
-		if (!this.#activeState || this.#activeState.chatId !== activeChat.id) return;
-		this.#activeState.groupBotMeta = meta;
-		if (this.#activeState._composerChat) this.#activeState._composerChat.groupBotMenu = meta;
-		if (this.#activeState._composerFileOptions) {
-			this.#activeState._composerFileOptions.groupBotMenu = meta?.menu || null;
-			this.#activeState._composerFileOptions.groupBotMeta = meta;
-		}
-		this.#panelFactory.refreshGroupBotComposerMenu(this.#activeState, meta?.menu || null);
+		void this.#refreshGroupBotMetaFromServer(activeChat);
 	}
 
 	async handleAssistantReplyPending(payload) {
@@ -24686,25 +24772,21 @@ class MessengerMessageRenderer {
 			composerNodes.push(botMenuBtn.build());
 			area._botMenuButton = botMenuBtn;
 		}
-		const groupBotMenuItems = buildBotComposerMenuItems(fileOptions?.groupBotMenu);
-		if (groupBotMenuItems.length) {
-			const groupBotMenuBtn = new MessengerBotMenuButton(
+		const groupBotMenus = normalizeGroupBotMenus(fileOptions?.groupBotMenus);
+		if (groupBotMenus.length) {
+			const groupBotMenuBtn = new MessengerGroupBotMenuButton(
 				this.#utils,
 				this.#icons,
 				this.#i18n,
 				fileOptions.themeManager || null,
-				groupBotMenuItems,
+				groupBotMenus,
 				(message) => {
 					if (!isSendAllowed()) return;
 					field.value = message;
 					doSend();
 				},
-				null,
-				'groupBotMenu',
 			);
-			const groupWrap = groupBotMenuBtn.build();
-			groupWrap.classList.add('mc-group-bot-menu-wrap');
-			composerNodes.push(groupWrap);
+			composerNodes.push(groupBotMenuBtn.build());
 			area._groupBotMenuButton = groupBotMenuBtn;
 		}
 		if (fileOptions && Array.isArray(fileOptions.types) && fileOptions.types.length > 0) {
@@ -25212,43 +25294,41 @@ class MessengerChatPanel {
 		state.inputField = needsStart ? null : newInput.querySelector('.mc-input-field');
 	}
 
-	refreshGroupBotComposerMenu(state, menu) {
+	refreshGroupBotComposerMenu(state, groupBotMenus) {
 		if (!state || !state.el) return;
 		if (!state.isGroupChat && !state.isGroupBranchChat) return;
 		const oldInput = state.el.querySelector('.mc-input-area');
 		if (!oldInput?.querySelector('.mc-input-field')) return;
 
-		if (state.groupBotMeta) state.groupBotMeta.menu = menu || null;
-		if (state._composerChat) state._composerChat.groupBotMenu = state.groupBotMeta || null;
+		const menus = normalizeGroupBotMenus(groupBotMenus);
+		state.groupBotMenus = menus;
+		if (state._composerChat) {
+			state._composerChat.groupBotMenus = menus;
+			state._composerChat.groupBotMenu = menus.length === 1 ? menus[0] : null;
+		}
 		if (state._composerFileOptions) {
-			state._composerFileOptions.groupBotMenu = menu || null;
-			if (state.groupBotMeta) state._composerFileOptions.groupBotMeta = state.groupBotMeta;
+			state._composerFileOptions.groupBotMenus = menus;
 		}
 
-		const hasMenu = normalizeBotMenuItems(menu).length > 0;
-		const menuWrap = oldInput.querySelector('.mc-group-bot-menu-wrap, .mc-bot-menu-wrap.mc-group-bot-menu-wrap');
-		const existingWrap = oldInput.querySelector('.mc-group-bot-menu-wrap')
-			|| (oldInput._groupBotMenuButton ? oldInput.querySelector('.mc-bot-menu-wrap:last-of-type') : null);
-		if (!hasMenu) {
+		const existingWrap = oldInput.querySelector('.mc-group-bot-menu-wrap');
+		if (!menus.length) {
 			if (oldInput._groupBotMenuButton) {
 				oldInput._groupBotMenuButton.closePopup?.();
 				delete oldInput._groupBotMenuButton;
 			}
-			const wrap = oldInput.querySelector('.mc-group-bot-menu-wrap');
-			wrap?.remove();
+			existingWrap?.remove();
 			return;
 		}
-		const groupBotMenuItems = buildBotComposerMenuItems(menu);
 		const field = oldInput.querySelector('.mc-input-field');
 		const onSend = state._composerOnSend;
 		const msgArea = state.msgArea;
 		const chatId = state.chatId;
-		const groupBotMenuBtn = new MessengerBotMenuButton(
+		const groupBotMenuBtn = new MessengerGroupBotMenuButton(
 			this.#utils,
 			this.#icons,
 			this.#i18n,
 			state._composerFileOptions?.themeManager || this.#themeManager,
-			groupBotMenuItems,
+			menus,
 			(message) => {
 				if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) return;
 				if (!field || !onSend) return;
@@ -25257,11 +25337,8 @@ class MessengerChatPanel {
 				field.style.height = '';
 				field.rows = 1;
 			},
-			null,
-			'groupBotMenu',
 		);
 		const newWrap = groupBotMenuBtn.build();
-		newWrap.classList.add('mc-group-bot-menu-wrap');
 		if (existingWrap) {
 			existingWrap.replaceWith(newWrap);
 		} else {
@@ -25886,8 +25963,10 @@ class MessengerChatPanel {
 		const hasAssistantMenu = isBotHeader && !!botMeta?.hasAssistantMenu;
 		const hasBotMenu = isBotHeader && normalizeBotMenuItems(botMeta?.menu).length > 0;
 		const isGroupOrBranch = isMessengerGroupChatType(chat.type);
-		const groupBotMeta = isGroupOrBranch ? (chatCallbacks.groupBotMeta || chat.groupBotMenu || null) : null;
-		const hasGroupBotMenu = isGroupOrBranch && normalizeBotMenuItems(groupBotMeta?.menu).length > 0;
+		const groupBotMenus = isGroupOrBranch
+			? normalizeGroupBotMenus(chatCallbacks.groupBotMenus || chat.groupBotMenus || (chat.groupBotMenu ? [chat.groupBotMenu] : []))
+			: [];
+		const hasGroupBotMenu = groupBotMenus.length > 0;
 		const hasFileTransfer = fileTransferTypes.length > 0;
 		const fileOptions = (hasFileTransfer || hasBotMenu || hasGroupBotMenu) ? {
 			types: hasFileTransfer ? fileTransferTypes : [],
@@ -25895,8 +25974,7 @@ class MessengerChatPanel {
 			botMenu: isBotHeader ? (botMeta?.menu || null) : null,
 			botMeta: isBotHeader ? botMeta : null,
 			botUserId: botMeta?.botUserId || chat.contactUserId || null,
-			groupBotMenu: hasGroupBotMenu ? (groupBotMeta?.menu || null) : null,
-			groupBotMeta: hasGroupBotMenu ? groupBotMeta : null,
+			groupBotMenus: hasGroupBotMenu ? groupBotMenus : [],
 			onBotAssistantAction: (itemId, botUserId) => this.#assistantMgr?.handleBotSpecialMenuItem(itemId, botUserId),
 			onBotMenuRefresh: refreshBotAssistantUi,
 			themeManager: this.#themeManager,
@@ -25958,7 +26036,7 @@ class MessengerChatPanel {
 			isGroupBranchChat,
 			isBotChat,
 			botMeta,
-			groupBotMeta: hasGroupBotMenu ? groupBotMeta : null,
+			groupBotMenus: hasGroupBotMenu ? groupBotMenus : [],
 			groupCanModerate: isGroupChat ? !!(chat.isAdmin || chat.isGroupCreator) : false,
 			isChannelChat,
 			channelSlug: chat.channelSlug || channelMeta?.slug || null,

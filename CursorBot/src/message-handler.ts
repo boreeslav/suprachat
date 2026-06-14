@@ -194,7 +194,7 @@ export class MessageHandler {
       if (!text && !media) return;
 
       this.sessions.ensureRoom(update.chatId);
-      await this.menuManager.syncChatMenu(update.chatId);
+      await this.menuManager.syncChatMenu(update.chatId, update.chatType);
 
       if (text && isSessionCommand(text)) {
         await this.deleteIncomingUserMessage(update);
@@ -285,7 +285,7 @@ export class MessageHandler {
       if (text === "/mode agent" || text.startsWith("/mode agent ")) {
         await this.interruptSessionWork(activeSessionKey);
         await this.cursor.setMode(activeSessionKey, "agent");
-        await this.menuManager.publishForChat(update.chatId);
+        await this.menuManager.publishForChat(update.chatId, update.chatType);
         await this.reply(update, `Режим: ${formatModeLabel("agent")}.`);
         return;
       }
@@ -298,7 +298,7 @@ export class MessageHandler {
       ) {
         await this.interruptSessionWork(activeSessionKey);
         await this.cursor.setMode(activeSessionKey, "ask");
-        await this.menuManager.publishForChat(update.chatId);
+        await this.menuManager.publishForChat(update.chatId, update.chatType);
         await this.reply(update, `Режим: ${formatModeLabel("ask")}.`);
         return;
       }
@@ -366,7 +366,7 @@ export class MessageHandler {
 
         await this.interruptSessionWork(activeSessionKey);
         await this.cursor.setProject(activeSessionKey, normalized);
-        await this.menuManager.publishForChat(update.chatId);
+        await this.menuManager.publishForChat(update.chatId, update.chatType);
         await this.reply(
           update,
           `Проект: ${this.projects.formatLabel(normalized)}.\nПапка: ${this.cursor.getProjectPath(activeSessionKey)}\nКонтекст Cursor для этой сессии будет создан заново при следующем запросе.`,
@@ -402,7 +402,7 @@ export class MessageHandler {
 
         await this.interruptSessionWork(activeSessionKey);
         await this.cursor.setModel(activeSessionKey, normalized);
-        await this.menuManager.publishForChat(update.chatId);
+        await this.menuManager.publishForChat(update.chatId, update.chatType);
         await this.reply(update, `Модель: ${this.models.formatLabel(normalized)}.`);
         return;
       }
@@ -568,7 +568,7 @@ export class MessageHandler {
       await this.interruptSessionWork(sessionKey);
       await this.cursor.setMode(sessionKey, mode);
       await this.cursor.resetSession(sessionKey);
-      await this.menuManager.publishForChat(update.chatId);
+      await this.menuManager.publishForChat(update.chatId, update.chatType);
       await this.cleanupSetupMessages(update, pending);
 
       const question = buildModelSetupMessage(this.models.getMenuModels());
@@ -600,7 +600,7 @@ export class MessageHandler {
     if (!sessionKey) return true;
     await this.interruptSessionWork(sessionKey);
     await this.cursor.setModel(sessionKey, normalized);
-    await this.menuManager.publishForChat(update.chatId);
+    await this.menuManager.publishForChat(update.chatId, update.chatType);
     await this.cleanupSetupMessages(update, pending);
     this.pendingSetup.delete(update.chatId);
     this.chatWorkStatus.delete(sessionKey);
@@ -946,7 +946,7 @@ export class MessageHandler {
     if (!force && this.menuRefreshSignals.get(chatId) === signal) {
       return Promise.resolve();
     }
-    return this.menuManager.publishForChat(chatId, force).then(() => {
+    return this.menuManager.publishForChat(chatId, this.menuManager.getChatType(chatId), force).then(() => {
       this.menuRefreshSignals.set(chatId, signal);
     });
   }

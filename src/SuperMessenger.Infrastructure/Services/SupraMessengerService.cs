@@ -1072,6 +1072,8 @@ public sealed partial class SupraMessengerService
                 .ThenBy(m => m.name)
                 .ToList();
 
+            var menus = await ResolveGroupBotMenusForChatAsync(chat!, ct);
+
             return new SupraGetGroupInfoResponse
             {
                 success = true,
@@ -1093,7 +1095,8 @@ public sealed partial class SupraMessengerService
                 branches = IsRootGroupChat(chat)
                     ? await BuildBranchDtosForRootAsync(chat.Id, userId, new Dictionary<Guid, List<SupraChatMessageRecord>>(), ct)
                     : [],
-                groupBotMenu = await ResolveGroupBotMenuForChatAsync(chat!, ct),
+                groupBotMenus = menus,
+                groupBotMenu = menus.Count == 1 ? menus[0] : null,
             };
         }
         catch (Exception ex)

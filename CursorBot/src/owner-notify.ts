@@ -2,6 +2,7 @@ import type { SupraBotApi } from "./supra-bot-api.js";
 
 export const OWNER_RESTART_MESSAGE = "⏳ Выполняется перезагрузка CursorBot…";
 export const OWNER_STARTED_MESSAGE = "✅ CursorBot запущен и готов к работе.";
+export const OWNER_RESTARTED_MESSAGE = "✅ CursorBot перезапущен и готов к работе.";
 
 export async function notifyOwner(
   api: SupraBotApi,

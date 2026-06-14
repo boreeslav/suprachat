@@ -136,6 +136,20 @@ export interface BotApiSetMenuResponse {
   error?: string;
 }
 
+export interface BotApiGetGroupMenuResponse {
+  success: boolean;
+  groupMenu?: BotApiMenuDto;
+  chatId?: string;
+  error?: string;
+}
+
+export interface BotApiSetGroupMenuResponse {
+  success: boolean;
+  groupMenu?: BotApiMenuDto;
+  chatId?: string;
+  error?: string;
+}
+
 export interface WsHandlers {
   onMessage?: (update: BotApiMessage, envelope?: unknown) => void;
   onConnected?: (msg: { type: string; botUserId?: string }) => void;
@@ -297,6 +311,17 @@ export class SupraBotApi {
 
   setMenu(params: { menu: BotApiMenuDto; chatId?: string }): Promise<BotApiSetMenuResponse> {
     return this._request<BotApiSetMenuResponse>("setMenu", params, "POST");
+  }
+
+  getGroupMenu(params: { chatId?: string } = {}): Promise<BotApiGetGroupMenuResponse> {
+    return this._request<BotApiGetGroupMenuResponse>("getGroupMenu", params, "GET");
+  }
+
+  setGroupMenu(params: {
+    groupMenu: BotApiMenuDto;
+    chatId?: string;
+  }): Promise<BotApiSetGroupMenuResponse> {
+    return this._request<BotApiSetGroupMenuResponse>("setGroupMenu", params, "POST");
   }
 
   setAssistantMenu(params: { menu: BotApiMenuDto; chatId?: string }): Promise<BotApiSetMenuResponse> {

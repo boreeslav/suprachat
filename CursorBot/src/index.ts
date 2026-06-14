@@ -10,7 +10,6 @@ import { ProjectCatalog } from "./project-catalog.js";
 import { installProcessGuard } from "./process-guard.js";
 import { SessionRegistry } from "./session-registry.js";
 import { StateStore } from "./state-store.js";
-import { notifyOwner, OWNER_STARTED_MESSAGE } from "./owner-notify.js";
 import { SupraBotApi } from "./supra-bot-api.js";
 
 installProcessGuard();
@@ -129,7 +128,6 @@ async function main(): Promise<void> {
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
   log("CursorBot запущен. Ожидание сообщений…");
-  void notifyOwner(api, config.bot.allowedUser, OWNER_STARTED_MESSAGE);
 
   // После WebSocket: восстановление не должно блокировать старт (SDK getRun/stream может завершить процесс).
   void handler.recoverPendingRuns().catch((err) => {

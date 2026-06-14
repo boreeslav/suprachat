@@ -5,16 +5,17 @@ namespace SuperMessenger.Infrastructure.Services;
 
 public sealed partial class SupraMessengerService
 {
-    async Task<SupraGroupBotMenuDto?> ResolveGroupBotMenuForChatAsync(
+    async Task<List<SupraGroupBotMenuDto>> ResolveGroupBotMenusForChatAsync(
         SupraChatRecord chat, CancellationToken ct)
     {
-        if (!IsGroupChat(chat)) return null;
+        if (!IsGroupChat(chat)) return [];
 
         var participants = await _store.GetParticipantsByChatAsync(chat.Id, ct);
         var adminParticipants = participants.Where(p => p.IsAdmin).ToList();
-        if (adminParticipants.Count == 0) return null;
+        if (adminParticipants.Count == 0) return [];
 
         var users = await _store.GetUsersAsync(ct);
+        var result = new List<SupraGroupBotMenuDto>();
         foreach (var participant in adminParticipants.OrderBy(p => p.UserId))
         {
             var user = users.FirstOrDefault(u => u.Id == participant.UserId);
@@ -26,16 +27,16 @@ public sealed partial class SupraMessengerService
             var menu = await ResolveGroupMenuForChatAsync(bot, chat, ct);
             if ((menu.items ?? []).Count == 0) continue;
 
-            return new SupraGroupBotMenuDto
+            result.Add(new SupraGroupBotMenuDto
             {
                 botUserId = participant.UserId.ToString(),
                 name = user.DisplayName,
                 avatar = AvatarUrl(user),
                 menu = menu,
-            };
+            });
         }
 
-        return null;
+        return result;
     }
 
     async Task<BotApiMenuDto> ResolveGroupMenuForChatAsync(

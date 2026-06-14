@@ -27,22 +27,65 @@ function Read-DotEnv([string]$Path) {
     return $cfg
 }
 
+function Test-IsOurBotProcess([string]$CommandLine) {
+    if (-not $CommandLine) { return $false }
+    if ($CommandLine -notlike '*dist\index.js*' -and $CommandLine -notlike '*dist/index.js*') { return $false }
+    return (
+        $CommandLine -like "*$Root*" -or
+        $CommandLine -like '*SuperMessenger\CursorBot*' -or
+        $CommandLine -like '*SuperMessenger/CursorBot*'
+    )
+}
+
+function Test-IsOurWatchdogProcess([string]$CommandLine) {
+    if (-not $CommandLine) { return $false }
+    if ($CommandLine -notlike '*watchdog.ps1*') { return $false }
+    if (
+        $CommandLine -like "*$Root*" -or
+        $CommandLine -like '*SuperMessenger\CursorBot*' -or
+        $CommandLine -like '*SuperMessenger/CursorBot*'
+    ) {
+        return $true
+    }
+    # run.cmd / npm: относительный путь scripts\watchdog.ps1 без полного Root в CLI
+    return (
+        $CommandLine -like '*scripts\watchdog.ps1*' -or
+        $CommandLine -like '*scripts/watchdog.ps1*'
+    )
+}
+
 function Get-BotProcesses {
+    $found = @{}
     Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" -ErrorAction SilentlyContinue |
-        Where-Object {
-            $_.CommandLine -and
-            $_.CommandLine -like "*$Root*" -and
-            ($_.CommandLine -like '*dist\index.js*' -or $_.CommandLine -like '*CursorBot*')
+        Where-Object { Test-IsOurBotProcess $_.CommandLine } |
+        ForEach-Object { $found[$_.ProcessId] = $_ }
+    $botPidFile = Join-Path $Root 'data\bot.pid'
+    if (Test-Path $botPidFile) {
+        $botPid = 0
+        [void][int]::TryParse((Get-Content $botPidFile -Raw).Trim(), [ref]$botPid)
+        if ($botPid -gt 0 -and -not $found.ContainsKey($botPid)) {
+            $proc = Get-CimInstance Win32_Process -Filter "ProcessId = $botPid" -ErrorAction SilentlyContinue
+            if ($proc) { $found[$botPid] = $proc }
         }
+    }
+    $found.Values
 }
 
 function Get-WatchdogProcesses {
+    $found = @{}
     Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" -ErrorAction SilentlyContinue |
-        Where-Object {
-            $_.CommandLine -and
-            $_.CommandLine -like "*$Root*" -and
-            $_.CommandLine -like '*watchdog.ps1*'
+        Where-Object { Test-IsOurWatchdogProcess $_.CommandLine } |
+        ForEach-Object { $found[$_.ProcessId] = $_ }
+    $watchdogPidFile = Join-Path $Root 'data\watchdog.pid'
+    if (Test-Path $watchdogPidFile) {
+        $watchdogPid = 0
+        [void][int]::TryParse((Get-Content $watchdogPidFile -Raw).Trim(), [ref]$watchdogPid)
+        if ($watchdogPid -gt 0 -and -not $found.ContainsKey($watchdogPid)) {
+            $proc = Get-CimInstance Win32_Process -Filter "ProcessId = $watchdogPid" -ErrorAction SilentlyContinue
+            if ($proc) { $found[$watchdogPid] = $proc }
         }
+    }
+    $found.Values
 }
 
 function Stop-WatchdogGracefully {
@@ -117,13 +160,17 @@ function Stop-BotGracefully([int]$TimeoutSec) {
 }
 
 function Start-BotDetached {
+    if (@(Get-WatchdogProcesses).Count -gt 0) {
+        Write-Step 'Watchdog already running — skip second start'
+        return
+    }
     $watchdog = Join-Path $Root 'scripts\watchdog.ps1'
     if (-not (Test-Path $watchdog)) {
         throw "watchdog.ps1 not found: $watchdog"
     }
     Start-Process -FilePath 'powershell.exe' `
         -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $watchdog `
-        -WorkingDirectory $Root -WindowStyle Minimized | Out-Null
+        -WorkingDirectory $Root -WindowStyle Hidden | Out-Null
 }
 
 if (-not (Test-Path '.env')) {
@@ -143,7 +190,6 @@ Write-Step 'Building new version...'
 if ($LASTEXITCODE -ne 0) { throw 'npm run build failed' }
 
 $envCfg = Read-DotEnv (Join-Path $Root '.env')
-Send-OwnerNotification 'restart'
 Stop-WatchdogGracefully
 Stop-BotGracefully -TimeoutSec $StopTimeoutSec
 
@@ -164,6 +210,7 @@ while ((Get-Date) -lt $deadline) {
 }
 
 if ($healthy) {
+    Send-OwnerNotification 'restarted'
     Write-Step 'Restart OK (health check passed). Watchdog supervises auto-recovery. data/state.json preserved.'
     exit 0
 }

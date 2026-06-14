@@ -2,6 +2,7 @@ import { loadConfig } from "./config.js";
 import {
   notifyOwner,
   OWNER_RESTART_MESSAGE,
+  OWNER_RESTARTED_MESSAGE,
   OWNER_STARTED_MESSAGE,
 } from "./owner-notify.js";
 import { SupraBotApi } from "./supra-bot-api.js";
@@ -9,6 +10,7 @@ import { SupraBotApi } from "./supra-bot-api.js";
 const MESSAGES: Record<string, string> = {
   restart: OWNER_RESTART_MESSAGE,
   started: OWNER_STARTED_MESSAGE,
+  restarted: OWNER_RESTARTED_MESSAGE,
 };
 
 async function main(): Promise<void> {

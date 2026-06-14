@@ -9,6 +9,38 @@ Set-Location $Root
 
 $pidFile = Join-Path $Root 'data\watchdog.pid'
 New-Item -ItemType Directory -Force -Path (Split-Path $pidFile) | Out-Null
+
+function Test-WatchdogAlreadyRunning {
+    if (Test-Path $pidFile) {
+        $existingPid = 0
+        [void][int]::TryParse((Get-Content $pidFile -Raw).Trim(), [ref]$existingPid)
+        if ($existingPid -gt 0 -and $existingPid -ne $PID) {
+            $alive = Get-Process -Id $existingPid -ErrorAction SilentlyContinue
+            if ($alive) { return $existingPid }
+        }
+    }
+    $others = Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.ProcessId -ne $PID -and
+            $_.CommandLine -and
+            $_.CommandLine -like '*watchdog.ps1*' -and
+            (
+                $_.CommandLine -like "*$Root*" -or
+                $_.CommandLine -like '*SuperMessenger\CursorBot*' -or
+                $_.CommandLine -like '*scripts\watchdog.ps1*' -or
+                $_.CommandLine -like '*scripts/watchdog.ps1*'
+            )
+        }
+    if ($others) { return $others[0].ProcessId }
+    return 0
+}
+
+$runningPid = Test-WatchdogAlreadyRunning
+if ($runningPid -gt 0) {
+    Write-Host ("[{0}] [watchdog] Уже запущен (PID {1}). Выход." -f (Get-Date -Format 'HH:mm:ss'), $runningPid)
+    exit 0
+}
+
 Set-Content -Path $pidFile -Value $PID -Encoding ascii
 
 function Write-Watchdog([string]$Message) {

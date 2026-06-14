@@ -483,6 +483,8 @@ public sealed class SupraGetGroupInfoResponse
     public bool isBranch { get; set; }
     public string? description { get; set; }
     public List<SupraGroupBranchDto> branches { get; set; } = [];
+    public List<SupraGroupBotMenuDto> groupBotMenus { get; set; } = [];
+    /// <summary>Устаревшее: первый бот из groupBotMenus (для совместимости).</summary>
     public SupraGroupBotMenuDto? groupBotMenu { get; set; }
     public string? error { get; set; }
 }

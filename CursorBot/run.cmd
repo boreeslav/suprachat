@@ -79,12 +79,25 @@ if "!NEED_BUILD!"=="1" (
   echo [BUILD] Актуальная сборка, пропуск.
 )
 
+if exist "data\watchdog.pid" (
+  for /f "usebackq delims=" %%p in ("data\watchdog.pid") do set "WD_PID=%%p"
+  tasklist /FI "PID eq !WD_PID!" 2>nul | findstr /I "powershell" >nul
+  if not errorlevel 1 (
+    echo.
+    echo [WARN] Watchdog уже работает ^(PID !WD_PID!^).
+    echo        Для перезапуска используйте safe-restart.cmd, не запускайте второй экземпляр.
+    echo.
+    pause
+    exit /b 0
+  )
+)
+
 echo.
 echo [RUN] Запуск бота. Ctrl+C — остановка. После сбоя — перезапуск через %RESTART_SEC% с.
 echo.
 
 :run_loop
-call npm run start:supervised
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\watchdog.ps1"
 set "EXIT_CODE=!ERRORLEVEL!"
 
 if !EXIT_CODE! EQU 0 (
