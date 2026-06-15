@@ -133,9 +133,12 @@ function Build-WebCryptoBundle([string]$MessengerDir) {
     if (-not (Test-Path $bundle)) { throw "Missing bundle: $bundle" }
     $signalr = Join-Path $cryptoDir "vendor\signalr.min.js"
     if (-not (Test-Path $signalr)) { throw "Missing SignalR bundle: $signalr" }
+    $markdown = Join-Path $cryptoDir "vendor\supra-markdown.bundle.js"
+    if (-not (Test-Path $markdown)) { throw "Missing Markdown bundle: $markdown" }
     $kb = [math]::Round((Get-Item $bundle).Length / 1KB, 1)
     $signalrKb = [math]::Round((Get-Item $signalr).Length / 1KB, 1)
-    Write-Host "  Web Crypto bundle: $kb KB, SignalR: $signalrKb KB" -ForegroundColor DarkGray
+    $markdownKb = [math]::Round((Get-Item $markdown).Length / 1KB, 1)
+    Write-Host "  Web Crypto bundle: $kb KB, SignalR: $signalrKb KB, Markdown: $markdownKb KB" -ForegroundColor DarkGray
 }
 
 function Copy-ProjectSources([string]$DestRoot) {

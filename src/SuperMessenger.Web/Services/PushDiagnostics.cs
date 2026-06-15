@@ -20,6 +20,7 @@ public sealed class PushRecipientTrace
     public string? displayName { get; set; }
     public string presenceStatus { get; set; } = "offline";
     public bool isConnected { get; set; }
+    public bool isForeground { get; set; } = true;
     public bool globalMuted { get; set; }
     public bool chatMuted { get; set; }
     public int subscriptionCount { get; set; }

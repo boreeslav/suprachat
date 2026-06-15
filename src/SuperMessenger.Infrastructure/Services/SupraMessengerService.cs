@@ -1206,22 +1206,22 @@ public sealed partial class SupraMessengerService
         }
     }
 
-    public async Task<(SupraCreateChatResponse response, SupraWsNewChatPayload? notify)> JoinGroupByLinkAsync(
+    public async Task<(SupraCreateChatResponse response, List<SupraWsNewChatPayload> notifies)> JoinGroupByLinkAsync(
         UserRecord user, string chatId, CancellationToken ct = default)
     {
         try
         {
             if (!Guid.TryParse(chatId, out var chatGuid))
-                return (new SupraCreateChatResponse { success = false, error = "Некорректный chatId" }, null);
+                return (new SupraCreateChatResponse { success = false, error = "Некорректный chatId" }, []);
 
             var chat = await _store.GetChatByIdAsync(chatGuid, ct);
             if (chat == null || !IsRootGroupChat(chat))
-                return (new SupraCreateChatResponse { success = false, error = "Группа не найдена" }, null);
+                return (new SupraCreateChatResponse { success = false, error = "Группа не найдена" }, []);
             if (!chat.AllowJoinByLink)
-                return (new SupraCreateChatResponse { success = false, error = "Вступление по ссылке отключено" }, null);
+                return (new SupraCreateChatResponse { success = false, error = "Вступление по ссылке отключено" }, []);
 
             if (await IsExcludedFromGroupAsync(user.Id, chatGuid, ct))
-                return (new SupraCreateChatResponse { success = false, error = "Вас исключили из группы. Вступление возможно только по приглашению администратора" }, null);
+                return (new SupraCreateChatResponse { success = false, error = "Вас исключили из группы. Вступление возможно только по приглашению администратора" }, []);
 
             if (await _store.IsParticipantAsync(chatGuid, user.Id, ct))
             {
@@ -1230,12 +1230,13 @@ public sealed partial class SupraMessengerService
                     success = true,
                     chatId = chat.Id.ToString(),
                     chatName = chat.Name,
-                }, null);
+                }, []);
             }
 
             await ClearChatRestrictionAsync(chatGuid, user.Id, ct);
 
             var family = await GetGroupFamilyChatsAsync(chatGuid, ct);
+            var notifies = new List<SupraWsNewChatPayload>();
             foreach (var familyChat in family)
             {
                 if (await _store.IsParticipantAsync(familyChat.Id, user.Id, ct)) continue;
@@ -1246,6 +1247,7 @@ public sealed partial class SupraMessengerService
                     UserId = user.Id,
                     IsAdmin = false,
                 }, ct);
+                notifies.Add(await BuildNewChatPayloadAsync(user.Id, familyChat.Id, ct));
             }
 
             return (new SupraCreateChatResponse
@@ -1253,17 +1255,11 @@ public sealed partial class SupraMessengerService
                 success = true,
                 chatId = chat.Id.ToString(),
                 chatName = chat.Name,
-            }, new SupraWsNewChatPayload
-            {
-                chatId = chat.Id.ToString(),
-                chatName = chat.Name,
-                chatType = chat.Type,
-                chatAvatar = GroupAvatarUrl(chat),
-            });
+            }, notifies);
         }
         catch (Exception ex)
         {
-            return (new SupraCreateChatResponse { success = false, error = ex.Message }, null);
+            return (new SupraCreateChatResponse { success = false, error = ex.Message }, []);
         }
     }
 
@@ -1296,19 +1292,20 @@ public sealed partial class SupraMessengerService
         }
     }
 
-    public async Task<SupraSimpleResponse> AddGroupMembersAsync(
+    public async Task<(SupraSimpleResponse response, Guid rootGroupId, List<(Guid UserId, SupraWsNewChatPayload Payload)> notifies)> AddGroupMembersAsync(
         UserRecord user, string chatId, List<string> memberIds, CancellationToken ct = default)
     {
         try
         {
             var (chat, me, error) = await GetGroupAccessAsync(user.Id, chatId, ct);
             if (error != null)
-                return new SupraSimpleResponse { success = false, error = error };
+                return (new SupraSimpleResponse { success = false, error = error }, Guid.Empty, []);
             if (!me!.IsAdmin)
-                return new SupraSimpleResponse { success = false, error = "Только администратор может добавлять участников" };
+                return (new SupraSimpleResponse { success = false, error = "Только администратор может добавлять участников" }, Guid.Empty, []);
 
             var rootId = await ResolveRootGroupIdAsync(chat!.Id, ct);
             var family = await GetGroupFamilyChatsAsync(rootId, ct);
+            var notifies = new List<(Guid UserId, SupraWsNewChatPayload Payload)>();
 
             foreach (var idStr in memberIds)
             {
@@ -1330,14 +1327,15 @@ public sealed partial class SupraMessengerService
                         UserId = pid,
                         IsAdmin = false,
                     }, ct);
+                    notifies.Add((pid, await BuildNewChatPayloadAsync(pid, familyChat.Id, ct)));
                 }
             }
 
-            return new SupraSimpleResponse { success = true };
+            return (new SupraSimpleResponse { success = true }, rootId, notifies);
         }
         catch (Exception ex)
         {
-            return new SupraSimpleResponse { success = false, error = ex.Message };
+            return (new SupraSimpleResponse { success = false, error = ex.Message }, Guid.Empty, []);
         }
     }
 

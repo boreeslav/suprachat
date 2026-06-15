@@ -37,6 +37,35 @@ try {
     if ((Get-Item $signalrOut).Length -lt 10000) { throw 'SignalR bundle too small' }
     $signalrKb = [math]::Round((Get-Item $signalrOut).Length / 1KB, 1)
     Write-Host "[vendor] OK vendor/signalr.min.js (${signalrKb} KB)" -ForegroundColor Green
+
+    if (-not (Test-Path 'node_modules\markdown-it') -or -not (Test-Path 'node_modules\dompurify')) {
+        Write-Host '[markdown] npm install markdown-it dompurify...'
+        $code = Invoke-Npm install 'markdown-it@14.1.0' 'dompurify@3.2.6' --no-save
+        if ($code -ne 0) { throw "npm install markdown-it dompurify failed (exit $code)" }
+    }
+    $esbuildPkg = Join-Path $here 'node_modules\esbuild\package.json'
+    if (-not (Test-Path $esbuildPkg)) {
+        Write-Host '[markdown] npm install esbuild...'
+        $code = Invoke-Npm install esbuild@0.25.5 --no-save
+        if ($code -ne 0) { throw "npm install esbuild failed (exit $code)" }
+    }
+    Write-Host '[markdown] esbuild (markdown-it + dompurify)...'
+    & npx esbuild supra-markdown-entry.cjs `
+        --bundle `
+        --format=iife `
+        --global-name=SupraMarkdown `
+        --outfile=vendor/supra-markdown.bundle.js `
+        --target=es2020 `
+        --legal-comments=none
+    if ($LASTEXITCODE -ne 0) { throw "esbuild markdown bundle failed: $LASTEXITCODE" }
+    $mdOut = Join-Path $here 'vendor\supra-markdown.bundle.js'
+    if (-not (Test-Path $mdOut)) { throw "Missing $mdOut" }
+    if ((Get-Item $mdOut).Length -lt 20000) { throw 'Markdown bundle too small' }
+    if (-not (Select-String -Path $mdOut -Pattern 'SupraMarkdown' -Quiet)) {
+        throw 'Markdown bundle missing global export'
+    }
+    $mdKb = [math]::Round((Get-Item $mdOut).Length / 1KB, 1)
+    Write-Host "[markdown] OK vendor/supra-markdown.bundle.js (${mdKb} KB)" -ForegroundColor Green
 } finally {
     Pop-Location
 }

@@ -49,6 +49,7 @@ const PRECACHE_PATHS = [
 	'/messenger/supra-messenger.css',
 	'/messenger/vendor/signalr.min.js',
 	'/messenger/vendor/qrcode.min.js',
+	'/messenger/vendor/supra-markdown.bundle.js',
 	'/messenger/vendor/supra-webcrypto.bundle.js',
 	'/api/app/icons/icon-192.png',
 	'/api/app/icons/icon-512.png',

@@ -84,6 +84,22 @@ public sealed class MessengerHub : Hub
             await _presenceNotifier.BroadcastPresenceAsync(userId.Value);
     }
 
+    public Task ReportForeground()
+    {
+        var userId = GetUserId();
+        if (!userId.HasValue) return Task.CompletedTask;
+        _presence.ReportForeground(userId.Value);
+        return Task.CompletedTask;
+    }
+
+    public Task ReportBackground()
+    {
+        var userId = GetUserId();
+        if (!userId.HasValue) return Task.CompletedTask;
+        _presence.ReportBackground(userId.Value);
+        return Task.CompletedTask;
+    }
+
     public static string UserGroup(string userId) => $"user:{userId}";
 
     private Guid? GetUserId()

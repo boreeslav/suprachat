@@ -263,7 +263,7 @@ public sealed class MessageInfoService
             if (p.UserId == message.SenderUserId) continue;
             var user = await _store.GetUserByIdAsync(p.UserId, ct);
             var name = user?.DisplayName ?? p.UserId.ToString();
-            if (_presence.IsConnected(p.UserId))
+            if (_presence.IsRealtimeAvailable(p.UserId))
             {
                 events.Add(new SupraMessageDeliveryEventDto
                 {

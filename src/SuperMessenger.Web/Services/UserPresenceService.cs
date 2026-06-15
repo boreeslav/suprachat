@@ -21,6 +21,7 @@ public sealed class UserPresenceService
             var now = DateTime.UtcNow;
             entry.LastHeartbeatUtc = now;
             entry.LastActivityUtc = now;
+            entry.IsForeground = true;
         }
     }
 
@@ -74,6 +75,47 @@ public sealed class UserPresenceService
         }
     }
 
+    public bool IsForeground(Guid userId)
+    {
+        lock (_lock)
+        {
+            return _entries.TryGetValue(userId, out var entry) && entry.IsForeground;
+        }
+    }
+
+    /// <summary>
+    /// Пользователь доступен для realtime-доставки (WS жив и приложение на переднем плане).
+    /// </summary>
+    public bool IsRealtimeAvailable(Guid userId)
+    {
+        lock (_lock)
+        {
+            return _entries.TryGetValue(userId, out var entry) && IsAlive(entry) && entry.IsForeground;
+        }
+    }
+
+    public void ReportForeground(Guid userId)
+    {
+        lock (_lock)
+        {
+            if (!_entries.TryGetValue(userId, out var entry)) return;
+            if (entry.ConnectionCount <= 0) return;
+            entry.IsForeground = true;
+            var now = DateTime.UtcNow;
+            entry.LastHeartbeatUtc = now;
+        }
+    }
+
+    public void ReportBackground(Guid userId)
+    {
+        lock (_lock)
+        {
+            if (!_entries.TryGetValue(userId, out var entry)) return;
+            if (entry.ConnectionCount <= 0) return;
+            entry.IsForeground = false;
+        }
+    }
+
     /// <summary>
     /// Сбрасывает «зависшие» подключения без heartbeat и возвращает userId для рассылки offline.
     /// </summary>
@@ -104,5 +146,6 @@ public sealed class UserPresenceService
         public int ConnectionCount;
         public DateTime LastHeartbeatUtc = DateTime.UtcNow;
         public DateTime LastActivityUtc = DateTime.UtcNow;
+        public bool IsForeground = true;
     }
 }

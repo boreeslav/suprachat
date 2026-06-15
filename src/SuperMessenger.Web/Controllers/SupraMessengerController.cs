@@ -662,6 +662,7 @@ public sealed class SupraMessengerController : ControllerBase
                 userId = uid.ToString(),
                 presenceStatus = _presence.GetStatus(uid),
                 isConnected = _presence.IsConnected(uid),
+                isForeground = _presence.IsForeground(uid),
             };
 
             var recipient = await _store.GetUserByIdAsync(uid, ct);
@@ -675,7 +676,7 @@ public sealed class SupraMessengerController : ControllerBase
                 continue;
             }
 
-            if (_presence.IsConnected(uid))
+            if (_presence.IsRealtimeAvailable(uid))
             {
                 entry.action = "skipped";
                 entry.skipReason = "online";
@@ -919,18 +920,26 @@ public sealed class SupraMessengerController : ControllerBase
     private async Task<object> HandleJoinGroupByLink(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
     {
         var chatId = GetString(data, "chatId") ?? "";
-        var (response, notify) = await _messenger.JoinGroupByLinkAsync(user, chatId, ct);
-        if (notify != null && response.success)
-            await _realtime.SendToUserAsync(user.Id, notify, ct);
+        var (response, notifies) = await _messenger.JoinGroupByLinkAsync(user, chatId, ct);
+        if (response.success)
+        {
+            foreach (var notify in notifies)
+                await _realtime.SendToUserAsync(user.Id, notify, ct);
+        }
         return response;
     }
 
     private async Task<object> HandleAddGroupMembers(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
     {
         var chatId = GetString(data, "chatId") ?? "";
-        var result = await _messenger.AddGroupMembersAsync(user, chatId, GetStringList(data, "memberIds"), ct);
-        if (result.success && Guid.TryParse(chatId, out var cg))
-            await BroadcastGroupUpdatedAsync(cg, ct);
+        var (result, rootGroupId, notifies) = await _messenger.AddGroupMembersAsync(user, chatId, GetStringList(data, "memberIds"), ct);
+        if (result.success)
+        {
+            if (rootGroupId != Guid.Empty)
+                await BroadcastGroupUpdatedAsync(rootGroupId, ct);
+            foreach (var (userId, payload) in notifies)
+                await _realtime.SendToUserAsync(userId, payload, ct);
+        }
         return result;
     }
 

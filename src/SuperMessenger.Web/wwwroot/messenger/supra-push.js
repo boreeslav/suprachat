@@ -287,6 +287,7 @@
 		// Настройки уведомлений нужны даже без активной подписки (для локальных
 		// уведомлений и для пунктов меню), поэтому грузим их всегда.
 		loadPreferences().catch(() => {});
+		installPushSubscriptionChangeHandler();
 		if (!isSupported()) return;
 		if (getPermission() !== 'granted') return;
 		if (getEnabledFlag() === '0') return;
@@ -297,6 +298,42 @@
 		}
 	}
 
+	async function syncOnReconnect() {
+		if (!isSupported()) return;
+		if (getPermission() !== 'granted') return;
+		if (getEnabledFlag() === '0') return;
+		try {
+			await ensureSubscribed();
+		} catch (e) {
+			console.warn('[SupraPush] reconnect sync failed', e);
+		}
+	}
+
+	async function handlePushSubscriptionChange(event) {
+		if (!isSupported()) return;
+		if (getPermission() !== 'granted') return;
+		if (getEnabledFlag() === '0') return;
+		try {
+			let sub = event?.newSubscription || null;
+			if (!sub) {
+				const reg = await getRegistration();
+				if (reg?.pushManager) sub = await reg.pushManager.getSubscription();
+			}
+			if (sub) await postSubscription(sub);
+		} catch (e) {
+			console.warn('[SupraPush] pushsubscriptionchange', e);
+		}
+	}
+
+	function installPushSubscriptionChangeHandler() {
+		if (!isSupported()) return;
+		getRegistration().then((reg) => {
+			if (!reg || reg.__smPushSubChangeBound) return;
+			reg.__smPushSubChangeBound = true;
+			reg.addEventListener('pushsubscriptionchange', handlePushSubscriptionChange);
+		}).catch(() => {});
+	}
+
 	global.SupraPush = {
 		isSupported,
 		getPermission,
@@ -304,6 +341,7 @@
 		enable,
 		disable,
 		syncOnLoad,
+		syncOnReconnect,
 		loadPreferences,
 		getPreferences,
 		isGlobalMuted,

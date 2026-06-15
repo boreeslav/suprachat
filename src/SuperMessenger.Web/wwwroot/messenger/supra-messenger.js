@@ -2943,6 +2943,14 @@ function isGroupBranchChat(chat) {
 	return chat?.type === 'group_branch' || !!chat?.parentChatId;
 }
 
+function showMessageAvatarsForPanel(state) {
+	return !!(state?.isGroupChat || state?.isGroupBranchChat);
+}
+
+function isGroupConversationChat(chat) {
+	return isMessengerGroupChatType(chat?.type);
+}
+
 function normalizeGroupChatsTree(chats) {
 	if (!Array.isArray(chats) || !chats.length) return chats || [];
 	const list = chats.map(c => ({ ...c }));
@@ -3669,13 +3677,59 @@ function formatActivityDisplay(activity, i18n) {
 	return i18n.tActivity(activity.activityType, activity.userName);
 }
 
+function formatActivityShortText(activity, i18n) {
+	if (!activity) return '';
+	const custom = (activity.activityMessage || '').trim();
+	if (custom) return custom;
+	if (activity.activityType === 'typing') return i18n.t('typingShort');
+	const full = formatActivityDisplay(activity, i18n);
+	const name = String(activity.userName || '').trim();
+	if (name && full.startsWith(name)) {
+		const rest = full.slice(name.length).trim();
+		if (rest) return rest;
+	}
+	return full;
+}
+
+function buildActivityRowElements(activities, i18n) {
+	const unique = [...new Map((activities || []).map(a => [a.userId, a])).values()];
+	return unique.map(act => {
+		const row = document.createElement('div');
+		row.className = 'mc-activity-row';
+		const nameEl = document.createElement('span');
+		nameEl.className = 'mc-activity-name';
+		nameEl.textContent = String(act.userName || '').trim();
+		const dots = document.createElement('span');
+		dots.className = 'mc-activity-dots';
+		dots.innerHTML = '<span></span><span></span><span></span>';
+		const textEl = document.createElement('span');
+		textEl.className = 'mc-activity-text';
+		textEl.textContent = formatActivityShortText(act, i18n);
+		row.append(nameEl, dots, textEl);
+		return row;
+	});
+}
+
+function fillGroupActivityIndicator(el, activities, i18n) {
+	if (!el) return;
+	el.replaceChildren(...buildActivityRowElements(activities, i18n));
+}
+
 function applyChatListPreviewEl(previewEl, previewInfo, i18n) {
 	if (!previewEl || !previewInfo) return;
 	previewEl.classList.toggle('mapp-chat-item-preview--typing', !!previewInfo.typing);
+	previewEl.classList.toggle(
+		'mapp-chat-item-preview--group-activity',
+		!!previewInfo.typing && !!previewInfo.groupActivities?.length
+	);
 	previewEl.classList.toggle('mapp-chat-item-preview--locked', !!previewInfo.locked && !previewInfo.typing);
 	previewEl.classList.toggle('mapp-chat-item-preview--media', !!previewInfo.media);
 	previewEl.replaceChildren();
 	if (previewInfo.typing) {
+		if (previewInfo.groupActivities?.length) {
+			fillGroupActivityIndicator(previewEl, previewInfo.groupActivities, i18n);
+			return;
+		}
 		fillTypingIndicator(previewEl, i18n, previewInfo.typingText);
 		return;
 	}
@@ -14086,6 +14140,38 @@ class MessengerOfflineStore {
 		}
 	}
 
+	static FOLDERS_PREFIX = 'sm-offline-folders:';
+
+	static saveFolders(userId, folders, members) {
+		if (!userId || !Array.isArray(folders)) return;
+		try {
+			localStorage.setItem(
+				MessengerOfflineStore.FOLDERS_PREFIX + userId,
+				JSON.stringify({
+					folders,
+					members: Array.isArray(members) ? members : [],
+					savedAt: Date.now(),
+				})
+			);
+		} catch (_) { /* ignore quota */ }
+	}
+
+	static loadFolders(userId) {
+		if (!userId) return null;
+		try {
+			const raw = localStorage.getItem(MessengerOfflineStore.FOLDERS_PREFIX + userId);
+			if (!raw) return null;
+			const parsed = JSON.parse(raw);
+			if (!Array.isArray(parsed?.folders)) return null;
+			return {
+				folders: parsed.folders,
+				members: Array.isArray(parsed.members) ? parsed.members : [],
+			};
+		} catch {
+			return null;
+		}
+	}
+
 	static CHANNEL_META_PREFIX = 'sm-offline-channel-meta:';
 	static CHANNEL_SLUG_PREFIX = 'sm-offline-channel-slug:';
 
@@ -15822,6 +15908,7 @@ class MessengerSidebar {
 		this.#archiveFolderId = (folders || []).find(f => f.isArchive)?.id || null;
 		this.#folderMembers = members || [];
 		this.#renderFoldersBar(true);
+		this.#refreshChatListPanels();
 	}
 
 	getArchiveFolderId() { return this.#archiveFolderId; }
@@ -16612,12 +16699,35 @@ class MessengerSidebar {
 		this.#refreshChatListPanels();
 	}
 
+	expandGroupForChat(chat) {
+		if (!isRootGroupChat(chat)) return;
+		const branches = this.#getBranchesForGroup(chat);
+		if (!branches.length) return;
+		if (this.#expandedGroupId === chat.id) return;
+		this.#expandedGroupId = chat.id;
+		this.#refreshChatListPanels();
+	}
+
+	ensureGroupBranchesVisible(chat) {
+		if (!chat) return;
+		let parentChat = null;
+		if (isGroupBranchChat(chat)) {
+			const parentId = chat.parentChatId;
+			if (!parentId) return;
+			parentChat = this.#allChatsRef?.find(c => c.id === parentId) || null;
+		} else if (isRootGroupChat(chat)) {
+			parentChat = this.#allChatsRef?.find(c => c.id === chat.id) || chat;
+		}
+		if (!parentChat) return;
+		this.expandGroupForChat(parentChat);
+	}
+
 	#buildBranchItem(chat, activeChat, { isMain = false } = {}) {
 		const item = this.#utils.mk('div', 'mapp-chat-item mapp-chat-item--branch');
 		if (activeChat?.id === chat.id) item.classList.add('mapp-chat-item--active');
 		item.dataset.chatId = chat.id;
 		const displayName = isMain
-			? (this.#i18n.t('groupBranchMain') + (chat.name ? ` · ${chat.name}` : ''))
+			? this.#i18n.t('groupBranchMain')
 			: (chat.name || this.#i18n.t('unnamed'));
 		const avatar = this.#avatarBuilder.build(chat.id, displayName, chat.avatar || null, 40);
 		const info = this.#utils.mk('div', 'mapp-chat-item-info');
@@ -19011,7 +19121,11 @@ class MessengerAppView {
 
 	async #openChat(chat) {
 		this.#assistantMgr?.setActiveChatId(chat?.id || null);
-		this.#sidebar?.collapseExpandedGroup?.();
+		if (isGroupBranchChat(chat) || isRootGroupChat(chat)) {
+			this.#sidebar?.ensureGroupBranchesVisible?.(chat);
+		} else {
+			this.#sidebar?.collapseExpandedGroup?.();
+		}
 		this.#api?.syncChatsMeta?.(this.#chats);
 		const chatData = this.#mergeChatForOpen(chat);
 		void this.#ensureChatKeysInBackground(chatData);
@@ -20438,10 +20552,17 @@ class MessengerAppView {
 		try {
 			const { folders, members } = await this.#api.getFolders();
 			this.#sidebar.setFolders(folders, members);
+			if (this.#currentUser?.id) {
+				MessengerOfflineStore.saveFolders(this.#currentUser.id, folders, members);
+			}
 		} catch (e) {
 			console.warn('[MessengerAppView] loadFolders error', e);
 			this.#sidebar.setFolders([], []);
 		}
+	}
+
+	applyCachedFolders(folders, members) {
+		this.#sidebar.setFolders(folders, members);
 	}
 
 	loadFolders() {
@@ -20990,6 +21111,9 @@ class MessengerAppView {
 	#formatChatListPreview(chat) {
 		const typing = this.#getChatTypingPreview(chat);
 		if (typing) {
+			if (typing.groupActivities?.length) {
+				return { typing: true, groupActivities: typing.groupActivities };
+			}
 			return { text: typing.text, typing: true, typingText: typing.typingText };
 		}
 		const stored = chat.lastMessage || '';
@@ -21015,9 +21139,18 @@ class MessengerAppView {
 	}
 
 	#getChatTypingPreview(chat) {
-		if (chat?.type !== 'direct') return null;
 		const st = this.#chatTypingState.get(chat.id);
 		if (!st?.users?.size) return null;
+		if (isGroupConversationChat(chat)) {
+			const activities = [...st.users.entries()].map(([userId, u]) => ({
+				userId,
+				userName: u.userName || '',
+				activityType: 'typing',
+				activityMessage: u.activityMessage || null,
+			}));
+			return activities.length ? { groupActivities: activities } : null;
+		}
+		if (chat?.type !== 'direct') return null;
 		const users = [...st.users.values()];
 		if (users.length === 1) {
 			const msg = (users[0].activityMessage || '').trim();
@@ -23054,9 +23187,22 @@ class MessengerTransport {
 	static RETRY_DELAYS_MS = [1000, 2000, 5000, 10000, 15000, 30000];
 	static SIGNALR_RECONNECT_DELAYS_MS = [0, 2000, 5000, 10000, 15000, 30000];
 	static PAGE_RESUME_DEBOUNCE_MS = 250;
+	static PAGE_RESUME_DEBOUNCE_MOBILE_MS = 0;
 	static PAGE_HIDE_DISCONNECT_GRACE_MS = 45000;
+	static PAGE_HIDE_DISCONNECT_GRACE_MOBILE_MS = 15000;
 	static PAGE_HIDE_PICKER_GRACE_MS = 120000;
 	static HEARTBEAT_MS = 30000;
+
+	static isMobilePwa() {
+		try {
+			if (typeof navigator !== 'undefined' && navigator.standalone) return true;
+			if (typeof matchMedia === 'function') {
+				if (matchMedia('(display-mode: standalone)').matches) return true;
+				if (matchMedia('(display-mode: fullscreen)').matches) return true;
+			}
+		} catch (_) { /* ignore */ }
+		return false;
+	}
 	#onMessage;
 	#wsUrl;
 	#connectionState;
@@ -23078,6 +23224,7 @@ class MessengerTransport {
 	#boundOnPageShow = null;
 	#boundOnPageHide = null;
 	#boundOnOnline = null;
+	#boundOnConnectionChange = null;
 	#heartbeatTimer = null;
 	#onConnectionRestored = null;
 	#hadConnectedOnce = false;
@@ -23110,11 +23257,15 @@ class MessengerTransport {
 		this.#boundOnPageShow = (e) => this.#onPageShow(e);
 		this.#boundOnPageHide = () => this.#onPageHide();
 		this.#boundOnOnline = () => this.resumeConnection('online');
+		this.#boundOnConnectionChange = () => this.resumeConnection('network-change');
 		document.addEventListener('visibilitychange', this.#boundOnPageActivated);
 		window.addEventListener('pageshow', this.#boundOnPageShow);
 		window.addEventListener('pagehide', this.#boundOnPageHide);
 		window.addEventListener('focus', this.#boundOnPageActivated);
 		window.addEventListener('online', this.#boundOnOnline);
+		try {
+			navigator.connection?.addEventListener?.('change', this.#boundOnConnectionChange);
+		} catch (_) { /* ignore */ }
 	}
 	#removePageLifecycleHandlers() {
 		if (this.#boundOnPageActivated) {
@@ -23127,10 +23278,14 @@ class MessengerTransport {
 			window.removeEventListener('pagehide', this.#boundOnPageHide);
 		if (this.#boundOnOnline)
 			window.removeEventListener('online', this.#boundOnOnline);
+		try {
+			navigator.connection?.removeEventListener?.('change', this.#boundOnConnectionChange);
+		} catch (_) { /* ignore */ }
 		this.#boundOnPageActivated = null;
 		this.#boundOnPageShow = null;
 		this.#boundOnPageHide = null;
 		this.#boundOnOnline = null;
+		this.#boundOnConnectionChange = null;
 		clearTimeout(this.#pageResumeDebounceTimer);
 		this.#pageResumeDebounceTimer = null;
 		clearTimeout(this.#pageHideDisconnectTimer);
@@ -23143,9 +23298,13 @@ class MessengerTransport {
 	#schedulePageHideDisconnect() {
 		this.#cancelPageHideDisconnect();
 		const pickerActive = typeof globalThis !== 'undefined' && globalThis.__smExternalPickerActive;
+		const mobileGrace = MessengerTransport.isMobilePwa();
+		const defaultGrace = mobileGrace
+			? MessengerTransport.PAGE_HIDE_DISCONNECT_GRACE_MOBILE_MS
+			: MessengerTransport.PAGE_HIDE_DISCONNECT_GRACE_MS;
 		const graceMs = pickerActive
 			? MessengerTransport.PAGE_HIDE_PICKER_GRACE_MS
-			: MessengerTransport.PAGE_HIDE_DISCONNECT_GRACE_MS;
+			: defaultGrace;
 		this.#pageHideDisconnectTimer = setTimeout(() => {
 			this.#pageHideDisconnectTimer = null;
 			if (typeof globalThis !== 'undefined' && globalThis.__smExternalPickerActive) {
@@ -23160,7 +23319,18 @@ class MessengerTransport {
 	}
 	#onPageHide() {
 		this.#stopHeartbeat();
+		this.#reportClientBackground();
 		this.#schedulePageHideDisconnect();
+	}
+	#reportClientBackground() {
+		const conn = this.#signalRConnection;
+		if (!conn || conn.state !== 'Connected') return;
+		conn.invoke('ReportBackground').catch(() => {});
+	}
+	#reportClientForeground() {
+		const conn = this.#signalRConnection;
+		if (!conn || conn.state !== 'Connected') return;
+		conn.invoke('ReportForeground').catch(() => {});
 	}
 	#startHeartbeat() {
 		if (this.#heartbeatTimer) return;
@@ -23187,10 +23357,14 @@ class MessengerTransport {
 	#onPageActivated() {
 		if (document.visibilityState === 'hidden') return;
 		this.#cancelPageHideDisconnect();
+		this.#reportClientForeground();
 		clearTimeout(this.#pageResumeDebounceTimer);
+		const debounceMs = MessengerTransport.isMobilePwa()
+			? MessengerTransport.PAGE_RESUME_DEBOUNCE_MOBILE_MS
+			: MessengerTransport.PAGE_RESUME_DEBOUNCE_MS;
 		this.#pageResumeDebounceTimer = setTimeout(
 			() => this.resumeConnection('visible'),
-			MessengerTransport.PAGE_RESUME_DEBOUNCE_MS
+			debounceMs
 		);
 	}
 	#clearReconnectTimers() {
@@ -23218,7 +23392,9 @@ class MessengerTransport {
 		if (!conn || this.#destroyed) return;
 
 		const state = conn.state;
-		if (state === 'Connected') {
+		const mobile = MessengerTransport.isMobilePwa();
+		if (state === 'Connected' && !mobile) {
+			this.#reportClientForeground();
 			this.reportActivity();
 			return;
 		}
@@ -23230,6 +23406,7 @@ class MessengerTransport {
 		const onConnected = () => {
 			this.#signalRStartAttempts = 0;
 			this.#lastError = '';
+			this.#reportClientForeground();
 			this.#markConnected();
 		};
 
@@ -24073,7 +24250,40 @@ function linkifyMessageHtml(html) {
 	}).join('');
 }
 
-function renderMessengerMessageHtml(text) {
+function stripMessengerInlineMarkdown(text) {
+	let s = String(text || '');
+	s = s.replace(/`([^`]+)`/g, '$1');
+	s = s.replace(/\*\*\*(.+?)\*\*\*/gs, '$1');
+	s = s.replace(/\*\*(.+?)\*\*/gs, '$1');
+	s = s.replace(/\*(.+?)\*/gs, '$1');
+	s = s.replace(/~~(.+?)~~/gs, '$1');
+	s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '$1');
+	return s;
+}
+
+function stripMessengerMarkdownPlain(text) {
+	let s = String(text || '');
+	s = s.replace(/```[\s\S]*?```/g, (block) => block.replace(/```[^\n]*\n?/g, '').replace(/```/g, ''));
+	s = s.replace(/^#{1,6}\s+/gm, '');
+	s = s.replace(/^>\s?/gm, '');
+	s = s.replace(/^[-*+]\s+/gm, '');
+	s = s.replace(/^\d+\.\s+/gm, '');
+	s = s.replace(/^\|[^\n]+\|$/gm, '');
+	s = s.replace(/^[|\-: ]+$/gm, '');
+	return stripMessengerInlineMarkdown(s);
+}
+
+function messageHasRichMarkdown(text) {
+	const s = String(text || '');
+	return /```/.test(s)
+		|| /^\|.+\|/m.test(s)
+		|| /^#{1,6}\s/m.test(s)
+		|| /^[-*+]\s/m.test(s)
+		|| /^\d+\.\s/m.test(s)
+		|| /^>\s/m.test(s);
+}
+
+function renderMessengerMessageHtmlLegacy(text) {
 	if (!text) return '';
 	let s = text
 		.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -24104,6 +24314,72 @@ function renderMessengerMessageHtml(text) {
 	s = linkifyMessageHtml(s);
 	s = s.replace(/\n/g, '<br>');
 	return s;
+}
+
+function normalizeMessageAnchorsInHtml(html) {
+	if (!html || typeof DOMParser === 'undefined') return html;
+	const doc = new DOMParser().parseFromString(`<div id="mc-md-root">${html}</div>`, 'text/html');
+	const root = doc.getElementById('mc-md-root');
+	if (!root) return html;
+	root.querySelectorAll('a[href]').forEach((anchor) => {
+		const hrefRaw = anchor.getAttribute('href') || '';
+		let href = hrefRaw;
+		if (!/^https?:\/\//i.test(href)) href = `https://${href}`;
+		try {
+			const parsed = new URL(href);
+			if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+				const label = anchor.textContent || hrefRaw;
+				anchor.replaceWith(doc.createTextNode(label));
+				return;
+			}
+			href = parsed.href;
+		} catch {
+			const label = anchor.textContent || hrefRaw;
+			anchor.replaceWith(doc.createTextNode(label));
+			return;
+		}
+		anchor.setAttribute('href', href);
+		anchor.setAttribute('rel', 'noopener noreferrer');
+		if (isMessengerInternalLink(href)) {
+			anchor.classList.add('mc-msg-internal-link');
+			anchor.removeAttribute('target');
+		} else {
+			anchor.setAttribute('target', '_blank');
+			anchor.classList.remove('mc-msg-internal-link');
+		}
+	});
+	root.querySelectorAll('table').forEach((table) => {
+		if (table.parentElement?.classList?.contains('mc-msg-table-scroll')) return;
+		const wrap = doc.createElement('div');
+		wrap.className = 'mc-msg-table-scroll';
+		table.classList.add('mc-msg-table');
+		table.parentNode.insertBefore(wrap, table);
+		wrap.appendChild(table);
+	});
+	root.querySelectorAll('pre').forEach((pre) => {
+		pre.classList.add('mc-msg-pre');
+		const code = pre.querySelector('code');
+		if (code) code.classList.add('mc-msg-code-block');
+	});
+	root.querySelectorAll('code').forEach((code) => {
+		if (!code.closest('pre')) code.classList.add('mc-msg-code');
+	});
+	return root.innerHTML;
+}
+
+function postProcessMessengerMarkdownHtml(html) {
+	if (!html) return '';
+	let result = normalizeMessageAnchorsInHtml(html);
+	result = linkifyMessageHtml(result);
+	return result;
+}
+
+function renderMessengerMessageHtml(text) {
+	if (!text) return '';
+	if (typeof SupraMarkdown !== 'undefined' && typeof SupraMarkdown.render === 'function') {
+		return postProcessMessengerMarkdownHtml(SupraMarkdown.render(text));
+	}
+	return renderMessengerMessageHtmlLegacy(text);
 }
 
 const MESSAGE_LINK_SELECTOR = '.mc-msg-text a[href], .mc-photo-album-caption a[href]';
@@ -24217,14 +24493,7 @@ class MessengerMessageRenderer {
 		if (!msg?.text || msg.deletedForEveryone) return null;
 		if (MessengerCustomMessage.parse(msg.text)) return null;
 		if (this.#isLockedMsg(msg)) return this.#lockedDisplayText(msg);
-		let s = String(msg.text);
-		s = s.replace(/`([^`]+)`/g, '$1');
-		s = s.replace(/\*\*\*(.+?)\*\*\*/gs, '$1');
-		s = s.replace(/\*\*(.+?)\*\*/gs, '$1');
-		s = s.replace(/\*(.+?)\*/gs, '$1');
-		s = s.replace(/~~(.+?)~~/gs, '$1');
-		s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '$1');
-		return s;
+		return stripMessengerMarkdownPlain(msg.text);
 	}
 
 	#isShortMessageText(msg) {
@@ -24242,6 +24511,7 @@ class MessengerMessageRenderer {
 	#isWideMessageText(msg) {
 		const plain = this.#plainMessageTextForWidth(msg);
 		if (plain == null) return false;
+		if (messageHasRichMarkdown(msg?.text)) return true;
 		return [...plain].length >= MessengerMessageRenderer.WIDE_MSG_MIN_LEN;
 	}
 
@@ -24344,6 +24614,7 @@ class MessengerMessageRenderer {
 			textEl.classList.add('mc-msg-text--locked');
 			textEl.textContent = this.#lockedDisplayText(msg);
 		} else {
+			textEl.classList.add('mc-msg-text--md');
 			textEl.innerHTML = this.#renderMarkdown(msg.text);
 		}
 		const footer = bubble.querySelector('.mc-msg-footer');
@@ -24640,23 +24911,15 @@ class MessengerMessageRenderer {
 	}
 	updateActivityBar(bar, activities, i18n) {
 		if (!bar || bar.dataset.channelDesc != null) return;
-		const textEl = bar.querySelector('.mc-activity-text');
 		if (!activities || activities.length === 0) {
-			bar.classList.remove('mc-activity-bar--visible');
-			if (textEl) textEl.textContent = '';
+			bar.classList.remove('mc-activity-bar--visible', 'mc-activity-bar--multi');
+			bar.replaceChildren();
 			return;
 		}
+		const rows = buildActivityRowElements(activities, i18n);
 		bar.classList.add('mc-activity-bar--visible');
-		if (!textEl) return;
-		const unique = [...new Map(activities.map(a => [a.userId, a])).values()];
-		if (unique.length === 1) {
-			textEl.textContent = formatActivityDisplay(unique[0], i18n);
-		} else if (unique.length <= 3) {
-			textEl.textContent = unique.map(u => u.userName).join(', ') +
-				' ' + (i18n.locale === 'ru' ? 'печатают' : 'are typing');
-		} else {
-			textEl.textContent = i18n.tActivityMany(unique.length);
-		}
+		bar.classList.toggle('mc-activity-bar--multi', rows.length > 1);
+		bar.replaceChildren(...rows);
 	}
 	setChannelDescriptionBar(bar, description) {
 		if (!bar) return;
@@ -25054,6 +25317,25 @@ class MessengerChatPanel {
 		this.refreshChatHeaderSub(state, chat, { botMeta: state?.botMeta, channelMeta: state?.channelMeta });
 	}
 
+	#restoreGroupHeaderSub(state, chat) {
+		const nameWrap = state.el?.querySelector('.mc-header-name-wrap');
+		const subEl = nameWrap?.querySelector('.mc-header-sub-row .mc-header-sub')
+			|| nameWrap?.querySelector('.mc-header-sub:not(.mc-header-channel-desc)');
+		if (!subEl) return;
+		subEl.classList.remove('mc-header-sub--typing', 'mc-header-sub--group-activity');
+		subEl.textContent = this.#resolveChatHeaderSubText(state, chat, {
+			botMeta: state?.botMeta,
+			channelMeta: state?.channelMeta,
+		}) ?? '';
+	}
+
+	#getGroupHeaderSubElement(state) {
+		const nameWrap = state.el?.querySelector('.mc-header-name-wrap');
+		if (!nameWrap) return null;
+		return nameWrap.querySelector('.mc-header-sub-row .mc-header-sub')
+			|| nameWrap.querySelector('.mc-header-sub:not(.mc-header-channel-desc)');
+	}
+
 	#getBotHeaderDescElement(state) {
 		const nameWrap = state?.el?.querySelector('.mc-header-name-wrap');
 		if (!nameWrap) return null;
@@ -25117,6 +25399,7 @@ class MessengerChatPanel {
 
 		const connState = this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING;
 		const isDirect = chat.type === 'direct' && !isBotContact(chat);
+		const isGroupConversation = isGroupConversationChat(chat);
 		const nameWrap = state.el.querySelector('.mc-header-name-wrap');
 		if (!nameWrap) return;
 
@@ -25128,12 +25411,18 @@ class MessengerChatPanel {
 			const descEl = this.#getBotHeaderDescElement(state);
 			if (descEl?.classList.contains('mc-header-sub--typing')) return;
 		}
+		if (connState !== MessengerConnectionStateManager.STATE_CONNECTING && isGroupConversation) {
+			const subEl = this.#getGroupHeaderSubElement(state);
+			if (subEl?.classList.contains('mc-header-sub--typing')) return;
+		}
 
 		if (connState === MessengerConnectionStateManager.STATE_CONNECTING) {
 			const subEl = this.#ensureChatHeaderSubElement(state, chat);
 			if (!subEl) return;
-			subEl.classList.remove('mc-header-sub--typing');
+			subEl.classList.remove('mc-header-sub--typing', 'mc-header-sub--group-activity');
 			subEl.textContent = this.#i18n.t('connectingToServer');
+			const activityBar = nameWrap.querySelector('.mc-activity-bar');
+			if (activityBar) this.#msgRenderer.updateActivityBar(activityBar, [], this.#i18n);
 			return;
 		}
 
@@ -25184,7 +25473,7 @@ class MessengerChatPanel {
 		const subEl = nameWrap.querySelector('.mc-header-sub-row .mc-header-sub')
 			|| nameWrap.querySelector('.mc-header-sub:not(.mc-header-channel-desc)');
 		if (!subEl) return;
-		subEl.classList.remove('mc-header-sub--typing');
+		subEl.classList.remove('mc-header-sub--typing', 'mc-header-sub--group-activity');
 		subEl.textContent = text ?? '';
 	}
 
@@ -25192,6 +25481,25 @@ class MessengerChatPanel {
 		if (!state) return;
 		const typing = (activities || []).filter(a => a.activityType === 'typing');
 		const isDirect = chat?.type === 'direct';
+		const isGroupConversation = isGroupConversationChat(chat);
+		const connState = this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING;
+		if (isGroupConversation) {
+			if (connState === MessengerConnectionStateManager.STATE_CONNECTING) {
+				this.#msgRenderer.updateActivityBar(activityBar, [], this.#i18n);
+				return;
+			}
+			const subEl = this.#getGroupHeaderSubElement(state);
+			if (activities?.length) {
+				if (subEl) {
+					subEl.classList.add('mc-header-sub--typing', 'mc-header-sub--group-activity');
+					fillGroupActivityIndicator(subEl, activities, this.#i18n);
+				}
+			} else if (subEl) {
+				this.#restoreGroupHeaderSub(state, chat);
+			}
+			this.#msgRenderer.updateActivityBar(activityBar, [], this.#i18n);
+			return;
+		}
 		if (isDirect && isBotContact(chat)) {
 			this.#cleanupOrphanBotHeaderDesc(state);
 			const descEl = this.#getBotHeaderDescElement(state);
@@ -27829,7 +28137,7 @@ class MessengerChatPanel {
 					state.avatarCache,
 					state.onAvatarClick,
 					id => this.#scrollToQuotedMessage(state, id),
-					state.isGroupChat,
+					showMessageAvatarsForPanel(state),
 					this.#msgRenderOpts(state)
 				);
 				this.#bindMessageRowEvents(state, el, msg);
@@ -28039,7 +28347,7 @@ class MessengerChatPanel {
 					state.avatarCache,
 					state.onAvatarClick,
 					id => this.#scrollToQuotedMessage(state, id),
-					state.isGroupChat,
+					showMessageAvatarsForPanel(state),
 					this.#msgRenderOpts(state)
 				);
 				this.#bindMessageRowEvents(state, el, msg);
@@ -28797,7 +29105,7 @@ class MessengerChatView {
 					this.#avatarCache,
 					null,
 					null,
-					this.#isGroupChat()
+					isGroupConversationChat(this.#chatMeta)
 				);
 				this.#messages.set(msg.id, { data: msg, el });
 			}
@@ -28936,7 +29244,7 @@ class MessengerChatView {
 					this.#avatarCache,
 					null,
 					null,
-					this.#isGroupChat()
+					isGroupConversationChat(this.#chatMeta)
 				);
 				this.#messages.set(msg.id, { data: msg, el });
 			}
@@ -29863,7 +30171,10 @@ class Messenger {
 			options.wsUrl || null,
 			connectionStateInst
 		);
-		transportInst.setOnConnectionRestored(() => this.#syncAfterReconnect());
+		transportInst.setOnConnectionRestored(() => {
+			this.#syncAfterReconnect();
+			try { window.SupraPush?.syncOnReconnect?.(); } catch (_) { /* ignore */ }
+		});
 		this.#i18n = i18nInst;
 		this.#icons = iconsInst;
 		this.#utils = utilsInst;
@@ -30020,6 +30331,11 @@ class Messenger {
 		if (user?.id) {
 			this.#appView.setCurrentUser(user);
 			this.#api.setCurrentUserId(user.id);
+			const cachedFolders = MessengerOfflineStore.loadFolders(user.id);
+			if (cachedFolders) {
+				this.#appView.applyCachedFolders(cachedFolders.folders, cachedFolders.members);
+			}
+			await this.#appView.loadFolders().catch(() => {});
 			const cachedChats = MessengerOfflineStore.loadChats(user.id);
 			if (cachedChats?.length) {
 				this.#appView.setChats(cachedChats);
@@ -30029,7 +30345,6 @@ class Messenger {
 		} else {
 			this.#appView.setChatsBootLoading(true);
 		}
-		void this.#appView.loadFolders().catch(() => {});
 		await this.#appView.restoreNavState();
 		this.#markRendered();
 		if (bootMark) bootMark('init-shell-ready');

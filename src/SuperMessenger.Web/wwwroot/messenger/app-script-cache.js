@@ -38,6 +38,8 @@
 
 			'/messenger/vendor/qrcode.min.js',
 
+			'/messenger/vendor/supra-markdown.bundle.js',
+
 			'/messenger/file-uploader.js',
 
 			'/messenger/app-branding.js',
