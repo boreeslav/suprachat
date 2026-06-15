@@ -1,6 +1,6 @@
 # CursorBot — AI-бот SuperMessenger на Cursor Agent SDK
 
-Бот подключается к [SuperMessenger Bot API](https://github.com/your-org/SuperMessenger/blob/main/docs/07-bot-api.md) и отвечает через **Cursor Agent** (локально или в облаке).
+Бот подключается к [SuperMessenger Bot API](../docs/07-bot-api.md) и отвечает через **Cursor Agent** (локально или в облаке).
 
 ## Возможности
 
@@ -40,9 +40,9 @@ cp .env.example .env
 | `CURSOR_PRO_MODEL` | Модель для пресета Pro (Premium), по умолчанию `claude-opus-4-8` |
 | `CURSOR_MODEL` | Устаревший алиас для `CURSOR_DEFAULT_MODEL` |
 | `CURSOR_RUNTIME` | `cloud` или `local` |
-| `BOT_CONFIG` | Путь к JSON-конфигу проектов и доступа (по умолчанию `./data/bot-config.json`) |
+| `BOT_CONFIG` | Путь к JSON-конфигу проектов и доступа (по умолчанию `./data/bot-config.json`; в репозитории есть шаблон `bot-config.json` в корне `CursorBot/`) |
 
-Проекты и персонализация задаются в **`data/bot-config.json`**:
+Проекты и персонализация задаются в JSON-конфиге (скопируйте `bot-config.json` → `data/bot-config.json` или укажите `BOT_CONFIG=./bot-config.json`):
 
 ```json
 {
@@ -58,7 +58,7 @@ cp .env.example .env
 - `projects` — список папок; переключение через меню «Проект» или `/project <id>`
 
 | `CURSOR_REPO_URL` | GitHub URL (для cloud) |
-| `CURSOR_CWD` | *(устарело)* — используйте `data/bot-config.json` |
+| `CURSOR_CWD` | *(устарело)* — используйте `bot-config.json` |
 
 ## Запуск
 

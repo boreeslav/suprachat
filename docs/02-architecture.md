@@ -10,12 +10,12 @@
                            │ HTTP + SignalR (cookie auth)
 ┌──────────────────────────▼──────────────────────────────┐
 │  SuperMessenger.Web                                       │
-│  Controllers, Hubs, Services (Presence, Realtime, Auth)   │
+│  Controllers, Hubs, Middleware, Services (~40 сервисов)   │
 └──────────────────────────┬──────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────┐
 │  SuperMessenger.Infrastructure                            │
-│  SupraMessengerService, FileDataStore, PasswordHasher     │
+│  SupraMessengerService, BotApiService, FileDataStore      │
 └──────────────────────────┬──────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────┐
@@ -29,8 +29,10 @@
 | Проект | Ответственность |
 |--------|----------------|
 | **Core** | `UserRecord`, `SupraChatRecord`, `InvitationRecord`, DTO Supra*, интерфейс `IDataStore` |
-| **Infrastructure** | `FileDataStore`, `JsonFileCollectionStore`, `SupraMessengerService`, `PasswordHasher` |
-| **Web** | ASP.NET Core 8, cookie authentication, controllers, SignalR hub, static wwwroot |
+| **Infrastructure** | `FileDataStore`, `JsonFileCollectionStore`, `SupraMessengerService` (partial), `BotApiService`, `SupraEncryptionService` |
+| **Web** | ASP.NET Core 8, cookie authentication, 14 controllers, SignalR hub, middleware, static wwwroot |
+
+Отдельного `.sln` нет — проекты собираются через `SuperMessenger.Web.csproj`.
 
 ## Хранение данных
 
@@ -41,7 +43,12 @@
 - `users.json`, `invitations.json`
 - `chats.json`, `participants.json`, `messages.json`
 - `folders.json`, `folder_members.json`
+- `bots.json`, `bot-tokens.json`, `bot-inbox.json`
+- `chat-member-keys.json` (E2EE)
+- `push-subscriptions.json`, `push-preferences.json`
 - `files.json` + бинарные файлы в `data/uploads/`, аватары в `data/avatars/`
+- `appearance.json` (брендинг)
+- `dpkeys/` — ключи ASP.NET Data Protection
 
 Замена на БД: реализовать `IDataStore` и зарегистрировать в DI вместо `FileDataStore`.
 
@@ -50,39 +57,62 @@
 ### UserRecord
 
 - Идентификация: `Id`, `Login`, `PasswordHash`, `DisplayName`
-- `Type`: User | Admin
-- Профиль: `Email`, `Phone`, `AvatarPath`, `StatusText`
+- `Type`: User | Admin | Bot
+- Профиль: `Email`, `Phone`, `AvatarPath`, `StatusText`, `AboutText`
 - Приватность: `SearchableByLogin`, `SearchableByName`, `AllowInvite`, `ShowOnlineStatus`, `AllowWrite`
+- E2EE: `EncryptionPublicKey`, `EncryptionPrivateKeyEnc`, `MasterPasswordSalt`
 - `LastSeenAt`, `IsActive`
 
 ### SupraChatRecord
 
-- `Id`, `Name`, `Type` (`direct` | `group` | `public_group`)
+- `Id`, `Name`, `Type` (`direct` | `group` | `public_group` | `channel` | `group_branch`)
 - `CreatorUserId`, `AvatarPath`, `AllowJoinByLink`
+- Для каналов: `Slug`, `DeletedAt` (мягкое удаление)
+- Для веток: `ParentChatId`, `BranchSlug`, `BranchOrder`
 
 ### Участники и сообщения
 
-- `SupraChatParticipantRecord`: `ChatId`, `UserId`, `IsAdmin`
-- `SupraChatMessageRecord`: текст, `SenderUserId`, `Status`, `CreatedOn`
+- `SupraChatParticipantRecord`: `ChatId`, `UserId`, `IsAdmin`, роль в канале
+- `SupraChatMessageRecord`: текст (`E1:` на сервере), `SenderUserId`, `Status`, `CreatedOn`, `EditedAt`
 - Папки: `SupraChatFolderRecord`, `SupraChatFolderMemberRecord` (`IsArchive` для архива)
 
 ## SupraMessengerService
 
-Центральный сервис бизнес-логики (~1300 строк). Основные группы методов:
+Центральный сервис бизнес-логики, разбит на partial-классы:
+
+| Файл | Ответственность |
+|------|-----------------|
+| `SupraMessengerService.cs` | Базовые чаты, контакты, папки, группы |
+| `SupraMessengerService.Messages.cs` | Сообщения, edit/delete/forward |
+| `SupraMessengerService.Sync.cs` | RequestSync, SyncChatPanel |
+| `SupraMessengerService.Channels.cs` | Каналы |
+| `SupraMessengerService.GroupBranches.cs` | Ветки групп |
+| `SupraMessengerService.Bots.cs` | Боты, токены |
+| `SupraMessengerService.Assistant.cs` | Режим ассистента |
+| `SupraMessengerService.Blocking.cs` | Блокировки |
+| `SupraMessengerService.Batch.cs` | BatchRequest |
+| `SupraMessengerService.GroupBotMenu.cs` | Inline-меню ботов |
+
+Основные группы методов:
 
 | Группа | Методы |
 |--------|--------|
 | Пользователь | `GetCurrentUserAsync` |
-| Чаты | `GetChatsAsync`, `RequestSyncAsync`, `CreateDirectChatAsync`, `CreateGroupAsync`, `GetOrCreateChatByIdAsync`, `LeaveChatAsync` |
-| Сообщения | `GetMessagesAsync`, `SendMessageAsync`, `MarkMessagesReadAsync`, `ClearChatHistoryAsync` |
-| Контакты | `GetContactsAsync`, `GetAllContactsAsync` |
-| Приватность | `CanSeeOnlineStatusAsync`, `CanWriteAsync` |
-| Папки | `GetFoldersAsync`, `SaveFolderAsync`, `DeleteFolderAsync`, `SetChatFolderAsync`, `RemoveChatFromFolderAsync`, `ReorderFoldersAsync` |
-| Группы | `GetGroupInfoAsync`, `UpdateGroupAsync`, `GetGroupLinkPreviewAsync`, `JoinGroupByLinkAsync`, `AddGroupMembersAsync`, `RemoveGroupMemberAsync`, `SetGroupMemberAdminAsync`, `SaveGroupAvatarPathAsync` |
-| Системные | `InsertGroupSystemEventAsync`, `GetGroupUpdatedPayloadAsync` |
-| Участники | `GetParticipantUserIdsAsync`, `GetDirectContactUserIdsAsync`, `GetChatContactUserIdsAsync` |
+| Чаты | `GetChatsAsync`, `RequestSyncAsync`, `CreateDirectChatAsync`, `CreateGroupAsync`, … |
+| Сообщения | `GetMessagesAsync`, `SendMessageAsync`, `EditMessageAsync`, `DeleteMessageAsync`, `ForwardMessageAsync`, … |
+| Каналы | `CreateChannelAsync`, `SubscribeChannelAsync`, `GetChannelInfoAsync`, … |
+| Ветки | `CreateGroupBranchAsync`, `UpdateGroupBranchAsync`, `ReorderGroupBranchesAsync`, … |
+| Боты | `CreateBotAsync`, `StartBotAsync`, `GenerateBotTokenAsync`, … |
+| Папки | `GetFoldersAsync`, `SaveFolderAsync`, … |
+| Группы | `GetGroupInfoAsync`, `UpdateGroupAsync`, … |
 
-Проверки доступа: участник чата, админ группы, настройки `allowWrite` / `showOnlineStatus`.
+Проверки доступа: участник чата, админ группы, роль в канале, настройки `allowWrite` / `showOnlineStatus`.
+
+Дополнительные сервисы Infrastructure:
+
+- **`BotApiService`** — REST/WS Bot API
+- **`SupraEncryptionService`** — E2EE на сервере
+- **`ChatFileService`** — файлы и аватары
 
 ## Контроллеры Web
 
@@ -92,14 +122,35 @@
 | `ProfileController` | `/api/profile` | Authorize |
 | `SupraMessengerController` | `/api/messenger/{method}` | Authorize |
 | `GroupController` | `/api/group` | Authorize |
+| `ChannelController` | `/api/channel` | Authorize |
+| `BotController` | `/api/bot` | Authorize |
 | `FilesController` | `/api/files` | частично AllowAnonymous |
 | `PublicPreviewController` | `/api/public` | AllowAnonymous |
 | `RegisterController` | `/api/register` | token endpoints |
 | `AdminController` | `/api/admin` | Admin |
+| `EncryptionController` | `/api/encryption` | Authorize |
+| `AppController` | `/api/app` | частично AllowAnonymous |
+| `PushController` | `/api/push` | Authorize |
+| `BotApiController` | `/api/bot-api` | Bot token |
 
 `SupraMessengerController.Invoke` — единая точка RPC-стиля: имя метода в URL, тело JSON, ответ `{ MethodNameResult: ... }`.
 
 После мутаций контроллер вызывает `RealtimeNotifier` для рассылки WebSocket-payload участникам.
+
+## Middleware
+
+| Middleware | Назначение |
+|------------|------------|
+| `BotWebSocketMiddleware` | Upgrade `/ws/bot` для Bot API |
+| `ProtectedStaticPageMiddleware` | Защита `/admin.html` |
+
+## Фоновые сервисы (Hosted Services)
+
+| Сервис | Назначение |
+|--------|------------|
+| `PresenceMonitorService` | Idle-таймаут → offline |
+| `BotInboxCleanupService` | Очистка inbox ботов (старше 1 суток) |
+| `ChatFileReferenceBootstrap` | Инициализация ссылок на файлы при старте |
 
 ## Realtime
 
@@ -108,6 +159,7 @@
 - `OnConnectedAsync` / `OnDisconnectedAsync` — группа `user:{userId}`, presence, `LastSeenAt`
 - При connect — `SupraSyncHint` (подсказка клиенту вызвать `RequestSync`)
 - `ReportActivity()` — сброс idle → online для контактов с правом видеть статус
+- `Heartbeat()` — keep-alive
 
 ### RealtimeNotifier
 
@@ -121,12 +173,17 @@ SendToUserAsync(userId, payload)
 | Класс | Назначение |
 |-------|------------|
 | `SupraWsNewMessagePayload` | Новое сообщение |
+| `SupraWsMessageEditedPayload` | Редактирование |
+| `SupraWsMessageDeletedPayload` | Удаление |
 | `SupraWsStatusPayload` | Статус прочтения |
 | `SupraWsNewChatPayload` | Новый чат в списке |
 | `SupraWsUserActivityPayload` | Печатает / запись голоса и т.д. |
 | `SupraWsChatHistoryClearedPayload` | Очистка истории |
 | `SupraWsPresencePayload` | online / idle / offline |
 | `SupraWsGroupUpdatedPayload` | Изменение группы |
+| `SupraWsChannelUpdatedPayload` | Изменение канала |
+| `SupraWsBotUpdatedPayload` | Изменение бота |
+| `SupraWsAppearanceUpdatedPayload` | Брендинг/тема |
 | `SupraWsSyncHintPayload` | Подсказка синхронизации (`RequestSync`) |
 | `SupraWsProfileUpdatedPayload` | Обновление профиля контакта |
 
@@ -142,17 +199,19 @@ SendToUserAsync(userId, payload)
 
 ## Аутентификация
 
-- Cookie Authentication (`AddAuthentication().AddCookie`).
+- Cookie Authentication (`AddAuthentication().AddCookie`, sliding 14 дней).
 - Claims: `NameIdentifier` = `User.Id`.
 - `CurrentUserAccessor` — получение `UserRecord` из HTTP context.
 - API-запросы без cookie → 401 JSON (не redirect), кроме явных `[AllowAnonymous]`.
+- Bot API — отдельная аутентификация по `login` + `token` (SHA-256).
 
 ## Маршрутизация SPA
 
 `Program.cs`:
 
 - `MapGet("/@{login}")` → `index.html`
-- `MapFallback` — `index.html` для не-API путей; `/@...` обрабатывается отдельно
+- `MapGet("/+{token}")` → регистрация
+- `MapFallback` — `IndexShellRenderer` для не-API путей (инъекция брендинга/версии)
 
 ## Клиентская архитектура
 
@@ -182,30 +241,43 @@ MessengerSidebar (click) → MessengerAppView.#openChat
 - `reconcileOnStartup` — подтверждение зависших `sending` (отдельно от бандла).
 - Дедупликация по `id` / `localId`.
 
+### Crypto-режимы
+
+- **Secure (HTTPS):** нативный Web Crypto API, `SupraSecureStore` (IndexedDB) для persistent unlock.
+- **Legacy (HTTP/LAN):** node-forge polyfill (`supra-webcrypto.bundle.js`), sessionStorage.
+
+Определяется в `supra-env.js` (генерируется при деплое через `SM_DEPLOY_PROTOCOL`).
+
 ### Адаптивность
 
 - `MessengerUtils.isMobile()` → `window.innerWidth <= 680`
 - `isMobileSheetMenu()` → `<= 1199` (bottom sheet меню)
 - CSS media queries синхронизированы с этими порогами
 
-## Интеграция OtbMessenger (legacy)
+## Совместимость с OtbMessenger
 
-Каталог `OtbMessenger/Schemas/` — схемы Creatio (JS/C#): `OtbMessengerService`, `OtbWsMessenger`, `FileUploader`. Standalone SuperMessenger воспроизводит контракт Supra автономно, без host-платформы SupraHost, но сохраняет совместимость имён методов и формата WS.
+Standalone SuperMessenger воспроизводит контракт Supra/OtbMessenger автономно, без host-платформы Creatio/SupraHost, но сохраняет совместимость имён методов и формата WS.
 
 ## Деплой
 
-- **Docker:** `docker compose up`
-- **Windows remote:** `deploy/deploy.ps1` (PuTTY `pscp`/`plink`, Docker на сервере)
+- **Docker:** `docker compose up -d --build`
+- **Windows remote:** `deploy.cmd` → `deploy/deploy.ps1` (PuTTY `pscp`/`plink`, Docker на сервере)
+- Версионирование: `deploy/release.json` + `deploy/apply-release.ps1`
+- Конфиг деплоя: `tmp/deploy/deploy.env` (создаётся при первом запуске)
 
 ## Конфигурация
 
 `appsettings.json`:
 
 - `Data:Root`, `Data:FilesPath`
-- Учётные данные начального админа (`DataInitializer`)
+- `Admin:Login`, `Admin:Password` — начальный админ (`DataInitializer`)
+- `App:PublicUrl` — публичный URL для push/manifest
+
+Переменные окружения Docker: `ADMIN_LOGIN`, `ADMIN_PASSWORD`, `PUBLIC_URL`, `APP_PORT`.
 
 ## Расширение
 
 1. Новый метод API → `SupraMessengerService` + case в `SupraMessengerController` + метод `MessengerApiClient` + UI.
-2. Новое поле пользователя → `UserRecord` + миграция JSON + Profile API + форма профиля.
+2. Новое поле пользователя → `UserRecord` + JSON store + Profile API + форма профиля.
 3. Новый тип WS-события → DTO в Core + отправка в controller/hub + обработчик в `Messenger.#onTransportMessage`.
+4. Замена хранилища → реализовать `IDataStore`, зарегистрировать в DI.

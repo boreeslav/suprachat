@@ -1,18 +1,20 @@
 # SupraMessenger
 
-Standalone-мессенджер (API, realtime, сущности).
+Standalone-мессенджер (REST API, SignalR realtime, JSON-хранилище с возможностью замены на БД).
 
 ## Возможности
 
-- Чаты: личные, группы, публичные группы
-- Сообщения, статусы прочтения, активность пользователя
-- Загрузка файлов и изображений
-- Хранение данных через `IDataStore` (сейчас — JSON-файлы, можно заменить на БД)
+- Чаты: личные, группы, публичные группы, **каналы**, **ветки групп**
+- Сообщения: отправка, **редактирование**, **удаление**, **пересылка**, inline-кнопки, статусы прочтения
+- Файлы и изображения (коллажи через `mc-content`)
+- Папки чатов, архив, присутствие online/idle/offline
 - Регистрация по **одноразовому** приглашению (`/register/{token}`)
-- Уникальный логин при регистрации
-- Профиль: имя, email, телефон, фото, смена пароля
-- Админка: пользователи, приглашения, смена типа (User/Admin)
-- **E2EE:** мастер-пароль, шифрование сообщений на сервере, ключи групп (авто + опциональный пароль вне канала)
+- Профиль: имя, email, телефон, статус (20 символов), «О себе», фото, смена пароля и логина
+- Приватность: поиск, приглашения, видимость онлайна, кто может писать
+- **E2EE:** мастер-пароль, шифрование на сервере (`E1:`), ключи групп
+- **Боты:** создание ботов, Bot API (REST + WebSocket), режим ассистента
+- **PWA:** установка на устройство, push-уведомления (VAPID)
+- Админка: пользователи, приглашения, **брендинг** (логотип, тема, звуки, HTML-контент)
 
 ## Запуск локально
 
@@ -21,8 +23,9 @@ cd src/SuperMessenger.Web
 dotnet run
 ```
 
-Откройте http://localhost:5000 (или порт из консоли).  
-Первый админ: `admin` / `ChangeMe123!` (см. `appsettings.json`).
+Откройте `http://localhost:5253` (HTTP) или `https://localhost:7110` (HTTPS) — точный порт выводится в консоль.  
+Первый админ: `admin` / `ChangeMe123!` (см. `appsettings.json`).  
+Данные: каталог `data/` рядом с проектом.
 
 ## Docker
 
@@ -38,23 +41,21 @@ docker compose up -d --build
 
 1. Установите [PuTTY](https://www.putty.org/) (`plink`, `pscp` в PATH).
 2. На сервере: Docker и Docker Compose.
-3. Скопируйте `tmp/deploy/deploy.env.example` в `tmp/deploy/deploy.env` и заполните параметры (или введите их при первом запуске `deploy.cmd`). Папка `tmp/` в git не коммитится.
-4. Запустите (перед упаковкой автоматически собирается `supra-webcrypto.bundle.js` для шифрования по HTTP/IP):
-
-```powershell
-.\deploy.cmd
-```
+3. Запустите `.\deploy.cmd` — при первом запуске создастся `tmp/deploy/deploy.env` (шаблон можно скопировать из `deploy/deploy.env.example`). Папка `tmp/` в git не коммитится.
+4. Перед упаковкой автоматически собирается `supra-webcrypto.bundle.js` для шифрования по HTTP/LAN.
 
 ## Архитектура данных
 
 - `SuperMessenger.Core.Abstractions.IDataStore` — абстракция хранилища
-- `SuperMessenger.Infrastructure.Storage.FileDataStore` — реализация на файлах (`data/`)
+- `SuperMessenger.Infrastructure.Storage.FileDataStore` — реализация на JSON-файлах (`data/`)
 
 ## API мессенджера
 
-`POST /api/messenger/{MethodName}` — совместимый контракт с клиентом (обёртка `{MethodName}Result}`).
+`POST /api/messenger/{MethodName}` — совместимый контракт с клиентом (обёртка `{MethodName}Result`).
 
 Realtime: SignalR `/hubs/messenger`, тип сообщений `SupraMessenger`.
+
+Дополнительно: `/api/bot-api/*` (Bot API), `/api/encryption/*` (E2EE), `/api/push/*` (уведомления), `/api/app/*` (PWA, брендинг).
 
 ## Документация
 
@@ -66,3 +67,8 @@ Realtime: SignalR `/hubs/messenger`, тип сообщений `SupraMessenger`.
 - [Архитектура и реализация](docs/02-architecture.md)
 - [Справочник API](docs/03-api-reference.md)
 - [Справочник клиента (JS)](docs/04-frontend-reference.md)
+- [E2EE](docs/05-encryption.md)
+- [Сетевая синхронизация](docs/06-network-sync.md)
+- [Bot API](docs/07-bot-api.md)
+- [PWA и push](docs/PWA-УСТАНОВКА.md)
+- [История изменений](CHANGELOG.md)

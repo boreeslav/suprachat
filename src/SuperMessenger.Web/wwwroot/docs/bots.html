@@ -7,51 +7,98 @@
 	<style>
 		:root { font-family: system-ui, sans-serif; line-height: 1.5; color: #1a1a1a; background: #f6f7f9; }
 		body { max-width: 52rem; margin: 0 auto; padding: 1.5rem; }
-		h1, h2 { line-height: 1.2; }
+		h1, h2, h3 { line-height: 1.2; }
 		a { color: #2563eb; }
 		code, pre { background: #eef1f5; border-radius: 6px; }
 		code { padding: 0.1em 0.35em; font-size: 0.92em; }
 		pre { padding: 1rem; overflow: auto; }
 		.card { background: #fff; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 		table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
-		th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #e5e7eb; }
+		th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
 		th { background: #f3f4f6; }
+		.note { font-size: 0.92rem; color: #4b5563; }
 	</style>
 </head>
 <body>
 	<h1>Bot API SuperMessenger</h1>
-	<p>HTTP и WebSocket API для ботов: отправка сообщений, получение входящих обновлений.</p>
+	<p>HTTP и WebSocket API для ботов: сообщения, медиа, inline-кнопки, меню, режим помощника, управление группами и каналами.</p>
+	<p class="note">Полная документация в репозитории: <code>docs/07-bot-api.md</code>.</p>
 
 	<div class="card">
 		<h2>Быстрый старт</h2>
 		<ol>
 			<li>Создайте бота в мессенджере («Мои боты»).</li>
-			<li>Сгенерируйте API-токен в настройках бота.</li>
-			<li>Вызывайте REST или подключите WebSocket с параметрами <code>login</code> и <code>token</code>.</li>
+			<li>Сгенерируйте API-токен в настройках бота (<code>GenerateBotToken</code>).</li>
+			<li>Вызывайте REST или подключите WebSocket с параметрами <code>login</code> и <code>token</code> в query string.</li>
+			<li>Для личного чата пользователь должен начать диалог с ботом (<code>/start</code>).</li>
 		</ol>
 		<p><a href="bot-example.html">Интерактивный пример с редактором скрипта →</a></p>
 	</div>
 
 	<div class="card">
 		<h2>Аутентификация</h2>
-		<p>Все методы: <code>login</code> (slug бота) + <code>token</code> (API-токен) <strong>в query string URL</strong>. GET или POST.</p>
+		<p>Cookie мессенджера не нужен. Все методы: <code>login</code> (slug бота) + <code>token</code> (API-токен) <strong>в query string URL</strong>. GET или POST.</p>
+		<p>На сервере хранится SHA-256 хеш токена. Параметры POST — в JSON-теле, <code>login</code>/<code>token</code> — только в URL.</p>
+		<pre>POST /api/bot-api/sendMessage?login=mybot_bot&amp;token=...
+Content-Type: application/json
+
+{"userLogin":"ivan","text":"Привет!"}</pre>
 	</div>
 
 	<div class="card">
-		<h2>REST</h2>
+		<h2>REST — сообщения и inbox</h2>
 		<table>
 			<thead><tr><th>Метод</th><th>Назначение</th></tr></thead>
 			<tbody>
 				<tr><td><code>GET/POST /api/bot-api/me</code></td><td>Информация о боте</td></tr>
-				<tr><td><code>GET/POST /api/bot-api/sendMessage</code></td><td>Отправить сообщение: текст, фото, коллаж, файл, кнопки</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/sendMessage</code></td><td>Текст, фото, коллаж, файл, inline-кнопки (<code>buttons</code>)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/editMessage</code></td><td>Редактировать своё сообщение</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/deleteMessage</code></td><td>Удалить сообщение (<code>deleteForEveryone</code>)</td></tr>
 				<tr><td><code>POST /api/bot-api/uploadFile</code></td><td>Загрузить файл (multipart <code>file</code>, query <code>chatId</code>)</td></tr>
 				<tr><td><code>GET /api/bot-api/getFile</code></td><td>Скачать файл по <code>fileId</code></td></tr>
 				<tr><td><code>GET /api/bot-api/getFilePreview</code></td><td>Превью изображения</td></tr>
 				<tr><td><code>GET /api/bot-api/getFileMedium</code></td><td>Средний размер изображения</td></tr>
-				<tr><td><code>GET/POST /api/bot-api/sendActivity</code></td><td>Индикатор активности: <code>typing</code>, <code>active</code></td></tr>
-				<tr><td><code>GET/POST /api/bot-api/editMessage</code></td><td>Редактировать своё сообщение (<code>chatId</code>, <code>messageId</code>, <code>text</code>)</td></tr>
-				<tr><td><code>GET/POST /api/bot-api/deleteMessage</code></td><td>Удалить сообщение (<code>chatId</code>, <code>messageId</code>)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/sendActivity</code></td><td>Индикатор: <code>typing</code>, <code>sendingFile</code>, <code>sendingImage</code>, <code>activityMessage</code></td></tr>
+				<tr><td><code>GET/POST /api/bot-api/getActivity</code></td><td>Текущие активности в чате</td></tr>
 				<tr><td><code>GET/POST /api/bot-api/getMessages</code></td><td>Inbox: <code>count</code>, <code>offset</code>, <code>afterMessageId</code></td></tr>
+			</tbody>
+		</table>
+		<p class="note">Адресат: <code>userLogin</code> (личный чат) или <code>chatId</code> (группа/канал). Зашифрованные сообщения в inbox не попадают.</p>
+	</div>
+
+	<div class="card">
+		<h2>REST — меню бота</h2>
+		<table>
+			<thead><tr><th>Метод</th><th>Назначение</th></tr></thead>
+			<tbody>
+				<tr><td><code>GET/POST /api/bot-api/getMenu</code></td><td>Меню слева от скрепки в личном чате</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/setMenu</code></td><td>Задать меню (<code>items</code>: <code>text</code>, <code>message</code>, <code>submenu</code>)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/getAssistantMenu</code></td><td>Меню режима помощника</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/setAssistantMenu</code></td><td>Задать меню помощника</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/getGroupMenu</code></td><td>Меню бота в группе</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/setGroupMenu</code></td><td>Задать меню в группе</td></tr>
+			</tbody>
+		</table>
+	</div>
+
+	<div class="card">
+		<h2>REST — режим помощника (assistant)</h2>
+		<p>Пользователь добавляет бота как помощника; выбранные сообщения отправляются боту в открытом виде с командой из меню.</p>
+		<table>
+			<thead><tr><th>Метод</th><th>Назначение</th></tr></thead>
+			<tbody>
+				<tr><td><code>GET/POST /api/bot-api/assistantReply</code></td><td>Ответ на сессию помощника (<code>sessionId</code>, <code>text</code>, медиа, кнопки)</td></tr>
+			</tbody>
+		</table>
+		<p class="note">Сессии создаются через messenger RPC <code>InvokeBotAssistant</code> в UI; подтверждение ответа — <code>ConfirmAssistantReply</code>.</p>
+	</div>
+
+	<div class="card">
+		<h2>REST — группы, ветки и каналы</h2>
+		<p>Бот должен быть участником с нужными правами (см. таблицу ниже).</p>
+		<table>
+			<thead><tr><th>Метод</th><th>Назначение</th></tr></thead>
+			<tbody>
 				<tr><td><code>GET/POST /api/bot-api/getChatInfo</code></td><td>Информация о группе/канале и права бота</td></tr>
 				<tr><td><code>GET/POST /api/bot-api/updateGroup</code></td><td>Название, описание группы (админ)</td></tr>
 				<tr><td><code>POST /api/bot-api/setGroupAvatar</code></td><td>Аватар группы, multipart <code>photo</code> (админ)</td></tr>
@@ -60,19 +107,49 @@
 				<tr><td><code>GET/POST /api/bot-api/createGroupBranch</code></td><td>Создать ветку (админ)</td></tr>
 				<tr><td><code>GET/POST /api/bot-api/updateGroupBranch</code></td><td>Изменить ветку (админ)</td></tr>
 				<tr><td><code>GET/POST /api/bot-api/deleteGroupBranch</code></td><td>Удалить ветку (админ)</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/reorderGroupBranches</code></td><td>Порядок веток (<code>parentChatId</code>, <code>branchIds</code>)</td></tr>
 				<tr><td><code>GET/POST /api/bot-api/updateChannel</code></td><td>Название, описание канала (admin/owner)</td></tr>
 				<tr><td><code>POST /api/bot-api/setChannelAvatar</code></td><td>Аватар канала, multipart <code>photo</code></td></tr>
 				<tr><td><code>GET/POST /api/bot-api/removeChannelMember</code></td><td>Снять admin/author (не владельца)</td></tr>
-				<tr><td><code>GET/POST /api/bot-api/setChannelMemberRole</code></td><td>Назначить роль в канале</td></tr>
-				<tr><td><code>GET/POST /api/bot-api/getChannelSubscribers</code></td><td>Список подписчиков</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/setChannelMemberRole</code></td><td>Назначить роль: <code>admin</code>, <code>author</code>, <code>subscriber</code></td></tr>
+				<tr><td><code>GET/POST /api/bot-api/getChannelSubscribers</code></td><td>Список подписчиков (<code>page</code>, <code>pageSize</code>, <code>query</code>)</td></tr>
 			</tbody>
 		</table>
 	</div>
 
 	<div class="card">
+		<h2>Права бота</h2>
+		<table>
+			<thead><tr><th>Действие</th><th>Группа (админ)</th><th>Канал (author)</th><th>Канал (admin/owner)</th></tr></thead>
+			<tbody>
+				<tr><td>Отправка сообщений</td><td>да</td><td>да</td><td>да</td></tr>
+				<tr><td>Удаление чужих сообщений</td><td>да</td><td>нет</td><td>да</td></tr>
+				<tr><td>Удаление участника</td><td>да*</td><td>нет</td><td>да*</td></tr>
+				<tr><td>Блокировка участника</td><td>да*</td><td>нет</td><td>—</td></tr>
+				<tr><td>Название, описание, аватар</td><td>да</td><td>нет</td><td>да</td></tr>
+				<tr><td>Ветки группы</td><td>да</td><td>—</td><td>—</td></tr>
+				<tr><td>Роли канала</td><td>—</td><td>нет</td><td>да</td></tr>
+			</tbody>
+		</table>
+		<p class="note">* Нельзя удалить/заблокировать создателя группы или владельца канала.</p>
+	</div>
+
+	<div class="card">
 		<h2>WebSocket</h2>
 		<pre>wss://&lt;host&gt;/ws/bot?login=&lt;bot&gt;&amp;token=&lt;token&gt;</pre>
-		<p>События: <code>connected</code>, <code>message</code> (поле <code>update</code>). Клиент: <code>{ "action": "ping" }</code>.</p>
+		<p><strong>Одна активная сессия на бота:</strong> новое подключение закрывает предыдущее.</p>
+		<h3>События от сервера</h3>
+		<table>
+			<thead><tr><th><code>type</code></th><th>Описание</th></tr></thead>
+			<tbody>
+				<tr><td><code>connected</code></td><td>Подключение, поле <code>botUserId</code></td></tr>
+				<tr><td><code>message</code></td><td>Входящее сообщение, поле <code>update</code> (как в <code>getMessages</code>)</td></tr>
+				<tr><td><code>pong</code></td><td>Ответ на ping</td></tr>
+			</tbody>
+		</table>
+		<h3>Команда клиента</h3>
+		<pre>{ "action": "ping" }</pre>
+		<p><code>supra-bot-api.js</code> по умолчанию автопереподключается и догружает пропущенные сообщения через <code>getMessages?afterMessageId=...</code>.</p>
 	</div>
 
 	<div class="card">
@@ -80,19 +157,26 @@
 		<pre>&lt;script src="/docs/supra-bot-api.js"&gt;&lt;/script&gt;
 &lt;script&gt;
 const api = new SupraBotApi({ login: 'mybot_bot', token: '...' });
-api.connectWebSocket({ onMessage: (m) => console.log(m) });
+
+api.connectWebSocket({
+  onMessage: (m) => console.log(m),
+  onSyncComplete: (n) => console.log('Missed:', n),
+}, { reconnect: true, syncMissed: true, lastInboxId: null });
+
 await api.sendMessage({ userLogin: 'user', text: 'Hi' });
+await api.sendActivity({ chatId: '...', activityType: 'typing', active: true });
+await api.setMenu({ menu: { items: [{ text: 'Справка', message: '/help' }] } });
 &lt;/script&gt;</pre>
-		<p>Подробнее — в репозитории: <code>docs/07-bot-api.md</code>.</p>
 	</div>
 
 	<div class="card">
 		<h2>Ограничения</h2>
 		<ul>
-			<li>Только незашифрованные исходящие сообщения.</li>
-			<li>Inbox на сервере — 1 сутки.</li>
+			<li>Только незашифрованные исходящие сообщения (без префикса <code>E1:</code>).</li>
+			<li>Inbox на сервере — <strong>1 сутки</strong>.</li>
 			<li>Личный чат по <code>userLogin</code> — только если пользователь уже начал диалог с ботом.</li>
-			<li>Управление группами/каналами — бот должен быть участником с ролью администратора (или author для публикации в канале).</li>
+			<li>Inline-кнопки: при нажатии в inbox приходит <code>buttonPress</code> с <code>sourceMessageId</code>, <code>buttonId</code>, <code>action</code>.</li>
+			<li>Активные статусы в открытом чате также приходят в <code>SyncChatPanel</code> (поле <code>activities</code>).</li>
 		</ul>
 	</div>
 </body>

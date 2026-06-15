@@ -1,7 +1,25 @@
 # Справочник клиента (supra-messenger.js)
 
-Файл: `src/SuperMessenger.Web/wwwroot/messenger/supra-messenger.js` (~9700 строк).  
+Файл: `src/SuperMessenger.Web/wwwroot/messenger/supra-messenger.js` (~29000 строк).  
 Точка входа standalone: `supra-integration.js`.
+
+Документ — справочник по основным классам; не перечисляет все UI-модули (боты, каналы, push и т.д.).
+
+## Дополнительные модули
+
+| Файл | Назначение |
+|------|------------|
+| `supra-integration.js` | Boot SPA, deep links, auth check |
+| `supra-crypto.js` | E2EE: мастер-пароль, AES-GCM, ключи групп |
+| `supra-push.js` | Push-подписка, VAPID, per-chat mute |
+| `supra-env.js` | Secure vs legacy режим (генерируется при деплое) |
+| `supra-secure-store.js` | Persistent unlock (IndexedDB, HTTPS) |
+| `supra-auth-crypto.js` | Мастер-пароль на экранах auth |
+| `supra-master-unlock.js` | Экран разблокировки после входа |
+| `app-mobile-viewport.js` | Масштаб UI на мобильных |
+| `app-branding.js` | Загрузка брендинга из `/api/app/appearance` |
+| `app-boot-timing.js` | Метрики времени загрузки |
+| `wwwroot/docs/supra-bot-api.js` | JS-клиент Bot API |
 
 ---
 
@@ -142,20 +160,6 @@ SVG-иконки как HTML-строки: `pencil`, `back`, `dots`, `send`, `ch
 | `dismissTop({ reason })` | Закрыть верхний слой |
 | `getStackSnapshot()` | Снимок стека (отладка) |
 | `logNav(event, extra)` | Запись в `MessengerNavDebugLog` (sessionStorage, без UI) |
-
----
-
-## MessengerDialog
-
-Модальные confirm/alert.
-
-| Статический метод | Описание |
-|-------------------|----------|
-| `confirm(options)` | Promise boolean |
-| `confirmWithCheckbox(options)` | Promise `{ confirmed, checked }` |
-| `alert(options)` | Promise void |
-
-Типы: `TYPE_INFO`, `TYPE_WARNING`, `TYPE_DANGER`, `TYPE_SUCCESS`.
 
 ---
 

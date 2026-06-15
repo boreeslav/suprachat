@@ -3,6 +3,26 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/).  
 Версионирование: `major.minor.patch` (см. `deploy/release.json`).
 
+## [1.2.0] — 2026-06-15
+
+### Добавлено
+
+- **Каналы** — создание, подписка, роли (owner/admin/author/subscriber), публичный просмотр по slug.
+- **Ветки групп** (`group_branch`) — подчаты внутри группы с собственным URL.
+- **Боты** — создание ботов, Bot API (REST `/api/bot-api/*` + WebSocket `/ws/bot`), режим ассистента.
+- **Редактирование, удаление и пересылка** сообщений.
+- **Блокировки** пользователей и групп.
+- **PWA и push-уведомления** — manifest, Service Worker, VAPID, per-chat mute.
+- **Админка брендинга** — логотип, иконки PWA, тема, звуки, HTML-контент (about/help/changelog).
+- Публичные API каналов: `/api/public/channel/{slug}`.
+- `CursorBot/` — пример интеграции с Cursor Agent SDK.
+
+### Изменено
+
+- `SupraMessengerService` разбит на partial-классы (Messages, Channels, Bots, Sync и др.).
+- Расширен Admin API (appearance, push-diagnostics).
+- Документация актуализирована по всем модулям проекта.
+
 ## [1.1.109] — 2026-06-08
 
 ### Добавлено
