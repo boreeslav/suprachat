@@ -7977,3 +7977,112 @@ textarea.mapp-profile-field-input:focus,
 	background: color-mix(in srgb, var(--mapp-danger, #e53935) 12%, transparent);
 	color: var(--mapp-danger, #c62828);
 }
+
+.mini-app-host-overlay {
+	z-index: 2147483000;
+}
+
+.mini-app-host-dialog {
+	display: flex;
+	flex-direction: column;
+	width: min(960px, 100vw);
+	height: min(92vh, 100%);
+	background: var(--mapp-content-bg, #fff);
+	border-radius: 12px;
+	overflow: hidden;
+	box-shadow: 0 12px 48px rgba(0, 0, 0, .28);
+}
+
+.mini-app-host-header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--mapp-border, rgba(0, 0, 0, .08));
+	background: var(--mapp-sidebar-bg, #fff);
+}
+
+.mini-app-host-title {
+	font-weight: 600;
+	font-size: 15px;
+	color: var(--mapp-text, #1c1c1e);
+}
+
+.mini-app-host-sub {
+	flex: 1;
+	font-size: 12px;
+	color: var(--mapp-text-secondary, #6b7280);
+}
+
+.mini-app-host-close {
+	border: none;
+	background: transparent;
+	font-size: 24px;
+	line-height: 1;
+	cursor: pointer;
+	color: var(--mapp-text-secondary, #6b7280);
+	padding: 0 4px;
+}
+
+.mini-app-host-body {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	background: #fff;
+}
+
+.mini-app-host-frame {
+	width: 100%;
+	height: 100%;
+	border: 0;
+	display: block;
+	background: #fff;
+}
+
+.mini-app-host-loading {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(255, 255, 255, .72);
+	color: var(--mapp-text-secondary, #6b7280);
+	z-index: 1;
+}
+
+.mini-app-host-loading--hidden {
+	display: none;
+}
+
+.mc-mini-app-bubble {
+	min-width: 220px;
+	max-width: 360px;
+}
+
+.mc-mini-app-card {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+	padding: 4px 2px 8px;
+}
+
+.mc-mini-app-icon {
+	font-size: 28px;
+	line-height: 1;
+}
+
+.mc-mini-app-title {
+	font-weight: 600;
+	font-size: 15px;
+}
+
+.mc-mini-app-hint {
+	font-size: 12px;
+	color: var(--mapp-text-secondary, #6b7280);
+	margin-top: 2px;
+}
+
+.mc-mini-app-open {
+	width: calc(100% - 8px);
+	margin: 0 4px 6px;
+}

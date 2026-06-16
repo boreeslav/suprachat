@@ -302,27 +302,41 @@ public sealed partial class SupraMessengerService
     {
         try
         {
-            var (bot, botUser, error) = await GetBotAccessAsync(userId, botUserId, ct);
-            if (error != null)
-                return new SupraGetBotInfoResponse { success = false, error = error };
+            if (!Guid.TryParse(botUserId, out var botUserGuid))
+                return new SupraGetBotInfoResponse { success = false, error = "Некорректный botUserId" };
+
+            var bot = await _store.GetBotByUserIdAsync(botUserGuid, ct);
+            if (bot == null)
+                return new SupraGetBotInfoResponse { success = false, error = "Бот не найден" };
+
+            var botUser = await _store.GetUserByIdAsync(botUserGuid, ct);
+            if (botUser == null || !IsBotUser(botUser))
+                return new SupraGetBotInfoResponse { success = false, error = "Бот не найден" };
+
+            if (IsBotDeleted(bot) && bot.OwnerUserId != userId)
+                return new SupraGetBotInfoResponse { success = false, error = "Бот удалён" };
+
+            var isOwner = bot.OwnerUserId == userId;
+            if (!isOwner && !await CanUserViewBotInChatAsync(userId, botUserGuid, chatId, ct))
+                return new SupraGetBotInfoResponse { success = false, error = "Нет доступа" };
 
             return new SupraGetBotInfoResponse
             {
                 success = true,
-                botUserId = botUser!.Id.ToString(),
+                botUserId = botUser.Id.ToString(),
                 name = botUser.DisplayName,
-                slug = bot!.Slug,
+                slug = bot.Slug,
                 description = bot.Description,
                 avatar = AvatarUrl(botUser),
                 ownerUserId = bot.OwnerUserId.ToString(),
-                canEdit = !IsBotDeleted(bot),
-                isOwner = bot.OwnerUserId == userId,
-                userCount = await CountBotUsersAsync(bot.BotUserId, ct),
-                hasToken = !string.IsNullOrEmpty(bot.TokenHash),
+                canEdit = isOwner && !IsBotDeleted(bot),
+                isOwner = isOwner,
+                userCount = isOwner ? await CountBotUsersAsync(bot.BotUserId, ct) : 0,
+                hasToken = isOwner && !string.IsNullOrEmpty(bot.TokenHash),
                 isDeleted = IsBotDeleted(bot),
                 menu = await ResolveBotMenuAsync(bot, chatId, ct),
                 assistantMenu = await ResolveAssistantMenuAsync(bot, chatId, ct),
-                isAssistant = await _store.HasUserBotAssistantAsync(userId, bot!.BotUserId, ct),
+                isAssistant = await _store.HasUserBotAssistantAsync(userId, bot.BotUserId, ct),
                 hasAssistantMenu = (await ResolveAssistantMenuAsync(bot, chatId, ct)).items?.Count > 0,
             };
         }
@@ -330,6 +344,20 @@ public sealed partial class SupraMessengerService
         {
             return new SupraGetBotInfoResponse { success = false, error = ex.Message };
         }
+    }
+
+    async Task<bool> CanUserViewBotInChatAsync(
+        Guid userId, Guid botUserId, string? chatId, CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(chatId) &&
+            Guid.TryParse(chatId.Trim(), out var chatGuid) &&
+            await _store.IsParticipantAsync(chatGuid, userId, ct) &&
+            await IsDirectBotChatAsync(chatGuid, ct))
+        {
+            return true;
+        }
+
+        return await FindDirectChatWithBotAsync(userId, botUserId, ct) != null;
     }
 
     public async Task<(SupraUpdateBotResponse response, SupraWsBotUpdatedPayload? updated)> UpdateBotAsync(
@@ -503,6 +531,7 @@ public sealed partial class SupraMessengerService
                           await IsDirectPairBlockedAsync(userId, bot.BotUserId, ct);
             var isStarted = !blocked &&
                             await IsBotChatEngagedAsync(userId, bot.BotUserId, chatId, ct);
+            var resolvedChatId = isStarted && chatId.HasValue ? chatId.Value.ToString() : null;
 
             return new SupraGetBotLinkPreviewResponse
             {
@@ -513,9 +542,9 @@ public sealed partial class SupraMessengerService
                 description = bot.Description,
                 avatar = AvatarUrl(botUser),
                 isStarted = isStarted,
-                chatId = isStarted && chatId.HasValue ? chatId.Value.ToString() : null,
+                chatId = resolvedChatId,
                 userCount = await CountBotUsersAsync(bot.BotUserId, ct),
-                menu = BotMenuHelper.ParseMenu(bot.MenuJson),
+                menu = await ResolveBotMenuAsync(bot, resolvedChatId, ct),
             };
         }
         catch (Exception ex)

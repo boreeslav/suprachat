@@ -12,6 +12,7 @@ public static partial class MessageAttachmentParser
     public const string ContentTypeImage = "image";
     public const string ContentTypeFile = "file";
     public const string ContentTypePhotoAlbum = "photo_album";
+    public const string ContentTypeMiniApp = "mini_app";
 
     [GeneratedRegex(
         $@"<{McContentTag}[^>]*type=""([^""]+)""[^>]*>([\s\S]*?)</{McContentTag}>",
@@ -40,6 +41,7 @@ public static partial class MessageAttachmentParser
             {
                 ContentTypeImage or ContentTypeFile => TryReadSingleFileId(root, out var single) ? new List<Guid> { single } : [],
                 ContentTypePhotoAlbum => ReadFileIdArray(root, "fileIds"),
+                ContentTypeMiniApp => ReadMiniAppFileIds(root),
                 _ => [],
             };
             return new ParsedMcContent(contentType, root, fileIds);
@@ -95,6 +97,7 @@ public static partial class MessageAttachmentParser
             ContentTypeImage => "🖼 " + (ReadString(parsed.Payload, "fileName") ?? "Изображение"),
             ContentTypePhotoAlbum => BuildAlbumPreview(parsed.Payload),
             ContentTypeFile => "📎 " + (ReadString(parsed.Payload, "fileName") ?? "File"),
+            ContentTypeMiniApp => "📱 " + (ReadString(parsed.Payload, "title") ?? "Mini App"),
             _ => text.Length > 120 ? text[..120] + "…" : text,
         };
     }
@@ -142,6 +145,20 @@ public static partial class MessageAttachmentParser
                 fileSize = i < fileSizes.Count ? fileSizes[i] : 0,
                 mimeType = i < mimeTypes.Count ? mimeTypes[i] : "",
             });
+        }
+        return result;
+    }
+
+    static List<Guid> ReadMiniAppFileIds(JsonElement root)
+    {
+        var result = new List<Guid>();
+        if (!root.TryGetProperty("files", out var arr) || arr.ValueKind != JsonValueKind.Array)
+            return result;
+        foreach (var el in arr.EnumerateArray())
+        {
+            if (!el.TryGetProperty("fileId", out var idProp)) continue;
+            if (Guid.TryParse(idProp.GetString(), out var id))
+                result.Add(id);
         }
         return result;
     }

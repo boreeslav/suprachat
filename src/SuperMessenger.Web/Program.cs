@@ -36,6 +36,7 @@ builder.Services.AddSingleton<BotApiService>(sp => new BotApiService(
     sp.GetRequiredService<ChatFileService>()));
 builder.Services.AddSingleton<BotWebSocketManager>();
 builder.Services.AddSingleton<BotInboxNotifier>();
+builder.Services.AddSingleton<MiniAppSessionService>();
 builder.Services.AddHostedService<BotInboxCleanupService>();
 builder.Services.AddHostedService<ChatFileReferenceBootstrap>();
 builder.Services.AddSingleton<MessengerSyncService>();

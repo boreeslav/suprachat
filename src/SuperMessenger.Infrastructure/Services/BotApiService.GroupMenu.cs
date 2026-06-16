@@ -105,4 +105,21 @@ public sealed partial class BotApiService
         groupMenu = menu,
         chatId = chatId,
     };
+
+    public async Task<SupraWsBotGroupUpdatedPayload> PurgeBotGroupMenusForFamilyAsync(
+        Guid botUserId, Guid anyChatIdInFamily, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        var chat = await _store.GetChatByIdAsync(anyChatIdInFamily, ct);
+        var rootId = chat?.ParentChatId ?? anyChatIdInFamily;
+        await _store.DeleteBotGroupChatMenuAsync(botUserId, anyChatIdInFamily, ct);
+        if (rootId != anyChatIdInFamily)
+            await _store.DeleteBotGroupChatMenuAsync(botUserId, rootId, ct);
+        return new SupraWsBotGroupUpdatedPayload
+        {
+            botUserId = botUserId.ToString(),
+            chatId = anyChatIdInFamily.ToString(),
+            groupMenu = new BotApiMenuDto { items = [] },
+        };
+    }
 }

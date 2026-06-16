@@ -568,6 +568,18 @@ api.connectWebSocket({
 
 Бот **не получает** `sourceChatId` — только `sessionId`. Ответ возможен только через `assistantReply({ sessionId, text, ... })`.
 
+## Mini Apps
+
+Интерактивные HTML-окна внутри мессенджера (sandbox iframe + bridge API). Бот публикует bundle через `sendMiniApp`; контент хранится в **сообщении** пользователя (локальная БД + кеш вложений).
+
+| Метод | Описание |
+|-------|----------|
+| `sendMiniApp` | Сообщение с `mc-content type="mini_app"` и вложениями (HTML/JS/CSS) |
+
+Inbox: поле `webAppData` при `sendData` из окна (не попадает в ленту чата).
+
+Подробно: [08-mini-apps.md](08-mini-apps.md).
+
 ## Связанные материалы
 
 - [01-functionality.md](01-functionality.md) — создание ботов в UI

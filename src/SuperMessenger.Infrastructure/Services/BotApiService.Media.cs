@@ -242,6 +242,20 @@ public sealed partial class BotApiService
             }
         }
 
+        if (!string.IsNullOrWhiteSpace(m.WebAppDataJson))
+        {
+            try
+            {
+                dto.webAppData = JsonSerializer.Deserialize<BotWebAppDataDto>(m.WebAppDataJson);
+                dto.contentType = "web_app_data";
+                dto.text = "";
+            }
+            catch
+            {
+                // ignore malformed metadata
+            }
+        }
+
         return dto;
     }
 

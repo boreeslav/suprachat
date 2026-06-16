@@ -19,5 +19,7 @@ public sealed class BotInboxMessageRecord
     public string? ButtonPressJson { get; set; }
     /// <summary>JSON BotAssistantSessionDto — вызов помощника из другого чата.</summary>
     public string? AssistantSessionJson { get; set; }
+    /// <summary>JSON BotWebAppDataDto — данные из mini app.</summary>
+    public string? WebAppDataJson { get; set; }
     public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
 }

@@ -11,6 +11,9 @@ public sealed class SupraChatDto
     public DateTime? contactLastSeenAt { get; set; }
     public string lastMessage { get; set; } = "";
     public DateTime? lastMessageTime { get; set; }
+    /// <summary>Последнее сообщение по всем веткам группы (для строки родителя и сортировки).</summary>
+    public string aggregatedLastMessage { get; set; } = "";
+    public DateTime? aggregatedLastMessageTime { get; set; }
     public int unreadCount { get; set; }
     public bool requiresCustomGroupPassword { get; set; }
     public bool hasGroupAutoKey { get; set; }
@@ -847,4 +850,6 @@ public sealed class SupraWsBotGroupUpdatedPayload
     public BotApiMenuDto? groupMenu { get; set; }
     /// <summary>Если задан — меню относится только к этой группе/ветке.</summary>
     public string? chatId { get; set; }
+    /// <summary>Персональное меню: только этому участнику.</summary>
+    public string? viewerUserId { get; set; }
 }

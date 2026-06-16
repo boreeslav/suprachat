@@ -116,6 +116,8 @@ public sealed partial class SupraMessengerService
                 contactLastSeenAt = contactLastSeenAt,
                 lastMessage = last?.Text ?? "",
                 lastMessageTime = last?.CreatedOn,
+                aggregatedLastMessage = last?.Text ?? "",
+                aggregatedLastMessageTime = last?.CreatedOn,
                 unreadCount = unread,
                 requiresCustomGroupPassword = chat.RequiresCustomGroupPassword,
                 hasGroupAutoKey = memberKey != null,
@@ -152,10 +154,10 @@ public sealed partial class SupraMessengerService
             {
                 dto.unreadCount += branch.unreadCount;
                 if (branch.lastMessageTime.HasValue &&
-                    (!dto.lastMessageTime.HasValue || branch.lastMessageTime > dto.lastMessageTime))
+                    (!dto.aggregatedLastMessageTime.HasValue || branch.lastMessageTime > dto.aggregatedLastMessageTime))
                 {
-                    dto.lastMessageTime = branch.lastMessageTime;
-                    dto.lastMessage = branch.lastMessage;
+                    dto.aggregatedLastMessageTime = branch.lastMessageTime;
+                    dto.aggregatedLastMessage = branch.lastMessage;
                 }
             }
         }
@@ -163,7 +165,7 @@ public sealed partial class SupraMessengerService
         foreach (var branchDto in branchDtoById.Values)
             result.Add(branchDto);
 
-        result = result.OrderByDescending(c => c.lastMessageTime ?? DateTime.MinValue).ToList();
+        result = result.OrderByDescending(c => c.aggregatedLastMessageTime ?? c.lastMessageTime ?? DateTime.MinValue).ToList();
         return new ChatListSnapshot
         {
             Chats = result,

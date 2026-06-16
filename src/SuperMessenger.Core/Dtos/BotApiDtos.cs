@@ -21,6 +21,7 @@ public sealed class BotApiMessageDto
     public string? replyToTextPreview { get; set; }
     public BotMessageButtonPressDto? buttonPress { get; set; }
     public BotAssistantSessionDto? assistantSession { get; set; }
+    public BotWebAppDataDto? webAppData { get; set; }
 }
 
 public sealed class BotApiFileAttachmentDto
@@ -120,6 +121,7 @@ public sealed class BotApiWsEnvelope
 {
     public string type { get; set; } = "";
     public BotApiMessageDto? update { get; set; }
+    public BotApiGroupChatEventDto? groupChat { get; set; }
     public string? botUserId { get; set; }
     public string? error { get; set; }
 }
@@ -213,4 +215,14 @@ public sealed class BotApiGetChannelSubscribersResponse
     public List<BotApiGroupMemberDto> subscribers { get; set; } = [];
     public bool hasMore { get; set; }
     public string? error { get; set; }
+}
+
+public sealed class BotApiGroupChatEventDto
+{
+    public string? eventType { get; set; }
+    public string? chatId { get; set; }
+    public string? chatType { get; set; }
+    public string? chatName { get; set; }
+    public string? parentChatId { get; set; }
+    public bool isAdmin { get; set; }
 }

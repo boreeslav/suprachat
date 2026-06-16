@@ -89,6 +89,30 @@ public sealed class BotApiController : ControllerBase
         return response.success ? Ok(response) : BadRequest(response);
     }
 
+    [HttpGet("sendMiniApp")]
+    [HttpPost("sendMiniApp")]
+    public async Task<IActionResult> SendMiniApp(CancellationToken ct)
+    {
+        var p = await ReadParamsAsync(ct);
+        var auth = await AuthenticateParamsAsync(p, ct);
+        if (auth == null)
+            return Unauthorized(new BotApiSendMiniAppResponse { success = false, error = "Unauthorized" });
+
+        var (botUser, _) = auth.Value;
+        var manifest = BuildMiniAppManifest(p);
+        var (response, broadcast) = await _botApi.SendMiniAppAsync(
+            botUser, manifest, p.userLogin, p.chatId, ct);
+
+        if (response.success && broadcast != null &&
+            Guid.TryParse(broadcast.chatId, out var chatGuid))
+        {
+            var participants = await GetChatParticipantIdsAsync(chatGuid, ct);
+            await _realtime.BroadcastToChatParticipantsAsync(participants, broadcast, ct);
+        }
+
+        return response.success ? Ok(response) : BadRequest(response);
+    }
+
     [HttpGet("getMessages")]
     [HttpPost("getMessages")]
     public async Task<IActionResult> GetMessages(CancellationToken ct)
@@ -886,6 +910,7 @@ public sealed class BotApiController : ControllerBase
             result.assistantMenu = ParseAssistantMenu(root);
             result.groupMenu = ParseGroupMenu(root);
             result.buttons = ParseButtons(root);
+            result.miniApp = ParseMiniApp(root);
         }
         catch
         {
@@ -1149,6 +1174,56 @@ public sealed class BotApiController : ControllerBase
         }
     }
 
+    static BotMiniAppManifestDto? ParseMiniApp(JsonElement root)
+    {
+        if (root.TryGetProperty("miniApp", out var miniEl))
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<BotMiniAppManifestDto>(miniEl.GetRawText(), MenuJsonOptions);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        var title = GetString(root, "title") ?? GetString(root, "text");
+        var entry = GetString(root, "entry");
+        if (string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(entry))
+            return null;
+
+        List<BotMiniAppFileDto>? files = null;
+        if (root.TryGetProperty("files", out var filesEl) && filesEl.ValueKind == JsonValueKind.Array)
+        {
+            try
+            {
+                files = JsonSerializer.Deserialize<List<BotMiniAppFileDto>>(filesEl.GetRawText(), MenuJsonOptions);
+            }
+            catch
+            {
+                files = null;
+            }
+        }
+
+        object? initData = null;
+        if (root.TryGetProperty("initData", out var initEl))
+            initData = JsonSerializer.Deserialize<object>(initEl.GetRawText(), MenuJsonOptions);
+
+        return new BotMiniAppManifestDto
+        {
+            title = title ?? "",
+            entry = entry ?? "index.html",
+            files = files ?? [],
+            initData = initData,
+            autoOpen = ParseBool(GetBoolString(root, "autoOpen"), false),
+            reusable = ParseBool(GetBoolString(root, "reusable"), true),
+            baseOrigin = GetString(root, "baseOrigin"),
+        };
+    }
+
+    static BotMiniAppManifestDto? BuildMiniAppManifest(BotApiRequestParams p) => p.miniApp;
+
     static readonly JsonSerializerOptions MenuJsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -1207,5 +1282,6 @@ public sealed class BotApiController : ControllerBase
         public string? sessionId { get; set; }
         public BotApiMenuDto? assistantMenu { get; set; }
         public BotApiMenuDto? groupMenu { get; set; }
+        public BotMiniAppManifestDto? miniApp { get; set; }
     }
 }
