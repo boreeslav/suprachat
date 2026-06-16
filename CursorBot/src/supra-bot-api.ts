@@ -69,6 +69,24 @@ export interface BotApiSendMessageResponse {
   error?: string;
 }
 
+export interface BotApiSendMessageParams {
+  text?: string;
+  caption?: string;
+  photoFileId?: string;
+  photoFileIds?: string[];
+  documentFileId?: string;
+  attachmentFileIds?: string[];
+  buttons?: BotMessageButtonDto[];
+  userLogin?: string;
+  chatId?: string;
+}
+
+export interface BotApiUploadFileResponse {
+  success: boolean;
+  fileId?: string;
+  error?: string;
+}
+
 export interface BotApiSendActivityResponse {
   success: boolean;
   chatId?: string;
@@ -254,13 +272,12 @@ export class SupraBotApi {
     return this._request<BotApiMeResponse>("me", {}, "GET");
   }
 
-  sendMessage(params: {
-    text?: string;
-    buttons?: BotMessageButtonDto[];
-    userLogin?: string;
-    chatId?: string;
-  }): Promise<BotApiSendMessageResponse> {
-    return this._request<BotApiSendMessageResponse>("sendMessage", params, "POST");
+  sendMessage(params: BotApiSendMessageParams): Promise<BotApiSendMessageResponse> {
+    return this._request<BotApiSendMessageResponse>(
+      "sendMessage",
+      params as Record<string, unknown>,
+      "POST",
+    );
   }
 
   sendActivity(params: {
@@ -271,6 +288,59 @@ export class SupraBotApi {
     chatId?: string;
   }): Promise<BotApiSendActivityResponse> {
     return this._request<BotApiSendActivityResponse>("sendActivity", params, "POST");
+  }
+
+  /** Сбрасывает индикаторы активности (typing, sendingImage и т.д.). */
+  async clearActivities(
+    target: { userLogin?: string; chatId?: string },
+    types?: string[],
+  ): Promise<void> {
+    let toClear = types?.length
+      ? [...new Set(types.filter(Boolean))]
+      : ["typing", "sendingImage", "sendingFile", "recordingVoice"];
+    if (!types?.length) {
+      try {
+        const cur = await this.getActivity(target);
+        for (const a of cur.activities ?? []) {
+          if (a.active && a.activityType) toClear.push(a.activityType);
+        }
+        toClear = [...new Set(toClear)];
+      } catch {
+        /* ignore */
+      }
+    }
+    await Promise.all(
+      toClear.map((activityType) =>
+        this.sendActivity({ ...target, activityType, active: false }).catch(() => {}),
+      ),
+    );
+  }
+
+  async uploadFile(
+    chatId: string,
+    data: Buffer | ArrayBuffer | Uint8Array,
+    fileName: string,
+    mimeType: string,
+  ): Promise<BotApiUploadFileResponse> {
+    const form = new FormData();
+    form.append("file", new Blob([new Uint8Array(data)], { type: mimeType }), fileName);
+
+    const url =
+      joinUrl(this.baseUrl, "api/bot-api/uploadFile") +
+      "?" +
+      this._authQuery() +
+      "&chatId=" +
+      encodeURIComponent(chatId);
+
+    const res = await fetch(url, { method: "POST", body: form });
+    const body = (await res.json().catch(() => ({}))) as BotApiUploadFileResponse;
+    if (!res.ok && body?.error) {
+      const err = new Error(body.error) as Error & { response?: unknown; status?: number };
+      err.response = body;
+      err.status = res.status;
+      throw err;
+    }
+    return body;
   }
 
   getActivity(params: {

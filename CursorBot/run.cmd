@@ -45,6 +45,20 @@ if not exist "data\bot-config.json" (
   )
 )
 
+if not exist "data\actions.json" (
+  if exist "actions.example.json" (
+    echo [SETUP] Копирую actions.example.json -^> data\actions.json
+    copy /Y "actions.example.json" "data\actions.json" >nul
+  )
+)
+
+if not exist "scripts\actions" (
+  if exist "scripts\actions.example" (
+    echo [SETUP] Копирую scripts\actions.example -^> scripts\actions
+    xcopy /E /I /Q "scripts\actions.example" "scripts\actions" >nul
+  )
+)
+
 if not exist "node_modules\.bin\tsc.cmd" (
   echo [SETUP] Установка зависимостей...
   call npm install

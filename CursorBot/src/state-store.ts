@@ -21,6 +21,7 @@ export interface ChatRoomMeta {
   sessionOrder: string[];
   nextSessionNum: number;
   pickerMessageId?: string;
+  actionsCatalogMessageId?: string;
   endedSessions?: string[];
 }
 
@@ -125,6 +126,7 @@ export class StateStore {
           sessionOrder: room.sessionOrder?.length ? [...room.sessionOrder] : ["1"],
           nextSessionNum: room.nextSessionNum ?? 2,
           pickerMessageId: room.pickerMessageId,
+          actionsCatalogMessageId: room.actionsCatalogMessageId,
           endedSessions: room.endedSessions ? [...room.endedSessions] : undefined,
         };
         const sessionKey = makeSessionKey(chatId, chatRooms[chatId]!.activeSessionId);

@@ -6,6 +6,7 @@ dist.backup.*/
 bot-config.json
 actions.json
 data/
+scripts/actions/
 tmp-*
 *.log
 .DS_Store

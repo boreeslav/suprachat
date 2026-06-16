@@ -47,7 +47,8 @@ cp .env.example .env
 ```bash
 cp bot-config.example.json data/bot-config.json
 cp actions.example.json data/actions.json   # опционально
-# отредактируйте data/bot-config.json
+xcopy /E /I scripts\actions.example scripts\actions   # скрипты для type=script (Windows)
+# отредактируйте data/bot-config.json и data/actions.json
 ```
 
 ```json
@@ -63,6 +64,8 @@ cp actions.example.json data/actions.json   # опционально
 - `allowedUsers` — массив **логинов** (без `@`), не отображаемых имён; пустой массив — доступ для всех
 - Рабочий файл по умолчанию — `data/bot-config.json` (не коммитится; в репозитории только `bot-config.example.json`)
 - `projects` — список папок; переключение через меню «Проект» или `/project <id>`
+
+Рабочие конфиги и скрипты действий **не коммитятся**: `data/`, `actions.json`, `scripts/actions/`. В репозитории — только шаблоны `*.example.json` и `scripts/actions.example/`.
 
 ### Каталог действий (`actions.json`)
 

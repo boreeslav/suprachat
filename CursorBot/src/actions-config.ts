@@ -26,7 +26,15 @@ export interface BotActionsFile {
 }
 
 export function resolveActionsFilePath(configPath: string): string {
-  return resolve(dirname(configPath), "actions.json");
+  const configDir = dirname(configPath);
+  const candidates = [
+    resolve(configDir, "actions.json"),
+    resolve(configDir, "..", "actions.json"),
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return candidates[0]!;
 }
 
 function dirname(filePath: string): string {

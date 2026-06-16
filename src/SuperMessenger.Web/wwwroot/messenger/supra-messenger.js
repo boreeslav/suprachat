@@ -3847,6 +3847,80 @@ function fillGroupActivityIndicator(el, activities, i18n) {
 	el.replaceChildren(...buildActivityRowElements(activities, i18n));
 }
 
+function chatListPreviewThumbFileIds(previewEl) {
+	if (!previewEl) return [];
+	return [...previewEl.querySelectorAll('.mapp-chat-item-preview-thumb[data-file-id]')]
+		.map(img => img.dataset.fileId)
+		.filter(Boolean);
+}
+
+function chatListPreviewMediaCaption(storedText) {
+	const parsed = MessengerCustomMessage.parse(storedText);
+	if (parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+		return (parsed.payload?.caption || '').trim();
+	}
+	return '';
+}
+
+function chatListPreviewCanKeepMediaThumbs(previewEl, storedText) {
+	if (!previewEl || !storedText || MessengerChatListPreview.isLockedStorage(storedText)) return false;
+	const parsed = MessengerCustomMessage.parse(storedText);
+	if (!parsed) return false;
+	const ct = parsed.contentType;
+	if (ct !== MessengerCustomMessage.CONTENT_TYPES.IMAGE
+		&& ct !== MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+		return false;
+	}
+	const nextIds = MessengerCustomMessage.extractAttachmentFileIds(storedText);
+	if (!nextIds.length) return false;
+	const prevIds = chatListPreviewThumbFileIds(previewEl);
+	return prevIds.length === nextIds.length && nextIds.every((id, i) => id === prevIds[i]);
+}
+
+function buildChatListPreviewInfo({
+	storedText,
+	utils,
+	cache,
+	i18n,
+	previewEl = null,
+	typing = null,
+}) {
+	if (typing) {
+		if (typing.groupActivities?.length) {
+			return { typing: true, groupActivities: typing.groupActivities };
+		}
+		return { text: typing.text, typing: true, typingText: typing.typingText };
+	}
+	const preview = MessengerChatListPreview.getDisplay(storedText, i18n);
+	if (preview.locked) {
+		return { text: preview.text, typing: false, locked: true };
+	}
+	if (chatListPreviewCanKeepMediaThumbs(previewEl, storedText)) {
+		return {
+			text: preview.text,
+			typing: false,
+			locked: false,
+			media: true,
+			caption: chatListPreviewMediaCaption(storedText),
+		};
+	}
+	const mediaContent = MessengerChatListPreview.buildMediaContent({
+		storedText,
+		utils,
+		cache,
+	});
+	if (mediaContent) {
+		return {
+			text: preview.text,
+			typing: false,
+			locked: false,
+			media: true,
+			mediaContent,
+		};
+	}
+	return { text: preview.text, typing: false, locked: preview.locked };
+}
+
 function applyChatListPreviewEl(previewEl, previewInfo, i18n) {
 	if (!previewEl || !previewInfo) return;
 	previewEl.classList.toggle('mapp-chat-item-preview--typing', !!previewInfo.typing);
@@ -3856,8 +3930,8 @@ function applyChatListPreviewEl(previewEl, previewInfo, i18n) {
 	);
 	previewEl.classList.toggle('mapp-chat-item-preview--locked', !!previewInfo.locked && !previewInfo.typing);
 	previewEl.classList.toggle('mapp-chat-item-preview--media', !!previewInfo.media);
-	previewEl.replaceChildren();
 	if (previewInfo.typing) {
+		previewEl.replaceChildren();
 		if (previewInfo.groupActivities?.length) {
 			fillGroupActivityIndicator(previewEl, previewInfo.groupActivities, i18n);
 			return;
@@ -3866,9 +3940,41 @@ function applyChatListPreviewEl(previewEl, previewInfo, i18n) {
 		return;
 	}
 	if (previewInfo.mediaContent) {
+		const nextIds = [...previewInfo.mediaContent.querySelectorAll('.mapp-chat-item-preview-thumb[data-file-id]')]
+			.map(img => img.dataset.fileId)
+			.filter(Boolean);
+		const prevIds = chatListPreviewThumbFileIds(previewEl);
+		if (nextIds.length && nextIds.length === prevIds.length && nextIds.every((id, i) => id === prevIds[i])) {
+			const prevCaption = previewEl.querySelector('.mapp-chat-item-preview-caption');
+			const nextCaption = previewInfo.mediaContent.querySelector('.mapp-chat-item-preview-caption');
+			const prevCapText = prevCaption?.textContent || '';
+			const nextCapText = nextCaption?.textContent || '';
+			if (prevCapText !== nextCapText) {
+				prevCaption?.remove();
+				if (nextCaption) previewEl.appendChild(nextCaption.cloneNode(true));
+			}
+			return;
+		}
+		previewEl.replaceChildren();
 		previewEl.appendChild(previewInfo.mediaContent);
 		return;
 	}
+	if (previewInfo.media) {
+		const caption = previewInfo.caption ?? '';
+		let capEl = previewEl.querySelector('.mapp-chat-item-preview-caption');
+		if (caption) {
+			if (!capEl) {
+				capEl = document.createElement('span');
+				capEl.className = 'mapp-chat-item-preview-caption';
+				previewEl.appendChild(capEl);
+			}
+			capEl.textContent = caption;
+		} else {
+			capEl?.remove();
+		}
+		return;
+	}
+	previewEl.replaceChildren();
 	previewEl.textContent = previewInfo.text || '';
 }
 
@@ -4917,6 +5023,10 @@ const MessengerImageSlot = {
 		if (!img || !url) return;
 		if (!this.isLocalSrc(url)) {
 			this.applyDirectSrc(img, url);
+			return;
+		}
+		if (img.src === url && img.classList.contains('mc-image-slot--ready')
+			&& img.complete && img.naturalWidth > 0) {
 			return;
 		}
 		this.markPending(img);
@@ -12912,6 +13022,23 @@ class MessengerCustomMessage {
 		return [];
 	}
 
+	static mediaSignature(text) {
+		if (!text || (typeof SupraCrypto !== 'undefined' && SupraCrypto.isEncrypted(text))) return null;
+		const parsed = MessengerCustomMessage.parse(text);
+		if (!parsed) return null;
+		const ct = parsed.contentType;
+		const p = parsed.payload || {};
+		if (ct === MessengerCustomMessage.CONTENT_TYPES.IMAGE && p.fileId) {
+			return `i:${p.fileId}`;
+		}
+		if (ct === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
+			const ids = (p.fileIds || []).filter(Boolean).join(',');
+			if (!ids) return null;
+			return `a:${ids}|${(p.caption || '').trim()}`;
+		}
+		return null;
+	}
+
 	static #normalizeForwardImageUrl(u) {
 		if (!u || u.startsWith('blob:') || u.startsWith('data:')) return u || '';
 		try {
@@ -13265,6 +13392,7 @@ class MessengerChatListPreview {
 			img.className = 'mapp-chat-item-preview-thumb mc-image-slot--pending';
 			img.alt = '';
 			const url = MessengerFileService.getFileUrl(fileId);
+			img.dataset.fileId = fileId;
 			if (cache) cache.applyThumbnailSrc(img, url, null, thumbMax);
 			slot.appendChild(img);
 			thumbs.appendChild(slot);
@@ -15000,12 +15128,18 @@ class MessengerCache {
 		maxSize = maxSize ?? getMessengerScreenThumbMax();
 		const sourceUrl = MessengerFileService.toOriginalUrl(url);
 		const cacheKey = messengerThumbCacheKey(sourceUrl, maxSize);
-		MessengerImageSlot.markPending(imgEl);
 		if (this.#thumbURLs.has(cacheKey)) {
-			MessengerImageSlot.applySrc(imgEl, this.#thumbURLs.get(cacheKey));
+			const cachedUrl = this.#thumbURLs.get(cacheKey);
+			if (imgEl.src === cachedUrl && imgEl.classList.contains('mc-image-slot--ready')
+				&& imgEl.complete && imgEl.naturalWidth > 0) {
+				this.prefetchMedium(url, signal);
+				return;
+			}
+			MessengerImageSlot.applySrc(imgEl, cachedUrl);
 			this.prefetchMedium(url, signal);
 			return;
 		}
+		MessengerImageSlot.markPending(imgEl);
 		this.getOrCreateThumbnail(url, signal, maxSize)
 			.then(u => {
 				if (imgEl.isConnected && u) {
@@ -16810,45 +16944,221 @@ class MessengerSidebar {
 		}
 	}
 
+	#findChatListItem(chatId) {
+		if (!chatId) return null;
+		const sel = `[data-chat-id="${String(chatId).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]`;
+		return this.el.chatList?.querySelector(sel)
+			|| this.el.chatListPanel?.querySelector(sel);
+	}
+
+	#chatListPreviewInfo(listPreviewChat, previewEl = null, sourceChat = null) {
+		const chat = sourceChat || listPreviewChat;
+		if (this.#formatChatPreview) {
+			return this.#formatChatPreview(chat, { previewEl });
+		}
+		return buildChatListPreviewInfo({
+			storedText: listPreviewChat.lastMessage || '',
+			utils: this.#utils,
+			cache: null,
+			i18n: this.#i18n,
+			previewEl,
+		});
+	}
+
+	#patchChatItemBadge(item, chat, hasBranches, branches) {
+		const wrap = item.querySelector('.mapp-badge-wrap');
+		if (!wrap) return;
+		const listUnreadCount = hasBranches
+			? getGroupListUnreadCount(chat, branches)
+			: (chat.unreadCount || 0);
+		wrap.replaceChildren();
+		if (listUnreadCount > 0) {
+			const badge = this.#utils.mk('span', 'mapp-badge');
+			if (isChatNotificationMuted(chat.id)) badge.classList.add('mapp-badge--muted');
+			badge.textContent = listUnreadCount > 99 ? '99+' : listUnreadCount;
+			wrap.appendChild(badge);
+		}
+	}
+
+	#patchChatItem(item, chat, activeChat) {
+		item.classList.toggle('mapp-chat-item--active', activeChat?.id === chat.id);
+		const isGroupChat = chat.type === 'group' || chat.type === 'public_group';
+		const branches = this.#getBranchesForGroup(chat);
+		const hasBranches = isRootGroupChat(chat) && branches.length > 0;
+		const listPreviewChat = hasBranches ? chatForParentListPreview(chat) : chat;
+		const isExpanded = hasBranches && this.#expandedGroupId === chat.id;
+		item.classList.toggle('mapp-chat-item--has-branches', hasBranches);
+		item.classList.toggle('mapp-chat-item--expanded', isExpanded);
+		const nameEl = item.querySelector('.mapp-chat-item-name');
+		if (nameEl) nameEl.textContent = chat.name || this.#i18n.t('unnamed');
+		const chevron = item.querySelector('.mapp-chat-item-branch-chevron');
+		if (chevron) chevron.textContent = isExpanded ? '▾' : '▸';
+		const timeEl = item.querySelector('.mapp-chat-item-time');
+		if (timeEl) {
+			timeEl.textContent = listPreviewChat.lastMessageTime
+				? this.#utils.formatListTime(listPreviewChat.lastMessageTime)
+				: '';
+		}
+		const previewEl = item.querySelector('.mapp-chat-item-preview');
+		if (previewEl) {
+			applyChatListPreviewEl(
+				previewEl,
+				this.#chatListPreviewInfo(listPreviewChat, previewEl, chat),
+				this.#i18n
+			);
+		}
+		this.#patchChatItemBadge(item, chat, hasBranches, branches);
+	}
+
+	#patchBranchItem(item, chat, activeChat, { isMain = false, parentChat = null } = {}) {
+		item.classList.toggle('mapp-chat-item--active', activeChat?.id === chat.id);
+		const displayName = isMain
+			? this.#i18n.t('groupBranchMain')
+			: (chat.name || this.#i18n.t('unnamed'));
+		const groupParent = isMain ? (parentChat || chat) : null;
+		const unreadCount = isMain && groupParent
+			? getGroupMainUnreadCount(groupParent, this.#getBranchesForGroup(groupParent))
+			: (chat.unreadCount || 0);
+		const nameEl = item.querySelector('.mapp-chat-item-name');
+		if (nameEl) nameEl.textContent = displayName;
+		const timeEl = item.querySelector('.mapp-chat-item-time');
+		if (timeEl) {
+			timeEl.textContent = chat.lastMessageTime
+				? this.#utils.formatListTime(chat.lastMessageTime)
+				: '';
+		}
+		const previewEl = item.querySelector('.mapp-chat-item-preview');
+		if (previewEl) {
+			const previewInfo = (!isMain && this.#formatChatPreview)
+				? this.#formatChatPreview(chat, { previewEl })
+				: buildChatListPreviewInfo({
+					storedText: chat.lastMessage || '',
+					utils: this.#utils,
+					cache: null,
+					i18n: this.#i18n,
+					previewEl,
+				});
+			applyChatListPreviewEl(previewEl, previewInfo, this.#i18n);
+		}
+		const wrap = item.querySelector('.mapp-badge-wrap');
+		if (wrap) {
+			wrap.replaceChildren();
+			if (unreadCount > 0) {
+				const badge = this.#utils.mk('span', 'mapp-badge');
+				if (isChatNotificationMuted(chat.id)) badge.classList.add('mapp-badge--muted');
+				badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+				wrap.appendChild(badge);
+			}
+		}
+	}
+
+	#renderBranchList(branchWrap, parentChat, branches, activeChat) {
+		const existing = [...branchWrap.querySelectorAll('.mapp-chat-item--branch')];
+		const byId = new Map(existing.map(el => [el.dataset.chatId, el]));
+		const nodes = [];
+		let mainItem = byId.get(parentChat.id);
+		if (mainItem) {
+			byId.delete(parentChat.id);
+			this.#patchBranchItem(mainItem, parentChat, activeChat, { isMain: true, parentChat });
+		} else {
+			mainItem = this.#buildBranchItem(parentChat, activeChat, { isMain: true, parentChat });
+		}
+		nodes.push(mainItem);
+		for (const branch of branches) {
+			const branchChat = this.#allChatsRef.find(c => c.id === branch.id) || {
+				id: branch.id,
+				name: branch.name,
+				type: 'group_branch',
+				avatar: branch.avatar || null,
+				parentChatId: parentChat.id,
+				branchSlug: branch.slug,
+				lastMessage: branch.lastMessage || '',
+				lastMessageTime: branch.lastMessageTime || null,
+				unreadCount: branch.unreadCount || 0,
+			};
+			let item = byId.get(branchChat.id);
+			if (item) {
+				byId.delete(branchChat.id);
+				this.#patchBranchItem(item, branchChat, activeChat, { isMain: false });
+			} else {
+				item = this.#buildBranchItem(branchChat, activeChat, { isMain: false });
+			}
+			nodes.push(item);
+		}
+		for (const el of byId.values()) el.remove();
+		branchWrap.replaceChildren(...nodes);
+	}
+
+	patchChatListItem(chat, activeChat = this.#lastActiveChat) {
+		if (!chat?.id) return;
+		const item = this.#findChatListItem(chat.id);
+		if (!item) {
+			this.#refreshChatListPanels();
+			return;
+		}
+		if (item.classList.contains('mapp-chat-item--branch')) {
+			this.#patchBranchItem(item, chat, activeChat);
+		} else {
+			this.#patchChatItem(item, chat, activeChat);
+		}
+	}
+
 	#renderPanelContent(panelEl, folderId, chats, activeChat, i18n, opts = {}) {
 		if (!panelEl || !i18n) return;
-		panelEl.innerHTML = '';
 		const displayChats = this.#filterChatsForFolder(
 			chats,
 			folderId,
 			this.el._filterQuery
 		);
 
+		const emptyEl = panelEl.querySelector(':scope > .mapp-list-empty');
 		if (!displayChats.length) {
-			const empty = this.#utils.mk('div', 'mapp-list-empty');
-			empty.textContent = opts.listLoading ? i18n.t('loading') : i18n.t('noChats');
-			panelEl.appendChild(empty);
+			panelEl.querySelectorAll(':scope > .mapp-chat-item, :scope > .mapp-chat-branch-list').forEach(el => el.remove());
+			if (emptyEl) {
+				emptyEl.textContent = opts.listLoading ? i18n.t('loading') : i18n.t('noChats');
+			} else {
+				const empty = this.#utils.mk('div', 'mapp-list-empty');
+				empty.textContent = opts.listLoading ? i18n.t('loading') : i18n.t('noChats');
+				panelEl.replaceChildren(empty);
+			}
 			return;
 		}
+		emptyEl?.remove();
 
-		displayChats.forEach(chat => {
-			panelEl.appendChild(this.#buildChatItem(chat, activeChat));
-			const branches = this.#getBranchesForGroup(chat);
-			if (this.#expandedGroupId === chat.id && branches.length > 0) {
-				const branchWrap = this.#utils.mk('div', 'mapp-chat-branch-list');
-				branchWrap.appendChild(this.#buildBranchItem(chat, activeChat, { isMain: true, parentChat: chat }));
-				branches.forEach(branch => {
-					const branchChat = this.#allChatsRef.find(c => c.id === branch.id) || {
-						id: branch.id,
-						name: branch.name,
-						type: 'group_branch',
-						avatar: branch.avatar || null,
-						parentChatId: chat.id,
-						branchSlug: branch.slug,
-						lastMessage: branch.lastMessage || '',
-						lastMessageTime: branch.lastMessageTime || null,
-						unreadCount: branch.unreadCount || 0,
-					};
-					branchWrap.appendChild(this.#buildBranchItem(branchChat, activeChat, { isMain: false }));
-				});
-				panelEl.appendChild(branchWrap);
-			}
+		const existingById = new Map();
+		panelEl.querySelectorAll(':scope > .mapp-chat-item').forEach(el => {
+			if (el.dataset.chatId) existingById.set(el.dataset.chatId, el);
 		});
+		const nextNodes = [];
+		for (const chat of displayChats) {
+			let item = existingById.get(chat.id);
+			if (item) {
+				existingById.delete(chat.id);
+				this.#patchChatItem(item, chat, activeChat);
+			} else {
+				item = this.#buildChatItem(chat, activeChat);
+			}
+			nextNodes.push(item);
+
+			const branches = this.#getBranchesForGroup(chat);
+			const branchFollows = item.nextElementSibling?.classList.contains('mapp-chat-branch-list')
+				? item.nextElementSibling
+				: null;
+			if (this.#expandedGroupId === chat.id && branches.length > 0) {
+				const branchWrap = branchFollows || this.#utils.mk('div', 'mapp-chat-branch-list');
+				branchWrap.dataset.parentChatId = chat.id;
+				this.#renderBranchList(branchWrap, chat, branches, activeChat);
+				nextNodes.push(branchWrap);
+			} else if (branchFollows) {
+				branchFollows.remove();
+			}
+		}
+		for (const el of existingById.values()) {
+			const branchWrap = el.nextElementSibling;
+			if (branchWrap?.classList.contains('mapp-chat-branch-list')) branchWrap.remove();
+			el.remove();
+		}
+		panelEl.replaceChildren(...nextNodes);
 	}
 
 	collapseExpandedGroup() {
@@ -16902,11 +17212,13 @@ class MessengerSidebar {
 		const row2 = this.#utils.mk('div', 'mapp-chat-item-row');
 		const previewEl = this.#utils.mk('span', 'mapp-chat-item-preview');
 		const previewInfo = (!isMain && this.#formatChatPreview)
-			? this.#formatChatPreview(chat)
-			: (() => {
-				const p = MessengerChatListPreview.getDisplay(chat.lastMessage || '', this.#i18n);
-				return { text: p.text, typing: false, locked: p.locked };
-			})();
+			? this.#formatChatPreview(chat, { previewEl: null })
+			: buildChatListPreviewInfo({
+				storedText: chat.lastMessage || '',
+				utils: this.#utils,
+				cache: null,
+				i18n: this.#i18n,
+			});
 		applyChatListPreviewEl(previewEl, previewInfo, this.#i18n);
 		const badgeWrap = this.#utils.mk('span', 'mapp-badge-wrap');
 		if (unreadCount > 0) {
@@ -17008,13 +17320,11 @@ class MessengerSidebar {
 		}
 		const row2 = this.#utils.mk('div', 'mapp-chat-item-row');
 		const previewEl = this.#utils.mk('span', 'mapp-chat-item-preview');
-		const previewInfo = this.#formatChatPreview
-			? this.#formatChatPreview(listPreviewChat)
-			: (() => {
-				const p = MessengerChatListPreview.getDisplay(listPreviewChat.lastMessage || '', this.#i18n);
-				return { text: p.text, typing: false, locked: p.locked };
-			})();
-		applyChatListPreviewEl(previewEl, previewInfo, this.#i18n);
+		applyChatListPreviewEl(
+			previewEl,
+			this.#chatListPreviewInfo(listPreviewChat, null, chat),
+			this.#i18n
+		);
 		const badgeWrap = this.#utils.mk('span', 'mapp-badge-wrap');
 		const listUnreadCount = hasBranches
 			? getGroupListUnreadCount(chat, branches)
@@ -17206,10 +17516,15 @@ class MessengerSidebar {
 		this.#formatChatPreview = typeof fn === 'function' ? fn : null;
 	}
 
-	updateChatPreview(chatId, previewInfo) {
-		const item = this.el.chatList?.querySelector(`[data-chat-id="${chatId}"]`);
+	updateChatPreview(chatId, previewInfo = null) {
+		const item = this.#findChatListItem(chatId);
 		const previewEl = item?.querySelector('.mapp-chat-item-preview');
-		if (!previewEl || !previewInfo) return;
+		if (!previewEl) return;
+		if (!previewInfo && this.#formatChatPreview) {
+			const chat = this.#allChatsRef.find(c => c.id === chatId);
+			if (chat) previewInfo = this.#formatChatPreview(chat, { previewEl });
+		}
+		if (!previewInfo) return;
 		applyChatListPreviewEl(previewEl, previewInfo, this.#i18n);
 	}
 
@@ -17743,7 +18058,7 @@ class MessengerAppView {
 		this.el.empty = empty;
 		this.el.placeholder = empty;
 		this.#sidebar.setOnFilter((q) => this.#filterChats(q));
-		this.#sidebar.setChatPreviewFormatter((chat) => this.#formatChatListPreview(chat));
+		this.#sidebar.setChatPreviewFormatter((chat, opts = {}) => this.#formatChatListPreview(chat, opts));
 		this.#sidebar.setOnFolderSelect(() => {
 			this.#persistNavState();
 			if (!this.#sidebar.usesFolderCarousel()) {
@@ -18127,7 +18442,7 @@ class MessengerAppView {
 	async #syncPreviewsFromMessageCache() {
 		if (!this.#chats?.length || !this.#msgService) return;
 		const yieldMain = () => (SupraCrypto?.yieldToMain?.() ?? Promise.resolve());
-		let changed = false;
+		const changedIds = new Set();
 		for (const c of this.#chats) {
 			try {
 				const messages = await this.#cachedMessagesForPreview(c.id);
@@ -18138,14 +18453,19 @@ class MessengerAppView {
 					} else if (isRootGroupChat(c)) {
 						applyGroupAggregatedPreview(c, this.#chats);
 					}
-					changed = true;
+					changedIds.add(c.id);
 				}
 			} catch (e) {
 				console.warn('[MessengerAppView] syncPreviewsFromMessageCache', c.id, e);
 			}
 			await yieldMain();
 		}
-		if (changed) this.#renderChatList();
+		if (!changedIds.size) return;
+		const activeChat = this.#activeChatForSidebar();
+		for (const id of changedIds) {
+			const chat = this.#chats.find(c => c.id === id);
+			if (chat) this.#sidebar.patchChatListItem(chat, activeChat);
+		}
 	}
 
 	async #runProgressivePreviewDecrypt(options = {}) {
@@ -18278,11 +18598,14 @@ class MessengerAppView {
 			} else if (isRootGroupChat(chat)) {
 				applyGroupAggregatedPreview(chat, this.#chats);
 			}
-			const render = () => this.#renderChatList();
 			if (this.#api?.decryptChatListPreviews) {
-				await this.#api.decryptChatListPreviews([chat]).then(render).catch(render);
-			} else {
-				render();
+				await this.#api.decryptChatListPreviews([chat]).catch(() => {});
+			}
+			const activeChat = this.#activeChatForSidebar();
+			this.#sidebar.patchChatListItem(chat, activeChat);
+			if (isGroupBranchChat(chat)) {
+				const parent = this.#chats.find(c => c.id === chat.parentChatId);
+				if (parent) this.#sidebar.patchChatListItem(parent, activeChat);
 			}
 		} catch (e) {
 			console.warn('[MessengerAppView] refreshChatListPreview cache', e);
@@ -21329,8 +21652,9 @@ class MessengerAppView {
 	}
 	async syncAfterReconnect(msgService, api) {
 		try {
-			await this.requestSyncBundle(msgService, api);
+			const result = await this.requestSyncBundle(msgService, api);
 			await this.#assistantMgr?.processPendingOnConnect();
+			if (result) return;
 			const chatId = this.#activeState?.chatId;
 			if (chatId && this.#isChatVisible(chatId)) {
 				await this.#panelFactory.backgroundSyncPanelMessages(chatId, this.#activeState);
@@ -21389,10 +21713,10 @@ class MessengerAppView {
 			st.users.delete(userId);
 		}
 		if (!st.users.size) this.#chatTypingState.delete(chatId);
-		this.#sidebar.updateChatPreview(chatId, this.#formatChatListPreview(chat));
+		this.#sidebar.updateChatPreview(chatId);
 	}
 
-	#formatChatListPreview(chat) {
+	#formatChatListPreview(chat, { previewEl = null } = {}) {
 		const typing = this.#getChatTypingPreview(chat);
 		if (typing) {
 			if (typing.groupActivities?.length) {
@@ -21403,25 +21727,13 @@ class MessengerAppView {
 		const hasBranches = isRootGroupChat(chat) && collectBranchesForGroup(chat, this.#chats).length > 0;
 		const previewChat = hasBranches ? chatForParentListPreview(chat) : chat;
 		const stored = previewChat.lastMessage || '';
-		const preview = MessengerChatListPreview.getDisplay(stored, this.#i18n);
-		if (preview.locked) {
-			return { text: preview.text, typing: false, locked: true };
-		}
-		const mediaContent = MessengerChatListPreview.buildMediaContent({
+		return buildChatListPreviewInfo({
 			storedText: stored,
 			utils: this.#utils,
 			cache: this.#mediaCache,
+			i18n: this.#i18n,
+			previewEl,
 		});
-		if (mediaContent) {
-			return {
-				text: preview.text,
-				typing: false,
-				locked: false,
-				media: true,
-				mediaContent,
-			};
-		}
-		return { text: preview.text, typing: false, locked: preview.locked };
 	}
 
 	#getChatTypingPreview(chat) {
@@ -23479,7 +23791,7 @@ class MessengerTransport {
 	static RETRY_DELAYS_MS = [1000, 2000, 5000, 10000, 15000, 30000];
 	static SIGNALR_RECONNECT_DELAYS_MS = [0, 2000, 5000, 10000, 15000, 30000];
 	static PAGE_RESUME_DEBOUNCE_MS = 250;
-	static PAGE_RESUME_DEBOUNCE_MOBILE_MS = 0;
+	static PAGE_RESUME_DEBOUNCE_MOBILE_MS = 250;
 	static PAGE_HIDE_DISCONNECT_GRACE_MS = 45000;
 	static PAGE_HIDE_DISCONNECT_GRACE_MOBILE_MS = 15000;
 	static PAGE_HIDE_PICKER_GRACE_MS = 120000;
@@ -23649,7 +23961,6 @@ class MessengerTransport {
 	#onPageActivated() {
 		if (document.visibilityState === 'hidden') return;
 		this.#cancelPageHideDisconnect();
-		this.#reportClientForeground();
 		clearTimeout(this.#pageResumeDebounceTimer);
 		const debounceMs = MessengerTransport.isMobilePwa()
 			? MessengerTransport.PAGE_RESUME_DEBOUNCE_MOBILE_MS
@@ -23684,8 +23995,7 @@ class MessengerTransport {
 		if (!conn || this.#destroyed) return;
 
 		const state = conn.state;
-		const mobile = MessengerTransport.isMobilePwa();
-		if (state === 'Connected' && !mobile) {
+		if (state === 'Connected') {
 			this.#reportClientForeground();
 			this.reportActivity();
 			return;
@@ -24052,6 +24362,9 @@ class MessengerCustomMessageRenderer {
 			getMsgArea: () => bubble.closest('.mc-messages'),
 		});
 		bubble.classList.add('mc-bubble--media-no-caption');
+		bubble.dataset.mediaSig = MessengerCustomMessage.mediaSignature(
+			MessengerCustomMessage.pack(MessengerCustomMessage.CONTENT_TYPES.IMAGE, payload)
+		) || '';
 	}
 
 	#renderPhotoAlbum(bubble, payload, channelPublic = false) {
@@ -24080,6 +24393,9 @@ class MessengerCustomMessageRenderer {
 			bubble.insertBefore(capEl, footer || null);
 		}
 		syncMediaCaptionFooterLayout(bubble);
+		bubble.dataset.mediaSig = MessengerCustomMessage.mediaSignature(
+			MessengerCustomMessage.pack(MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM, payload)
+		) || '';
 	}
 }
 
@@ -25164,6 +25480,8 @@ class MessengerMessageRenderer {
 		if (!entry?.el) return;
 		const bubble = entry.el.querySelector('.mc-bubble');
 		if (!bubble) return;
+		const mediaSig = MessengerCustomMessage.mediaSignature(msg.text);
+		const keepMedia = mediaSig && bubble.dataset.mediaSig === mediaSig;
 		const oldQuote = bubble.querySelector('.mc-msg-quote');
 		if (oldQuote) oldQuote.remove();
 		const oldFwd = bubble.querySelector('.mc-msg-forward-label');
@@ -25171,11 +25489,14 @@ class MessengerMessageRenderer {
 		const oldText = bubble.querySelector('.mc-msg-text');
 		if (oldText) oldText.remove();
 		bubble.querySelector('.mc-msg-thoughts')?.remove();
-		bubble.querySelector('.mc-photo-collage')?.remove();
-		bubble.querySelectorAll('.mc-image-slot-wrap, .mc-photo-collage-cell').forEach(el => el.remove());
-		bubble.querySelector('.mc-bubble-image')?.remove();
-		bubble.querySelector('.mc-file-progress-wrap')?.remove();
-		bubble.classList.remove('mc-image-bubble', 'mc-photo-album-bubble', 'mc-file-bubble', 'mc-file-bubble-clickable', 'mc-file-upload-bubble', 'mc-bubble--media-no-caption');
+		if (!keepMedia) {
+			bubble.querySelector('.mc-photo-collage')?.remove();
+			bubble.querySelectorAll('.mc-image-slot-wrap, .mc-photo-collage-cell').forEach(el => el.remove());
+			bubble.querySelector('.mc-bubble-image')?.remove();
+			bubble.querySelector('.mc-file-progress-wrap')?.remove();
+			bubble.classList.remove('mc-image-bubble', 'mc-photo-album-bubble', 'mc-file-bubble', 'mc-file-bubble-clickable', 'mc-file-upload-bubble', 'mc-bubble--media-no-caption');
+			delete bubble.dataset.mediaSig;
+		}
 		if (msg.forwardedFromSenderName) {
 			const fwdEl = this.#utils.mk('div', 'mc-msg-forward-label');
 			const fn = this.#i18n.t('forwardedFrom');
@@ -25194,8 +25515,22 @@ class MessengerMessageRenderer {
 			textEl.textContent = this.#i18n.t('messageDeleted');
 			const footer = bubble.querySelector('.mc-msg-footer');
 			bubble.insertBefore(textEl, footer);
-		} else {
+		} else if (!keepMedia) {
 			this.#appendMessageText(bubble, msg, { channelPublic });
+			if (mediaSig) bubble.dataset.mediaSig = mediaSig;
+		} else if (mediaSig?.startsWith('a:')) {
+			const caption = (MessengerCustomMessage.parse(msg.text)?.payload?.caption || '').trim();
+			let capEl = bubble.querySelector('.mc-photo-album-caption');
+			if (caption) {
+				if (!capEl) {
+					capEl = this.#utils.mk('div', 'mc-msg-text mc-photo-album-caption');
+					const footer = bubble.querySelector('.mc-msg-footer');
+					bubble.insertBefore(capEl, footer);
+				}
+				capEl.innerHTML = renderMessengerMessageHtml(caption);
+			} else {
+				capEl?.remove();
+			}
 		}
 		syncMediaCaptionFooterLayout(bubble);
 		this.#syncTierBadge(bubble, msg, !!entry?.el?.classList?.contains('mc-msg-row--mine'));
@@ -26339,7 +26674,7 @@ class MessengerChatPanel {
 			const changed = next.text !== m.text
 				|| next.replyToTextPreview !== m.replyToTextPreview
 				|| !!next._locked !== !!m._locked
-				|| SupraCrypto.isEncrypted(m.text);
+				|| (SupraCrypto.isEncrypted(m.text) && !SupraCrypto.isEncrypted(next.text));
 			if (!changed) continue;
 			entry.data = next;
 			if (entry.el) {
@@ -26396,13 +26731,16 @@ class MessengerChatPanel {
 				failed++;
 				continue;
 			}
+			const changed = decrypted.text !== m.text
+				|| decrypted.replyToTextPreview !== m.replyToTextPreview
+				|| !!decrypted._locked !== !!m._locked;
 			entry.data = {
 				...decrypted,
 				_encText: encText,
 				_encReplyPreview: encReply,
 			};
 			unlocked++;
-			if (entry.el) {
+			if (entry.el && changed) {
 				this.#msgRenderer.updateMsgContent(
 					entry,
 					entry.data,
@@ -28647,7 +28985,7 @@ class MessengerChatPanel {
 						prev.text !== fresh.text
 						|| prev.replyToTextPreview !== fresh.replyToTextPreview
 						|| !!prev._locked !== !!fresh._locked
-						|| SupraCrypto.isEncrypted(prev.text)
+						|| (SupraCrypto.isEncrypted(prev.text) && !SupraCrypto.isEncrypted(fresh.text))
 					)) {
 						this.#msgRenderer.updateMsgContent(
 							entry,
@@ -29554,7 +29892,7 @@ class MessengerChatView {
 						prev.text !== fresh.text
 						|| prev.replyToTextPreview !== fresh.replyToTextPreview
 						|| !!prev._locked !== !!fresh._locked
-						|| SupraCrypto.isEncrypted(prev.text)
+						|| (SupraCrypto.isEncrypted(prev.text) && !SupraCrypto.isEncrypted(fresh.text))
 					)) {
 						this.#msgRenderer.updateMsgContent(entry, fresh, null);
 					}

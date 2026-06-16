@@ -13,6 +13,14 @@ import { PendingFilesStore } from "./pending-files.js";
 import { formatStatusMessage, type ChatWorkSnapshot } from "./session-status.js";
 import { AssistantHandler } from "./assistant-handler.js";
 import {
+  ActionHandler,
+  isActionCommand,
+  isScriptActionUiCommand,
+  parseActionCommand,
+} from "./action-handler.js";
+import { ActionMgmtHandler, isMetaActionId } from "./action-mgmt-handler.js";
+import { scheduleSafeRestart } from "./bot-restart.js";
+import {
   buildModeSetupMessage,
   buildModelSetupMessage,
   buildSetupCompleteMessage,
@@ -45,6 +53,7 @@ const HELP_TEXT = `Команды Cursor-бота:
 /project <id> — переключить проект (папку репозитория)
 /project list — список проектов
 /status — статус активной сессии
+/actions — каталог кнопок-действий (скрипты и задачи агента)
 
 До ${5} параллельных сессий на чат. Фоновые сессии продолжают работу; их ответы появятся при переключении.
 Любой другой текст отправляется агенту в активную сессию.
@@ -120,6 +129,8 @@ export class MessageHandler {
   private readonly mediaInbox: MediaInboxService;
   private readonly pendingFiles = new PendingFilesStore();
   private readonly assistantHandler: AssistantHandler;
+  private readonly actionHandler: ActionHandler;
+  private readonly actionMgmt: ActionMgmtHandler;
 
   constructor(
     private readonly api: SupraBotApi,
@@ -133,6 +144,8 @@ export class MessageHandler {
     this.outbox = new SessionOutbox(join(dirname(config.stateFile), "outbox"));
     this.mediaInbox = new MediaInboxService(api, config);
     this.assistantHandler = new AssistantHandler(api, cursor, config.bot.assistant, config);
+    this.actionHandler = new ActionHandler(api, config);
+    this.actionMgmt = new ActionMgmtHandler(api, cursor, sessions, config);
   }
 
   private isAllowedUser(update: BotApiMessage): boolean {
@@ -193,8 +206,17 @@ export class MessageHandler {
       const media = resolveInboundMedia(update);
       if (!text && !media) return;
 
+      if (update.buttonPress && text && isScriptActionUiCommand(text)) {
+        await this.deleteIncomingUserMessage(update);
+        return;
+      }
+
       this.sessions.ensureRoom(update.chatId);
       await this.menuManager.syncChatMenu(update.chatId, update.chatType);
+
+      if (text && (await this.tryHandleActionInput(update, text))) {
+        return;
+      }
 
       if (text && isSessionCommand(text)) {
         await this.deleteIncomingUserMessage(update);
@@ -408,6 +430,7 @@ export class MessageHandler {
       }
 
       if (text.startsWith("/")) {
+        if (isScriptActionUiCommand(text)) return;
         await this.reply(update, `Неизвестная команда. ${HELP_TEXT.split("\n")[0]}`);
         return;
       }
@@ -440,6 +463,154 @@ export class MessageHandler {
     } finally {
       this.processing.delete(dedupeKey);
     }
+  }
+
+  private async tryHandleActionInput(update: BotApiMessage, text: string): Promise<boolean> {
+    if (text === "/cancel" || text.startsWith("/cancel ")) {
+      if (this.actionMgmt.hasPending(update.chatId)) {
+        this.actionMgmt.clearPending(update.chatId);
+        await this.reply(update, "Отменено.");
+        return true;
+      }
+    }
+
+    if (
+      await this.actionMgmt.tryHandlePendingDescription(
+        update,
+        text,
+        (u, t) => this.reply(u, t).then(() => undefined),
+        async () => {
+          await this.clearChatActivities(update);
+          await this.scheduleBotRestart("action-mgmt");
+        },
+      )
+    ) {
+      return true;
+    }
+
+    if (!isActionCommand(text)) return false;
+
+    const parsed = parseActionCommand(text);
+    if (!parsed) return false;
+
+    if (parsed.kind === "list") {
+      await this.showActionsCatalog(update);
+      return true;
+    }
+
+    const actionId = parsed.actionId;
+    if (isMetaActionId(actionId)) {
+      await this.cleanupActionUiMessages(update);
+      await this.actionMgmt.handleMetaAction(
+        update,
+        actionId,
+        (u, t) => this.reply(u, t).then(() => undefined),
+        (u, t, buttons) => this.replyWithButtons(u, t, buttons),
+      );
+      return true;
+    }
+
+    await this.cleanupActionUiMessages(update);
+    try {
+      await this.actionHandler.runAction(
+        update,
+        actionId,
+        this.replyTarget(update),
+        (u, t) => this.reply(u, t).then(() => undefined),
+        (u, prompt, mode, replyPrefix) =>
+          this.runAgentActionForCatalog(u, prompt, mode, replyPrefix),
+      );
+    } finally {
+      await this.clearChatActivities(update);
+      await this.scheduleBotRestart("action");
+    }
+    return true;
+  }
+
+  private async showActionsCatalog(update: BotApiMessage): Promise<void> {
+    const chatId = update.chatId;
+    const actions = this.actionHandler.loadActions();
+    const maxUser = this.actionMgmt.maxUserActionButtons(10);
+    const text = this.actionHandler.buildCatalogText();
+    const buttons = this.actionHandler.buildActionButtons(actions, maxUser);
+
+    const existingId = this.sessions.getActionsCatalogMessageId(chatId);
+    if (existingId) {
+      try {
+        await this.api.editMessage({
+          chatId,
+          messageId: existingId,
+          text,
+          buttons,
+        });
+        return;
+      } catch (err) {
+        console.warn(
+          "[handler] edit actions catalog failed:",
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+
+    const messageId = await this.replyWithButtons(update, text, buttons, { skipDedup: true });
+    if (messageId) {
+      this.sessions.setActionsCatalogMessageId(chatId, messageId);
+    }
+  }
+
+  private async cleanupActionUiMessages(update: BotApiMessage): Promise<void> {
+    const ids = new Set<string>();
+    if (update.buttonPress?.sourceMessageId) ids.add(update.buttonPress.sourceMessageId);
+    if (update.messageId) ids.add(update.messageId);
+
+    const catalogId = this.sessions.getActionsCatalogMessageId(update.chatId);
+    if (catalogId) ids.add(catalogId);
+    this.sessions.setActionsCatalogMessageId(update.chatId, undefined);
+
+    for (const messageId of ids) {
+      try {
+        await this.deleteReply(update, messageId);
+      } catch (err) {
+        console.warn(
+          "[handler] cleanup action UI message:",
+          messageId,
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+  }
+
+  private async clearChatActivities(update: BotApiMessage): Promise<void> {
+    await this.api.clearActivities(this.replyTarget(update));
+  }
+
+  private async scheduleBotRestart(reason: string): Promise<void> {
+    await scheduleSafeRestart(this.config.stateFile, () => this.sessions.flushState(), reason);
+  }
+
+  private async runAgentActionForCatalog(
+    update: BotApiMessage,
+    prompt: string,
+    mode: "agent" | "ask",
+    replyPrefix?: string,
+  ): Promise<void> {
+    const sessionKey = this.sessions.getActiveSessionKey(update.chatId);
+    if (!sessionKey) {
+      await this.reply(
+        update,
+        "Сначала выберите или создайте сессию (/sessions), затем повторите действие.",
+      );
+      await this.showSessionPicker(update);
+      return;
+    }
+
+    await this.interruptSessionWork(sessionKey);
+    await this.cursor.setMode(sessionKey, mode);
+    await this.menuManager.publishForChat(update.chatId, update.chatType);
+
+    const fullPrompt = replyPrefix ? `${replyPrefix}${prompt}` : prompt;
+    const workToken = Symbol("action-agent");
+    await this.runAgentRequest(update, sessionKey, fullPrompt, workToken);
   }
 
   private async handleInboundMedia(

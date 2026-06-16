@@ -178,4 +178,19 @@ export class SessionRegistry {
     room.pickerMessageId = messageId;
     this.state.setChatRoom(chatId, room);
   }
+
+  getActionsCatalogMessageId(chatId: string): string | undefined {
+    return this.state.getChatRoom(chatId)?.actionsCatalogMessageId;
+  }
+
+  setActionsCatalogMessageId(chatId: string, messageId: string | undefined): void {
+    const room = this.state.getChatRoom(chatId);
+    if (!room) return;
+    room.actionsCatalogMessageId = messageId;
+    this.state.setChatRoom(chatId, room);
+  }
+
+  flushState(): Promise<void> {
+    return this.state.flush();
+  }
 }

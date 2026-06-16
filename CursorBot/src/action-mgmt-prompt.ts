@@ -47,7 +47,7 @@ const RULES = `Правила каталога действий (actions.json):
 - Пути в args относительно корня CursorBot: ${"{CURSOR_BOT_ROOT}"}
 - stdout → текст ответа в чат
 - Последняя строка stdout может быть JSON: {"text":"...", "photo":"путь/к/файлу.png", "caption":"..."}
-- Пример скриншота: scripts/actions/screenshot.mjs
+- Пример скриншота: scripts/actions.example/screenshot.mjs (скопируйте в scripts/actions/)
 
 Для type=agent:
 - prompt обязателен; mode: «ask» или «agent»

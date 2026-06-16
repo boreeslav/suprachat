@@ -79,6 +79,7 @@ export function buildBotMenu(
         modelMenuItem(`model-${index}`, item, activeModel),
       ),
     },
+    { id: "actions", text: "Действия", message: "/actions" },
     { id: "status", text: "Статус", message: "/status" },
   );
 

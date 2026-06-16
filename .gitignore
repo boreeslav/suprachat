@@ -14,11 +14,16 @@ src/SuperMessenger.Web/deploy-branding.json
 
 # Node
 node_modules/
+**/node_modules/
+
+# Client minified bundles (build-client-assets.ps1 / deploy)
+src/SuperMessenger.Web/wwwroot/messenger/*.min.js
 
 # CursorBot local runtime (sources are tracked under CursorBot/)
 CursorBot/.env
 CursorBot/bot-config.json
 CursorBot/actions.json
+CursorBot/scripts/actions/
 CursorBot/tmp-*
 CursorBot/dist/
 CursorBot/dist.backup.*/
