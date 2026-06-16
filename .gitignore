@@ -17,6 +17,9 @@ node_modules/
 
 # CursorBot local runtime (sources are tracked under CursorBot/)
 CursorBot/.env
+CursorBot/bot-config.json
+CursorBot/actions.json
+CursorBot/tmp-*
 CursorBot/dist/
 CursorBot/dist.backup.*/
 
@@ -32,3 +35,6 @@ CursorBot/dist.backup.*/
 # OS
 Thumbs.db
 .DS_Store
+
+# Local deploy secrets and nginx site config (examples are tracked)
+deploy/nginx/supermessenger.conf

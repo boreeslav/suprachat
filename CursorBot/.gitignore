@@ -3,6 +3,9 @@ dist/
 dist/.build-stamp
 dist.backup.*/
 .env
+bot-config.json
+actions.json
 data/
+tmp-*
 *.log
 .DS_Store

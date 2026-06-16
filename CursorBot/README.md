@@ -8,8 +8,8 @@
 - Автопереподключение и догрузка пропущенных сообщений (`afterMessageId`)
 - Личные чаты, группы и каналы (при наличии прав у бота)
 - Отдельная сессия Cursor Agent на каждый `chatId`
-- Команды: `/help`, `/new`, `/project`, `/mode agent|ask`, `/model auto|pro|<id>`, `/status`
-- Меню бота: проект, режим, модель (обновляется онлайн)
+- Команды: `/help`, `/new`, `/project`, `/mode agent|ask`, `/model auto|pro|<id>`, `/status`, `/actions`
+- Меню бота: проект, режим, модель, действия (обновляется онлайн)
 - Сохранение `lastInboxId`, `agentId`, `projectId` и незавершённых run между перезапусками
 
 ## Подготовка в SuperMessenger
@@ -40,13 +40,19 @@ cp .env.example .env
 | `CURSOR_PRO_MODEL` | Модель для пресета Pro (Premium), по умолчанию `claude-opus-4-8` |
 | `CURSOR_MODEL` | Устаревший алиас для `CURSOR_DEFAULT_MODEL` |
 | `CURSOR_RUNTIME` | `cloud` или `local` |
-| `BOT_CONFIG` | Путь к JSON-конфигу проектов и доступа (по умолчанию `./data/bot-config.json`; в репозитории есть шаблон `bot-config.json` в корне `CursorBot/`) |
+| `BOT_CONFIG` | Путь к JSON-конфигу проектов и доступа (по умолчанию `./data/bot-config.json`; шаблон — `bot-config.example.json`) |
 
-Проекты и персонализация задаются в JSON-конфиге (скопируйте `bot-config.json` → `data/bot-config.json` или укажите `BOT_CONFIG=./bot-config.json`):
+Проекты и персонализация задаются в JSON-конфиге:
+
+```bash
+cp bot-config.example.json data/bot-config.json
+cp actions.example.json data/actions.json   # опционально
+# отредактируйте data/bot-config.json
+```
 
 ```json
 {
-  "allowedUser": "your_login",
+  "allowedUsers": ["your_login"],
   "defaultProjectId": "super-messenger",
   "projects": [
     { "id": "super-messenger", "name": "SuperMessenger", "path": ".." }
@@ -54,8 +60,45 @@ cp .env.example .env
 }
 ```
 
-- `allowedUser` — единственный пользователь (логин без `@`); пусто — доступ для всех
+- `allowedUsers` — массив **логинов** (без `@`), не отображаемых имён; пустой массив — доступ для всех
+- Рабочий файл по умолчанию — `data/bot-config.json` (не коммитится; в репозитории только `bot-config.example.json`)
 - `projects` — список папок; переключение через меню «Проект» или `/project <id>`
+
+### Каталог действий (`actions.json`)
+
+Рядом с `bot-config.json` (в той же папке) лежит `actions.json` — список кнопок-действий. Шаблон: `actions.example.json`. Файл перечитывается при каждом открытии каталога и при запуске действия.
+
+Меню бота → **Действия** или команда `/actions` — сообщение с кнопками. Скриптовые действия выполняются без агента; для `type: "agent"` нужна активная сессия.
+
+Управление каталогом через чат (кнопки внизу списка):
+- **Добавить действие** — опишите задачу, агент создаст запись в `actions.json` (в отдельной сессии)
+- **Редактировать** / **Удалить** — выбор действия и описание изменений
+- `/cancel` — отмена ввода описания
+
+Пример:
+
+```json
+{
+  "actions": [
+    {
+      "id": "screenshot",
+      "title": "Скриншот рабочего стола",
+      "type": "script",
+      "command": "node",
+      "args": ["scripts/actions/screenshot.mjs"]
+    },
+    {
+      "id": "summarize",
+      "title": "Краткое резюме",
+      "type": "agent",
+      "mode": "ask",
+      "prompt": "Кратко опиши состояние проекта."
+    }
+  ]
+}
+```
+
+Скрипт может вывести текст в stdout или JSON в последней строке: `{"text":"...", "photo":"path/to.png", "caption":"..."}`. Агент может добавлять и менять действия, редактируя `actions.json`.
 
 | `CURSOR_REPO_URL` | GitHub URL (для cloud) |
 | `CURSOR_CWD` | *(устарело)* — используйте `bot-config.json` |

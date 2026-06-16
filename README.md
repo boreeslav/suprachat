@@ -35,7 +35,7 @@ docker compose up -d --build
 
 Порт приложения в Docker по умолчанию: **8080** на `127.0.0.1` (снаружи — nginx на 80/443). Переменная `APP_PORT` в `docker-compose.yml`.
 
-На продакшене с Let's Encrypt: `deploy/setup-https-remote.sh` и `deploy/nginx/supermessenger.conf` (nginx + certbot).
+На продакшене с Let's Encrypt: `deploy/setup-https-remote.sh <ваш-домен>` и `deploy/nginx/supermessenger.conf.example` (скопируйте в `supermessenger.conf`, замените `YOUR_DOMAIN`).
 
 ## Деплой на удалённый сервер (Windows)
 

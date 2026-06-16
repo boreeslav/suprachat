@@ -1,0 +1,18 @@
+{
+  "actions": [
+    {
+      "id": "screenshot",
+      "title": "Скриншот рабочего стола",
+      "type": "script",
+      "command": "node",
+      "args": ["scripts/actions/screenshot.mjs"]
+    },
+    {
+      "id": "summarize",
+      "title": "Краткое резюме проекта",
+      "type": "agent",
+      "mode": "ask",
+      "prompt": "Кратко опиши состояние проекта."
+    }
+  ]
+}

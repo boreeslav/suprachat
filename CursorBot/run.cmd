@@ -32,6 +32,19 @@ if not exist ".env" (
   exit /b 1
 )
 
+if not exist "data" mkdir data
+
+if not exist "data\bot-config.json" (
+  if exist "bot-config.example.json" (
+    echo [SETUP] Копирую bot-config.example.json -^> data\bot-config.json
+    copy /Y "bot-config.example.json" "data\bot-config.json" >nul
+  ) else (
+    echo [ERROR] Не найден data\bot-config.json. Скопируйте bot-config.example.json в data\bot-config.json.
+    pause
+    exit /b 1
+  )
+)
+
 if not exist "node_modules\.bin\tsc.cmd" (
   echo [SETUP] Установка зависимостей...
   call npm install

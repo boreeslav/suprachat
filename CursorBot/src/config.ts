@@ -1,4 +1,5 @@
 import { config as loadEnv } from "dotenv";
+import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadBotSettings, type BotSettings } from "./bot-config.js";
 
@@ -57,7 +58,14 @@ export function loadConfig(): AppConfig {
   }
 
   const sendTyping = envBool("SUPRA_SEND_TYPING", envBool("SUPRA_SEND_THINKING", true));
-  const botConfigPath = resolve(process.env.BOT_CONFIG?.trim() || "./data/bot-config.json");
+  const botConfigFromEnv = process.env.BOT_CONFIG?.trim();
+  const botConfigPath = botConfigFromEnv
+    ? resolve(botConfigFromEnv)
+    : existsSync(resolve("data/bot-config.json"))
+      ? resolve("data/bot-config.json")
+      : existsSync(resolve("bot-config.json"))
+        ? resolve("bot-config.json")
+        : resolve("data/bot-config.json");
   const botSettings = loadBotSettings(botConfigPath);
 
   const config: AppConfig = {
