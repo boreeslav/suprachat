@@ -3,7 +3,8 @@
 
 param(
     [int]$HealthTimeoutSec = 30,
-    [int]$StopTimeoutSec = 15
+    [int]$StopTimeoutSec = 15,
+    [switch]$SkipBuild
 )
 
 $ErrorActionPreference = 'Stop'
@@ -177,17 +178,22 @@ if (-not (Test-Path '.env')) {
     throw '.env not found. Copy .env.example and configure first.'
 }
 
-$backupDir = Join-Path $Root ('dist.backup.' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+$backupDir = $null
 $distDir = Join-Path $Root 'dist'
 
-if (Test-Path $distDir) {
-    Write-Step "Backup current dist -> $backupDir"
-    Copy-Item $distDir $backupDir -Recurse -Force
-}
+if ($SkipBuild) {
+    Write-Step 'Quick restart (без пересборки)'
+} else {
+    $backupDir = Join-Path $Root ('dist.backup.' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+    if (Test-Path $distDir) {
+        Write-Step "Backup current dist -> $backupDir"
+        Copy-Item $distDir $backupDir -Recurse -Force
+    }
 
-Write-Step 'Building new version...'
-& npm run build
-if ($LASTEXITCODE -ne 0) { throw 'npm run build failed' }
+    Write-Step 'Building new version...'
+    & npm run build
+    if ($LASTEXITCODE -ne 0) { throw 'npm run build failed' }
+}
 
 $envCfg = Read-DotEnv (Join-Path $Root '.env')
 Stop-WatchdogGracefully
@@ -211,8 +217,13 @@ while ((Get-Date) -lt $deadline) {
 
 if ($healthy) {
     Send-OwnerNotification 'restarted'
-    Write-Step 'Restart OK (health check passed). Watchdog supervises auto-recovery. data/state.json preserved.'
+    $mode = if ($SkipBuild) { 'quick' } else { 'full' }
+    Write-Step "Restart OK ($mode, health check passed). Watchdog supervises auto-recovery. data/state.json preserved."
     exit 0
+}
+
+if ($SkipBuild) {
+    throw 'Health check failed after quick restart'
 }
 
 Write-Step 'Health check failed — rolling back dist and restarting previous version'

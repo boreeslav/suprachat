@@ -66,6 +66,35 @@ try {
     }
     $mdKb = [math]::Round((Get-Item $mdOut).Length / 1KB, 1)
     Write-Host "[markdown] OK vendor/supra-markdown.bundle.js (${mdKb} KB)" -ForegroundColor Green
+
+    if (-not (Test-Path 'node_modules\qrcode\lib\browser.js')) {
+        Write-Host '[vendor] npm install qrcode...'
+        $code = Invoke-Npm install 'qrcode@1.5.4' --no-save
+        if ($code -ne 0) { throw "npm install qrcode failed (exit $code)" }
+    }
+    if (-not (Test-Path $esbuildPkg)) {
+        Write-Host '[qrcode] npm install esbuild...'
+        $code = Invoke-Npm install esbuild@0.25.5 --no-save
+        if ($code -ne 0) { throw "npm install esbuild failed (exit $code)" }
+    }
+    Write-Host '[qrcode] esbuild (node-qrcode browser)...'
+    & npx esbuild node_modules/qrcode/lib/browser.js `
+        --bundle `
+        --format=iife `
+        --global-name=QRCode `
+        --outfile=vendor/qrcode.min.js `
+        --minify `
+        --target=es2020 `
+        --legal-comments=none
+    if ($LASTEXITCODE -ne 0) { throw "esbuild qrcode bundle failed: $LASTEXITCODE" }
+    $qrOut = Join-Path $here 'vendor\qrcode.min.js'
+    if (-not (Test-Path $qrOut)) { throw "Missing $qrOut" }
+    if ((Get-Item $qrOut).Length -lt 5000) { throw 'QRCode bundle too small' }
+    if (-not (Select-String -Path $qrOut -Pattern 'toCanvas' -Quiet)) {
+        throw 'QRCode bundle missing toCanvas'
+    }
+    $qrKb = [math]::Round((Get-Item $qrOut).Length / 1KB, 1)
+    Write-Host "[qrcode] OK vendor/qrcode.min.js (${qrKb} KB)" -ForegroundColor Green
 } finally {
     Pop-Location
 }

@@ -168,6 +168,26 @@ export interface BotApiSetGroupMenuResponse {
   error?: string;
 }
 
+export interface BotApiGroupBranchDto {
+  id: string;
+  name: string;
+  slug: string;
+  avatar?: string;
+  order: number;
+}
+
+export interface BotApiGetChatInfoResponse {
+  success: boolean;
+  chatId?: string;
+  chatType?: string;
+  name?: string;
+  parentChatId?: string;
+  branchSlug?: string;
+  isBranch?: boolean;
+  branches?: BotApiGroupBranchDto[];
+  error?: string;
+}
+
 export interface WsHandlers {
   onMessage?: (update: BotApiMessage, envelope?: unknown) => void;
   onConnected?: (msg: { type: string; botUserId?: string }) => void;
@@ -185,6 +205,24 @@ export interface WsOptions {
   reconnectMaxDelay?: number;
   syncMissed?: boolean;
   lastInboxId?: string | null;
+}
+
+const REQUEST_TIMEOUT_MS = 30_000;
+const SEND_RETRY_ATTEMPTS = 3;
+const SEND_RETRY_BASE_MS = 800;
+
+function sleepMs(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTransientHttpStatus(status: number): boolean {
+  return status === 408 || status === 429 || status === 502 || status === 503 || status === 504;
+}
+
+function isTransientFetchError(err: unknown): boolean {
+  if (err instanceof Error && err.name === "AbortError") return true;
+  const msg = err instanceof Error ? err.message : String(err);
+  return /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|network|timeout|abort/i.test(msg);
 }
 
 function joinUrl(base: string, path: string): string {
@@ -236,14 +274,25 @@ export class SupraBotApi {
     return new URLSearchParams({ login: this.login, token: this.token }).toString();
   }
 
+  private async _fetchOnce<T>(url: string, init: RequestInit): Promise<{ res: Response; data: T & { error?: string } }> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, { ...init, signal: controller.signal });
+      const data = (await res.json().catch(() => ({}))) as T & { error?: string };
+      return { res, data };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   private async _request<T>(
     path: string,
     params: Record<string, unknown> = {},
     method = "GET",
   ): Promise<T> {
-    const m = method.toUpperCase();
     let url = joinUrl(this.baseUrl, "api/bot-api/" + path) + "?" + this._authQuery();
-
+    const m = method.toUpperCase();
     const init: RequestInit = { method: m, headers: {} };
     if (m === "GET") {
       const qs = new URLSearchParams();
@@ -257,8 +306,7 @@ export class SupraBotApi {
       init.body = JSON.stringify(params);
     }
 
-    const res = await fetch(url, init);
-    const data = (await res.json().catch(() => ({}))) as T & { error?: string };
+    const { res, data } = await this._fetchOnce<T>(url, init);
     if (!res.ok && data?.error) {
       const err = new Error(data.error) as Error & { response?: unknown; status?: number };
       err.response = data;
@@ -268,12 +316,60 @@ export class SupraBotApi {
     return data;
   }
 
+  private async _requestWithRetry<T>(
+    path: string,
+    params: Record<string, unknown> = {},
+    method = "POST",
+  ): Promise<T> {
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= SEND_RETRY_ATTEMPTS; attempt++) {
+      let url = joinUrl(this.baseUrl, "api/bot-api/" + path) + "?" + this._authQuery();
+      const m = method.toUpperCase();
+      const init: RequestInit = { method: m, headers: {} };
+      if (m === "GET") {
+        const qs = new URLSearchParams();
+        for (const [k, v] of Object.entries(params)) {
+          if (v != null && v !== "") qs.set(k, String(v));
+        }
+        const extra = qs.toString();
+        if (extra) url += "&" + extra;
+      } else {
+        (init.headers as Record<string, string>)["Content-Type"] = "application/json";
+        init.body = JSON.stringify(params);
+      }
+
+      try {
+        const { res, data } = await this._fetchOnce<T>(url, init);
+        if (res.ok) return data;
+        if (isTransientHttpStatus(res.status) && attempt < SEND_RETRY_ATTEMPTS) {
+          await sleepMs(SEND_RETRY_BASE_MS * attempt);
+          continue;
+        }
+        if (data?.error) {
+          const err = new Error(data.error) as Error & { response?: unknown; status?: number };
+          err.response = data;
+          err.status = res.status;
+          throw err;
+        }
+        return data;
+      } catch (err) {
+        lastErr = err;
+        if (isTransientFetchError(err) && attempt < SEND_RETRY_ATTEMPTS) {
+          await sleepMs(SEND_RETRY_BASE_MS * attempt);
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+  }
+
   getMe(): Promise<BotApiMeResponse> {
     return this._request<BotApiMeResponse>("me", {}, "GET");
   }
 
   sendMessage(params: BotApiSendMessageParams): Promise<BotApiSendMessageResponse> {
-    return this._request<BotApiSendMessageResponse>(
+    return this._requestWithRetry<BotApiSendMessageResponse>(
       "sendMessage",
       params as Record<string, unknown>,
       "POST",
@@ -392,6 +488,10 @@ export class SupraBotApi {
     chatId?: string;
   }): Promise<BotApiSetGroupMenuResponse> {
     return this._request<BotApiSetGroupMenuResponse>("setGroupMenu", params, "POST");
+  }
+
+  getChatInfo(params: { chatId: string }): Promise<BotApiGetChatInfoResponse> {
+    return this._request<BotApiGetChatInfoResponse>("getChatInfo", params, "GET");
   }
 
   setAssistantMenu(params: { menu: BotApiMenuDto; chatId?: string }): Promise<BotApiSetMenuResponse> {

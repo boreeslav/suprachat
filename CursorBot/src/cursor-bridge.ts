@@ -21,6 +21,7 @@ import {
   mergeAgentContext,
 } from "./agent-context.js";
 import type { PendingRunRecord, StateStore } from "./state-store.js";
+import { parseSessionKey } from "./session-keys.js";
 import type { AgentProgressEvent } from "./thought-status.js";
 
 /** Старше — pending run считается устаревшим и очищается без обращения к SDK. */
@@ -947,6 +948,13 @@ export class CursorBridge {
       });
     }
 
+    const parsed = parseSessionKey(chatId);
+    if (parsed) {
+      const room = this.state.ensureChatRoom(parsed.chatId);
+      room.defaultProjectId = normalized;
+      this.state.setChatRoom(parsed.chatId, room);
+    }
+
     await this.disposeLiveAgent(chatId);
 
     const control = this.chatRuns.get(chatId);
@@ -966,6 +974,14 @@ export class CursorBridge {
     if (saved) {
       const normalized = this.projects.normalizeKey(saved);
       if (normalized) return normalized;
+    }
+    const parsed = parseSessionKey(chatId);
+    if (parsed) {
+      const roomDefault = this.state.getChatRoom(parsed.chatId)?.defaultProjectId;
+      if (roomDefault) {
+        const normalized = this.projects.normalizeKey(roomDefault);
+        if (normalized) return normalized;
+      }
     }
     return this.projects.defaultKey;
   }

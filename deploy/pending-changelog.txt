@@ -1,5 +1,2 @@
 # Changelog items before deploy (one per line). Lines starting with # are ignored.
-CursorBot: вернуть пункт меню «Действия» и обработку /actions с каталогом кнопок.
-CursorBot: исправить путь к actions.json (data/ и fallback в корне).
-CursorBot: конфиги и scripts/actions/ вне git; примеры в *.example.json и scripts/actions.example/.
-Git: вычистить из истории scripts/actions и сгенерированные *.min.js.
+

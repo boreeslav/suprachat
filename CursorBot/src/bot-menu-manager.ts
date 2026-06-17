@@ -11,6 +11,12 @@ function menuFingerprint(menu: BotApiMenuDto): string {
   return JSON.stringify(menu);
 }
 
+interface GroupFamilyScope {
+  chatIds: string[];
+  parentChatId?: string;
+  branchChatIds: string[];
+}
+
 export class BotMenuManager {
   private readonly syncedChats = new Set<string>();
   private readonly publishedFingerprints = new Map<string, string>();
@@ -46,6 +52,62 @@ export class BotMenuManager {
     return isGroupChatType(this.resolveChatType(chatId, chatType));
   }
 
+  private chatTypeForFamilyMember(
+    chatId: string,
+    scope: GroupFamilyScope,
+    fallback?: string | null,
+  ): string | undefined {
+    if (scope.parentChatId && chatId === scope.parentChatId) return "group";
+    if (scope.branchChatIds.includes(chatId)) return "group_branch";
+    return this.resolveChatType(chatId, fallback);
+  }
+
+  private async resolveGroupFamily(chatId: string): Promise<GroupFamilyScope> {
+    const chatIds = new Set<string>([chatId]);
+    let parentChatId: string | undefined;
+    const branchChatIds: string[] = [];
+
+    try {
+      const info = await this.api.getChatInfo({ chatId });
+      if (!info.success) {
+        return { chatIds: [...chatIds], branchChatIds };
+      }
+
+      if (info.parentChatId) {
+        parentChatId = info.parentChatId;
+        chatIds.add(parentChatId);
+        const parentInfo = await this.api.getChatInfo({ chatId: parentChatId });
+        if (parentInfo.success) {
+          for (const branch of parentInfo.branches ?? []) {
+            if (branch.id) {
+              chatIds.add(branch.id);
+              branchChatIds.push(branch.id);
+            }
+          }
+        }
+      } else {
+        for (const branch of info.branches ?? []) {
+          if (branch.id) {
+            chatIds.add(branch.id);
+            branchChatIds.push(branch.id);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(
+        "[menu] resolveGroupFamily failed:",
+        chatId,
+        err instanceof Error ? err.message : err,
+      );
+    }
+
+    return {
+      chatIds: [...chatIds],
+      parentChatId,
+      branchChatIds,
+    };
+  }
+
   private buildChatMenu(chatId: string): BotApiMenuDto {
     const sessionKey = this.sessions.getActiveSessionKey(chatId);
     return buildBotMenu(
@@ -55,6 +117,7 @@ export class BotMenuManager {
       this.projects.listMenuProjects(),
       sessionKey ? this.cursor.getProjectId(sessionKey) : this.projects.defaultKey,
       buildSessionSubmenuItems(this.sessions, chatId),
+      this.sessions.getActiveSessionId(chatId),
     );
   }
 
@@ -107,6 +170,7 @@ export class BotMenuManager {
 
   /**
    * Публикует меню для чата. setMenu/setGroupMenu вызывается только если содержимое изменилось.
+   * Для групп и веток — отдельное меню на каждый chatId в семействе (родитель + все ветки).
    */
   async publishForChat(
     chatId: string,
@@ -114,8 +178,42 @@ export class BotMenuManager {
     force = false,
   ): Promise<boolean> {
     if (!chatId) return false;
-    this.rememberChatType(chatId, chatType ?? this.chatTypes.get(chatId));
 
+    let effectiveType = this.resolveChatType(chatId, chatType);
+    if (!effectiveType) {
+      try {
+        const info = await this.api.getChatInfo({ chatId });
+        if (info.success && info.chatType) {
+          effectiveType = info.chatType;
+          this.rememberChatType(chatId, effectiveType);
+        }
+      } catch {
+        /* direct chat or API unavailable */
+      }
+    } else {
+      this.rememberChatType(chatId, effectiveType);
+    }
+
+    if (this.isGroupChat(chatId, effectiveType)) {
+      const scope = await this.resolveGroupFamily(chatId);
+      let any = false;
+      for (const familyChatId of scope.chatIds) {
+        const type = this.chatTypeForFamilyMember(familyChatId, scope, effectiveType);
+        this.rememberChatType(familyChatId, type);
+        const published = await this.publishForChatSingle(familyChatId, type, force);
+        if (published) any = true;
+      }
+      return any;
+    }
+
+    return await this.publishForChatSingle(chatId, effectiveType, force);
+  }
+
+  private async publishForChatSingle(
+    chatId: string,
+    chatType?: string | null,
+    force = false,
+  ): Promise<boolean> {
     const menu = this.buildChatMenu(chatId);
     const fingerprint = menuFingerprint(menu);
     if (!force && this.publishedFingerprints.get(chatId) === fingerprint) {
@@ -155,14 +253,50 @@ export class BotMenuManager {
     force = false,
   ): Promise<void> {
     if (!chatId) return;
-    this.rememberChatType(chatId, chatType);
+
+    let effectiveType = this.resolveChatType(chatId, chatType);
+    if (!effectiveType) {
+      try {
+        const info = await this.api.getChatInfo({ chatId });
+        if (info.success && info.chatType) {
+          effectiveType = info.chatType;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    if (effectiveType) this.rememberChatType(chatId, effectiveType);
+
+    if (this.isGroupChat(chatId, effectiveType)) {
+      await this.publishForChat(chatId, effectiveType, force);
+      return;
+    }
+
     if (!force && this.syncedChats.has(chatId)) return;
-    await this.publishForChat(chatId, chatType, force);
+    await this.publishForChat(chatId, effectiveType, force);
   }
 
   invalidateChat(chatId: string): void {
     this.syncedChats.delete(chatId);
     this.publishedFingerprints.delete(chatId);
     this.chatTypes.delete(chatId);
+  }
+
+  /** Перепубликует меню для всех известных чатов (после перезапуска бота). */
+  async publishAllKnownChats(chatIds: string[], force = true): Promise<void> {
+    const seenFamilies = new Set<string>();
+    for (const chatId of chatIds) {
+      if (!chatId) continue;
+      const chatType = this.chatTypes.get(chatId);
+      if (this.isGroupChat(chatId, chatType)) {
+        const scope = await this.resolveGroupFamily(chatId);
+        const familyKey = scope.parentChatId ?? chatId;
+        if (seenFamilies.has(familyKey)) continue;
+        seenFamilies.add(familyKey);
+        await this.publishForChat(chatId, chatType, force);
+      } else {
+        await this.publishForChat(chatId, chatType, force);
+      }
+    }
   }
 }

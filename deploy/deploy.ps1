@@ -135,6 +135,8 @@ function Build-WebCryptoBundle([string]$MessengerDir) {
     if (-not (Test-Path $signalr)) { throw "Missing SignalR bundle: $signalr" }
     $markdown = Join-Path $cryptoDir "vendor\supra-markdown.bundle.js"
     if (-not (Test-Path $markdown)) { throw "Missing Markdown bundle: $markdown" }
+    $qrcode = Join-Path $cryptoDir "vendor\qrcode.min.js"
+    if (-not (Test-Path $qrcode)) { throw "Missing QRCode bundle: $qrcode" }
     $kb = [math]::Round((Get-Item $bundle).Length / 1KB, 1)
     $signalrKb = [math]::Round((Get-Item $signalr).Length / 1KB, 1)
     $markdownKb = [math]::Round((Get-Item $markdown).Length / 1KB, 1)
@@ -266,7 +268,8 @@ function Update-AssetUrls([string]$DestRoot, [string]$AppVersion = '') {
         $indexHtml = [regex]::Replace($indexHtml, "var proto = '[^']*';", "var proto = '$($script:ClientProtocol)';")
         # Bootstrap-скрипты должны bust'иться на каждый деплoy (не только при смене CSS-хеша).
         $bootstrapRe = '(?<prefix>(?:src|href)="/messenger/(?:app-boot-timing|app-update-notifier|app-script-cache|app-splash)\.js)\?[^"]*(")'
-        $indexHtml = [regex]::Replace($indexHtml, $bootstrapRe, "`${prefix}?v=$scriptBuild`${2}")
+        # $1 — захваченная закрывающая кавычка; $2 в .NET — именованная группа prefix, не кавычка.
+        $indexHtml = [regex]::Replace($indexHtml, $bootstrapRe, '${prefix}?v=' + $scriptBuild + '$1')
         [System.IO.File]::WriteAllText($indexPath, $indexHtml)
         Write-Host "  index.html sm-build: $scriptBuild, protocol: $ClientProtocol" -ForegroundColor DarkGray
     }

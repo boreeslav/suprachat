@@ -1,6 +1,9 @@
 # Local scratch, deploy secrets, build artifacts (not for repo)
 tmp/
 
+# Local task docs (Jira exports, specs — not for repo)
+Tasks/
+
 # Cursor agent config (local only — не коммитить, логика работает из локальных файлов)
 .cursor/
 AGENTS.md

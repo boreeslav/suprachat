@@ -9,19 +9,16 @@ import {
   resolveActionsFilePath,
   type BotActionDefinition,
 } from "./actions-config.js";
+import { getActionCatalogPage } from "./action-catalog-pages.js";
 import {
   ACTION_CMD_PREFIX,
   ACTIONS_CMD,
-  META_ADD,
-  META_DELETE,
-  META_EDIT,
 } from "./actions-constants.js";
 import type { BotApiMessage, BotMessageButtonDto, SupraBotApi } from "./supra-bot-api.js";
 import type { ActionMgmtHandler } from "./action-mgmt-handler.js";
 
 export { ACTIONS_CMD, ACTION_CMD_PREFIX } from "./actions-constants.js";
 
-const MAX_ACTION_BUTTONS = 10;
 const DEFAULT_SCRIPT_TIMEOUT_MS = 120_000;
 
 export function isActionCommand(text: string): boolean {
@@ -117,37 +114,8 @@ export class ActionHandler {
     return loadActionsConfig(this.config.bot.configPath);
   }
 
-  buildActionButtons(actions: BotActionDefinition[], maxUser = MAX_ACTION_BUTTONS): BotMessageButtonDto[] {
-    const userButtons = actions.slice(0, maxUser).map((action, index) => ({
-      id: `act-${action.id}`,
-      text: action.title,
-      action: `${ACTION_CMD_PREFIX}${action.id}`,
-      color: index === 0 ? "primary" : "default",
-    }));
-    return [...userButtons, ...this.buildMgmtCatalogButtons()].slice(0, MAX_ACTION_BUTTONS);
-  }
-
-  private buildMgmtCatalogButtons(): BotMessageButtonDto[] {
-    return [
-      {
-        id: "act-mgmt-add",
-        text: "➕ Добавить действие",
-        action: `${ACTION_CMD_PREFIX}${META_ADD}`,
-        color: "success",
-      },
-      {
-        id: "act-mgmt-edit",
-        text: "✏️ Редактировать",
-        action: `${ACTION_CMD_PREFIX}${META_EDIT}`,
-        color: "default",
-      },
-      {
-        id: "act-mgmt-delete",
-        text: "🗑 Удалить",
-        action: `${ACTION_CMD_PREFIX}${META_DELETE}`,
-        color: "secondary",
-      },
-    ];
+  buildActionButtons(actions: BotActionDefinition[], pageIndex = 0): BotMessageButtonDto[] {
+    return getActionCatalogPage(actions, pageIndex).buttons;
   }
 
   buildCatalogText(): string {
@@ -164,9 +132,8 @@ export class ActionHandler {
     ) => Promise<string | undefined>,
   ): Promise<string | undefined> {
     const actions = this.loadActions();
-    const maxUser = actionMgmt.maxUserActionButtons(MAX_ACTION_BUTTONS);
     const text = this.buildCatalogText();
-    const buttons = this.buildActionButtons(actions, maxUser);
+    const buttons = this.buildActionButtons(actions);
     return replyWithButtons(update, text, buttons);
   }
 

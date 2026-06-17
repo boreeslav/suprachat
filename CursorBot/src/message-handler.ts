@@ -18,7 +18,7 @@ import {
   isScriptActionUiCommand,
   parseActionCommand,
 } from "./action-handler.js";
-import { ActionMgmtHandler, isMetaActionId } from "./action-mgmt-handler.js";
+import { ActionMgmtHandler, isMetaActionId, parseMetaActionId } from "./action-mgmt-handler.js";
 import { scheduleSafeRestart } from "./bot-restart.js";
 import {
   buildModeSetupMessage,
@@ -28,7 +28,8 @@ import {
   isSetupResponse,
   type SessionSetupState,
 } from "./session-setup.js";
-import { parseSessionCommand, parseSessionKey, makeSessionKey, isSessionCommand } from "./session-keys.js";
+import { parseSessionCommand, parseSessionKey, makeSessionKey, isSessionCommand, SESSION_CMD_PREFIX } from "./session-keys.js";
+import { isGroupChatType } from "./chat-type.js";
 import { buildSessionPickerButtons, buildSessionPickerText } from "./session-picker.js";
 import { SessionOutbox } from "./session-outbox.js";
 import { SessionRegistry } from "./session-registry.js";
@@ -53,6 +54,7 @@ const HELP_TEXT = `Команды Cursor-бота:
 /project <id> — переключить проект (папку репозитория)
 /project list — список проектов
 /status — статус активной сессии
+/stop или /sess:stop — остановить текущую задачу агента (меню «Сессии» → «Остановить»)
 /actions — каталог кнопок-действий (скрипты и задачи агента)
 
 До ${5} параллельных сессий на чат. Фоновые сессии продолжают работу; их ответы появятся при переключении.
@@ -115,12 +117,19 @@ interface ActiveChatWork {
   stopHeartbeat?: () => void;
 }
 
+interface StoppedSessionState {
+  stoppedAt: string;
+  followupMessageId?: string;
+}
+
 export class MessageHandler {
   private readonly processing = new Set<string>();
   private readonly processedMessageIds = new Set<string>();
   private readonly recentReplies = new Map<string, number>();
   /** Ключ — sessionKey; несколько сессий одного чата могут работать параллельно. */
   private readonly activeSessionWork = new Map<string, ActiveChatWork>();
+  /** Сессии, где пользователь остановил задачу и может уточнить или отменить. */
+  private readonly stoppedSessions = new Map<string, StoppedSessionState>();
   private readonly pendingSetup = new Map<string, SessionSetupState>();
   private readonly chatWorkStatus = new Map<string, ChatWorkSnapshot>();
   private readonly chatHandleChains = new Map<string, Promise<void>>();
@@ -155,10 +164,62 @@ export class MessageHandler {
     return login === normalizeUserLogin(allowed);
   }
 
+  /** Команды и действия, обрабатываемые сразу — даже пока агент выполняет задачу на Cursor API. */
+  private isPrioritizedMessage(update: BotApiMessage, text: string): boolean {
+    if (text && isSessionCommand(text)) return true;
+    if (text === "/status" || text.startsWith("/status ")) return true;
+    if (text === "/sessions" || text.startsWith("/sessions ")) return true;
+    if (text === "/new" || text.startsWith("/new ")) return true;
+    if (text === "/help" || text.startsWith("/help ")) return true;
+    if (text === "/cancel" || text.startsWith("/cancel ")) return true;
+    if (isActionCommand(text)) return true;
+    if (
+      text === "/mode agent"
+      || text.startsWith("/mode agent ")
+      || text === "/mode ask"
+      || text.startsWith("/mode ask ")
+      || text === "/mode plan"
+      || text.startsWith("/mode plan ")
+    ) {
+      return true;
+    }
+    if (text === "/model" || text.startsWith("/model ")) return true;
+    if (text === "/project" || text.startsWith("/project ")) return true;
+    if (update.buttonPress && text && isScriptActionUiCommand(text)) return true;
+    return false;
+  }
+
+  private isSessionTaskBusy(sessionKey: string): boolean {
+    return this.sessions.isBusy(sessionKey) || this.activeSessionWork.has(sessionKey);
+  }
+
+  private isAwaitingStopFollowup(sessionKey: string): boolean {
+    return this.stoppedSessions.has(sessionKey);
+  }
+
+  private clearAwaitingStopFollowup(sessionKey: string): void {
+    this.stoppedSessions.delete(sessionKey);
+  }
+
+  private async replyBusyHint(update: BotApiMessage): Promise<void> {
+    await this.reply(
+      update,
+      "Задача выполняется. Остановите её через меню «Сессии» → «Остановить» (/sess:stop), затем уточните или отмените.",
+    );
+  }
+
   async handle(update: BotApiMessage): Promise<void> {
     const dedupeKey = update.messageId || update.id;
     if (!dedupeKey || this.processing.has(dedupeKey)) return;
     if (update.messageId && this.processedMessageIds.has(update.messageId)) return;
+
+    const textRaw = resolveInboundText(update);
+    const text = isMcContentText(textRaw) ? "" : textRaw;
+
+    if (this.isPrioritizedMessage(update, text)) {
+      await this.handleMessage(update, dedupeKey);
+      return;
+    }
 
     const chatId = update.chatId;
     const prev = this.chatHandleChains.get(chatId) ?? Promise.resolve();
@@ -444,14 +505,27 @@ export class MessageHandler {
         const files = this.pendingFiles.take(update.chatId);
         const prompt = this.pendingFiles.buildAgentPrompt(files, text);
         const workToken = Symbol("session-work");
-        await this.interruptSessionWork(activeSessionKey);
-        await this.runAgentRequest(update, activeSessionKey, prompt, workToken);
+        if (this.isAwaitingStopFollowup(activeSessionKey)) {
+          this.clearAwaitingStopFollowup(activeSessionKey);
+        } else if (this.isSessionTaskBusy(activeSessionKey)) {
+          await this.replyBusyHint(update);
+          return;
+        }
+        this.startAgentRequest(update, activeSessionKey, prompt, workToken);
         return;
       }
 
       const workToken = Symbol("session-work");
-      await this.interruptSessionWork(activeSessionKey);
-      await this.runAgentRequest(update, activeSessionKey, text, workToken);
+      if (this.isAwaitingStopFollowup(activeSessionKey)) {
+        this.clearAwaitingStopFollowup(activeSessionKey);
+        this.startAgentRequest(update, activeSessionKey, text, workToken);
+        return;
+      }
+      if (this.isSessionTaskBusy(activeSessionKey)) {
+        await this.replyBusyHint(update);
+        return;
+      }
+      this.startAgentRequest(update, activeSessionKey, text, workToken);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("[handler]", update.id, msg);
@@ -467,6 +541,11 @@ export class MessageHandler {
 
   private async tryHandleActionInput(update: BotApiMessage, text: string): Promise<boolean> {
     if (text === "/cancel" || text.startsWith("/cancel ")) {
+      const sessionKey = this.sessions.getActiveSessionKey(update.chatId);
+      if (sessionKey && this.isAwaitingStopFollowup(sessionKey)) {
+        await this.cancelStoppedTask(update, sessionKey);
+        return true;
+      }
       if (this.actionMgmt.hasPending(update.chatId)) {
         this.actionMgmt.clearPending(update.chatId);
         await this.reply(update, "Отменено.");
@@ -494,12 +573,20 @@ export class MessageHandler {
     if (!parsed) return false;
 
     if (parsed.kind === "list") {
-      await this.showActionsCatalog(update);
+      await this.deleteIncomingUserMessage(update);
+      await this.dismissActionsCatalog(update);
+      await this.showActionsCatalog(update, 0, { forceNew: true });
       return true;
     }
 
     const actionId = parsed.actionId;
     if (isMetaActionId(actionId)) {
+      const meta = parseMetaActionId(actionId);
+      if (meta?.kind === "page") {
+        await this.deleteIncomingUserMessage(update);
+        await this.showActionsCatalog(update, meta.pageIndex);
+        return true;
+      }
       await this.cleanupActionUiMessages(update);
       await this.actionMgmt.handleMetaAction(
         update,
@@ -522,34 +609,57 @@ export class MessageHandler {
       );
     } finally {
       await this.clearChatActivities(update);
-      await this.scheduleBotRestart("action");
     }
     return true;
   }
 
-  private async showActionsCatalog(update: BotApiMessage): Promise<void> {
+  private async dismissActionsCatalog(update: BotApiMessage): Promise<void> {
+    const chatId = update.chatId;
+    const catalogId = this.sessions.getActionsCatalogMessageId(chatId);
+    this.sessions.setActionsCatalogMessageId(chatId, undefined);
+    if (!catalogId) return;
+    try {
+      await this.deleteReply(update, catalogId);
+    } catch (err) {
+      console.warn(
+        "[handler] dismiss actions catalog failed:",
+        catalogId,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
+  private async showActionsCatalog(
+    update: BotApiMessage,
+    pageIndex = 0,
+    opts?: { forceNew?: boolean },
+  ): Promise<void> {
     const chatId = update.chatId;
     const actions = this.actionHandler.loadActions();
-    const maxUser = this.actionMgmt.maxUserActionButtons(10);
     const text = this.actionHandler.buildCatalogText();
-    const buttons = this.actionHandler.buildActionButtons(actions, maxUser);
+    const buttons = this.actionHandler.buildActionButtons(actions, pageIndex);
 
     const existingId = this.sessions.getActionsCatalogMessageId(chatId);
-    if (existingId) {
+    if (!opts?.forceNew && existingId) {
       try {
-        await this.api.editMessage({
+        const result = await this.api.editMessage({
           chatId,
           messageId: existingId,
           text,
           buttons,
         });
-        return;
+        if (result.success) return;
+        console.warn(
+          "[handler] edit actions catalog failed:",
+          result.error ?? "unknown",
+        );
       } catch (err) {
         console.warn(
           "[handler] edit actions catalog failed:",
           err instanceof Error ? err.message : err,
         );
       }
+      this.sessions.setActionsCatalogMessageId(chatId, undefined);
     }
 
     const messageId = await this.replyWithButtons(update, text, buttons, { skipDedup: true });
@@ -610,7 +720,8 @@ export class MessageHandler {
 
     const fullPrompt = replyPrefix ? `${replyPrefix}${prompt}` : prompt;
     const workToken = Symbol("action-agent");
-    await this.runAgentRequest(update, sessionKey, fullPrompt, workToken);
+    this.clearAwaitingStopFollowup(sessionKey);
+    this.startAgentRequest(update, sessionKey, fullPrompt, workToken);
   }
 
   private async handleInboundMedia(
@@ -620,6 +731,11 @@ export class MessageHandler {
   ): Promise<void> {
     const media = resolveInboundMedia(update);
     if (!media) return;
+
+    if (this.isSessionTaskBusy(sessionKey) && !this.isAwaitingStopFollowup(sessionKey)) {
+      await this.replyBusyHint(update);
+      return;
+    }
 
     const activityType = media.isPhotoBatch ? "sendingImage" : "sendingFile";
     try {
@@ -656,8 +772,13 @@ export class MessageHandler {
         );
         const prompt = this.mediaInbox.buildPhotoAgentPrompt(ingested, caption);
         const workToken = Symbol("session-work");
-        await this.interruptSessionWork(sessionKey);
-        await this.runAgentRequest(update, sessionKey, prompt, workToken);
+        if (this.isAwaitingStopFollowup(sessionKey)) {
+          this.clearAwaitingStopFollowup(sessionKey);
+        } else if (this.isSessionTaskBusy(sessionKey)) {
+          await this.replyBusyHint(update);
+          return;
+        }
+        this.startAgentRequest(update, sessionKey, prompt, workToken);
         return;
       }
 
@@ -902,6 +1023,27 @@ export class MessageHandler {
       return;
     }
 
+    if (cmd.kind === "stop") {
+      const sessionId = this.sessions.getActiveSessionId(update.chatId);
+      if (!sessionId) {
+        await this.reply(update, "Нет активной сессии.");
+        await this.showSessionPicker(update);
+        return;
+      }
+      await this.stopSessionWork(update, this.sessionKey(update.chatId, sessionId));
+      return;
+    }
+
+    if (cmd.kind === "stop-cancel") {
+      const sessionId = this.sessions.getActiveSessionId(update.chatId);
+      if (!sessionId) {
+        await this.reply(update, "Нет активной сессии.");
+        return;
+      }
+      await this.cancelStoppedTask(update, this.sessionKey(update.chatId, sessionId));
+      return;
+    }
+
     await this.switchToSession(update, cmd.sessionId);
   }
 
@@ -920,6 +1062,7 @@ export class MessageHandler {
     this.chatWorkStatus.delete(sessionKey);
 
     await this.interruptSessionWork(sessionKey);
+    this.clearAwaitingStopFollowup(sessionKey);
     this.sessions.clearRuntime(sessionKey);
     await this.cursor.disposeSession(sessionKey);
 
@@ -997,6 +1140,7 @@ export class MessageHandler {
     }
 
     const targetSessionKey = this.sessionKey(chatId, targetSessionId);
+    this.clearAwaitingStopFollowup(prevSessionKey);
     if (opts.isNew) {
       const prevSession = this.cursor.getMode(prevSessionKey);
       const prevModel = this.cursor.getModel(prevSessionKey);
@@ -1044,11 +1188,20 @@ export class MessageHandler {
     work.thoughtStatus = null;
   }
 
+  private shouldPublishThoughtStatus(update: BotApiMessage, sessionKey: string): boolean {
+    return (
+      this.config.supra.sendThoughtStatus &&
+      this.isSessionLive(sessionKey) &&
+      !isGroupChatType(update.chatType)
+    );
+  }
+
   private async attachLiveThoughtsIfNeeded(
     update: BotApiMessage,
     sessionKey: string,
   ): Promise<void> {
     if (!this.config.supra.sendThoughtStatus) return;
+    if (isGroupChatType(update.chatType)) return;
     if (!this.sessions.isBusy(sessionKey)) return;
 
     const parsed = parseSessionKey(sessionKey);
@@ -1084,15 +1237,24 @@ export class MessageHandler {
     chatId: string,
     sessionId: string,
   ): Promise<void> {
-    const entries = await this.outbox.drain(chatId, sessionId);
+    const entries = await this.outbox.readAll(chatId, sessionId);
     if (!entries.length) return;
 
+    const remaining: { text: string; ts: string }[] = [];
     for (const entry of entries) {
       const chunks = splitMessage(entry.text, this.config.supra.maxMessageChars);
+      let allSent = true;
       for (const chunk of chunks) {
-        await this.reply(update, chunk);
+        const messageId = await this.reply(update, chunk, { skipDedup: true });
+        if (!messageId) {
+          allSent = false;
+          break;
+        }
       }
+      if (!allSent) remaining.push(entry);
     }
+
+    await this.outbox.rewrite(chatId, sessionId, remaining);
   }
 
   private menuRefreshSignal(chatId: string): string {
@@ -1122,6 +1284,82 @@ export class MessageHandler {
     });
   }
 
+  private startAgentRequest(
+    update: BotApiMessage,
+    sessionKey: string,
+    text: string,
+    workToken: symbol,
+  ): void {
+    void this.runAgentRequest(update, sessionKey, text, workToken).catch((err) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[handler] agent request failed (${sessionKey}):`, msg);
+      if (this.isActiveWork(sessionKey, workToken)) {
+        this.finishSessionWork(sessionKey);
+        this.sessions.setRuntime(sessionKey, "idle");
+        void this.refreshSessionMenu(update.chatId);
+      }
+      if (this.isSessionLive(sessionKey)) {
+        void this.reply(update, `Ошибка: ${msg}`, { skipDedup: true });
+      }
+    });
+  }
+
+  private async stopSessionWork(update: BotApiMessage, sessionKey: string): Promise<void> {
+    const wasBusy = this.isSessionTaskBusy(sessionKey);
+    await this.interruptSessionWork(sessionKey);
+    void this.refreshSessionMenu(update.chatId, true);
+
+    if (!wasBusy && this.isAwaitingStopFollowup(sessionKey)) {
+      const buttons: BotMessageButtonDto[] = [
+        {
+          id: "sess-stop-cancel",
+          text: "❌ Отменить задачу",
+          action: `${SESSION_CMD_PREFIX}stop-cancel`,
+          color: "danger",
+        },
+      ];
+      await this.replyWithButtons(
+        update,
+        "Задача уже остановлена.\nОтправьте уточнение, чтобы продолжить, или отмените задачу.",
+        buttons,
+        { skipDedup: true },
+      );
+      return;
+    }
+
+    if (!wasBusy) {
+      await this.reply(update, "Нет выполняющейся задачи.");
+      return;
+    }
+
+    this.stoppedSessions.set(sessionKey, { stoppedAt: new Date().toISOString() });
+    const buttons: BotMessageButtonDto[] = [
+      {
+        id: "sess-stop-cancel",
+        text: "❌ Отменить задачу",
+        action: `${SESSION_CMD_PREFIX}stop-cancel`,
+        color: "danger",
+      },
+    ];
+    await this.replyWithButtons(
+      update,
+      "Выполнение остановлено.\nОтправьте уточнение, чтобы продолжить, или отмените задачу.",
+      buttons,
+      { skipDedup: true },
+    );
+  }
+
+  private async cancelStoppedTask(update: BotApiMessage, sessionKey: string): Promise<void> {
+    if (!this.isAwaitingStopFollowup(sessionKey) && !this.isSessionTaskBusy(sessionKey)) {
+      await this.reply(update, "Нет остановленной задачи для отмены.");
+      return;
+    }
+    await this.interruptSessionWork(sessionKey);
+    this.clearAwaitingStopFollowup(sessionKey);
+    void this.refreshSessionMenu(update.chatId, true);
+    await this.reply(update, "Задача отменена.");
+  }
+
   private async runAgentRequest(
     update: BotApiMessage,
     sessionKey: string,
@@ -1132,8 +1370,7 @@ export class MessageHandler {
     if (!parsed) return;
 
     await this.withTyping(update, async () => {
-      const thoughtStatus =
-        this.config.supra.sendThoughtStatus && this.isSessionLive(sessionKey)
+      const thoughtStatus = this.shouldPublishThoughtStatus(update, sessionKey)
           ? new ThoughtStatusPublisher(
               update,
               this.api,
@@ -1421,8 +1658,7 @@ export class MessageHandler {
 
     try {
       const live = this.isSessionLive(sessionKey);
-      const thoughtStatus =
-        this.config.supra.sendThoughtStatus && live
+      const thoughtStatus = this.shouldPublishThoughtStatus(update, sessionKey)
           ? new ThoughtStatusPublisher(
               update,
               this.api,
@@ -1485,9 +1721,9 @@ export class MessageHandler {
 
       thoughtStatus?.dispose();
 
-      if (reply && !reply.superseded && reply.status !== "cancelled" && reply.status !== "error") {
+      if (reply && !reply.superseded && reply.status !== "cancelled") {
         await this.deliverAgentReply(update, sessionKey, reply);
-        delivered = true;
+        delivered = reply.status !== "error";
         return;
       }
 
@@ -1551,6 +1787,7 @@ export class MessageHandler {
       await this.reply(
         update,
         "После перезапуска бота Cursor-run уже недоступен, а повторный запуск вашего сообщения не удался. Отправьте запрос ещё раз.",
+        { skipDedup: true },
       );
     } catch (err) {
       console.warn(
@@ -1586,18 +1823,28 @@ export class MessageHandler {
     const parsed = parseSessionKey(sessionKey);
     const live = this.isSessionLive(sessionKey);
 
-    const deliverText = async (text: string) => {
+    const deliverText = async (text: string, opts?: { skipDedup?: boolean }): Promise<boolean> => {
       if (live) {
-        await this.reply(update, text);
-      } else if (parsed) {
-        await this.outbox.append(parsed.chatId, parsed.sessionId, text);
+        const messageId = await this.reply(update, text, opts);
+        return !!messageId;
       }
+      if (parsed) {
+        await this.outbox.append(parsed.chatId, parsed.sessionId, text);
+        return true;
+      }
+      return false;
     };
 
     if (reply.status === "error") {
       console.error(
         `[handler] запрос не выполнен после автоповторов (${sessionKey}, run ${reply.runId}):`,
         reply.errorDetail ?? "(без описания)",
+      );
+      const detail = reply.errorDetail?.trim();
+      await deliverText(
+        detail
+          ? `Ошибка: ${detail}`
+          : "Запрос не выполнен. Попробуйте ещё раз или переформулируйте задачу.",
       );
       return;
     }
@@ -1610,7 +1857,12 @@ export class MessageHandler {
     const chunks = splitMessage(reply.text, this.config.supra.maxMessageChars);
     for (const chunk of chunks) {
       if (isStillActive && !isStillActive()) return;
-      await deliverText(chunk);
+      const ok = await deliverText(chunk, { skipDedup: chunks.length > 1 });
+      if (!ok) {
+        console.error(
+          `[handler] не удалось доставить часть ответа (${sessionKey}, run ${reply.runId})`,
+        );
+      }
     }
   }
 
@@ -1660,11 +1912,20 @@ export class MessageHandler {
     await this.setTyping(update, active, message || undefined);
   }
 
-  private async reply(update: BotApiMessage, text: string): Promise<string | undefined> {
-    const dedupKey = `${update.chatId}:${text}`;
+  private async reply(
+    update: BotApiMessage,
+    text: string,
+    opts?: { skipDedup?: boolean },
+  ): Promise<string | undefined> {
+    const trimmed = text.trim();
+    if (!trimmed) return undefined;
+
+    const dedupKey = `${update.chatId}:${trimmed}`;
     const now = Date.now();
-    const lastAt = this.recentReplies.get(dedupKey);
-    if (lastAt != null && now - lastAt < 5000) return undefined;
+    if (!opts?.skipDedup) {
+      const lastAt = this.recentReplies.get(dedupKey);
+      if (lastAt != null && now - lastAt < 5000) return undefined;
+    }
     this.recentReplies.set(dedupKey, now);
     if (this.recentReplies.size > 200) {
       for (const [key, at] of this.recentReplies) {
@@ -1672,16 +1933,33 @@ export class MessageHandler {
       }
     }
 
-    const result = await this.api.sendMessage({ ...this.replyTarget(update), text });
-    return result.messageId;
+    try {
+      const result = await this.api.sendMessage({ ...this.replyTarget(update), text: trimmed });
+      if (!result.success) {
+        console.error("[handler] sendMessage failed:", result.error ?? "unknown");
+        this.recentReplies.delete(dedupKey);
+        return undefined;
+      }
+      return result.messageId;
+    } catch (err) {
+      console.error(
+        "[handler] sendMessage error:",
+        err instanceof Error ? err.message : err,
+      );
+      this.recentReplies.delete(dedupKey);
+      return undefined;
+    }
   }
 
   async editReply(update: BotApiMessage, messageId: string, text: string): Promise<void> {
-    await this.api.editMessage({
+    const result = await this.api.editMessage({
       chatId: update.chatId,
       messageId,
       text,
     });
+    if (!result.success) {
+      console.error("[handler] editMessage failed:", result.error ?? "unknown");
+    }
   }
 
   async deleteReply(update: BotApiMessage, messageId: string, deleteForEveryone = true): Promise<void> {

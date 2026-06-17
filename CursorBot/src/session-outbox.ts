@@ -56,9 +56,19 @@ export class SessionOutbox {
     }
   }
 
+  /** @deprecated Prefer readAll + rewrite after confirmed delivery. */
   async drain(chatId: string, sessionId: string): Promise<OutboxEntry[]> {
-    const entries = await this.readAll(chatId, sessionId);
-    if (entries.length) await this.clear(chatId, sessionId);
-    return entries;
+    return this.readAll(chatId, sessionId);
+  }
+
+  async rewrite(chatId: string, sessionId: string, entries: OutboxEntry[]): Promise<void> {
+    const path = this.filePath(chatId, sessionId);
+    if (!entries.length) {
+      await this.clear(chatId, sessionId);
+      return;
+    }
+    await mkdir(dirname(path), { recursive: true });
+    const body = entries.map((entry) => JSON.stringify(entry) + "\n").join("");
+    await writeFile(path, body, "utf8");
   }
 }

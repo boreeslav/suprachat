@@ -67,6 +67,16 @@ async function main(): Promise<void> {
   const sessions = new SessionRegistry(state, projectCatalog.defaultKey);
   const menuManager = new BotMenuManager(api, cursor, sessions, modelCatalog, projectCatalog);
   await menuManager.publishGlobal(true);
+  const knownChatIds = state.listChatRoomIds();
+  for (const pending of state.listPendingRuns()) {
+    if (pending.chatId && pending.chatType) {
+      menuManager.rememberChatType(pending.chatId, pending.chatType);
+    }
+  }
+  if (knownChatIds.length) {
+    await menuManager.publishAllKnownChats(knownChatIds, true);
+    log(`Меню обновлено для ${knownChatIds.length} чат(ов)`);
+  }
   const assistantMenuManager = new AssistantMenuManager(api, config.bot.assistant);
   await assistantMenuManager.publishGlobal(true);
 
@@ -84,6 +94,7 @@ async function main(): Promise<void> {
       onConnected: (msg) => {
         log("WebSocket подключён, botUserId=", msg.botUserId);
         void handler.refreshPublishedActivities();
+        void menuManager.publishAllKnownChats(state.listChatRoomIds(), true);
       },
       onMessage: (update) => {
         persistState();

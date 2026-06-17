@@ -23,6 +23,8 @@ export interface ChatRoomMeta {
   pickerMessageId?: string;
   actionsCatalogMessageId?: string;
   endedSessions?: string[];
+  /** Проект по умолчанию для ветки/чата (все сессии). */
+  defaultProjectId?: string;
 }
 
 /** Незавершённый run Cursor — для доставки ответа после перезапуска бота. */
@@ -128,6 +130,7 @@ export class StateStore {
           pickerMessageId: room.pickerMessageId,
           actionsCatalogMessageId: room.actionsCatalogMessageId,
           endedSessions: room.endedSessions ? [...room.endedSessions] : undefined,
+          defaultProjectId: (room.defaultProjectId ?? "").trim() || undefined,
         };
         const sessionKey = makeSessionKey(chatId, chatRooms[chatId]!.activeSessionId);
         if (!chats[sessionKey]) {
@@ -186,6 +189,10 @@ export class StateStore {
 
   getChatRoom(chatId: string): ChatRoomMeta | undefined {
     return this.state.chatRooms[chatId];
+  }
+
+  listChatRoomIds(): string[] {
+    return Object.keys(this.state.chatRooms);
   }
 
   ensureChatRoom(chatId: string): ChatRoomMeta {

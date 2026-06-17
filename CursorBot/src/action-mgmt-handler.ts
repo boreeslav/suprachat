@@ -4,19 +4,21 @@ import { fileURLToPath } from "node:url";
 import type { AppConfig } from "./config.js";
 import type { CursorBridge } from "./cursor-bridge.js";
 import { loadActionsConfig, resolveActionsFilePath } from "./actions-config.js";
+import { getActionPickerPage } from "./action-catalog-pages.js";
 import {
   ACTION_CMD_PREFIX,
   META_ADD,
   META_DELETE,
   META_EDIT,
+  META_MANAGE,
+  META_PAGE,
 } from "./actions-constants.js";
 import { buildActionMgmtPrompt, type ActionMgmtTask } from "./action-mgmt-prompt.js";
 import type { BotApiMessage, BotMessageButtonDto, SupraBotApi } from "./supra-bot-api.js";
 import type { SessionRegistry } from "./session-registry.js";
 import { makeSessionKey } from "./session-keys.js";
 
-const MAX_PICKER_BUTTONS = 10;
-const MGMT_BUTTON_COUNT = 3;
+const MGMT_BUTTON_COUNT = 1;
 
 export interface PendingActionMgmt {
   task: ActionMgmtTask;
@@ -32,21 +34,36 @@ export function parseMetaActionId(
   actionId: string,
 ):
   | { kind: "add" }
-  | { kind: "edit_list" }
+  | { kind: "manage" }
+  | { kind: "page"; pageIndex: number }
+  | { kind: "edit_list"; pageIndex: number }
   | { kind: "edit"; targetId: string }
-  | { kind: "delete_list" }
+  | { kind: "delete_list"; pageIndex: number }
   | { kind: "delete"; targetId: string }
   | null {
   if (actionId === META_ADD) return { kind: "add" };
-  if (actionId === META_EDIT) return { kind: "edit_list" };
-  if (actionId === META_DELETE) return { kind: "delete_list" };
+  if (actionId === META_MANAGE) return { kind: "manage" };
+  if (actionId === META_EDIT) return { kind: "edit_list", pageIndex: 0 };
+  if (actionId === META_DELETE) return { kind: "delete_list", pageIndex: 0 };
+  if (actionId.startsWith(`${META_PAGE}:`)) {
+    const pageIndex = Number.parseInt(actionId.slice(META_PAGE.length + 1).trim(), 10);
+    if (Number.isFinite(pageIndex) && pageIndex >= 0) return { kind: "page", pageIndex };
+  }
   if (actionId.startsWith(`${META_EDIT}:`)) {
-    const targetId = actionId.slice(META_EDIT.length + 1).trim();
-    if (targetId) return { kind: "edit", targetId };
+    const rest = actionId.slice(META_EDIT.length + 1).trim();
+    if (rest.startsWith("page:")) {
+      const pageIndex = Number.parseInt(rest.slice("page:".length).trim(), 10);
+      if (Number.isFinite(pageIndex) && pageIndex >= 0) return { kind: "edit_list", pageIndex };
+    }
+    if (rest) return { kind: "edit", targetId: rest };
   }
   if (actionId.startsWith(`${META_DELETE}:`)) {
-    const targetId = actionId.slice(META_DELETE.length + 1).trim();
-    if (targetId) return { kind: "delete", targetId };
+    const rest = actionId.slice(META_DELETE.length + 1).trim();
+    if (rest.startsWith("page:")) {
+      const pageIndex = Number.parseInt(rest.slice("page:".length).trim(), 10);
+      if (Number.isFinite(pageIndex) && pageIndex >= 0) return { kind: "delete_list", pageIndex };
+    }
+    if (rest) return { kind: "delete", targetId: rest };
   }
   return null;
 }
@@ -142,6 +159,30 @@ export class ActionMgmtHandler {
       return;
     }
 
+    if (meta.kind === "manage") {
+      await replyWithButtons(update, "Управление каталогом:", [
+        {
+          id: "act-mgmt-add",
+          text: "➕ Добавить действие",
+          action: `${ACTION_CMD_PREFIX}${META_ADD}`,
+          color: "success",
+        },
+        {
+          id: "act-mgmt-edit",
+          text: "✏️ Редактировать",
+          action: `${ACTION_CMD_PREFIX}${META_EDIT}`,
+          color: "default",
+        },
+        {
+          id: "act-mgmt-delete",
+          text: "🗑 Удалить",
+          action: `${ACTION_CMD_PREFIX}${META_DELETE}`,
+          color: "secondary",
+        },
+      ]);
+      return;
+    }
+
     if (meta.kind === "edit_list") {
       if (!actions.length) {
         await reply(update, "Нет действий для редактирования.");
@@ -150,7 +191,7 @@ export class ActionMgmtHandler {
       await replyWithButtons(
         update,
         PICKER_TEXT,
-        this.buildPickerButtons(actions, META_EDIT),
+        this.buildPickerButtons(actions, META_EDIT, meta.pageIndex),
       );
       return;
     }
@@ -163,7 +204,7 @@ export class ActionMgmtHandler {
       await replyWithButtons(
         update,
         PICKER_TEXT,
-        this.buildPickerButtons(actions, META_DELETE),
+        this.buildPickerButtons(actions, META_DELETE, meta.pageIndex),
       );
       return;
     }
@@ -217,13 +258,14 @@ export class ActionMgmtHandler {
   private buildPickerButtons(
     actions: ReturnType<typeof loadActionsConfig>,
     prefix: typeof META_EDIT | typeof META_DELETE,
+    pageIndex = 0,
   ): BotMessageButtonDto[] {
-    return actions.slice(0, MAX_PICKER_BUTTONS).map((action) => ({
-      id: `act-${prefix}-${action.id}`,
-      text: action.title,
-      action: `${ACTION_CMD_PREFIX}${prefix}:${action.id}`,
-      color: prefix === META_DELETE ? "secondary" : "default",
-    }));
+    return getActionPickerPage(
+      actions,
+      prefix,
+      pageIndex,
+      prefix === META_DELETE ? "secondary" : "default",
+    ).buttons;
   }
 
   private async runMgmtAgent(

@@ -3776,7 +3776,8 @@
 	}
 
 	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) > .mapp-modal,
-	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) > .mc-panel-window {
+	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) > .mc-panel-window,
+	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) > .mini-app-host-dialog {
 		width: 100% !important;
 		height: 100% !important;
 		max-width: none !important;
@@ -3797,7 +3798,8 @@
 	}
 
 	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) .mapp-modal-header,
-	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) .mc-panel-window-header {
+	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) .mc-panel-window-header,
+	.mapp-modal-overlay:not(.mapp-avatar-src-overlay) .mini-app-host-header {
 		padding-top: calc(14px + env(safe-area-inset-top, 0px));
 		flex-shrink: 0;
 	}
@@ -7987,6 +7989,7 @@ textarea.mapp-profile-field-input:focus,
 	flex-direction: column;
 	width: min(960px, 100vw);
 	height: min(92vh, 100%);
+	max-height: 100dvh;
 	background: var(--mapp-content-bg, #fff);
 	border-radius: 12px;
 	overflow: hidden;

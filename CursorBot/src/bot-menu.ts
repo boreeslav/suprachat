@@ -1,5 +1,6 @@
 import type { CursorBotMode } from "./cursor-mode.js";
 import { formatModeLabel } from "./cursor-mode.js";
+import { SESSION_CMD_PREFIX } from "./session-keys.js";
 import type { MenuModelItem } from "./model-catalog.js";
 import type { MenuProjectItem } from "./project-catalog.js";
 import type { BotApiMenuDto, BotApiMenuItemDto } from "./supra-bot-api.js";
@@ -38,6 +39,7 @@ export function buildBotMenu(
   projectItems: MenuProjectItem[] = [],
   activeProject: string = "",
   sessionItems: BotApiMenuItemDto[] = [],
+  activeSessionId: string | null = null,
 ): BotApiMenuDto {
   const items: BotApiMenuItemDto[] = [
     { id: "help", text: "Справка", message: "/help" },
@@ -51,6 +53,14 @@ export function buildBotMenu(
     });
   } else {
     items.push({ id: "sessions", text: "Сессии", message: "/sessions" });
+  }
+
+  if (activeSessionId) {
+    items.push({
+      id: "sess-stop",
+      text: "⏹ Остановить",
+      message: `${SESSION_CMD_PREFIX}stop`,
+    });
   }
 
   if (projectItems.length > 0) {

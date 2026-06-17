@@ -126,8 +126,13 @@ export class SessionRegistry {
     const session = this.state.ensureSession(chatId, sessionId);
     if (inherited?.projectId?.trim()) {
       session.projectId = inherited.projectId;
-    } else if (!session.projectId.trim() && this.defaultProjectId) {
-      session.projectId = this.defaultProjectId;
+    } else if (!session.projectId.trim()) {
+      const roomDefault = this.state.getChatRoom(chatId)?.defaultProjectId;
+      if (roomDefault?.trim()) {
+        session.projectId = roomDefault;
+      } else if (this.defaultProjectId) {
+        session.projectId = this.defaultProjectId;
+      }
     }
     if (inherited?.mode) session.mode = inherited.mode;
     if (inherited?.model?.trim()) session.model = inherited.model;

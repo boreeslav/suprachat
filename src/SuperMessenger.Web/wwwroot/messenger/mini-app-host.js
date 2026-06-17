@@ -50,16 +50,27 @@
 		return origin + '/api/mini-app/frame?token=' + encodeURIComponent(token);
 	}
 
+	function hideLoading() {
+		overlay?.querySelector('.mini-app-host-loading')?.classList.add('mini-app-host-loading--hidden');
+	}
+
+	function isTrustedIframeMessage(event) {
+		if (!iframe || event.source !== iframe.contentWindow) return false;
+		const expected = resolveOrigin(session?.baseOrigin);
+		const appOrigin = global.location.origin;
+		return event.origin === expected
+			|| event.origin === appOrigin
+			|| event.origin === 'null';
+	}
+
 	function onIframeMessage(event) {
-		if (!iframe || event.source !== iframe.contentWindow) return;
-		const origin = resolveOrigin(session?.baseOrigin);
-		if (event.origin !== origin && event.origin !== global.location.origin) return;
+		if (!isTrustedIframeMessage(event)) return;
 
 		const data = event.data;
 		if (!data || data.v !== PROTO || !data.type) return;
 
 		if (data.type === 'ready') {
-			overlay?.querySelector('.mini-app-host-loading')?.classList.add('mini-app-host-loading--hidden');
+			hideLoading();
 			return;
 		}
 		if (data.type === 'close') {
@@ -135,9 +146,6 @@
 		overlay = null;
 		iframe = null;
 		session = null;
-		if (navHandle && global.MessengerNavigation?.popOverlay) {
-			try { global.MessengerNavigation.popOverlay(navHandle); } catch { /* ignore */ }
-		}
 		navHandle = null;
 	}
 
@@ -180,8 +188,9 @@
 
 			iframe = document.createElement('iframe');
 			iframe.className = 'mini-app-host-frame';
-			iframe.setAttribute('sandbox', 'allow-scripts allow-forms');
+			iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-same-origin');
 			iframe.setAttribute('referrerpolicy', 'no-referrer');
+			iframe.addEventListener('load', () => hideLoading());
 			iframe.src = buildFrameUrl(session.token, session.baseOrigin);
 
 			body.append(loading, iframe);
@@ -192,13 +201,20 @@
 			global.addEventListener('message', onIframeMessage);
 
 			if (global.MessengerNavigation?.pushOverlay) {
-				navHandle = global.MessengerNavigation.pushOverlay(() => MiniAppHost.close(false));
+				navHandle = global.MessengerNavigation.pushOverlay(() => teardown(), {
+					overlayKind: 'mini-app',
+				});
 			}
 		},
 
-		close(fromUser) {
+		close(fromUser = false) {
+			if (!overlay && !navHandle) return;
+			if (navHandle) {
+				if (fromUser) navHandle.close(true);
+				else navHandle.closeImmediate();
+				return;
+			}
 			teardown();
-			if (fromUser) { /* reserved */ }
 		},
 
 		tryAutoOpen(msg, ctx) {

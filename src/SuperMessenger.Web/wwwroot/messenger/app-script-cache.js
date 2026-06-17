@@ -10,6 +10,8 @@
 
 	const LS_SCRIPT_PREFIX = 'supra-script:';
 
+	const SS_RELOAD_KEY = 'sm-script-reload-build';
+
 
 
 	const USE_MINIFIED = BUILD_NUMBER > 0;
@@ -627,6 +629,72 @@
 
 
 
+	function hasReloadBeenAttempted() {
+
+		try {
+
+			return sessionStorage.getItem(SS_RELOAD_KEY) === String(BUILD_NUMBER);
+
+		} catch {
+
+			return !!global.__smScriptReloadAttempted;
+
+		}
+
+	}
+
+
+
+	function markReloadAttempted() {
+
+		try {
+
+			sessionStorage.setItem(SS_RELOAD_KEY, String(BUILD_NUMBER));
+
+		} catch {
+
+			global.__smScriptReloadAttempted = true;
+
+		}
+
+	}
+
+
+
+	async function recoverBeforeScriptReload() {
+
+		try {
+
+			if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+
+				const regs = await navigator.serviceWorker.getRegistrations();
+
+				await Promise.all(regs.map((r) => r.unregister().catch(() => false)));
+
+			}
+
+		} catch (_) { /* ignore */ }
+
+		try {
+
+			if (global.caches?.keys) {
+
+				const names = await global.caches.keys();
+
+				await Promise.all(
+
+					names.filter((n) => n.startsWith('sm-static-v')).map((n) => global.caches.delete(n))
+
+				);
+
+			}
+
+		} catch (_) { /* ignore */ }
+
+	}
+
+
+
 	async function unregisterStaleWorkers() {
 
 		if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
@@ -791,9 +859,11 @@
 
 				if (global.Messenger) return;
 
-				if (!global.__smScriptReloadAttempted) {
+				if (!hasReloadBeenAttempted()) {
 
-					global.__smScriptReloadAttempted = true;
+					markReloadAttempted();
+
+					await recoverBeforeScriptReload();
 
 					global.location.reload();
 

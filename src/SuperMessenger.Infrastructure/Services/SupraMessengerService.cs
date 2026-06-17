@@ -685,6 +685,24 @@ public sealed partial class SupraMessengerService
             if (!await _store.IsParticipantAsync(chatGuid, user.Id, ct))
                 return new SupraSimpleResponse { success = false, error = "Нет доступа" };
 
+            var chat = await _store.GetChatByIdAsync(chatGuid, ct);
+            if (chat != null && IsGroupChat(chat))
+            {
+                var root = await GetRootGroupChatAsync(chatGuid, ct) ?? chat;
+                if (!await IsGroupModeratorAsync(user.Id, root, ct))
+                    return new SupraSimpleResponse { success = false, error = "Только администратор может очищать историю" };
+            }
+            else if (chat != null && IsChannelChat(chat))
+            {
+                var me = (await _store.GetParticipantsByChatAsync(chatGuid, ct))
+                    .FirstOrDefault(p => p.UserId == user.Id);
+                if (me == null)
+                    return new SupraSimpleResponse { success = false, error = "Нет доступа" };
+                var role = ResolveParticipantRole(me, chat);
+                if (!ChannelRoles.CanManageMembers(role))
+                    return new SupraSimpleResponse { success = false, error = "Только администратор может очищать историю" };
+            }
+
             if (alsoDeleteForOther)
             {
                 await _files.ReleaseChatAttachmentsAsync(chatGuid, ct);

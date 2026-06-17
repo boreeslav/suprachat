@@ -15,6 +15,7 @@ class MessengerI18n {
 			noContacts: 'Нет контактов',
 			miniAppOpen: 'Открыть',
 			miniAppOpenHint: 'Интерактивное окно от бота',
+			miniAppOpenFailed: 'Не удалось открыть Mini App',
 			contactsNotFound: 'Контакты не найдены',
 			contactsLoadError: 'Ошибка загрузки контактов',
 			newChat: 'Новый чат',
@@ -540,6 +541,7 @@ class MessengerI18n {
 			noContacts: 'No contacts',
 			miniAppOpen: 'Open',
 			miniAppOpenHint: 'Interactive window from bot',
+			miniAppOpenFailed: 'Could not open Mini App',
 			contactsNotFound: 'No contacts found',
 			contactsLoadError: 'Failed to load contacts',
 			newChat: 'New Chat',
@@ -2804,7 +2806,6 @@ class MobileBottomSheetMenu {
 
 		swipeZone.addEventListener('touchcancel', resetDrag, { passive: true });
 
-		onSheetReady?.(sheet);
 		return { close, sheet };
 	}
 }
@@ -3074,6 +3075,16 @@ function chatForParentListPreview(chat) {
 	};
 }
 
+/** Превью строки «Основная» — только сообщения основной ветки, без дочерних веток. */
+function chatForMainBranchListPreview(groupChat) {
+	if (!isRootGroupChat(groupChat)) return groupChat;
+	return {
+		...groupChat,
+		lastMessage: groupChat.lastMessage || '',
+		lastMessageTime: groupChat.lastMessageTime || null,
+	};
+}
+
 function syncParentGroupBranchEntry(chats, branchChat) {
 	const parentId = branchChat?.parentChatId;
 	if (!parentId || !Array.isArray(chats)) return null;
@@ -3118,8 +3129,22 @@ function adjustParentGroupUnread(chats, parentId, delta) {
 	return parent;
 }
 
+function isGroupTypeChat(chat) {
+	const t = chat?.type;
+	return t === 'group' || t === 'public_group' || t === 'group_branch';
+}
+
+function canModerateGroupChat(chat) {
+	return isGroupTypeChat(chat) && !!(chat.isAdmin || chat.isGroupCreator);
+}
+
+function canClearChatHistory(chat) {
+	if (!isGroupTypeChat(chat)) return true;
+	return canModerateGroupChat(chat);
+}
+
 function canManageGroupBranches(chat) {
-	return isRootGroupChat(chat) && (chat.isAdmin || chat.isGroupCreator);
+	return isRootGroupChat(chat) && canModerateGroupChat(chat);
 }
 
 function isVisibleRootChatItem(chat) {
@@ -4194,11 +4219,13 @@ const MessengerNavigation = (() => {
 		close(fromUser = true) {
 			if (!layer || layers.indexOf(layer) < 0) return;
 			logNav('close', { layerId: layer.id, fromUser: !!fromUser });
-			if (fromUser && isHistoryActive() && history.state?.mappNav?.depth === layer.depth) {
-				deferRecoverFromPopstate(400);
-				try { history.back(); return; } catch (_) {}
+			// Сначала снимаем слой из стека, затем синхронизируем history (см. closeImmediate).
+			// Иначе history.back() после sheet/selection может не вызвать popstate — диалог зависает.
+			if (fromUser) {
+				this.closeImmediate();
+				return;
 			}
-			popLayerImmediate(layer, false, fromUser ? 'user-close' : 'programmatic');
+			popLayerImmediate(layer, false, 'programmatic');
 			writeHistoryFromStack();
 		},
 		closeImmediate() {
@@ -14058,6 +14085,8 @@ class MessengerUtils {
 		return null;
 	}
 	static scrollToBottom(container) {
+		if (!container) return () => {};
+		container._scrollPinCleanup?.();
 		container.scrollTop = container.scrollHeight;
 		const MAX_WAIT_MS = 5000;
 		const SETTLE_MS = 150;
@@ -14068,6 +14097,7 @@ class MessengerUtils {
 			clearTimeout(settleTimer);
 			clearTimeout(watchdogTimer);
 			ro.disconnect();
+			if (container._scrollPinCleanup === cleanup) container._scrollPinCleanup = null;
 		};
 		const doScroll = () => {
 			cleanup();
@@ -14085,6 +14115,7 @@ class MessengerUtils {
 		ro.observe(container);
 		watchdogTimer = setTimeout(doScroll, MAX_WAIT_MS);
 		settleTimer = setTimeout(doScroll, SETTLE_MS);
+		container._scrollPinCleanup = cleanup;
 		return cleanup;
 	}
 	static isMobile() {
@@ -14509,6 +14540,62 @@ class MessengerOfflineStore {
 			return null;
 		}
 	}
+}
+
+class MessengerInputDraftStore {
+	static PREFIX = 'sm-input-draft:';
+	static SAVE_DEBOUNCE_MS = 400;
+
+	static #storageKey(userId, chatId) {
+		if (!userId || !chatId) return null;
+		return MessengerInputDraftStore.PREFIX + userId + ':' + chatId;
+	}
+
+	static load(userId, chatId) {
+		const key = MessengerInputDraftStore.#storageKey(userId, chatId);
+		if (!key) return '';
+		try {
+			return localStorage.getItem(key) || '';
+		} catch {
+			return '';
+		}
+	}
+
+	static save(userId, chatId, text) {
+		const key = MessengerInputDraftStore.#storageKey(userId, chatId);
+		if (!key) return;
+		try {
+			const value = String(text ?? '');
+			if (!value) localStorage.removeItem(key);
+			else localStorage.setItem(key, value);
+		} catch { /* ignore quota */ }
+	}
+
+	static clear(userId, chatId) {
+		MessengerInputDraftStore.save(userId, chatId, '');
+	}
+}
+
+function applyMessengerInputDraft(field, text) {
+	if (!field || text == null || text === '') return;
+	field.value = text;
+	field.style.height = 'auto';
+	if (field.scrollHeight > 40) {
+		field.style.height = Math.min(field.scrollHeight, 120) + 'px';
+	} else {
+		field.style.height = '';
+		field.rows = 1;
+	}
+}
+
+function messengerClearInputDraft(field, chatId, userId) {
+	if (!userId || !chatId) return;
+	const area = field?.closest?.('.mc-input-area');
+	if (area?._clearInputDraft) {
+		area._clearInputDraft();
+		return;
+	}
+	MessengerInputDraftStore.clear(userId, chatId);
 }
 
 class MessengerCache {
@@ -16944,17 +17031,25 @@ class MessengerSidebar {
 		}
 	}
 
-	#findChatListItem(chatId) {
+	#findChatListItem(chatId, { branchOnly = false, parentOnly = false } = {}) {
 		if (!chatId) return null;
 		const sel = `[data-chat-id="${String(chatId).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]`;
-		return this.el.chatList?.querySelector(sel)
-			|| this.el.chatListPanel?.querySelector(sel);
+		const roots = [this.el.chatList, this.el.chatListPanel].filter(Boolean);
+		for (const root of roots) {
+			for (const item of root.querySelectorAll(sel)) {
+				const isBranch = item.classList.contains('mapp-chat-item--branch');
+				if (branchOnly && !isBranch) continue;
+				if (parentOnly && isBranch) continue;
+				return item;
+			}
+		}
+		return null;
 	}
 
-	#chatListPreviewInfo(listPreviewChat, previewEl = null, sourceChat = null) {
+	#chatListPreviewInfo(listPreviewChat, previewEl = null, sourceChat = null, { suppressTyping = false, mainBranchOnly = false } = {}) {
 		const chat = sourceChat || listPreviewChat;
 		if (this.#formatChatPreview) {
-			return this.#formatChatPreview(chat, { previewEl });
+			return this.#formatChatPreview(chat, { previewEl, suppressTyping, mainBranchOnly });
 		}
 		return buildChatListPreviewInfo({
 			storedText: listPreviewChat.lastMessage || '',
@@ -17001,9 +17096,10 @@ class MessengerSidebar {
 		}
 		const previewEl = item.querySelector('.mapp-chat-item-preview');
 		if (previewEl) {
+			const suppressTyping = hasBranches && this.#expandedGroupId === chat.id;
 			applyChatListPreviewEl(
 				previewEl,
-				this.#chatListPreviewInfo(listPreviewChat, previewEl, chat),
+				this.#chatListPreviewInfo(listPreviewChat, previewEl, chat, { suppressTyping }),
 				this.#i18n
 			);
 		}
@@ -17016,6 +17112,7 @@ class MessengerSidebar {
 			? this.#i18n.t('groupBranchMain')
 			: (chat.name || this.#i18n.t('unnamed'));
 		const groupParent = isMain ? (parentChat || chat) : null;
+		const previewChat = isMain && groupParent ? chatForMainBranchListPreview(groupParent) : chat;
 		const unreadCount = isMain && groupParent
 			? getGroupMainUnreadCount(groupParent, this.#getBranchesForGroup(groupParent))
 			: (chat.unreadCount || 0);
@@ -17023,16 +17120,16 @@ class MessengerSidebar {
 		if (nameEl) nameEl.textContent = displayName;
 		const timeEl = item.querySelector('.mapp-chat-item-time');
 		if (timeEl) {
-			timeEl.textContent = chat.lastMessageTime
-				? this.#utils.formatListTime(chat.lastMessageTime)
+			timeEl.textContent = previewChat.lastMessageTime
+				? this.#utils.formatListTime(previewChat.lastMessageTime)
 				: '';
 		}
 		const previewEl = item.querySelector('.mapp-chat-item-preview');
 		if (previewEl) {
-			const previewInfo = (!isMain && this.#formatChatPreview)
-				? this.#formatChatPreview(chat, { previewEl })
+			const previewInfo = this.#formatChatPreview
+				? this.#formatChatPreview(previewChat, { previewEl, mainBranchOnly: isMain })
 				: buildChatListPreviewInfo({
-					storedText: chat.lastMessage || '',
+					storedText: previewChat.lastMessage || '',
 					utils: this.#utils,
 					cache: null,
 					i18n: this.#i18n,
@@ -17075,6 +17172,8 @@ class MessengerSidebar {
 				lastMessage: branch.lastMessage || '',
 				lastMessageTime: branch.lastMessageTime || null,
 				unreadCount: branch.unreadCount || 0,
+				isAdmin: parentChat.isAdmin,
+				isGroupCreator: parentChat.isGroupCreator,
 			};
 			let item = byId.get(branchChat.id);
 			if (item) {
@@ -17097,9 +17196,20 @@ class MessengerSidebar {
 			return;
 		}
 		if (item.classList.contains('mapp-chat-item--branch')) {
-			this.#patchBranchItem(item, chat, activeChat);
+			const parentId = item.closest('.mapp-chat-branch-list')?.dataset.parentChatId;
+			const isMain = !!(parentId && String(chat.id).toLowerCase() === String(parentId).toLowerCase());
+			const parentChat = isMain
+				? chat
+				: (parentId ? this.#allChatsRef.find(c => c.id === parentId) : null);
+			this.#patchBranchItem(item, chat, activeChat, { isMain, parentChat });
 		} else {
 			this.#patchChatItem(item, chat, activeChat);
+			if (isRootGroupChat(chat) && this.#expandedGroupId === chat.id && this.#getBranchesForGroup(chat).length > 0) {
+				const mainBranchItem = this.#findChatListItem(chat.id, { branchOnly: true });
+				if (mainBranchItem) {
+					this.#patchBranchItem(mainBranchItem, chat, activeChat, { isMain: true, parentChat: chat });
+				}
+			}
 		}
 	}
 
@@ -17198,6 +17308,7 @@ class MessengerSidebar {
 			? this.#i18n.t('groupBranchMain')
 			: (chat.name || this.#i18n.t('unnamed'));
 		const groupParent = isMain ? (parentChat || chat) : null;
+		const previewChat = isMain && groupParent ? chatForMainBranchListPreview(groupParent) : chat;
 		const unreadCount = isMain && groupParent
 			? getGroupMainUnreadCount(groupParent, this.#getBranchesForGroup(groupParent))
 			: (chat.unreadCount || 0);
@@ -17207,14 +17318,14 @@ class MessengerSidebar {
 		const nameEl = this.#utils.mk('span', 'mapp-chat-item-name');
 		nameEl.textContent = displayName;
 		const timeEl = this.#utils.mk('span', 'mapp-chat-item-time');
-		timeEl.textContent = chat.lastMessageTime ? this.#utils.formatListTime(chat.lastMessageTime) : '';
+		timeEl.textContent = previewChat.lastMessageTime ? this.#utils.formatListTime(previewChat.lastMessageTime) : '';
 		row1.append(nameEl, timeEl);
 		const row2 = this.#utils.mk('div', 'mapp-chat-item-row');
 		const previewEl = this.#utils.mk('span', 'mapp-chat-item-preview');
-		const previewInfo = (!isMain && this.#formatChatPreview)
-			? this.#formatChatPreview(chat, { previewEl: null })
+		const previewInfo = this.#formatChatPreview
+			? this.#formatChatPreview(previewChat, { previewEl: null, mainBranchOnly: isMain })
 			: buildChatListPreviewInfo({
-				storedText: chat.lastMessage || '',
+				storedText: previewChat.lastMessage || '',
 				utils: this.#utils,
 				cache: null,
 				i18n: this.#i18n,
@@ -17320,9 +17431,10 @@ class MessengerSidebar {
 		}
 		const row2 = this.#utils.mk('div', 'mapp-chat-item-row');
 		const previewEl = this.#utils.mk('span', 'mapp-chat-item-preview');
+		const suppressTyping = hasBranches && this.#expandedGroupId === chat.id;
 		applyChatListPreviewEl(
 			previewEl,
-			this.#chatListPreviewInfo(listPreviewChat, null, chat),
+			this.#chatListPreviewInfo(listPreviewChat, null, chat, { suppressTyping }),
 			this.#i18n
 		);
 		const badgeWrap = this.#utils.mk('span', 'mapp-badge-wrap');
@@ -17402,9 +17514,11 @@ class MessengerSidebar {
 				});
 			}
 		}
-		pushItem(this.#icons.eraser(), this.#i18n.t('clearHistory'), false, () => {
-			this.#onChatAction?.('clearHistory', chat);
-		});
+		if (canClearChatHistory(chat)) {
+			pushItem(this.#icons.eraser(), this.#i18n.t('clearHistory'), false, () => {
+				this.#onChatAction?.('clearHistory', chat);
+			});
+		}
 
 		const folderChildren = this.#buildFolderMoveMenuChildren(chat);
 		if (folderChildren.length > 0) {
@@ -17517,12 +17631,26 @@ class MessengerSidebar {
 	}
 
 	updateChatPreview(chatId, previewInfo = null) {
+		const chat = this.#allChatsRef.find(c => c.id === chatId);
+		if (!chat) return;
+		const hasBranches = isRootGroupChat(chat) && this.#getBranchesForGroup(chat).length > 0;
+		if (hasBranches && this.#expandedGroupId === chatId) {
+			const parentItem = this.#findChatListItem(chatId, { parentOnly: true });
+			const mainBranchItem = this.#findChatListItem(chatId, { branchOnly: true });
+			if (parentItem) this.#patchChatItem(parentItem, chat, this.#lastActiveChat);
+			if (mainBranchItem) {
+				this.#patchBranchItem(mainBranchItem, chat, this.#lastActiveChat, {
+					isMain: true,
+					parentChat: chat,
+				});
+			}
+			return;
+		}
 		const item = this.#findChatListItem(chatId);
 		const previewEl = item?.querySelector('.mapp-chat-item-preview');
 		if (!previewEl) return;
 		if (!previewInfo && this.#formatChatPreview) {
-			const chat = this.#allChatsRef.find(c => c.id === chatId);
-			if (chat) previewInfo = this.#formatChatPreview(chat, { previewEl });
+			previewInfo = this.#formatChatPreview(chat, { previewEl });
 		}
 		if (!previewInfo) return;
 		applyChatListPreviewEl(previewEl, previewInfo, this.#i18n);
@@ -17985,7 +18113,10 @@ class MessengerAppView {
 	setConnectionStateManager(mgr) {
 		this.#connectionStateMgr = mgr;
 		this.#sidebar.setConnectionStateManager(mgr);
-		mgr?.subscribe(() => {
+		mgr?.subscribe((state) => {
+			if (state !== MessengerConnectionStateManager.STATE_CONNECTED) {
+				this.#clearAllRemoteActivityIndicators();
+			}
 			this.#refreshActiveChatHeader();
 			this.#refreshActiveChatHeaderSub();
 		});
@@ -18852,6 +18983,50 @@ class MessengerAppView {
 		};
 	}
 
+	#findBotBySlug(slug) {
+		const norm = String(slug || '').trim().toLowerCase();
+		if (!norm) return null;
+		const fromList = this.#chats.find(c =>
+			isBotContact(c) && String(c.botSlug || '').trim().toLowerCase() === norm
+		);
+		if (fromList) return fromList;
+		for (const c of this.#chats) {
+			if (c.type !== 'direct' || !c.contactUserId || !isBotContact(c)) continue;
+			const login = this.#contactLogins.get(c.contactUserId);
+			if (login && login.toLowerCase() === norm) return c;
+		}
+		return null;
+	}
+
+	#buildChannelLinkPreviewFromChat(chat, slug) {
+		if (!chat?.id) return null;
+		const localSubscribed = chat.channelPreview?.isSubscribed !== false;
+		return {
+			success: true,
+			chatId: chat.id,
+			name: chat.name || '',
+			slug: chat.channelSlug || slug,
+			avatar: messengerPublicChannelAvatarUrl(chat.avatar || null, chat.id),
+			description: chat.channelPreview?.description || '',
+			isSubscribed: localSubscribed,
+		};
+	}
+
+	#buildBotLinkPreviewFromChat(chat, slug) {
+		if (!chat?.contactUserId) return null;
+		const started = chat.botPreview?.isStarted !== false && !isBotPreviewChatId(chat.id);
+		return {
+			success: true,
+			botUserId: chat.contactUserId,
+			name: chat.name || '',
+			slug: chat.botSlug || slug,
+			avatar: chat.avatar || null,
+			description: chat.botDescription || chat.botPreview?.description || '',
+			isStarted: started,
+			chatId: started ? chat.id : null,
+		};
+	}
+
 	#resolveBotMeta(chat) {
 		if (!isBotContact(chat)) return null;
 		return {
@@ -18879,8 +19054,13 @@ class MessengerAppView {
 			this.#activeChat.groupBotMenus = normalized;
 			this.#activeChat.groupBotMenu = chat.groupBotMenu;
 		}
+		const chatRef = this.#chats.find(c => c.id === chat.id);
+		if (chatRef) {
+			chatRef.groupBotMenus = normalized;
+			chatRef.groupBotMenu = chat.groupBotMenu;
+		}
 		const state = panelState
-			|| (this.#activeState?.chatId === chat.id ? this.#activeState : this.#panelPool.get(chat.id)?.state);
+			?? (this.#activeState?.chatId === chat.id ? this.#activeState : null);
 		if (!state || (!state.isGroupChat && !state.isGroupBranchChat)) return normalized;
 		state.groupBotMenus = normalized;
 		if (state._composerChat) {
@@ -18897,18 +19077,36 @@ class MessengerAppView {
 	async #loadGroupBotMenusForChat(chat) {
 		if (!this.#isGroupChat(chat)) return [];
 		try {
-			const info = await this.#api.getGroupInfo(chat.id);
-			if (!info?.success) return [];
+			const info = await this.#api.call('GetGroupInfo', { chatId: chat.id });
+			if (!info?.success) return null;
 			return normalizeGroupBotMenus(info.groupBotMenus
 				|| (info.groupBotMenu ? [info.groupBotMenu] : []));
 		} catch (e) {
 			console.warn('[MessengerAppView] loadGroupBotMenusForChat', e);
-			return [];
+			return null;
 		}
 	}
 
-	async #refreshGroupBotMetaFromServer(chat) {
+	async #refreshGroupBotMenusForPanel(chat, panelState) {
+		if (!this.#isGroupChat(chat) || !panelState) return [];
+		try {
+			const menus = await this.#loadGroupBotMenusForChat(chat);
+			if (menus === null) return this.#resolveGroupBotMenus(chat);
+			if (this.#activeState !== panelState || this.#activeChat?.id !== chat.id) return menus;
+			this.#applyGroupBotMenusToState(chat, menus, panelState);
+			return menus;
+		} catch (e) {
+			console.warn('[MessengerAppView] refreshGroupBotMenusForPanel', e);
+			return this.#resolveGroupBotMenus(chat);
+		}
+	}
+
+	async #refreshGroupBotMetaFromServer(chat, panelState = null) {
+		const state = panelState
+			?? (this.#activeState?.chatId === chat.id ? this.#activeState : null);
+		if (state) return this.#refreshGroupBotMenusForPanel(chat, state);
 		const menus = await this.#loadGroupBotMenusForChat(chat);
+		if (menus === null) return this.#resolveGroupBotMenus(chat);
 		return this.#applyGroupBotMenusToState(chat, menus);
 	}
 
@@ -19183,6 +19381,7 @@ class MessengerAppView {
 		if (this.#panelPool.has(chatId)) this.#evictPanel(chatId);
 		this.#capturePanelScroll(state);
 		MessengerMessageHighlight.clear(state.msgArea);
+		state.el?.querySelector('.mc-input-area')?._flushInputDraft?.();
 		if (this.el.panelPoolHost) {
 			this.el.panelPoolHost.appendChild(state.el);
 		}
@@ -19228,6 +19427,8 @@ class MessengerAppView {
 		entry.state.unreadCount = pendingUnreadCount;
 		this.el.chatArea.appendChild(entry.state.el);
 		this.#activeState = entry.state;
+		this.#panelFactory.restoreInputDraft(entry.state);
+		this.#hydratePanelTypingFromList(chat.id);
 		this.el.empty.hidden = true;
 		this.#refreshActiveChatHeader();
 		this.#refreshActiveChatHeaderSub(chat);
@@ -19243,7 +19444,11 @@ class MessengerAppView {
 		this.#panelFactory.syncImageViewerActionHost(entry.state);
 		global.ThemeChatBg?.paint?.();
 		if (this.#isGroupChat(chat)) {
-			void this.#refreshGroupBotMetaFromServer(chat);
+			const cachedMenus = this.#resolveGroupBotMenus(chat);
+			if (cachedMenus.length) {
+				this.#applyGroupBotMenusToState(chat, cachedMenus, entry.state);
+			}
+			void this.#refreshGroupBotMenusForPanel(chat, entry.state);
 		}
 	}
 
@@ -19285,8 +19490,7 @@ class MessengerAppView {
 		let botMeta = null;
 		let groupBotMenusPreloaded = [];
 		if (this.#isGroupChat(chat)) {
-			groupBotMenusPreloaded = await this.#loadGroupBotMenusForChat(chat);
-			this.#applyGroupBotMenusToState(chat, groupBotMenusPreloaded);
+			groupBotMenusPreloaded = this.#resolveGroupBotMenus(chat);
 		}
 		if (isChannelType(chat.type)) {
 			channelMeta = this.#resolveChannelMeta(chat);
@@ -19330,6 +19534,7 @@ class MessengerAppView {
 			if (!edit && !text?.trim()) return;
 			if (isChannelType(chat.type)) {
 				field.value = '';
+				messengerClearInputDraft(field, chat.id, this.#currentUser?.id);
 				const localMsg = {
 					id: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2),
 					serverId: null,
@@ -19388,6 +19593,7 @@ class MessengerAppView {
 				field.value = '';
 				field.style.height = '';
 				field.rows = 1;
+				messengerClearInputDraft(field, chat.id, this.#currentUser?.id);
 				try {
 					await this.#api.editMessage(state.chatId, edit.msg.id, newText);
 					this.#panelFactory.clearComposerDraft(state);
@@ -19404,6 +19610,7 @@ class MessengerAppView {
 				return;
 			}
 			field.value = '';
+			messengerClearInputDraft(field, chat.id, this.#currentUser?.id);
 			const reply = state.replyDraft;
 			let outgoingPrep = { encryptionTier: 'basic' };
 			let resolved = { tier: 'basic' };
@@ -19503,10 +19710,12 @@ class MessengerAppView {
 			onChatEncryptionHasPassword: (c) => !!this.#api.getCrypto()?.getCustomPassword(c?.id),
 			onChatEncryptionStatusText: (c) => this.#chatEncryptionStatusText(c),
 			onEnterExtraPassword: (c) => this.#enterChatExtraPassword(c),
-			onClearHistory: (c) => {
-				this.#panelFactory.exitSelectionForNavigation(this.#activeState);
-				return this.#clearChatHistory(c);
-			},
+			...(canClearChatHistory(chat) ? {
+				onClearHistory: (c) => {
+					this.#panelFactory.exitSelectionForNavigation(this.#activeState);
+					return this.#clearChatHistory(c);
+				},
+			} : {}),
 			onDeleteChat: (c) => {
 				this.#panelFactory.exitSelectionForNavigation(this.#activeState);
 				return this.#deleteOrLeaveChat(c, false);
@@ -19530,6 +19739,7 @@ class MessengerAppView {
 				this.refreshChatListPreview(chat.id).catch(() => {});
 			},
 			onApplyActivities: (activities) => this.applyChatActivities(chat.id, activities),
+			onPanelActivitiesChange: (chatId, activities) => this.#syncChatListTypingWithPanel(chatId, activities),
 			onChannelAvatarUpdate: (avatar) => {
 				if (!avatar) return;
 				const normalized = messengerPublicChannelAvatarUrl(avatar, chat.id);
@@ -19585,10 +19795,14 @@ class MessengerAppView {
 		}
 		this.#activeState = state;
 		this.el.chatArea.appendChild(state.el);
+		this.#hydratePanelTypingFromList(chat.id);
 		this.#panelFactory.loadHistory(chat.id, state);
 		this.#refreshActiveChatHeader();
-		if (groupBotMenusPreloaded.length) {
-			this.#panelFactory.refreshGroupBotComposerMenu(state, groupBotMenusPreloaded);
+		if (this.#isGroupChat(chat)) {
+			if (groupBotMenusPreloaded.length) {
+				this.#applyGroupBotMenusToState(chat, groupBotMenusPreloaded, state);
+			}
+			void this.#refreshGroupBotMenusForPanel(chat, state);
 		}
 		global.ThemeChatBg?.paint?.();
 	}
@@ -20514,7 +20728,7 @@ class MessengerAppView {
 			&& activeChat.parentChatId !== scopedChatId) {
 			return;
 		}
-		void this.#refreshGroupBotMetaFromServer(activeChat);
+		void this.#refreshGroupBotMenusForPanel(activeChat, this.#activeState);
 	}
 
 	async handleAssistantReplyPending(payload) {
@@ -20759,6 +20973,24 @@ class MessengerAppView {
 			normalizeAppUrl();
 			return true;
 		}
+		const localBot = this.#findBotBySlug(slug);
+		if (localBot) {
+			const botPreview = this.#buildBotLinkPreviewFromChat(localBot, slug);
+			if (botPreview?.success) {
+				await this.openBotBySlug(slug, botPreview, { messageId });
+				normalizeAppUrl();
+				return true;
+			}
+		}
+		const localChannel = this.#findChannelBySlug(slug);
+		if (localChannel) {
+			const channelPreview = this.#buildChannelLinkPreviewFromChat(localChannel, slug);
+			if (channelPreview?.success) {
+				await this.openChannelBySlug(slug, channelPreview, { messageId });
+				normalizeAppUrl();
+				return true;
+			}
+		}
 		const botPreview = await this.#api.getBotLinkPreview(slug).catch(() => null);
 		if (botPreview?.success) {
 			await this.openBotBySlug(slug, botPreview, { messageId });
@@ -20768,21 +21000,6 @@ class MessengerAppView {
 		const channelPreview = await this.#api.getChannelLinkPreview(slug).catch(() => null);
 		if (channelPreview?.success) {
 			await this.openChannelBySlug(slug, channelPreview, { messageId });
-			normalizeAppUrl();
-			return true;
-		}
-		const localChannel = this.#findChannelBySlug(slug);
-		if (localChannel) {
-			const localSubscribed = localChannel.channelPreview?.isSubscribed !== false;
-			await this.openChannelBySlug(slug, {
-				success: true,
-				chatId: localChannel.id,
-				name: localChannel.name || '',
-				slug: localChannel.channelSlug || slug,
-				avatar: messengerPublicChannelAvatarUrl(localChannel.avatar || null, localChannel.id),
-				description: localChannel.channelPreview?.description || '',
-				isSubscribed: localSubscribed,
-			}, { messageId });
 			normalizeAppUrl();
 			return true;
 		}
@@ -21178,20 +21395,16 @@ class MessengerAppView {
 		try {
 			let p = preview;
 			if (!p?.success) {
+				const local = this.#findChannelBySlug(slug);
+				if (local) p = this.#buildChannelLinkPreviewFromChat(local, slug);
+			}
+			if (!p?.success) {
 				p = await this.#api.getChannelLinkPreview(slug).catch(() => null);
 			}
 			if (!p?.success) {
 				const local = this.#findChannelBySlug(slug);
 				if (!local) return;
-				p = {
-					success: true,
-					chatId: local.id,
-					name: local.name || '',
-					slug: local.channelSlug || slug,
-					avatar: local.avatar || null,
-					description: local.channelPreview?.description || '',
-					isSubscribed: local.channelPreview?.isSubscribed !== false,
-				};
+				p = this.#buildChannelLinkPreviewFromChat(local, slug);
 			}
 			if (!p?.success) return;
 			const avatarUrl = messengerPublicChannelAvatarUrl(p.avatar || null, p.chatId);
@@ -21242,7 +21455,16 @@ class MessengerAppView {
 		try {
 			let p = preview;
 			if (!p?.success) {
+				const local = this.#findBotBySlug(slug);
+				if (local) p = this.#buildBotLinkPreviewFromChat(local, slug);
+			}
+			if (!p?.success) {
 				p = await this.#api.getBotLinkPreview(slug).catch(() => null);
+			}
+			if (!p?.success) {
+				const local = this.#findBotBySlug(slug);
+				if (!local) return;
+				p = this.#buildBotLinkPreviewFromChat(local, slug);
 			}
 			if (!p?.success) return;
 			const chatId = p.isStarted && p.chatId
@@ -21420,7 +21642,28 @@ class MessengerAppView {
 			return;
 		}
 		try {
-			const preview = await this.#api.getGroupBranchLinkPreview(parentChatId, slug);
+			let preview = null;
+			const parent = this.#chats.find(c => c.id === parentChatId);
+			const normSlug = String(slug || '').trim().toLowerCase();
+			const branchFromTree = parent
+				? collectBranchesForGroup(parent, this.#chats).find(b =>
+					String(b.slug || b.branchSlug || '').trim().toLowerCase() === normSlug
+				)
+				: null;
+			if (branchFromTree?.id) {
+				preview = {
+					success: true,
+					chatId: branchFromTree.id,
+					name: branchFromTree.name || '',
+					avatar: branchFromTree.avatar || null,
+					parentChatId,
+					slug: branchFromTree.slug || branchFromTree.branchSlug || slug,
+					isMember: true,
+				};
+			}
+			if (!preview?.success) {
+				preview = await this.#api.getGroupBranchLinkPreview(parentChatId, slug).catch(() => null);
+			}
 			if (!preview?.success) return;
 			if (!preview.isMember) {
 				normalizeAppUrl();
@@ -21596,6 +21839,80 @@ class MessengerAppView {
 		if (pooled) fn(pooled.state);
 	}
 
+	#forAllPanelStates(fn) {
+		const seen = new Set();
+		const visit = (state) => {
+			if (!state || seen.has(state)) return;
+			seen.add(state);
+			fn(state);
+		};
+		visit(this.#activeState);
+		for (const { state } of this.#panelPool.values()) visit(state);
+	}
+
+	#isConnectionReadyForActivities() {
+		return this.#connectionStateMgr?.state === MessengerConnectionStateManager.STATE_CONNECTED;
+	}
+
+	#clearAllChatListTypingState() {
+		if (!this.#chatTypingState.size) return false;
+		for (const st of this.#chatTypingState.values()) {
+			for (const u of st.users.values()) {
+				if (u.timer) clearTimeout(u.timer);
+			}
+		}
+		this.#chatTypingState.clear();
+		return true;
+	}
+
+	#clearAllPanelActivities() {
+		this.#forAllPanelStates(state => state.activityTracker?.clearAll?.());
+	}
+
+	#clearAllRemoteActivityIndicators() {
+		const listChanged = this.#clearAllChatListTypingState();
+		this.#clearAllPanelActivities();
+		if (listChanged) this.#renderChatList();
+	}
+
+	#syncChatListTypingWithPanel(chatId, activities) {
+		if (!chatId) return;
+		const typingUserIds = new Set(
+			(activities || []).filter(a => a.activityType === 'typing').map(a => a.userId)
+		);
+		const st = this.#chatTypingState.get(chatId);
+		if (!st?.users?.size) return;
+		let changed = false;
+		for (const [userId, u] of [...st.users.entries()]) {
+			if (!typingUserIds.has(userId)) {
+				if (u.timer) clearTimeout(u.timer);
+				st.users.delete(userId);
+				changed = true;
+			}
+		}
+		if (!st.users.size) this.#chatTypingState.delete(chatId);
+		if (changed) this.#sidebar.updateChatPreview(chatId);
+	}
+
+	#hydratePanelTypingFromList(chatId) {
+		if (!this.#isConnectionReadyForActivities()) return;
+		const st = this.#chatTypingState.get(chatId);
+		if (!st?.users?.size) return;
+		for (const [userId, u] of st.users.entries()) {
+			this.#forEachPanelState(chatId, state => {
+				this.#panelFactory.updateActivity(
+					state,
+					userId,
+					u.userName,
+					'typing',
+					true,
+					u.activityMessage || null,
+					null
+				);
+			});
+		}
+	}
+
 	updateMessageStatus(messageId, status) {
 		if (this.#activeState) {
 			this.#panelFactory.updateMsgStatus(this.#activeState, messageId, status);
@@ -21666,6 +21983,7 @@ class MessengerAppView {
 	receiveActivity(chatId, userId, userName, activityType, active, activityMessage = null, expiresAt = null) {
 		const chat = this.#chats.find(c => c.id === chatId);
 		if (isChannelType(chat?.type)) return;
+		if (active && !this.#isConnectionReadyForActivities()) return;
 		const expiresAtMs = expiresAt ? Date.parse(expiresAt) : null;
 		this.#updateChatTypingPreview(chatId, userId, userName, activityType, active, activityMessage, expiresAtMs);
 		this.#forEachPanelState(chatId, state => {
@@ -21675,6 +21993,7 @@ class MessengerAppView {
 
 	applyChatActivities(chatId, activities) {
 		if (!activities?.length) return;
+		if (!this.#isConnectionReadyForActivities()) return;
 		for (const a of activities) {
 			if (!a?.userId || !a?.activityType) continue;
 			this.receiveActivity(
@@ -21691,6 +22010,7 @@ class MessengerAppView {
 
 	#updateChatTypingPreview(chatId, userId, userName, activityType, active, activityMessage = null, expiresAtMs = null) {
 		if (activityType !== 'typing') return;
+		if (active && !this.#isConnectionReadyForActivities()) return;
 		const chat = this.#chats.find(c => c.id === chatId);
 		if (!chat || isChannelType(chat.type)) return;
 		let st = this.#chatTypingState.get(chatId);
@@ -21716,16 +22036,22 @@ class MessengerAppView {
 		this.#sidebar.updateChatPreview(chatId);
 	}
 
-	#formatChatListPreview(chat, { previewEl = null } = {}) {
-		const typing = this.#getChatTypingPreview(chat);
-		if (typing) {
-			if (typing.groupActivities?.length) {
-				return { typing: true, groupActivities: typing.groupActivities };
+	#formatChatListPreview(chat, { previewEl = null, suppressTyping = false, mainBranchOnly = false } = {}) {
+		if (!suppressTyping) {
+			const typing = this.#getChatTypingPreview(chat);
+			if (typing) {
+				if (typing.groupActivities?.length) {
+					return { typing: true, groupActivities: typing.groupActivities };
+				}
+				return { text: typing.text, typing: true, typingText: typing.typingText };
 			}
-			return { text: typing.text, typing: true, typingText: typing.typingText };
 		}
-		const hasBranches = isRootGroupChat(chat) && collectBranchesForGroup(chat, this.#chats).length > 0;
-		const previewChat = hasBranches ? chatForParentListPreview(chat) : chat;
+		const hasBranches = !mainBranchOnly
+			&& isRootGroupChat(chat)
+			&& collectBranchesForGroup(chat, this.#chats).length > 0;
+		const previewChat = mainBranchOnly
+			? chatForMainBranchListPreview(chat)
+			: (hasBranches ? chatForParentListPreview(chat) : chat);
 		const stored = previewChat.lastMessage || '';
 		return buildChatListPreviewInfo({
 			storedText: stored,
@@ -21737,6 +22063,7 @@ class MessengerAppView {
 	}
 
 	#getChatTypingPreview(chat) {
+		if (!this.#isConnectionReadyForActivities()) return null;
 		const st = this.#chatTypingState.get(chat.id);
 		if (!st?.users?.size) return null;
 		if (isGroupConversationChat(chat)) {
@@ -24302,15 +24629,27 @@ class MessengerCustomMessageRenderer {
 		const openBtn = this.#utils.mk('button', 'mc-mini-app-open mapp-btn mapp-btn-primary');
 		openBtn.type = 'button';
 		openBtn.textContent = this.#i18n.t('miniAppOpen') || 'Открыть';
-		const messageId = bubble.closest('.mc-msg')?.dataset?.msgId;
 		openBtn.addEventListener('click', (e) => {
 			e.preventDefault();
 			e.stopPropagation();
+			const row = bubble.closest('.mc-msg-row');
+			const messageId = row?.dataset?.msgId;
 			if (!messageId) return;
+			const botName = bubble.querySelector('.mc-msg-sender')?.textContent || '';
 			MessengerMiniAppLauncher.open(messageId, {
 				title: payload?.title,
 				baseOrigin: payload?.baseOrigin,
-				botName: bubble.closest('.mc-msg')?.querySelector('.mc-msg-sender')?.textContent || '',
+				botName,
+			}).catch(err => {
+				console.warn('[MiniApp] open failed', err);
+				if (typeof MessengerDialog !== 'undefined') {
+					MessengerDialog.showNotice(
+						err?.message || this.#i18n.t('miniAppOpenFailed') || 'Не удалось открыть Mini App',
+						this.#i18n.t('close') || 'Закрыть',
+						null,
+						null,
+					);
+				}
 			});
 		});
 		if (footer) bubble.insertBefore(openBtn, footer);
@@ -24412,6 +24751,46 @@ class MessengerMessageHighlight {
 		MessengerMessageHighlight.#dimOverlay = null;
 	}
 
+	static #pauseScrollPin(msgArea) {
+		if (!msgArea || msgArea.dataset.smScrollPinPaused) return;
+		msgArea.dataset.smScrollPinPaused = '1';
+		msgArea._scrollPinCleanup?.();
+		msgArea._scrollPinCleanup = null;
+	}
+
+	static #resumeScrollPin(msgArea) {
+		if (!msgArea?.dataset.smScrollPinPaused) return;
+		delete msgArea.dataset.smScrollPinPaused;
+		const panel = MessengerUtils.resolveChatPanel(msgArea);
+		if (MessengerUtils.shouldPinMessagesToComposer(msgArea, panel)) {
+			MessengerUtils.scrollToBottom(msgArea);
+		}
+	}
+
+	static #placeSpotlight(row, target, pad = 5) {
+		const apply = () => {
+			const rect = target.getBoundingClientRect();
+			let spot = MessengerMessageHighlight.#spotEl;
+			if (!spot) {
+				spot = document.createElement('div');
+				spot.className = 'mc-msg-spotlight';
+				document.body.appendChild(spot);
+				MessengerMessageHighlight.#spotEl = spot;
+			}
+			spot.style.top = `${rect.top - pad}px`;
+			spot.style.left = `${rect.left - pad}px`;
+			spot.style.width = `${rect.width + pad * 2}px`;
+			spot.style.height = `${rect.height + pad * 2}px`;
+			row.classList.add('mc-msg-row--highlighted');
+		};
+		void target.offsetHeight;
+		apply();
+		requestAnimationFrame(() => {
+			apply();
+			requestAnimationFrame(apply);
+		});
+	}
+
 	/** Возвращает чат в исходное положение и убирает временный отступ. */
 	static #restoreScroll() {
 		const s = MessengerMessageHighlight.#savedScroll;
@@ -24448,6 +24827,7 @@ class MessengerMessageHighlight {
 		const edge = menuTop - gap;
 
 		if (msgArea) {
+			MessengerMessageHighlight.#pauseScrollPin(msgArea);
 			// убираем любые остатки прошлого выделения и фиксируем базовую позицию
 			msgArea.querySelectorAll('.mc-msg-scroll-spacer').forEach(el => el.remove());
 			MessengerMessageHighlight.#savedScroll = { area: msgArea, top: msgArea.scrollTop };
@@ -24463,22 +24843,13 @@ class MessengerMessageHighlight {
 					spacer.style.flexShrink = '0';
 					spacer.style.height = `${Math.ceil(overlap - room + 8)}px`;
 					msgArea.appendChild(spacer);
+					void msgArea.scrollHeight;
 				}
 				msgArea.scrollTop += overlap;
 			}
 		}
 
-		const rect = target.getBoundingClientRect();
-		const pad = 5;
-		const spot = document.createElement('div');
-		spot.className = 'mc-msg-spotlight';
-		spot.style.top = `${rect.top - pad}px`;
-		spot.style.left = `${rect.left - pad}px`;
-		spot.style.width = `${rect.width + pad * 2}px`;
-		spot.style.height = `${rect.height + pad * 2}px`;
-		document.body.appendChild(spot);
-		MessengerMessageHighlight.#spotEl = spot;
-		row.classList.add('mc-msg-row--highlighted');
+		MessengerMessageHighlight.#placeSpotlight(row, target);
 	}
 
 	static #removeSpacer(msgArea) {
@@ -24486,6 +24857,7 @@ class MessengerMessageHighlight {
 	}
 
 	static #centerRowInView(msgArea, row) {
+		MessengerMessageHighlight.#pauseScrollPin(msgArea);
 		const rowCenter = row.offsetTop + row.offsetHeight / 2;
 		const idealScroll = rowCenter - msgArea.clientHeight / 2;
 		const maxScroll = Math.max(0, msgArea.scrollHeight - msgArea.clientHeight);
@@ -24542,6 +24914,7 @@ class MessengerMessageHighlight {
 		MessengerMessageHighlight.#clearSpotlight();
 		MessengerMessageHighlight.#restoreScroll();
 		MessengerMessageHighlight.#removeSpacer(msgArea);
+		MessengerMessageHighlight.#resumeScrollPin(msgArea);
 	}
 }
 
@@ -25597,11 +25970,37 @@ class MessengerMessageRenderer {
 			bar.classList.remove('mc-activity-bar--channel-desc', 'mc-activity-bar--visible');
 		}
 	}
-	buildInputArea(chatId, msgArea, onSend, onActivity = null, fileOptions = null, connectionStateMgr = null) {
+	buildInputArea(chatId, msgArea, onSend, onActivity = null, fileOptions = null, connectionStateMgr = null, draftOptions = null) {
 		const area = this.#utils.mk('div', 'mc-input-area');
 		const field = this.#utils.mk('textarea', 'mc-input-field');
 		field.placeholder = this.#i18n.t('writeMessage');
 		field.rows = 1;
+		const draftUserId = draftOptions?.userId || null;
+		const shouldPersistDraft = typeof draftOptions?.shouldPersist === 'function'
+			? draftOptions.shouldPersist
+			: () => true;
+		let draftSaveTimer = null;
+		const scheduleDraftSave = () => {
+			if (!draftUserId || !shouldPersistDraft()) return;
+			clearTimeout(draftSaveTimer);
+			draftSaveTimer = setTimeout(() => {
+				MessengerInputDraftStore.save(draftUserId, chatId, field.value);
+			}, MessengerInputDraftStore.SAVE_DEBOUNCE_MS);
+		};
+		const flushInputDraft = () => {
+			if (!draftUserId || !shouldPersistDraft()) return;
+			clearTimeout(draftSaveTimer);
+			MessengerInputDraftStore.save(draftUserId, chatId, field.value);
+		};
+		const clearSavedDraft = () => {
+			if (!draftUserId) return;
+			clearTimeout(draftSaveTimer);
+			MessengerInputDraftStore.clear(draftUserId, chatId);
+		};
+		if (draftUserId) {
+			const savedDraft = MessengerInputDraftStore.load(draftUserId, chatId);
+			if (savedDraft) applyMessengerInputDraft(field, savedDraft);
+		}
 		let typingStopTimer = null, lastActivitySentAt = 0;
 		const THROTTLE_MS = MessengerActivityTracker.DEFAULT_TIMEOUT;
 		const resetFieldHeight = () => {
@@ -25631,6 +26030,7 @@ class MessengerMessageRenderer {
 					msgArea.scrollTop = msgArea.scrollHeight;
 				}
 			}
+			scheduleDraftSave();
 			if (!isSendAllowed()) return;
 			if (onActivity) {
 				const now = Date.now();
@@ -25722,6 +26122,10 @@ class MessengerMessageRenderer {
 		}
 		composerNodes.push(field, btn);
 		area.append(...composerNodes);
+		area._clearInputDraft = clearSavedDraft;
+		area._flushInputDraft = flushInputDraft;
+		area._draftUserId = draftUserId;
+		area._draftChatId = chatId;
 		if (connectionStateMgr) {
 			connectionStateMgr.subscribe(applyConnectionState);
 		} else {
@@ -25887,6 +26291,32 @@ class MessengerChatPanel {
 	setPresenceManager(presence) { this.#presence = presence; }
 	setConnectionStateManager(mgr) { this.#connectionStateMgr = mgr; }
 	setAssistantManager(mgr) { this.#assistantMgr = mgr; }
+
+	#buildInputDraftOptions(chatId, panelState, chatCallbacks) {
+		const userId = chatCallbacks?.currentUser?.id;
+		if (!userId) return null;
+		return {
+			userId,
+			shouldPersist: () => !panelState?.editDraft,
+		};
+	}
+
+	restoreInputDraft(state) {
+		if (!state?.inputField || state.editDraft) return;
+		const userId = state._draftUserId
+			|| state.el?.querySelector('.mc-input-area')?._draftUserId;
+		if (!userId || state.inputField.value) return;
+		const saved = MessengerInputDraftStore.load(userId, state.chatId);
+		if (saved) applyMessengerInputDraft(state.inputField, saved);
+	}
+
+	#inputDraftOptionsFromState(state) {
+		if (!state?._draftUserId) return null;
+		return {
+			userId: state._draftUserId,
+			shouldPersist: () => !state.editDraft,
+		};
+	}
 
 	#msgRenderOpts(state) {
 		return {
@@ -26144,11 +26574,26 @@ class MessengerChatPanel {
 		const isDirect = chat?.type === 'direct';
 		const isGroupConversation = isGroupConversationChat(chat);
 		const connState = this.#connectionStateMgr?.state ?? MessengerConnectionStateManager.STATE_CONNECTING;
-		if (isGroupConversation) {
-			if (connState === MessengerConnectionStateManager.STATE_CONNECTING) {
+		if (connState !== MessengerConnectionStateManager.STATE_CONNECTED) {
+			if (isGroupConversation) {
 				this.#msgRenderer.updateActivityBar(activityBar, [], this.#i18n);
-				return;
+				this.#restoreGroupHeaderSub(state, chat);
+			} else if (isDirect && isBotContact(chat)) {
+				const descEl = this.#getBotHeaderDescElement(state);
+				if (descEl) {
+					descEl.classList.remove('mc-header-sub--typing');
+					this.refreshBotHeaderSub(state, chat, state.botMeta);
+				}
+				this.#msgRenderer.updateActivityBar(activityBar, [], this.#i18n);
+			} else if (isDirect) {
+				this.#restoreDirectHeaderSub(state, chat);
+				this.#msgRenderer.updateActivityBar(activityBar, [], this.#i18n);
+			} else {
+				this.#msgRenderer.updateActivityBar(activityBar, [], this.#i18n);
 			}
+			return;
+		}
+		if (isGroupConversation) {
 			const subEl = this.#getGroupHeaderSubElement(state);
 			if (activities?.length) {
 				if (subEl) {
@@ -26220,6 +26665,8 @@ class MessengerChatPanel {
 		}
 		if (!wantsComposer && !wantsStub) return;
 
+		oldInput._flushInputDraft?.();
+		const draftOptions = this.#inputDraftOptionsFromState(state);
 		const newInput = wantsComposer
 			? this.#msgRenderer.buildInputArea(
 				chat.id,
@@ -26227,7 +26674,8 @@ class MessengerChatPanel {
 				state._composerOnSend,
 				state._composerOnActivity,
 				state._composerFileOptions,
-				this.#connectionStateMgr
+				this.#connectionStateMgr,
+				draftOptions
 			)
 			: this.#buildChannelStubInput(chat, meta, state);
 
@@ -26249,6 +26697,8 @@ class MessengerChatPanel {
 		if (needsStart && hasStub) return;
 		if (!needsStart && hasComposer) return;
 
+		oldInput._flushInputDraft?.();
+		const draftOptions = this.#inputDraftOptionsFromState(state);
 		const newInput = needsStart
 			? this.#buildBotStubInput(chat, state, state._botChatCallbacks || {})
 			: this.#msgRenderer.buildInputArea(
@@ -26257,7 +26707,8 @@ class MessengerChatPanel {
 				state._composerOnSend,
 				state._composerOnActivity,
 				state._composerFileOptions,
-				this.#connectionStateMgr
+				this.#connectionStateMgr,
+				draftOptions
 			);
 		oldInput.replaceWith(newInput);
 		state.inputField = needsStart ? null : newInput.querySelector('.mc-input-field');
@@ -26339,12 +26790,11 @@ class MessengerChatPanel {
 		if (existingWrap) {
 			existingWrap.replaceWith(newWrap);
 		} else {
-			const attachBtn = oldInput.querySelector('.mc-attach-btn');
-			const fieldEl = oldInput.querySelector('.mc-input-field');
-			if (attachBtn) {
-				oldInput.insertBefore(newWrap, attachBtn);
-			} else if (fieldEl) {
-				oldInput.insertBefore(newWrap, fieldEl);
+			// insertBefore requires a direct child; .mc-attach-btn lives inside .mc-attach-wrap.
+			const insertRef = oldInput.querySelector(':scope > .mc-attach-wrap')
+				|| oldInput.querySelector(':scope > .mc-input-field');
+			if (insertRef?.parentNode === oldInput) {
+				oldInput.insertBefore(newWrap, insertRef);
 			} else {
 				oldInput.prepend(newWrap);
 			}
@@ -26410,13 +26860,15 @@ class MessengerChatPanel {
 		if (!state._composerOnSend) return;
 		const composerOpts = this.#ensureComposerFileOptions(state, { botMenu: menu || null });
 		if (!composerOpts) return;
+		oldInput._flushInputDraft?.();
 		const newInput = this.#msgRenderer.buildInputArea(
 			state.chatId,
 			state.msgArea,
 			state._composerOnSend,
 			state._composerOnActivity,
 			composerOpts,
-			this.#connectionStateMgr
+			this.#connectionStateMgr,
+			this.#inputDraftOptionsFromState(state)
 		);
 		oldInput.replaceWith(newInput);
 		state.inputField = newInput.querySelector('.mc-input-field');
@@ -26934,6 +27386,7 @@ class MessengerChatPanel {
 		header.append(info, menuWrap);
 		const activityTracker = isChannelHeader ? null : new MessengerActivityTracker(activities => {
 			this.#applyChatActivityUi(panelState, activityBar, activities, chat);
+			chatCallbacks.onPanelActivitiesChange?.(chat.id, activities);
 		});
 		const msgArea = this.#utils.mk('div', 'mc-messages');
 		const topLoader = this.#utils.mk('div', 'mc-top-loader');
@@ -27009,18 +27462,19 @@ class MessengerChatPanel {
 		const isChannel = isChannelType(chat.type);
 		const canPostChannel = isChannel && channelMetaCanPost(channelMeta);
 		const needsBotStart = botChatNeedsStart(chat);
+		const inputDraftOptions = this.#buildInputDraftOptions(chat.id, panelState, chatCallbacks);
 		let inputArea;
 		if (needsBotStart) {
 			inputArea = this.#buildBotStubInput(chat, panelState, chatCallbacks);
 		} else if (isChannel && canPostChannel) {
 			inputArea = this.#msgRenderer.buildInputArea(
-				chat.id, msgArea, onSend, onActivity, fileOptions, this.#connectionStateMgr
+				chat.id, msgArea, onSend, onActivity, fileOptions, this.#connectionStateMgr, inputDraftOptions
 			);
 		} else if (isChannel) {
 			inputArea = this.#buildChannelStubInput(chat, channelMeta, panelState);
 		} else {
 			inputArea = this.#msgRenderer.buildInputArea(
-				chat.id, msgArea, onSend, onActivity, fileOptions, this.#connectionStateMgr
+				chat.id, msgArea, onSend, onActivity, fileOptions, this.#connectionStateMgr, inputDraftOptions
 			);
 		}
 		el.append(header, msgWrap, replyBar, selectBar, inputArea);
@@ -27036,7 +27490,7 @@ class MessengerChatPanel {
 			isBotChat,
 			botMeta,
 			groupBotMenus: hasGroupBotMenu ? groupBotMenus : [],
-			groupCanModerate: isGroupChat ? !!(chat.isAdmin || chat.isGroupCreator) : false,
+			groupCanModerate: (isGroupChat || isGroupBranchChat) ? canModerateGroupChat(chat) : false,
 			isChannelChat,
 			channelSlug: chat.channelSlug || channelMeta?.slug || null,
 			channelMeta,
@@ -27116,12 +27570,13 @@ class MessengerChatPanel {
 			_composerOnSend: onSend,
 			_composerOnActivity: onActivity,
 			_composerFileOptions: fileOptions,
+			_draftUserId: inputDraftOptions?.userId || null,
 		};
 		panelState = state;
 		panelStateRef.current = state;
 		state._headerMenuCallbacks = headerMenuCallbacks;
 		this.refreshChatHeaderSub(state, chat, { botMeta, channelMeta });
-		if (isGroupChat && !state.groupCanModerate) {
+		if ((isGroupChat || isGroupBranchChat) && !state.groupCanModerate) {
 			void this.#resolveGroupCanDeleteForEveryone(state);
 		}
 		this.#bindMessageInteractions(state);
@@ -27375,7 +27830,7 @@ class MessengerChatPanel {
 			this.#appendChatEncryptionMenu(menu, chat, callbacks, addItem);
 		}
 
-		if (typeof callbacks.onClearHistory === 'function') {
+		if (typeof callbacks.onClearHistory === 'function' && canClearChatHistory(chat)) {
 			addItem(this.#icons.eraser(), 'clearHistory', 'Очистить историю', false, () => callbacks.onClearHistory(chat));
 		}
 
@@ -27464,7 +27919,7 @@ class MessengerChatPanel {
 			}
 		}
 
-		if (typeof callbacks.onClearHistory === 'function') {
+		if (typeof callbacks.onClearHistory === 'function' && canClearChatHistory(chat)) {
 			pushItem(this.#icons.eraser(), 'clearHistory', 'Очистить историю', false, () => callbacks.onClearHistory(chat));
 		}
 
@@ -27634,6 +28089,7 @@ class MessengerChatPanel {
 			state.inputField.value = '';
 			state.inputField.style.height = '';
 			state.inputField.rows = 1;
+			this.restoreInputDraft(state);
 		}
 		state.inputField?.focus();
 	}
@@ -28469,12 +28925,22 @@ class MessengerChatPanel {
 	}
 
 	async #resolveGroupCanDeleteForEveryone(state) {
-		if (!state?.isGroupChat) return false;
+		if (!state?.isGroupChat && !state?.isGroupBranchChat) return false;
 		if (state.groupCanModerate) return true;
 		const meta = this.#api.chatMeta?.(state.chatId);
 		if (meta?.isAdmin || meta?.isGroupCreator) {
 			state.groupCanModerate = true;
 			return true;
+		}
+		if (state.isGroupBranchChat) {
+			const parentId = state._composerChat?.parentChatId;
+			if (parentId) {
+				const parentMeta = this.#api.chatMeta?.(parentId);
+				if (parentMeta?.isAdmin || parentMeta?.isGroupCreator) {
+					state.groupCanModerate = true;
+					return true;
+				}
+			}
 		}
 		try {
 			const info = await this.#api.getGroupInfo(state.chatId);
@@ -28504,7 +28970,13 @@ class MessengerChatPanel {
 		return !!result.checked;
 	}
 
+	#prepareMessageDeleteDialog(state) {
+		MobileBottomSheetMenu.close(false);
+		this.#dismissSelectionModeForAction(state);
+	}
+
 	async #deleteMessage(state, msg) {
+		this.#prepareMessageDeleteDialog(state);
 		const isOwn = !!msg.isOwn;
 		const canDeleteForEveryone = isOwn || await this.#resolveGroupCanDeleteForEveryone(state);
 		let deleteForEveryone = false;
@@ -28706,6 +29178,7 @@ class MessengerChatPanel {
 	async #deleteSelectedMessages(state) {
 		const entries = this.#getSelectedMessageEntries(state);
 		if (!entries.length) return;
+		this.#prepareMessageDeleteDialog(state);
 		const allOwn = entries.every(({ msg }) => !!msg.isOwn);
 		const canDeleteForEveryone = allOwn || await this.#resolveGroupCanDeleteForEveryone(state);
 		let deleteForEveryone = false;
@@ -29634,7 +30107,12 @@ class MessengerChatView {
 	}
 	setConnectionStateManager(mgr) {
 		this.#connectionStateMgr = mgr;
-		mgr?.subscribe(() => this.#refreshEmbeddedHeaderSub());
+		mgr?.subscribe((state) => {
+			if (state !== MessengerConnectionStateManager.STATE_CONNECTED) {
+				this.#activityTracker?.clearAll?.();
+			}
+			this.#refreshEmbeddedHeaderSub();
+		});
 	}
 
 	#refreshEmbeddedHeaderSub() {
@@ -29716,7 +30194,8 @@ class MessengerChatView {
 		const inputArea = this.#msgRenderer.buildInputArea(
 			chatMeta.id, messages,
 			(chatId, field, msgArea) => this.#handleSend(chatId, field, msgArea),
-			null, fileOptions, this.#connectionStateMgr
+			null, fileOptions, this.#connectionStateMgr,
+			this.#currentUser?.id ? { userId: this.#currentUser.id } : null
 		);
 		root.append(header, msgWrap, inputArea);
 		container.appendChild(root);
@@ -30191,12 +30670,14 @@ class MessengerChatView {
 	}
 	receiveActivity(userId, userName, activityType, active, activityMessage = null, expiresAt = null) {
 		if (!activityType) return;
+		if (active && this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) return;
 		const expiresAtMs = expiresAt ? Date.parse(expiresAt) : null;
 		this.#activityTracker?.update(userId, userName, activityType, !!active, activityMessage, expiresAtMs);
 	}
 
 	applyChatActivities(activities) {
 		if (!activities?.length) return;
+		if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) return;
 		for (const a of activities) {
 			if (!a?.userId || !a?.activityType) continue;
 			this.receiveActivity(
@@ -30357,6 +30838,7 @@ class MessengerChatView {
 		field.value = '';
 		field.style.height = '';
 		field.rows = 1;
+		messengerClearInputDraft(field, chatId, this.#currentUser?.id);
 		const localId = this.#utils.localMessageId();
 		let outgoingPrep = { encryptionTier: 'basic' };
 		let resolved = { tier: 'basic' };
@@ -30579,6 +31061,13 @@ class MessengerActivityTracker {
 	destroy() {
 		this.#activities.forEach(e => clearTimeout(e.timer));
 		this.#activities.clear();
+	}
+
+	clearAll() {
+		if (!this.#activities.size) return;
+		this.#activities.forEach(e => clearTimeout(e.timer));
+		this.#activities.clear();
+		this.#notify();
 	}
 }
 

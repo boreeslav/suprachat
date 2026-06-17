@@ -9,6 +9,19 @@ export function buildSessionSubmenuItems(
   const activeId = registry.getActiveSessionId(chatId);
   const items: BotApiMenuItemDto[] = [];
 
+  if (activeId) {
+    items.push({
+      id: "sess-stop",
+      text: "⏹ Остановить",
+      message: `${SESSION_CMD_PREFIX}stop`,
+    });
+    items.push({
+      id: "sess-end",
+      text: "Завершить сессию",
+      message: `${SESSION_CMD_PREFIX}end`,
+    });
+  }
+
   for (const sessionId of registry.listSessionIds(chatId)) {
     const sessionKey = `${chatId}::${sessionId}`;
     const marks: string[] = [];
@@ -19,14 +32,6 @@ export function buildSessionSubmenuItems(
       id: `sess-${sessionId}`,
       text: `${prefix}${registry.sessionTitle(sessionId)}`,
       message: `${SESSION_CMD_PREFIX}${sessionId}`,
-    });
-  }
-
-  if (activeId) {
-    items.push({
-      id: "sess-end",
-      text: "Завершить сессию",
-      message: `${SESSION_CMD_PREFIX}end`,
     });
   }
 
@@ -55,6 +60,15 @@ export function buildSessionPickerText(registry: SessionRegistry, chatId: string
 export function buildSessionPickerButtons(registry: SessionRegistry, chatId: string): BotMessageButtonDto[] {
   const activeId = registry.getActiveSessionId(chatId);
   const buttons: BotMessageButtonDto[] = [];
+
+  if (activeId) {
+    buttons.push({
+      id: "sess-stop",
+      text: "⏹ Остановить",
+      action: `${SESSION_CMD_PREFIX}stop`,
+      color: "danger",
+    });
+  }
 
   for (const sessionId of registry.listSessionIds(chatId)) {
     const sessionKey = `${chatId}::${sessionId}`;
