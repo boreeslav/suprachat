@@ -10,6 +10,7 @@
 | **Домен** | По умолчанию — **основной домен** мессенджера (`window.location.origin`). В манифесте опционально `baseOrigin` для будущего выноса на отдельный origin. |
 | **Безопасность** | Sandbox iframe (`allow-scripts allow-forms`, без `allow-same-origin`) + postMessage bridge. Bot token и cookie мессенджера в iframe **не передаются**. |
 | **Канал к боту** | `sendData` → inbox бота (`webAppData`), **не** в ленту чата (как `buttonPress`). |
+| **Канал от бота** | `sendWebAppData` → очередь активной сессии; mini app получает через `pollData` / `onData`. |
 | **Якорь** | Сообщение с `mc-content type="mini_app"` + вложения-bundle; кнопка «Открыть» и опциональный `autoOpen`. |
 
 ## Архитектура
@@ -70,9 +71,24 @@ MiniAppHost: overlay → sandbox iframe → /api/mini-app/frame?token=
 {
   "sourceMessageId": "...",
   "miniAppMessageId": "...",
-  "payload": { }
+  "sessionToken": "...",
+  "payloadJson": "{ ... }"
 }
 ```
+
+`sessionToken` — токен активной сессии mini app; используйте его в `sendWebAppData` для ответа.
+
+### `POST /api/bot-api/sendWebAppData`
+
+| Поле | Обяз. | Описание |
+|------|-------|----------|
+| `sessionToken` | * | Токен из `webAppData.sessionToken` |
+| `miniAppMessageId` + `userLogin` | * | Альтернатива, если токен не сохранён |
+| `payload` | нет | JSON для mini app (до 64 KB) |
+
+**Ответ:** `{ success, seq }` — `seq` для отслеживания порядка.
+
+Одно из двух: `sessionToken` **или** (`miniAppMessageId` + `userLogin`).
 
 ## Bridge API (iframe ↔ host)
 
@@ -81,6 +97,8 @@ MiniAppHost: overlay → sandbox iframe → /api/mini-app/frame?token=
 | `ready` | iframe → host | Снять loader |
 | `close` | iframe → host | Закрыть overlay |
 | `sendData` | iframe → host | Данные боту |
+| `pollData` | iframe → server | Long-poll данных от бота |
+| `onData` | iframe (SDK) | Подписка на данные от бота (фоновый poll) |
 | `getUser` | iframe → host | `userId`, `displayName`, `avatarUrl` |
 | `getContext` | iframe → host | `chatId`, `chatType`, `messageId`, `theme`, `initData` |
 | `themeChanged` | host → iframe | Смена темы |
@@ -95,6 +113,7 @@ MiniAppHost: overlay → sandbox iframe → /api/mini-app/frame?token=
 | `GET /api/mini-app/frame?token=` | HTML entry (CSP, sandbox) |
 | `GET /api/mini-app/asset?token=&path=` | Файл из bundle |
 | `POST /api/mini-app/data` | `{ token, payload }` → inbox боту |
+| `GET /api/mini-app/poll?token=&afterSeq=&timeoutMs=` | Long-poll данных от бота → `{ messages, lastSeq }` |
 
 ## Кеширование (клиент)
 

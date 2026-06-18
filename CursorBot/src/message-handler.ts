@@ -22,7 +22,7 @@ import { ActionMgmtHandler, isMetaActionId, parseMetaActionId } from "./action-m
 import { scheduleSafeRestart } from "./bot-restart.js";
 import { writeRestartNotice } from "./restart-notice.js";
 import { parseSessionCommand, parseSessionKey, makeSessionKey, isSessionCommand, SESSION_CMD_PREFIX, UI_CANCEL_CMD } from "./session-keys.js";
-import { isGroupChatType } from "./chat-type.js";
+import { supportsLiveThoughts } from "./chat-type.js";
 import { buildSessionPickerButtons, buildSessionPickerText } from "./session-picker.js";
 import { SessionOutbox } from "./session-outbox.js";
 import { SessionRegistry } from "./session-registry.js";
@@ -1182,7 +1182,7 @@ export class MessageHandler {
     return (
       this.config.supra.sendThoughtStatus &&
       this.isSessionLive(sessionKey) &&
-      !isGroupChatType(update.chatType)
+      supportsLiveThoughts(update.chatType)
     );
   }
 
@@ -1191,7 +1191,7 @@ export class MessageHandler {
     sessionKey: string,
   ): Promise<void> {
     if (!this.config.supra.sendThoughtStatus) return;
-    if (isGroupChatType(update.chatType)) return;
+    if (!supportsLiveThoughts(update.chatType)) return;
     if (!this.sessions.isBusy(sessionKey)) return;
 
     const parsed = parseSessionKey(sessionKey);
@@ -1452,13 +1452,19 @@ export class MessageHandler {
 
         if (!this.isActiveWork(sessionKey, workToken)) return;
 
-        thoughtStatus?.dispose();
         if (thoughtBuffer) thoughtBuffer.clear();
 
-        if (reply.superseded) return;
+        if (reply.superseded) {
+          thoughtStatus?.dispose();
+          return;
+        }
 
-        await this.deliverAgentReply(update, sessionKey, reply, () =>
-          this.isActiveWork(sessionKey, workToken),
+        await this.finalizeThoughtAndDeliverReply(
+          update,
+          sessionKey,
+          thoughtStatus,
+          reply,
+          () => this.isActiveWork(sessionKey, workToken),
         );
       } finally {
         if (this.isActiveWork(sessionKey, workToken)) {
@@ -1708,15 +1714,13 @@ export class MessageHandler {
       const reply = await raceTimeout(runRecovery(), recoveryTimeoutMs, "recovery");
       if (!this.isActiveWork(sessionKey, workToken)) return;
 
-      thoughtStatus?.dispose();
-
       if (reply && !reply.superseded && reply.status !== "cancelled") {
-        await this.deliverAgentReply(update, sessionKey, reply);
+        await this.finalizeThoughtAndDeliverReply(update, sessionKey, thoughtStatus, reply);
         delivered = reply.status !== "error";
         return;
       }
 
-      this.cursor.abandonPendingRun(sessionKey);
+      thoughtStatus?.dispose();
       await this.notifyRecoveryFailed(update);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1801,6 +1805,53 @@ export class MessageHandler {
     };
   }
 
+  private async finalizeThoughtAndDeliverReply(
+    update: BotApiMessage,
+    sessionKey: string,
+    thoughtStatus: ThoughtStatusPublisher | null,
+    reply: { text: string; runId: string; status: string; superseded?: boolean; errorDetail?: string },
+    isStillActive?: () => boolean,
+  ): Promise<void> {
+    if (reply.status === "error") {
+      if (thoughtStatus) await thoughtStatus.finalize("");
+      await this.deliverAgentReply(update, sessionKey, reply, isStillActive);
+      return;
+    }
+
+    if (reply.status === "cancelled") {
+      thoughtStatus?.dispose();
+      await this.deliverAgentReply(update, sessionKey, reply, isStillActive);
+      return;
+    }
+
+    const chunks = splitMessage(reply.text, this.config.supra.maxMessageChars);
+    if (!chunks.length) {
+      thoughtStatus?.dispose();
+      return;
+    }
+
+    let startIdx = 0;
+    if (thoughtStatus) {
+      const finalized = await thoughtStatus.finalize(chunks[0]!);
+      if (finalized.converted) {
+        console.log(
+          `[handler] answer delivered via thought edit (${sessionKey}, message ${finalized.messageId}, run ${reply.runId})`,
+        );
+        startIdx = 1;
+      }
+    }
+
+    for (let i = startIdx; i < chunks.length; i++) {
+      if (isStillActive && !isStillActive()) return;
+      await this.deliverAgentReply(
+        update,
+        sessionKey,
+        { ...reply, text: chunks[i]! },
+        isStillActive,
+      );
+    }
+  }
+
   private async deliverAgentReply(
     update: BotApiMessage,
     sessionKey: string,
@@ -1846,10 +1897,14 @@ export class MessageHandler {
     const chunks = splitMessage(reply.text, this.config.supra.maxMessageChars);
     for (const chunk of chunks) {
       if (isStillActive && !isStillActive()) return;
-      const ok = await deliverText(chunk, { skipDedup: chunks.length > 1 });
+      const ok = await deliverText(chunk, { skipDedup: true });
       if (!ok) {
         console.error(
           `[handler] не удалось доставить часть ответа (${sessionKey}, run ${reply.runId})`,
+        );
+      } else {
+        console.log(
+          `[handler] delivered reply chunk (${sessionKey}, run ${reply.runId}, ${chunk.length} chars, live=${live})`,
         );
       }
     }

@@ -41,7 +41,8 @@ public sealed partial class SupraMessengerService
         var hiddenIds = await GetDeletedMessageIdsForUserAsync(userId, ct);
         var allMessages = await _store.GetAllMessagesAsync(ct);
         var visibleByChat = allMessages
-            .Where(m => chatIdSet.Contains(m.ChatId) && !hiddenIds.Contains(m.Id) && !m.DeletedForEveryone)
+            .Where(m => chatIdSet.Contains(m.ChatId) && !hiddenIds.Contains(m.Id) && !m.DeletedForEveryone
+                && IsMessageVisibleToUser(m, userId))
             .GroupBy(m => m.ChatId)
             .ToDictionary(
                 g => g.Key,

@@ -49,6 +49,15 @@ export interface BotApiMessage {
       attachmentFileIds?: string[];
     }>;
   };
+  webAppData?: BotWebAppDataDto;
+}
+
+export interface BotWebAppDataDto {
+  sourceMessageId: string;
+  miniAppMessageId: string;
+  /** Токен активной сессии — для ответа через sendWebAppData. */
+  sessionToken?: string;
+  payloadJson?: string;
 }
 
 export type BotFileVariant = "original" | "preview" | "medium";
@@ -60,6 +69,21 @@ export interface BotApiMeResponse {
   name?: string;
   description?: string;
   error?: string;
+}
+
+export interface BotApiSendWebAppDataResponse {
+  success: boolean;
+  seq?: number;
+  error?: string;
+}
+
+export interface BotApiSendWebAppDataParams {
+  /** Предпочтительный способ — токен из webAppData.sessionToken. */
+  sessionToken?: string;
+  /** Альтернатива: messageId mini app + логин пользователя с активной сессией. */
+  miniAppMessageId?: string;
+  userLogin?: string;
+  payload?: unknown;
 }
 
 export interface BotApiSendMessageResponse {
@@ -79,6 +103,38 @@ export interface BotApiSendMessageParams {
   buttons?: BotMessageButtonDto[];
   userLogin?: string;
   chatId?: string;
+  /** Невидимое сообщение: не показывается пузырём у получателя (для авто-запуска mini app без сервисной карточки). */
+  invisible?: boolean;
+  /** Логин адресата личного сообщения в групповом чате — доставляется/видно только ему. */
+  targetUserLogin?: string;
+}
+
+export interface BotMiniAppFileDto {
+  path: string;
+  fileId: string;
+}
+
+export interface BotApiSendMiniAppParams {
+  title: string;
+  entry?: string;
+  files: BotMiniAppFileDto[];
+  initData?: unknown;
+  autoOpen?: boolean;
+  reusable?: boolean;
+  baseOrigin?: string;
+  userLogin?: string;
+  chatId?: string;
+  /** Невидимое mini app: запускается у получателя сразу, без сервисной карточки. */
+  invisible?: boolean;
+  /** Логин адресата в групповом чате — mini app получит и запустит только он. */
+  targetUserLogin?: string;
+}
+
+export interface BotApiSendMiniAppResponse {
+  success: boolean;
+  messageId?: string;
+  chatId?: string;
+  error?: string;
 }
 
 export interface BotApiUploadFileResponse {
@@ -372,6 +428,31 @@ export class SupraBotApi {
     return this._requestWithRetry<BotApiSendMessageResponse>(
       "sendMessage",
       params as Record<string, unknown>,
+      "POST",
+    );
+  }
+
+  /**
+   * Публикует mini app в чат. Bundle-файлы должны быть предварительно загружены
+   * (uploadFile) — в files передаются их fileId. invisible + targetUserLogin
+   * позволяют отправить невидимое личное mini app, которое сразу запустится у адресата.
+   */
+  sendMiniApp(params: BotApiSendMiniAppParams): Promise<BotApiSendMiniAppResponse> {
+    return this._requestWithRetry<BotApiSendMiniAppResponse>(
+      "sendMiniApp",
+      params as unknown as Record<string, unknown>,
+      "POST",
+    );
+  }
+
+  /**
+   * Отправляет данные в открытое mini app (канал бот → mini app).
+   * sessionToken берётся из webAppData.sessionToken входящего сообщения.
+   */
+  sendWebAppData(params: BotApiSendWebAppDataParams): Promise<BotApiSendWebAppDataResponse> {
+    return this._requestWithRetry<BotApiSendWebAppDataResponse>(
+      "sendWebAppData",
+      params as unknown as Record<string, unknown>,
       "POST",
     );
   }

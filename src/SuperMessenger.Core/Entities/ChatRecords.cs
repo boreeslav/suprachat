@@ -60,6 +60,10 @@ public sealed class SupraChatMessageRecord
     public string? ButtonPressJson { get; set; }
     /// <summary>JSON BotAssistantReplyMetaDto — ответ помощника для вставки в исходный чат.</summary>
     public string? AssistantReplyJson { get; set; }
+    /// <summary>Невидимое сообщение: доставляется получателю, но не рендерится пузырём и не влияет на превью/счётчики (для авто-запуска mini app без сервисной карточки).</summary>
+    public bool Invisible { get; set; }
+    /// <summary>Личное сообщение в групповом чате: доставляется/видно только этому пользователю (null — всем участникам).</summary>
+    public Guid? TargetUserId { get; set; }
 }
 
 public sealed class SupraMessageUserDeletionRecord

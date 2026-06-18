@@ -20,6 +20,7 @@ public sealed class BotApiController : ControllerBase
     private readonly BotApiService _botApi;
     private readonly SupraMessengerService _messenger;
     private readonly RealtimeNotifier _realtime;
+    private readonly MiniAppChannelService _miniAppChannel;
     private readonly IDataStore _store;
     private readonly ChatImageProcessingService _images;
     private readonly string _avatarsRoot;
@@ -29,6 +30,7 @@ public sealed class BotApiController : ControllerBase
         BotApiService botApi,
         SupraMessengerService messenger,
         RealtimeNotifier realtime,
+        MiniAppChannelService miniAppChannel,
         IDataStore store,
         ChatImageProcessingService images,
         IConfiguration config)
@@ -36,6 +38,7 @@ public sealed class BotApiController : ControllerBase
         _botApi = botApi;
         _messenger = messenger;
         _realtime = realtime;
+        _miniAppChannel = miniAppChannel;
         _store = store;
         _images = images;
         var dataRoot = config["Data:Root"] ?? "data";
@@ -77,6 +80,8 @@ public sealed class BotApiController : ControllerBase
             p.photoFileIds,
             p.documentFileId,
             p.attachmentFileIds,
+            ParseBool(p.invisible, false),
+            p.targetUserLogin,
             ct);
 
         if (response.success && broadcast != null &&
@@ -101,7 +106,13 @@ public sealed class BotApiController : ControllerBase
         var (botUser, _) = auth.Value;
         var manifest = BuildMiniAppManifest(p);
         var (response, broadcast) = await _botApi.SendMiniAppAsync(
-            botUser, manifest, p.userLogin, p.chatId, ct);
+            botUser,
+            manifest,
+            p.userLogin,
+            p.chatId,
+            ParseBool(p.invisible, false),
+            p.targetUserLogin,
+            ct);
 
         if (response.success && broadcast != null &&
             Guid.TryParse(broadcast.chatId, out var chatGuid))
@@ -111,6 +122,49 @@ public sealed class BotApiController : ControllerBase
         }
 
         return response.success ? Ok(response) : BadRequest(response);
+    }
+
+    [HttpGet("sendWebAppData")]
+    [HttpPost("sendWebAppData")]
+    public async Task<IActionResult> SendWebAppData(CancellationToken ct)
+    {
+        var p = await ReadParamsAsync(ct);
+        var auth = await AuthenticateParamsAsync(p, ct);
+        if (auth == null)
+            return Unauthorized(new BotApiSendWebAppDataResponse { success = false, error = "Unauthorized" });
+
+        var (botUser, _) = auth.Value;
+        var payloadJson = p.payload == null ? "{}" : JsonSerializer.Serialize(p.payload);
+
+        (bool ok, long seq, string? error) result;
+        if (!string.IsNullOrWhiteSpace(p.sessionToken))
+        {
+            result = _miniAppChannel.Enqueue(botUser.Id, p.sessionToken!, payloadJson);
+        }
+        else if (!string.IsNullOrWhiteSpace(p.miniAppMessageId) && !string.IsNullOrWhiteSpace(p.userLogin))
+        {
+            if (!Guid.TryParse(p.miniAppMessageId, out var messageId))
+                return BadRequest(new BotApiSendWebAppDataResponse { success = false, error = "Некорректный miniAppMessageId" });
+
+            var viewer = await _store.GetUserByLoginAsync(p.userLogin!.Trim(), ct);
+            if (viewer == null || !viewer.IsActive)
+                return BadRequest(new BotApiSendWebAppDataResponse { success = false, error = "Пользователь не найден" });
+
+            result = _miniAppChannel.EnqueueByMessageUser(botUser.Id, messageId, viewer.Id, payloadJson);
+        }
+        else
+        {
+            return BadRequest(new BotApiSendWebAppDataResponse
+            {
+                success = false,
+                error = "Укажите sessionToken или miniAppMessageId + userLogin",
+            });
+        }
+
+        if (!result.ok)
+            return BadRequest(new BotApiSendWebAppDataResponse { success = false, error = result.error });
+
+        return Ok(new BotApiSendWebAppDataResponse { success = true, seq = result.seq });
     }
 
     [HttpGet("getMessages")]
@@ -859,6 +913,10 @@ public sealed class BotApiController : ControllerBase
             documentFileId = Request.Query["documentFileId"].ToString(),
             fileId = Request.Query["fileId"].ToString(),
             sessionId = Request.Query["sessionId"].ToString(),
+            sessionToken = Request.Query["sessionToken"].ToString(),
+            miniAppMessageId = Request.Query["miniAppMessageId"].ToString(),
+            invisible = Request.Query["invisible"].ToString(),
+            targetUserLogin = Request.Query["targetUserLogin"].ToString(),
         };
         result.photoFileIds = ParseQueryStringList(Request.Query["photoFileIds"]);
         result.attachmentFileIds = ParseQueryStringList(Request.Query["attachmentFileIds"]);
@@ -903,6 +961,13 @@ public sealed class BotApiController : ControllerBase
             result.documentFileId = FirstNonEmpty(result.documentFileId, GetString(root, "documentFileId"));
             result.fileId = FirstNonEmpty(result.fileId, GetString(root, "fileId"));
             result.sessionId = FirstNonEmpty(result.sessionId, GetString(root, "sessionId"));
+            result.sessionToken = FirstNonEmpty(result.sessionToken, GetString(root, "sessionToken"));
+            result.miniAppMessageId = FirstNonEmpty(result.miniAppMessageId, GetString(root, "miniAppMessageId"));
+            result.invisible = FirstNonEmpty(result.invisible, GetBoolString(root, "invisible"));
+            result.targetUserLogin = FirstNonEmpty(result.targetUserLogin, GetString(root, "targetUserLogin"));
+            result.payload = root.TryGetProperty("payload", out var payloadEl)
+                ? JsonSerializer.Deserialize<object>(payloadEl.GetRawText(), MenuJsonOptions)
+                : result.payload;
             result.branchIds = ParseStringList(root, "branchIds");
             result.photoFileIds = FirstNonEmptyList(result.photoFileIds, ParseStringList(root, "photoFileIds"));
             result.attachmentFileIds = FirstNonEmptyList(result.attachmentFileIds, ParseStringList(root, "attachmentFileIds"));
@@ -1280,6 +1345,11 @@ public sealed class BotApiController : ControllerBase
         public List<string>? attachmentFileIds { get; set; }
         public string? fileId { get; set; }
         public string? sessionId { get; set; }
+        public string? sessionToken { get; set; }
+        public string? miniAppMessageId { get; set; }
+        public string? invisible { get; set; }
+        public string? targetUserLogin { get; set; }
+        public object? payload { get; set; }
         public BotApiMenuDto? assistantMenu { get; set; }
         public BotApiMenuDto? groupMenu { get; set; }
         public BotMiniAppManifestDto? miniApp { get; set; }

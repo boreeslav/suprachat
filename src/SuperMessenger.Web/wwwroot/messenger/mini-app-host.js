@@ -95,7 +95,11 @@
 				body: JSON.stringify({ token: session?.token, payload }),
 			});
 			const data = await res.json().catch(() => ({}));
-			replyIframe(requestId, null, data.success ? { ok: true } : null, data.error || 'send failed');
+			if (data.success) {
+				replyIframe(requestId, null, { ok: true });
+			} else {
+				replyIframe(requestId, null, null, data.error || 'send failed');
+			}
 		} catch (err) {
 			replyIframe(requestId, null, null, err?.message || 'send failed');
 		}

@@ -51,6 +51,8 @@ public sealed partial class SupraMessengerService
             deletedForEveryone = m.DeletedForEveryone,
             encryptionTier = NormalizeEncryptionTier(m.EncryptionTier),
             buttons = buttons,
+            invisible = m.Invisible,
+            targetUserId = m.TargetUserId?.ToString(),
         };
     }
 
@@ -99,6 +101,8 @@ public sealed partial class SupraMessengerService
             encryptionTier = NormalizeEncryptionTier(m.EncryptionTier),
             buttons = buttons,
             assistantReply = assistantReply,
+            invisible = m.Invisible,
+            targetUserId = m.TargetUserId?.ToString(),
         };
     }
 
@@ -135,6 +139,8 @@ public sealed partial class SupraMessengerService
         IReadOnlyList<Guid>? attachmentFileIds = null,
         IReadOnlyList<BotMessageButtonDto>? buttons = null,
         string? assistantReplyJson = null,
+        bool invisible = false,
+        Guid? targetUserId = null,
         CancellationToken ct = default)
     {
         try
@@ -267,6 +273,8 @@ public sealed partial class SupraMessengerService
                 ClientLocalId = normalizedLocalId,
                 ButtonsJson = hasButtons ? BotMessageButtonHelper.SerializeButtons(normalizedButtons!) : null,
                 AssistantReplyJson = string.IsNullOrWhiteSpace(assistantReplyJson) ? null : assistantReplyJson.Trim(),
+                Invisible = invisible,
+                TargetUserId = targetUserId,
             };
             await _store.SaveMessageAsync(record, ct);
             await _files.SyncMessageAttachmentsAsync(msgGuid, chatGuid, record.Text, attachmentFileIds, ct);
@@ -461,11 +469,20 @@ public sealed partial class SupraMessengerService
     {
         var hiddenIds = await GetDeletedMessageIdsForUserAsync(userId, ct);
         return (await _store.GetMessagesByChatAsync(chatGuid, ct))
-            .Where(m => !hiddenIds.Contains(m.Id) && !m.DeletedForEveryone)
+            .Where(m => !hiddenIds.Contains(m.Id) && !m.DeletedForEveryone && IsMessageVisibleToUser(m, userId))
             .OrderBy(m => m.CreatedOn)
             .ThenBy(m => m.Id)
             .ToList();
     }
+
+    /// <summary>
+    /// Видимость сообщения для пользователя в истории/превью:
+    /// невидимые сообщения исключаются полностью (живут только как realtime-триггер для mini app),
+    /// личные сообщения видны только адресату (или отправителю-боту).
+    /// </summary>
+    internal static bool IsMessageVisibleToUser(SupraChatMessageRecord m, Guid userId) =>
+        !m.Invisible
+        && (m.TargetUserId == null || m.TargetUserId == userId || m.SenderUserId == userId);
 
     public async Task<SupraGetMessagesResponse> GetMessagesAsync(
         Guid userId,

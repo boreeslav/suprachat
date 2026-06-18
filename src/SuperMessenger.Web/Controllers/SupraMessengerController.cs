@@ -278,7 +278,7 @@ public sealed class SupraMessengerController : ControllerBase
             attachmentFileIds.Count > 0 ? attachmentFileIds : null,
             buttons: null,
             assistantReplyJson: null,
-            ct);
+            ct: ct);
         if (broadcast != null && Guid.TryParse(broadcast.chatId, out var chatId))
         {
             var pushTrace = await BroadcastToAllChatParticipantsAsync(chatId, broadcast, ct);

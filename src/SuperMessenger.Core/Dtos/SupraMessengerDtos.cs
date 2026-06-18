@@ -80,6 +80,8 @@ public sealed class SupraChatMessageDto
     public bool deletedForEveryone { get; set; }
     public string encryptionTier { get; set; } = "basic";
     public List<BotMessageButtonDto>? buttons { get; set; }
+    public bool invisible { get; set; }
+    public string? targetUserId { get; set; }
 }
 
 public sealed class SupraGetCurrentUserResponse
@@ -261,6 +263,8 @@ public sealed class SupraWsNewMessagePayload
     public string encryptionTier { get; set; } = "basic";
     public List<BotMessageButtonDto>? buttons { get; set; }
     public BotAssistantReplyMetaDto? assistantReply { get; set; }
+    public bool invisible { get; set; }
+    public string? targetUserId { get; set; }
 }
 
 public sealed class SupraEditMessageResponse

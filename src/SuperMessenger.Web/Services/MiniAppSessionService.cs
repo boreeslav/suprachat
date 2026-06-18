@@ -9,6 +9,12 @@ public sealed class MiniAppSessionService
     public const int MaxPayloadBytes = 64_000;
 
     private readonly ConcurrentDictionary<string, MiniAppSession> _sessions = new(StringComparer.Ordinal);
+    private readonly MiniAppChannelService _channel;
+
+    public MiniAppSessionService(MiniAppChannelService channel)
+    {
+        _channel = channel;
+    }
 
     public string CreateSession(
         Guid viewerUserId,
@@ -19,7 +25,7 @@ public sealed class MiniAppSessionService
     {
         PurgeExpired();
         var token = Guid.NewGuid().ToString("N");
-        _sessions[token] = new MiniAppSession
+        var session = new MiniAppSession
         {
             Token = token,
             ViewerUserId = viewerUserId,
@@ -29,6 +35,8 @@ public sealed class MiniAppSessionService
             Manifest = manifest,
             ExpiresOn = DateTime.UtcNow.Add(SessionTtl),
         };
+        _sessions[token] = session;
+        _channel.RegisterSession(session);
         return token;
     }
 
@@ -38,10 +46,24 @@ public sealed class MiniAppSessionService
         if (!_sessions.TryGetValue(token.Trim(), out var session)) return null;
         if (session.ExpiresOn <= DateTime.UtcNow)
         {
-            _sessions.TryRemove(token.Trim(), out _);
+            RemoveSession(token.Trim());
             return null;
         }
         return session;
+    }
+
+    public void Touch(string? token)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return;
+        var key = token.Trim();
+        if (_sessions.TryGetValue(key, out var session))
+            session.ExpiresOn = DateTime.UtcNow.Add(SessionTtl);
+    }
+
+    void RemoveSession(string token)
+    {
+        _sessions.TryRemove(token, out _);
+        _channel.UnregisterSession(token);
     }
 
     void PurgeExpired()
@@ -50,7 +72,7 @@ public sealed class MiniAppSessionService
         foreach (var kv in _sessions)
         {
             if (kv.Value.ExpiresOn <= now)
-                _sessions.TryRemove(kv.Key, out _);
+                RemoveSession(kv.Key);
         }
     }
 

@@ -31,7 +31,31 @@ public sealed class BotWebAppDataDto
 {
     public string sourceMessageId { get; set; } = "";
     public string miniAppMessageId { get; set; } = "";
+    /// <summary>Токен активной сессии mini app — для ответа через sendWebAppData.</summary>
+    public string? sessionToken { get; set; }
     public string? payloadJson { get; set; }
+}
+
+public sealed class BotApiSendWebAppDataResponse
+{
+    public bool success { get; set; }
+    public long seq { get; set; }
+    public string? error { get; set; }
+}
+
+public sealed class MiniAppChannelMessageDto
+{
+    public long seq { get; set; }
+    public string payloadJson { get; set; } = "";
+    public string timestamp { get; set; } = "";
+}
+
+public sealed class MiniAppPollResponseDto
+{
+    public bool success { get; set; }
+    public List<MiniAppChannelMessageDto> messages { get; set; } = [];
+    public long lastSeq { get; set; }
+    public string? error { get; set; }
 }
 
 public sealed class MiniAppSessionRequestDto

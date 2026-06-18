@@ -26,6 +26,7 @@ public sealed class MiniAppController : ControllerBase
     private readonly IDataStore _store;
     private readonly CurrentUserAccessor _current;
     private readonly MiniAppSessionService _sessions;
+    private readonly MiniAppChannelService _channel;
     private readonly BotApiService _botApi;
     private readonly BotInboxNotifier _botInbox;
     private readonly ChatFileService _files;
@@ -35,6 +36,7 @@ public sealed class MiniAppController : ControllerBase
         IDataStore store,
         CurrentUserAccessor current,
         MiniAppSessionService sessions,
+        MiniAppChannelService channel,
         BotApiService botApi,
         BotInboxNotifier botInbox,
         ChatFileService files,
@@ -43,6 +45,7 @@ public sealed class MiniAppController : ControllerBase
         _store = store;
         _current = current;
         _sessions = sessions;
+        _channel = channel;
         _botApi = botApi;
         _botInbox = botInbox;
         _files = files;
@@ -149,12 +152,15 @@ public sealed class MiniAppController : ControllerBase
         if (Encoding.UTF8.GetByteCount(payloadJson) > MiniAppSessionService.MaxPayloadBytes)
             return BadRequest(new MiniAppDataResponseDto { success = false, error = "Payload слишком большой" });
 
+        _sessions.Touch(body.token);
+
         var (ok, error) = await _botApi.RecordWebAppDataAsync(
             session.BotUserId,
             session.ViewerUserId,
             session.ChatId,
             session.MessageId,
             payloadJson,
+            sessionToken: body.token,
             ct);
         if (!ok)
             return BadRequest(new MiniAppDataResponseDto { success = false, error = error });
@@ -165,6 +171,35 @@ public sealed class MiniAppController : ControllerBase
             await _botInbox.NotifyAsync([latest], ct);
 
         return Ok(new MiniAppDataResponseDto { success = true });
+    }
+
+    [HttpGet("poll")]
+    [AllowAnonymous]
+    public async Task<ActionResult<MiniAppPollResponseDto>> Poll(
+        [FromQuery] string? token,
+        [FromQuery] long afterSeq = 0,
+        [FromQuery] int timeoutMs = 25_000,
+        CancellationToken ct = default)
+    {
+        var session = _sessions.TryGet(token);
+        if (session == null)
+            return BadRequest(new MiniAppPollResponseDto { success = false, error = "Сессия истекла" });
+
+        _sessions.Touch(token);
+        timeoutMs = Math.Clamp(timeoutMs, 0, 30_000);
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+
+        while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
+        {
+            var result = _channel.Poll(token!, afterSeq);
+            if (!result.success)
+                return BadRequest(result);
+            if (result.messages.Count > 0)
+                return Ok(result);
+            await Task.Delay(500, ct);
+        }
+
+        return Ok(_channel.Poll(token!, afterSeq));
     }
 
     [HttpGet("context")]

@@ -17769,6 +17769,11 @@ class MessengerAppView {
 	#previewScrollBound = false;
 	#previewCacheSyncScheduled = false;
 	#pendingMarkRead = new Set();
+	/** messageId mini app, которые уже были авто-открыты в этой сессии. */
+	#autoOpenedMiniApps = new Set();
+	/** Отложенное авто-открытие mini app (фон/оверлей), ждёт возвращения в foreground. */
+	#pendingAutoOpenMiniApp = null;
+	#miniAppVisibilityHooked = false;
 	#markReadSyncTimer = new Map();
 	#syncInFlight = null;
 	#lastSyncAt = 0;
@@ -17860,6 +17865,7 @@ class MessengerAppView {
 			deletedForEveryone: !!body.deletedForEveryone,
 			encryptionTier: body.encryptionTier || 'basic',
 			buttons: normalizeMessageButtons(body.buttons),
+			invisible: !!body.invisible,
 		};
 		const listPreviewSource = {
 			text: body.text,
@@ -17870,6 +17876,12 @@ class MessengerAppView {
 		};
 		const chatId = body.chatId;
 		const msg = await this.#api.decryptRealtimeMessage(chatId, rawMsg);
+		if (msg.invisible) {
+			// Невидимое сообщение: только запускаем mini app, без рендера и счётчиков.
+			this.#mediaCache?.prefetchMessageImages?.(msg.text);
+			this.#maybeHandleMiniAppMessage(chatId, msg);
+			return;
+		}
 		if (msg.isOwn) {
 			await this.#msgService.ingestOwnFromRealtime(chatId, rawMsg, this.#api);
 			await this.receiveOwnMessage(chatId, msg, listPreviewSource);
@@ -17878,6 +17890,11 @@ class MessengerAppView {
 			this.receiveMessage(chatId, msg, listPreviewSource);
 		}
 		this.#mediaCache?.prefetchMessageImages?.(msg.text);
+		this.#maybeHandleMiniAppMessage(chatId, msg);
+	}
+
+	/** Точка входа из realtime-потока: кэширование bundle и авто-открытие mini app. */
+	handleIncomingMiniApp(chatId, msg) {
 		this.#maybeHandleMiniAppMessage(chatId, msg);
 	}
 
@@ -17893,14 +17910,56 @@ class MessengerAppView {
 				fileId => MessengerFileService.getFileUrl(fileId),
 			).catch(err => console.warn('[MessengerAppView] mini app cache', err));
 		}
-		if (!manifest.autoOpen || msg.isOwn) return;
-		if (this.#activeChat?.id !== chatId || !this.#isChatVisible(chatId)) return;
-		if (MessengerNavigation.hasOverlayLayers()) return;
+		// Невидимое mini app всегда запускается автоматически (карточки в ленте нет).
+		if ((!manifest.autoOpen && !msg.invisible) || msg.isOwn) return;
+		this.#requestMiniAppAutoOpen(chatId, msg, manifest);
+	}
+
+	#requestMiniAppAutoOpen(chatId, msg, manifest) {
+		if (!msg?.id) return;
+		if (this.#autoOpenedMiniApps.has(msg.id)) return;
+		this.#ensureMiniAppAutoOpenHook();
+		// Сообщение пришло, пока вкладка/приложение в фоне или поверх открыт другой
+		// оверлей — открываем mini app сразу, как только пользователь вернётся.
+		const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+		if (hidden || MessengerNavigation.hasOverlayLayers()) {
+			this.#pendingAutoOpenMiniApp = { chatId, msg, manifest };
+			return;
+		}
+		this.#openMiniAppFromAutoOpen(chatId, msg, manifest);
+	}
+
+	#openMiniAppFromAutoOpen(chatId, msg, manifest) {
+		this.#autoOpenedMiniApps.add(msg.id);
+		if (this.#pendingAutoOpenMiniApp?.msg?.id === msg.id) {
+			this.#pendingAutoOpenMiniApp = null;
+		}
 		MessengerMiniAppLauncher.open(msg.id, {
 			title: manifest.title,
 			baseOrigin: manifest.baseOrigin,
 			botName: msg.senderName,
+		}).catch(err => {
+			// Разрешаем повторную попытку, если открытие не удалось.
+			this.#autoOpenedMiniApps.delete(msg.id);
+			console.warn('[MessengerAppView] mini app autoOpen', err);
 		});
+	}
+
+	#ensureMiniAppAutoOpenHook() {
+		if (this.#miniAppVisibilityHooked || typeof document === 'undefined') return;
+		this.#miniAppVisibilityHooked = true;
+		const flush = () => this.#flushPendingMiniAppAutoOpen();
+		document.addEventListener('visibilitychange', flush);
+		if (typeof window !== 'undefined') window.addEventListener('focus', flush);
+	}
+
+	#flushPendingMiniAppAutoOpen() {
+		const pending = this.#pendingAutoOpenMiniApp;
+		if (!pending) return;
+		if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+		if (MessengerNavigation.hasOverlayLayers()) return;
+		this.#pendingAutoOpenMiniApp = null;
+		this.#openMiniAppFromAutoOpen(pending.chatId, pending.msg, pending.manifest);
 	}
 
 	isChatVisibleForRead(chatId) {
@@ -31737,6 +31796,8 @@ class Messenger {
 					deletedForEveryone: !!body.deletedForEveryone,
 					encryptionTier: body.encryptionTier || 'basic',
 					buttons: normalizeMessageButtons(body.buttons),
+					invisible: !!body.invisible,
+					targetUserId: body.targetUserId || null,
 				};
 				const listPreviewSource = {
 					text: body.text,
@@ -31746,6 +31807,22 @@ class Messenger {
 					encryptionTier: body.encryptionTier || 'basic',
 				};
 				this.#api.decryptRealtimeMessage(body.chatId, rawMsg).then(async msg => {
+					if (msg.invisible) {
+						// Невидимое сообщение: не рендерим пузырь, не трогаем превью/счётчики
+						// и не проигрываем звук — только запускаем mini app у получателя.
+						if (this.#mode === Messenger.MODE_APP) {
+							this.#appView.handleIncomingMiniApp(body.chatId, msg);
+						}
+						return;
+					}
+					if (
+						msg.targetUserId
+						&& meId
+						&& msg.targetUserId !== meId
+						&& msg.senderId !== meId
+					) {
+						return;
+					}
 					if (!msg.isOwn) {
 						if (!isChatNotificationMuted(body.chatId)) {
 							MessengerMessageSounds.playIncoming();
@@ -31771,6 +31848,7 @@ class Messenger {
 								this.#appView.scheduleMarkReadOnSync(body.chatId);
 							}
 						}
+						this.#appView.handleIncomingMiniApp(body.chatId, msg);
 					} else if (this.#chatView.chatMeta?.id === body.chatId) {
 						try {
 							if (msg.isOwn) {

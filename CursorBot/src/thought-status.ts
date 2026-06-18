@@ -14,6 +14,11 @@ export interface ThoughtStatusOptions {
   maxChars: number;
 }
 
+export interface ThoughtFinalizeResult {
+  converted: boolean;
+  messageId?: string;
+}
+
 type ReplyTarget = { userLogin?: string; chatId?: string };
 
 function isRetryableError(err: unknown): boolean {
@@ -38,6 +43,10 @@ function formatThoughtMessage(buffer: string, maxChars: number): string {
   const maxBody = Math.max(40, maxChars - header.length);
   const body = rotateBuffer(buffer.trim(), maxBody);
   return header + body;
+}
+
+function isThoughtText(text: string): boolean {
+  return text.includes(THOUGHTS_MARKER);
 }
 
 function sleep(ms: number): Promise<void> {
@@ -103,6 +112,10 @@ export class ThoughtStatusPublisher {
   private latestPending: string | null = null;
   private workerRunning = false;
   private disposed = false;
+  /** id сообщений, созданных/обновлённых именно как «мысли» — удаляем только их. */
+  private readonly thoughtMessageIds = new Set<string>();
+  private workerIdle: Promise<void> = Promise.resolve();
+  private workerIdleResolve: (() => void) | null = null;
 
   constructor(
     private readonly update: BotApiMessage,
@@ -136,10 +149,33 @@ export class ThoughtStatusPublisher {
     this.scheduleWorker();
   }
 
+  private markWorkerBusy(): void {
+    if (this.workerRunning) return;
+    this.workerRunning = true;
+    this.workerIdle = new Promise<void>((resolve) => {
+      this.workerIdleResolve = resolve;
+    });
+  }
+
+  private markWorkerIdle(): void {
+    if (!this.workerRunning) return;
+    this.workerRunning = false;
+    this.workerIdleResolve?.();
+    this.workerIdleResolve = null;
+  }
+
   private scheduleWorker(): void {
     if (this.disposed || this.workerRunning) return;
-    this.workerRunning = true;
+    this.markWorkerBusy();
     void this.runWorker();
+  }
+
+  /** Ждёт завершения фонового worker и всех in-flight publish. */
+  async drain(): Promise<void> {
+    await this.workerIdle;
+    for (let i = 0; i < 50 && this.workerRunning; i++) {
+      await sleep(20);
+    }
   }
 
   private async runWorker(): Promise<void> {
@@ -170,15 +206,29 @@ export class ThoughtStatusPublisher {
         }
       }
     } finally {
-      this.workerRunning = false;
+      this.markWorkerIdle();
       if (this.latestPending && !this.disposed) this.scheduleWorker();
     }
   }
 
+  private trackThoughtMessage(messageId: string): void {
+    this.thoughtMessageIds.add(messageId);
+  }
+
   private async publish(text: string): Promise<void> {
+    if (!isThoughtText(text)) {
+      console.warn("[thought-status] skip publish — not a thought payload");
+      return;
+    }
+
     if (!this.messageId) {
       const result = await this.api.sendMessage({ ...this.replyTarget, text });
       if (result.success && result.messageId) {
+        this.trackThoughtMessage(result.messageId);
+        if (this.disposed) {
+          this.deleteThoughtMessage(result.messageId, "disposed-during-create");
+          return;
+        }
         this.messageId = result.messageId;
         this.lastPublishedText = text;
         this.lastPublishedAt = Date.now();
@@ -193,11 +243,60 @@ export class ThoughtStatusPublisher {
       messageId: this.messageId,
       text,
     });
+    this.trackThoughtMessage(this.messageId);
     this.lastPublishedText = text;
     this.lastPublishedAt = Date.now();
   }
 
-  /** Неблокирующая очистка: основной поток не ждёт сеть. */
+  /**
+   * Завершает публикацию мыслей: ждёт worker, превращает пузырь мыслей в финальный ответ
+   * (edit без маркера) вместо delete+send — устраняет гонку, когда delete сносил финальный текст.
+   */
+  async finalize(finalText: string): Promise<ThoughtFinalizeResult> {
+    if (this.disposed) return { converted: false };
+
+    this.disposed = true;
+    this.latestPending = null;
+    await this.drain();
+
+    const messageId = this.messageId;
+    this.messageId = undefined;
+    this.buffer = "";
+
+    const trimmed = finalText.trim();
+    if (!messageId) {
+      console.log("[thought-status] finalize: no thought bubble, will send new message");
+      return { converted: false };
+    }
+    if (!trimmed) {
+      this.deleteThoughtMessage(messageId, "finalize-empty");
+      return { converted: false };
+    }
+
+    try {
+      const result = await this.api.editMessage({
+        chatId: this.update.chatId,
+        messageId,
+        text: trimmed,
+      });
+      if (!result.success) {
+        console.warn("[thought-status] finalize edit failed:", result.error ?? "unknown");
+        this.deleteThoughtMessage(messageId, "finalize-edit-failed");
+        return { converted: false };
+      }
+      this.thoughtMessageIds.delete(messageId);
+      console.log(
+        `[thought-status] finalized thought ${messageId} as answer (${trimmed.length} chars, chat ${this.update.chatId})`,
+      );
+      return { converted: true, messageId };
+    } catch (err) {
+      console.warn("[thought-status] finalize edit error:", err instanceof Error ? err.message : err);
+      this.deleteThoughtMessage(messageId, "finalize-edit-error");
+      return { converted: false };
+    }
+  }
+
+  /** Неблокирующая очистка при прерывании (stop / switch session). */
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
@@ -206,8 +305,18 @@ export class ThoughtStatusPublisher {
 
     const messageId = this.messageId;
     this.messageId = undefined;
-    if (!messageId) return;
+    if (messageId) this.deleteThoughtMessage(messageId, "dispose");
+  }
 
+  private deleteThoughtMessage(messageId: string, reason: string): void {
+    if (!this.thoughtMessageIds.has(messageId)) {
+      console.warn(
+        `[thought-status] skip delete ${messageId} (${reason}) — not tracked as thought message`,
+      );
+      return;
+    }
+    this.thoughtMessageIds.delete(messageId);
+    console.log(`[thought-status] delete thought message ${messageId} (${reason})`);
     void this.api
       .deleteMessage({
         chatId: this.update.chatId,

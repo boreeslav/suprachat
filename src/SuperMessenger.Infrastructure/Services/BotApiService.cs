@@ -175,6 +175,8 @@ public sealed partial class BotApiService
         IReadOnlyList<string>? photoFileIds = null,
         string? documentFileId = null,
         IReadOnlyList<string>? attachmentFileIds = null,
+        bool invisible = false,
+        string? targetUserLogin = null,
         CancellationToken ct = default)
     {
         try
@@ -188,6 +190,10 @@ public sealed partial class BotApiService
             var (target, targetError) = await ResolveTargetChatAsync(botUser, userLogin, chatId, requireChannelPostRights: true, ct);
             if (target == null)
                 return (new BotApiSendMessageResponse { success = false, error = targetError }, null);
+
+            var (targetUserId, targetUserError) = await ResolveTargetUserAsync(target.ChatId, targetUserLogin, ct);
+            if (targetUserError != null)
+                return (new BotApiSendMessageResponse { success = false, error = targetUserError }, null);
 
             var (messageText, fileIds, mediaError) = await BuildOutgoingMediaTextAsync(
                 botUser,
@@ -225,6 +231,8 @@ public sealed partial class BotApiService
                 encryptionTier: "basic",
                 attachmentFileIds: fileIds.Count > 0 ? fileIds : null,
                 buttons: normalizedButtons,
+                invisible: invisible,
+                targetUserId: targetUserId,
                 ct: ct);
 
             return (new BotApiSendMessageResponse
@@ -481,6 +489,25 @@ public sealed partial class BotApiService
         }
 
         return (new BotApiTargetChat(chatGuid), null);
+    }
+
+    /// <summary>
+    /// Преобразует логин адресата личного сообщения в id и проверяет, что он участник чата.
+    /// Пустой логин — сообщение для всех (возвращает null без ошибки).
+    /// </summary>
+    async Task<(Guid? userId, string? error)> ResolveTargetUserAsync(
+        Guid chatGuid, string? targetUserLogin, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(targetUserLogin))
+            return (null, null);
+
+        var targetUser = await _store.GetUserByLoginAsync(targetUserLogin.Trim(), ct);
+        if (targetUser == null || !targetUser.IsActive)
+            return (null, "Целевой пользователь не найден");
+        if (!await _store.IsParticipantAsync(chatGuid, targetUser.Id, ct))
+            return (null, "Целевой пользователь не является участником чата");
+
+        return (targetUser.Id, null);
     }
 
     sealed record BotApiTargetChat(Guid ChatId)

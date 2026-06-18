@@ -11,6 +11,8 @@ public sealed partial class BotApiService
         BotMiniAppManifestDto? manifest,
         string? userLogin,
         string? chatId,
+        bool invisible = false,
+        string? targetUserLogin = null,
         CancellationToken ct = default)
     {
         try
@@ -22,6 +24,10 @@ public sealed partial class BotApiService
             var (target, targetError) = await ResolveTargetChatAsync(botUser, userLogin, chatId, requireChannelPostRights: true, ct);
             if (target == null)
                 return (new BotApiSendMiniAppResponse { success = false, error = targetError }, null);
+
+            var (targetUserId, targetUserError) = await ResolveTargetUserAsync(target.ChatId, targetUserLogin, ct);
+            if (targetUserError != null)
+                return (new BotApiSendMiniAppResponse { success = false, error = targetUserError }, null);
 
             long totalBytes = 0;
             foreach (var f in normalized!.files)
@@ -46,6 +52,8 @@ public sealed partial class BotApiService
                 messageText,
                 encryptionTier: "basic",
                 attachmentFileIds: fileIds,
+                invisible: invisible,
+                targetUserId: targetUserId,
                 ct: ct);
 
             return (new BotApiSendMiniAppResponse
@@ -68,6 +76,7 @@ public sealed partial class BotApiService
         Guid chatId,
         Guid miniAppMessageId,
         string payloadJson,
+        string? sessionToken = null,
         CancellationToken ct = default)
     {
         var viewer = await _store.GetUserByIdAsync(viewerUserId, ct);
@@ -89,6 +98,7 @@ public sealed partial class BotApiService
             {
                 sourceMessageId = miniAppMessageId.ToString(),
                 miniAppMessageId = miniAppMessageId.ToString(),
+                sessionToken = sessionToken,
                 payloadJson = payloadJson,
             }),
             CreatedOn = DateTime.UtcNow,
