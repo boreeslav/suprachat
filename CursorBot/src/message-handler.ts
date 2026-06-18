@@ -20,15 +20,8 @@ import {
 } from "./action-handler.js";
 import { ActionMgmtHandler, isMetaActionId, parseMetaActionId } from "./action-mgmt-handler.js";
 import { scheduleSafeRestart } from "./bot-restart.js";
-import {
-  buildModeSetupMessage,
-  buildModelSetupMessage,
-  buildSetupCompleteMessage,
-  isSetupCancelResponse,
-  isSetupResponse,
-  type SessionSetupState,
-} from "./session-setup.js";
-import { parseSessionCommand, parseSessionKey, makeSessionKey, isSessionCommand, SESSION_CMD_PREFIX } from "./session-keys.js";
+import { writeRestartNotice } from "./restart-notice.js";
+import { parseSessionCommand, parseSessionKey, makeSessionKey, isSessionCommand, SESSION_CMD_PREFIX, UI_CANCEL_CMD } from "./session-keys.js";
 import { isGroupChatType } from "./chat-type.js";
 import { buildSessionPickerButtons, buildSessionPickerText } from "./session-picker.js";
 import { SessionOutbox } from "./session-outbox.js";
@@ -39,6 +32,9 @@ import {
   ThoughtStatusPublisher,
   type AgentProgressEvent,
 } from "./thought-status.js";
+
+/** id действия перезапуска из actions.json — обрабатывается внутри бота, без дочернего скрипта. */
+const RESTART_ACTION_ID = "bot-restart";
 
 const HELP_TEXT = `Команды Cursor-бота:
 
@@ -54,7 +50,7 @@ const HELP_TEXT = `Команды Cursor-бота:
 /project <id> — переключить проект (папку репозитория)
 /project list — список проектов
 /status — статус активной сессии
-/stop или /sess:stop — остановить текущую задачу агента (меню «Сессии» → «Остановить»)
+/stop или /sess:stop — остановить текущую задачу агента (меню «Сессии» → «Стоп»)
 /actions — каталог кнопок-действий (скрипты и задачи агента)
 
 До ${5} параллельных сессий на чат. Фоновые сессии продолжают работу; их ответы появятся при переключении.
@@ -130,7 +126,6 @@ export class MessageHandler {
   private readonly activeSessionWork = new Map<string, ActiveChatWork>();
   /** Сессии, где пользователь остановил задачу и может уточнить или отменить. */
   private readonly stoppedSessions = new Map<string, StoppedSessionState>();
-  private readonly pendingSetup = new Map<string, SessionSetupState>();
   private readonly chatWorkStatus = new Map<string, ChatWorkSnapshot>();
   private readonly chatHandleChains = new Map<string, Promise<void>>();
   private readonly menuRefreshSignals = new Map<string, string>();
@@ -167,6 +162,7 @@ export class MessageHandler {
   /** Команды и действия, обрабатываемые сразу — даже пока агент выполняет задачу на Cursor API. */
   private isPrioritizedMessage(update: BotApiMessage, text: string): boolean {
     if (text && isSessionCommand(text)) return true;
+    if (text === UI_CANCEL_CMD) return true;
     if (text === "/status" || text.startsWith("/status ")) return true;
     if (text === "/sessions" || text.startsWith("/sessions ")) return true;
     if (text === "/new" || text.startsWith("/new ")) return true;
@@ -204,7 +200,7 @@ export class MessageHandler {
   private async replyBusyHint(update: BotApiMessage): Promise<void> {
     await this.reply(
       update,
-      "Задача выполняется. Остановите её через меню «Сессии» → «Остановить» (/sess:stop), затем уточните или отмените.",
+      "Задача выполняется. Остановите её через меню «Сессии» → «Стоп» (/sess:stop), затем уточните или отмените.",
     );
   }
 
@@ -275,6 +271,12 @@ export class MessageHandler {
       this.sessions.ensureRoom(update.chatId);
       await this.menuManager.syncChatMenu(update.chatId, update.chatType);
 
+      if (text === UI_CANCEL_CMD) {
+        await this.deleteIncomingUserMessage(update);
+        await this.dismissButtonWindow(update);
+        return;
+      }
+
       if (text && (await this.tryHandleActionInput(update, text))) {
         return;
       }
@@ -285,13 +287,9 @@ export class MessageHandler {
         return;
       }
 
-      const pending = this.pendingSetup.get(update.chatId);
-      if (pending && !isSetupResponse(text, pending.step)) {
-        this.pendingSetup.delete(update.chatId);
-      }
-
-      if (await this.tryHandleSessionSetup(update, text)) {
-        return;
+      // Любое сообщение-команда со слэшом удаляется после выполнения (кроме /start — приветствие).
+      if (text.startsWith("/") && text !== "/start") {
+        await this.deleteIncomingUserMessage(update);
       }
 
       if (text === "/start") {
@@ -301,7 +299,6 @@ export class MessageHandler {
       }
 
       if (text === "/sessions" || text.startsWith("/sessions ")) {
-        await this.deleteIncomingUserMessage(update);
         await this.refreshSessionMenu(update.chatId);
         await this.showSessionPicker(update);
         return;
@@ -318,18 +315,7 @@ export class MessageHandler {
           return;
         }
         if (text === "/new" || text.startsWith("/new ")) {
-          await this.cleanupPendingSetupQuestion(update);
-          await this.deleteIncomingUserMessage(update);
-          const created = this.sessions.createSession(update.chatId);
-          if (!created.ok) {
-            await this.reply(update, created.reason);
-            return;
-          }
-          this.sessions.switchActive(update.chatId, created.sessionId);
-          await this.cursor.resetSession(this.sessionKey(update.chatId, created.sessionId));
-          await this.refreshSessionMenu(update.chatId);
-          await this.dismissSessionPicker(update);
-          await this.startSessionSetup(update);
+          await this.createAndAnnounceSession(update);
           return;
         }
         if (media) {
@@ -350,18 +336,7 @@ export class MessageHandler {
       }
 
       if (text === "/new" || text.startsWith("/new ")) {
-        await this.cleanupPendingSetupQuestion(update);
-        await this.deleteIncomingUserMessage(update);
-        const created = this.sessions.createSession(update.chatId);
-        if (!created.ok) {
-          await this.reply(update, created.reason);
-          return;
-        }
-        this.sessions.switchActive(update.chatId, created.sessionId);
-        await this.cursor.resetSession(this.sessionKey(update.chatId, created.sessionId));
-        await this.refreshSessionMenu(update.chatId);
-        await this.dismissSessionPicker(update);
-        await this.startSessionSetup(update);
+        await this.createAndAnnounceSession(update);
         return;
       }
 
@@ -506,6 +481,7 @@ export class MessageHandler {
         const prompt = this.pendingFiles.buildAgentPrompt(files, text);
         const workToken = Symbol("session-work");
         if (this.isAwaitingStopFollowup(activeSessionKey)) {
+          await this.dismissStopWindow(update, activeSessionKey);
           this.clearAwaitingStopFollowup(activeSessionKey);
         } else if (this.isSessionTaskBusy(activeSessionKey)) {
           await this.replyBusyHint(update);
@@ -517,6 +493,7 @@ export class MessageHandler {
 
       const workToken = Symbol("session-work");
       if (this.isAwaitingStopFollowup(activeSessionKey)) {
+        await this.dismissStopWindow(update, activeSessionKey);
         this.clearAwaitingStopFollowup(activeSessionKey);
         this.startAgentRequest(update, activeSessionKey, text, workToken);
         return;
@@ -598,6 +575,12 @@ export class MessageHandler {
     }
 
     await this.cleanupActionUiMessages(update);
+
+    if (actionId.toLowerCase() === RESTART_ACTION_ID) {
+      await this.handleRestartAction(update);
+      return true;
+    }
+
     try {
       await this.actionHandler.runAction(
         update,
@@ -698,6 +681,25 @@ export class MessageHandler {
     await scheduleSafeRestart(this.config.stateFile, () => this.sessions.flushState(), reason);
   }
 
+  /** Перезапуск бота по действию из каталога — внутри процесса бота (надёжно через watchdog). */
+  private async handleRestartAction(update: BotApiMessage): Promise<void> {
+    try {
+      await this.reply(update, "⏳ Перезагружаю CursorBot…", {
+        skipDedup: true,
+      });
+    } catch (err) {
+      console.warn("[handler] restart notify failed:", err instanceof Error ? err.message : err);
+    }
+    const target = this.replyTarget(update);
+    writeRestartNotice(this.config.stateFile, {
+      chatId: target.chatId,
+      userLogin: target.userLogin,
+      requestedAt: new Date().toISOString(),
+    });
+    await this.clearChatActivities(update);
+    await this.scheduleBotRestart("action-restart");
+  }
+
   private async runAgentActionForCatalog(
     update: BotApiMessage,
     prompt: string,
@@ -773,6 +775,7 @@ export class MessageHandler {
         const prompt = this.mediaInbox.buildPhotoAgentPrompt(ingested, caption);
         const workToken = Symbol("session-work");
         if (this.isAwaitingStopFollowup(sessionKey)) {
+          await this.dismissStopWindow(update, sessionKey);
           this.clearAwaitingStopFollowup(sessionKey);
         } else if (this.isSessionTaskBusy(sessionKey)) {
           await this.replyBusyHint(update);
@@ -801,137 +804,146 @@ export class MessageHandler {
     }
   }
 
-  private async startSessionSetup(update: BotApiMessage): Promise<void> {
-    const question = buildModeSetupMessage();
-    const messageId = await this.replyWithButtons(update, question.text, question.buttons, {
-      skipDedup: true,
-    });
-    if (!messageId) {
-      console.error("[handler] startSessionSetup: sendMessage with buttons returned no messageId");
-      await this.reply(
-        update,
-        "Не удалось показать выбор режима. Повторите /new или «➕ Новая» в меню сессий.",
-      );
+  /** Сообщение с параметрами новой сессии (режим/модель/проект меняются через меню). */
+  private buildSessionParamsMessage(sessionId: string, sessionKey: string): string {
+    const title = this.sessions.sessionTitle(sessionId);
+    const mode = this.cursor.getMode(sessionKey);
+    const model = this.cursor.getModel(sessionKey);
+    const projectId = this.cursor.getProjectId(sessionKey);
+    return [
+      `${title} создана.`,
+      `Режим: ${formatModeLabel(mode)}.`,
+      `Модель: ${this.models.formatLabel(model)}.`,
+      `Проект: ${this.projects.formatLabel(projectId)}.`,
+      "",
+      "Режим, модель и проект меняются через меню.",
+    ].join("\n");
+  }
+
+  /** Создаёт сессию (параметры наследуются от активной или дефолтные) и сообщает параметры — без вопросов. */
+  private async createAndAnnounceSession(update: BotApiMessage): Promise<void> {
+    const created = this.sessions.createSession(update.chatId);
+    if (!created.ok) {
+      await this.reply(update, created.reason);
+      await this.refreshSessionMenu(update.chatId);
       return;
     }
-    this.pendingSetup.set(update.chatId, {
-      step: "mode",
-      questionMessageId: messageId,
-    });
-    this.chatWorkStatus.set(update.chatId, {
-      phase: "setup",
-      detail: "Выбор режима и модели",
-      startedAt: new Date().toISOString(),
-    });
+    this.sessions.switchActive(update.chatId, created.sessionId);
+    const sessionKey = this.sessionKey(update.chatId, created.sessionId);
+    await this.cursor.resetSession(sessionKey);
+    await this.refreshSessionMenu(update.chatId, true);
+    await this.dismissSessionPicker(update);
+    await this.reply(update, this.buildSessionParamsMessage(created.sessionId, sessionKey));
   }
 
-  private async tryHandleSessionSetup(update: BotApiMessage, text: string): Promise<boolean> {
-    const pending = this.pendingSetup.get(update.chatId);
-    if (!pending || !isSetupResponse(text, pending.step)) return false;
-
-    if (isSetupCancelResponse(text)) {
-      await this.cleanupSetupMessages(update, pending);
-      this.pendingSetup.delete(update.chatId);
-      this.chatWorkStatus.delete(update.chatId);
-
-      if (pending.step === "model") {
-        const sk = this.sessions.getActiveSessionKey(update.chatId);
-        if (!sk) return true;
-        const mode = this.cursor.getMode(sk);
-        const model = this.cursor.getModel(sk);
-        await this.reply(update, buildSetupCompleteMessage(mode, model, this.models));
-      } else {
-        await this.reply(update, "Отменено. Сессия не изменена.");
-      }
-      return true;
+  /** Один вопрос с кнопками: завершить сессию? Да/Нет. */
+  private async confirmEndSession(update: BotApiMessage): Promise<void> {
+    const sessionId = this.sessions.getActiveSessionId(update.chatId);
+    if (!sessionId) {
+      await this.reply(update, "Нет активной сессии для завершения.");
+      await this.showSessionPicker(update);
+      return;
     }
-
-    if (pending.step === "mode") {
-      const mode =
-        text === "/mode ask" ||
-        text.startsWith("/mode ask ") ||
-        text === "/mode plan" ||
-        text.startsWith("/mode plan ")
-          ? "ask"
-          : "agent";
-
-      const sessionKey = this.sessions.getActiveSessionKey(update.chatId);
-      if (!sessionKey) return true;
-      await this.interruptSessionWork(sessionKey);
-      await this.cursor.setMode(sessionKey, mode);
-      await this.cursor.resetSession(sessionKey);
-      await this.menuManager.publishForChat(update.chatId, update.chatType);
-      await this.cleanupSetupMessages(update, pending);
-
-      const question = buildModelSetupMessage(this.models.getMenuModels());
-      const messageId = await this.replyWithButtons(update, question.text, question.buttons, {
-        skipDedup: true,
-      });
-      if (!messageId) {
-        await this.reply(update, "Не удалось показать выбор модели. Используйте /model auto или /model pro.");
-        this.pendingSetup.delete(update.chatId);
-        return true;
-      }
-      this.pendingSetup.set(update.chatId, {
-        step: "model",
-        questionMessageId: messageId,
-      });
-      return true;
-    }
-
-    const arg = text.slice("/model".length).trim();
-    if (!arg) return false;
-
-    const normalized = this.models.normalizeKey(arg);
-    if (!normalized) {
-      await this.reply(update, `Неизвестная модель «${arg}». Выберите кнопку ниже.`);
-      return true;
-    }
-
-    const sessionKey = this.sessions.getActiveSessionKey(update.chatId);
-    if (!sessionKey) return true;
-    await this.interruptSessionWork(sessionKey);
-    await this.cursor.setModel(sessionKey, normalized);
-    await this.menuManager.publishForChat(update.chatId, update.chatType);
-    await this.cleanupSetupMessages(update, pending);
-    this.pendingSetup.delete(update.chatId);
-    this.chatWorkStatus.delete(sessionKey);
-
-    const mode = this.cursor.getMode(sessionKey);
-    await this.reply(update, buildSetupCompleteMessage(mode, normalized, this.models));
-    return true;
+    const buttons: BotMessageButtonDto[] = [
+      {
+        id: "sess-end-yes",
+        text: "Да",
+        action: `${SESSION_CMD_PREFIX}end-confirm`,
+        color: "danger",
+      },
+      {
+        id: "sess-end-no",
+        text: "Нет",
+        action: `${SESSION_CMD_PREFIX}end-cancel`,
+        color: "default",
+      },
+    ];
+    await this.replyWithButtons(
+      update,
+      `Завершить ${this.sessions.sessionTitle(sessionId)}? Будет создана новая сессия с теми же параметрами.`,
+      buttons,
+      { skipDedup: true },
+    );
   }
 
-  private async cleanupPendingSetupQuestion(update: BotApiMessage): Promise<void> {
-    const pending = this.pendingSetup.get(update.chatId);
-    if (!pending) return;
-    this.pendingSetup.delete(update.chatId);
-    if (!pending.questionMessageId) return;
+  /** Завершает текущую сессию и сразу создаёт новую с теми же параметрами — без вопросов. */
+  private async finishAndRecreateSession(update: BotApiMessage, oldSessionId: string): Promise<void> {
+    const chatId = update.chatId;
+    const oldKey = this.sessionKey(chatId, oldSessionId);
+
+    const mode = this.cursor.getMode(oldKey);
+    const model = this.cursor.getModel(oldKey);
+    const projectId = this.cursor.getProjectId(oldKey);
+
+    this.chatWorkStatus.delete(chatId);
+    this.chatWorkStatus.delete(oldKey);
+    await this.interruptSessionWork(oldKey);
+    this.clearAwaitingStopFollowup(oldKey);
+
+    const ended = this.sessions.endSession(chatId, oldSessionId);
+    if (!ended.ok) {
+      await this.reply(update, ended.reason);
+      return;
+    }
+    this.sessions.clearRuntime(oldKey);
+    await this.cursor.disposeSession(oldKey);
+
+    const created = this.sessions.createSession(chatId);
+    if (!created.ok) {
+      await this.refreshSessionMenu(chatId, true);
+      await this.reply(
+        update,
+        `${this.sessions.sessionTitle(oldSessionId)} завершена.\n${created.reason}`,
+      );
+      await this.showSessionPicker(update);
+      return;
+    }
+
+    this.sessions.switchActive(chatId, created.sessionId);
+    const newKey = this.sessionKey(chatId, created.sessionId);
+    await this.cursor.resetSession(newKey);
+    await this.cursor.setMode(newKey, mode);
+    await this.cursor.setModel(newKey, model);
+    await this.cursor.setProject(newKey, projectId);
+
+    await this.refreshSessionMenu(chatId, true);
+    await this.dismissSessionPicker(update);
+    await this.reply(update, this.buildSessionParamsMessage(created.sessionId, newKey));
+  }
+
+  /** Удаляет окно с кнопками, в котором нажата кнопка (и чистит сохранённые id окон). */
+  private async dismissButtonWindow(update: BotApiMessage): Promise<void> {
+    const sourceId = update.buttonPress?.sourceMessageId;
+    if (!sourceId) return;
+    if (this.sessions.getPickerMessageId(update.chatId) === sourceId) {
+      this.sessions.setPickerMessageId(update.chatId, undefined);
+    }
+    if (this.sessions.getActionsCatalogMessageId(update.chatId) === sourceId) {
+      this.sessions.setActionsCatalogMessageId(update.chatId, undefined);
+    }
     try {
-      await this.deleteReply(update, pending.questionMessageId);
+      await this.deleteReply(update, sourceId);
     } catch (err) {
       console.warn(
-        "[handler] cleanup pending setup question:",
+        "[handler] dismiss button window:",
+        sourceId,
         err instanceof Error ? err.message : err,
       );
     }
   }
 
-  private async cleanupSetupMessages(
-    update: BotApiMessage,
-    pending: SessionSetupState,
-  ): Promise<void> {
-    const messageIds = [pending.questionMessageId, update.messageId].filter(Boolean) as string[];
-    for (const messageId of messageIds) {
-      try {
-        await this.deleteReply(update, messageId);
-      } catch (err) {
-        console.warn(
-          "[handler] cleanup setup message:",
-          messageId,
-          err instanceof Error ? err.message : err,
-        );
-      }
+  /** Удаляет окно «Выполнение остановлено» с кнопками. */
+  private async dismissStopWindow(update: BotApiMessage, sessionKey: string): Promise<void> {
+    const messageId = this.stoppedSessions.get(sessionKey)?.followupMessageId;
+    if (!messageId) return;
+    try {
+      await this.deleteReply(update, messageId);
+    } catch (err) {
+      console.warn(
+        "[handler] dismiss stop window:",
+        messageId,
+        err instanceof Error ? err.message : err,
+      );
     }
   }
 
@@ -997,29 +1009,33 @@ export class MessageHandler {
     const cmd = parseSessionCommand(text);
     if (!cmd) return;
 
+    // Если команда пришла нажатием кнопки — удаляем окно с кнопками.
+    await this.dismissButtonWindow(update);
+
     if (cmd.kind === "new") {
-      await this.cleanupPendingSetupQuestion(update);
-      const created = this.sessions.createSession(update.chatId);
-      if (!created.ok) {
-        console.warn(`[handler] createSession failed for ${update.chatId}: ${created.reason}`);
-        await this.reply(update, created.reason);
-        await this.refreshSessionMenu(update.chatId);
-        return;
-      }
-      console.log(`[handler] new session ${created.sessionId} in chat ${update.chatId}`);
-      await this.switchToSession(update, created.sessionId, { isNew: true });
-      await this.startSessionSetup(update);
+      console.log(`[handler] new session requested in chat ${update.chatId}`);
+      await this.createAndAnnounceSession(update);
       return;
     }
 
     if (cmd.kind === "end") {
+      await this.confirmEndSession(update);
+      return;
+    }
+
+    if (cmd.kind === "end-confirm") {
       const sessionId = this.sessions.getActiveSessionId(update.chatId);
       if (!sessionId) {
         await this.reply(update, "Нет активной сессии для завершения.");
         await this.showSessionPicker(update);
         return;
       }
-      await this.endSession(update, sessionId);
+      await this.finishAndRecreateSession(update, sessionId);
+      return;
+    }
+
+    if (cmd.kind === "end-cancel") {
+      // Окно подтверждения уже удалено выше — ничего больше не делаем.
       return;
     }
 
@@ -1045,32 +1061,6 @@ export class MessageHandler {
     }
 
     await this.switchToSession(update, cmd.sessionId);
-  }
-
-  private async endSession(update: BotApiMessage, sessionId: string): Promise<void> {
-    const chatId = update.chatId;
-    const sessionKey = this.sessionKey(chatId, sessionId);
-    const ended = this.sessions.endSession(chatId, sessionId);
-    if (!ended.ok) {
-      await this.reply(update, ended.reason);
-      return;
-    }
-
-    await this.cleanupPendingSetupQuestion(update);
-    this.pendingSetup.delete(chatId);
-    this.chatWorkStatus.delete(chatId);
-    this.chatWorkStatus.delete(sessionKey);
-
-    await this.interruptSessionWork(sessionKey);
-    this.clearAwaitingStopFollowup(sessionKey);
-    this.sessions.clearRuntime(sessionKey);
-    await this.cursor.disposeSession(sessionKey);
-
-    await this.refreshSessionMenu(chatId);
-
-    const title = this.sessions.sessionTitle(sessionId);
-    await this.reply(update, `${title} завершена.`);
-    await this.showSessionPicker(update);
   }
 
   private async showSessionPicker(update: BotApiMessage): Promise<void> {
@@ -1310,20 +1300,17 @@ export class MessageHandler {
     void this.refreshSessionMenu(update.chatId, true);
 
     if (!wasBusy && this.isAwaitingStopFollowup(sessionKey)) {
-      const buttons: BotMessageButtonDto[] = [
-        {
-          id: "sess-stop-cancel",
-          text: "❌ Отменить задачу",
-          action: `${SESSION_CMD_PREFIX}stop-cancel`,
-          color: "danger",
-        },
-      ];
-      await this.replyWithButtons(
+      await this.dismissStopWindow(update, sessionKey);
+      const messageId = await this.replyWithButtons(
         update,
         "Задача уже остановлена.\nОтправьте уточнение, чтобы продолжить, или отмените задачу.",
-        buttons,
+        this.buildStopWindowButtons(),
         { skipDedup: true },
       );
+      this.stoppedSessions.set(sessionKey, {
+        stoppedAt: this.stoppedSessions.get(sessionKey)?.stoppedAt ?? new Date().toISOString(),
+        followupMessageId: messageId,
+      });
       return;
     }
 
@@ -1332,21 +1319,33 @@ export class MessageHandler {
       return;
     }
 
-    this.stoppedSessions.set(sessionKey, { stoppedAt: new Date().toISOString() });
-    const buttons: BotMessageButtonDto[] = [
+    const messageId = await this.replyWithButtons(
+      update,
+      "Выполнение остановлено.\nОтправьте уточнение, чтобы продолжить, или отмените задачу.",
+      this.buildStopWindowButtons(),
+      { skipDedup: true },
+    );
+    this.stoppedSessions.set(sessionKey, {
+      stoppedAt: new Date().toISOString(),
+      followupMessageId: messageId,
+    });
+  }
+
+  private buildStopWindowButtons(): BotMessageButtonDto[] {
+    return [
       {
         id: "sess-stop-cancel",
         text: "❌ Отменить задачу",
         action: `${SESSION_CMD_PREFIX}stop-cancel`,
         color: "danger",
       },
+      {
+        id: "sess-stop-close",
+        text: "Отмена",
+        action: UI_CANCEL_CMD,
+        color: "default",
+      },
     ];
-    await this.replyWithButtons(
-      update,
-      "Выполнение остановлено.\nОтправьте уточнение, чтобы продолжить, или отмените задачу.",
-      buttons,
-      { skipDedup: true },
-    );
   }
 
   private async cancelStoppedTask(update: BotApiMessage, sessionKey: string): Promise<void> {
@@ -1354,6 +1353,7 @@ export class MessageHandler {
       await this.reply(update, "Нет остановленной задачи для отмены.");
       return;
     }
+    await this.dismissStopWindow(update, sessionKey);
     await this.interruptSessionWork(sessionKey);
     this.clearAwaitingStopFollowup(sessionKey);
     void this.refreshSessionMenu(update.chatId, true);
@@ -1518,17 +1518,6 @@ export class MessageHandler {
   }
 
   getSessionWorkSnapshot(sessionKey: string): ChatWorkSnapshot | undefined {
-    const parsed = parseSessionKey(sessionKey);
-    if (parsed) {
-      const setup = this.pendingSetup.get(parsed.chatId);
-      if (setup) {
-        return {
-          phase: "setup",
-          detail: setup.step === "mode" ? "Выбор режима" : "Выбор модели",
-          startedAt: this.chatWorkStatus.get(sessionKey)?.startedAt,
-        };
-      }
-    }
     return this.chatWorkStatus.get(sessionKey);
   }
 

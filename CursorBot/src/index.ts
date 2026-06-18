@@ -1,6 +1,7 @@
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { loadConfig } from "./config.js";
 import { CursorBridge } from "./cursor-bridge.js";
+import { installFileLogger } from "./file-logger.js";
 import { acquireInstanceLock } from "./instance-lock.js";
 import { AssistantMenuManager } from "./assistant-menu-manager.js";
 import { BotMenuManager } from "./bot-menu-manager.js";
@@ -8,10 +9,12 @@ import { MessageHandler } from "./message-handler.js";
 import { ModelCatalog } from "./model-catalog.js";
 import { ProjectCatalog } from "./project-catalog.js";
 import { installProcessGuard } from "./process-guard.js";
+import { deliverRestartNotice } from "./restart-notice.js";
 import { SessionRegistry } from "./session-registry.js";
 import { StateStore } from "./state-store.js";
 import { SupraBotApi } from "./supra-bot-api.js";
 
+installFileLogger(resolve(process.env.STATE_FILE?.trim() ? dirname(process.env.STATE_FILE.trim()) : "data", "bot.log"));
 installProcessGuard();
 
 function log(...args: unknown[]): void {
@@ -95,6 +98,7 @@ async function main(): Promise<void> {
         log("WebSocket подключён, botUserId=", msg.botUserId);
         void handler.refreshPublishedActivities();
         void menuManager.publishAllKnownChats(state.listChatRoomIds(), true);
+        void deliverRestartNotice(api, config.stateFile);
       },
       onMessage: (update) => {
         persistState();

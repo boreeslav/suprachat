@@ -36,6 +36,42 @@ const PEEK_RUN_TIMEOUT_MS = 10_000;
 const STUCK_RUN_TIMEOUT_MS = 15_000;
 /** Ожидание run.wait() после завершения stream — защита от бесконечного зависания. */
 const RUN_WAIT_TIMEOUT_MS = 30 * 60 * 1000;
+/** Нет ни одного события из stream дольше этого — считаем подключение зависшим, прерываем run. */
+const STREAM_INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
+
+class StreamInactivityError extends Error {
+  constructor(label: string, timeoutMs: number) {
+    super(`${label}: нет событий ${Math.round(timeoutMs / 60_000)} мин (подключение зависло)`);
+    this.name = "StreamInactivityError";
+  }
+}
+
+/**
+ * Оборачивает async-iterable stream: бросает StreamInactivityError, если между событиями
+ * проходит больше timeoutMs. Без этого зависший локальный агент держит запрос вечно,
+ * очередь чата не освобождается и накапливаются мёртвые подключения (помогает только рестарт).
+ */
+async function* streamWithInactivityTimeout<T>(
+  stream: AsyncIterable<T>,
+  timeoutMs: number,
+  label: string,
+): AsyncGenerator<T> {
+  const iterator = stream[Symbol.asyncIterator]();
+  while (true) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new StreamInactivityError(label, timeoutMs)), timeoutMs);
+    });
+    let result: IteratorResult<T>;
+    try {
+      result = await Promise.race([iterator.next(), timeout]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+    if (result.done) return;
+    yield result.value;
+  }
+}
 
 export interface AgentReply {
   text: string;
@@ -1176,22 +1212,44 @@ export class CursorBridge {
       const chunks: string[] = [];
       let streamError: string | undefined;
 
-      for await (const event of run.stream()) {
-        if (abortSignal.aborted || (this.chatRuns.get(chatId)?.generation ?? 0) !== generation) {
+      try {
+        for await (const event of streamWithInactivityTimeout(
+          run.stream(),
+          STREAM_INACTIVITY_TIMEOUT_MS,
+          `stream(${run.id})`,
+        )) {
+          if (abortSignal.aborted || (this.chatRuns.get(chatId)?.generation ?? 0) !== generation) {
+            if (run.supports("cancel")) {
+              await run.cancel().catch(() => undefined);
+            }
+            return this.cancelledReply(agent, run.id, generation, chatId);
+          }
+
+          streamError = extractStreamError(event) ?? streamError;
+          this.handleStreamEvent(event, onProgress);
+
+          if (event.type === "assistant") {
+            for (const block of event.message.content) {
+              if (block.type === "text" && block.text) chunks.push(block.text);
+            }
+          }
+        }
+      } catch (streamErr) {
+        if (streamErr instanceof StreamInactivityError) {
+          console.error(`[cursor] ${streamErr.message} — прерываю run ${run.id}`);
           if (run.supports("cancel")) {
             await run.cancel().catch(() => undefined);
           }
-          return this.cancelledReply(agent, run.id, generation, chatId);
+          this.state.clearPendingRunIfMatch(chatId, run.id);
+          return {
+            text: "",
+            agentId: agent.agentId,
+            runId: run.id,
+            status: "error",
+            errorDetail: streamErr.message,
+          };
         }
-
-        streamError = extractStreamError(event) ?? streamError;
-        this.handleStreamEvent(event, onProgress);
-
-        if (event.type === "assistant") {
-          for (const block of event.message.content) {
-            if (block.type === "text" && block.text) chunks.push(block.text);
-          }
-        }
+        throw streamErr;
       }
 
       if (abortSignal.aborted || (this.chatRuns.get(chatId)?.generation ?? 0) !== generation) {

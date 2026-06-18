@@ -16,7 +16,7 @@ import {
 import { buildActionMgmtPrompt, type ActionMgmtTask } from "./action-mgmt-prompt.js";
 import type { BotApiMessage, BotMessageButtonDto, SupraBotApi } from "./supra-bot-api.js";
 import type { SessionRegistry } from "./session-registry.js";
-import { makeSessionKey } from "./session-keys.js";
+import { makeSessionKey, UI_CANCEL_CMD } from "./session-keys.js";
 
 const MGMT_BUTTON_COUNT = 1;
 
@@ -178,6 +178,12 @@ export class ActionMgmtHandler {
           text: "🗑 Удалить",
           action: `${ACTION_CMD_PREFIX}${META_DELETE}`,
           color: "secondary",
+        },
+        {
+          id: "act-mgmt-cancel",
+          text: "Отмена",
+          action: UI_CANCEL_CMD,
+          color: "default",
         },
       ]);
       return;

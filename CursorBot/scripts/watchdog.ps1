@@ -74,8 +74,13 @@ while ($true) {
         break
     }
 
-    Write-Watchdog ("Bot crashed (code {0}). Restart in {1}s..." -f $code, $RestartSec)
-    Start-Sleep -Seconds $RestartSec
+    if ($code -eq 42) {
+        Write-Watchdog 'Restart requested by bot (code 42). Restarting now...'
+        Start-Sleep -Seconds 1
+    } else {
+        Write-Watchdog ("Bot crashed (code {0}). Restart in {1}s..." -f $code, $RestartSec)
+        Start-Sleep -Seconds $RestartSec
+    }
 }
 
 if (Test-Path $pidFile) { Remove-Item $pidFile -Force -ErrorAction SilentlyContinue }

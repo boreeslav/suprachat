@@ -58,7 +58,7 @@ export function buildBotMenu(
   if (activeSessionId) {
     items.push({
       id: "sess-stop",
-      text: "⏹ Остановить",
+      text: "Стоп",
       message: `${SESSION_CMD_PREFIX}stop`,
     });
   }

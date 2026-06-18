@@ -1,5 +1,7 @@
 export const MAX_AGENT_SESSIONS = 5;
 export const SESSION_CMD_PREFIX = "/sess:";
+/** Универсальная кнопка «Отмена» в окнах с кнопками — удаляет само сообщение с кнопками. */
+export const UI_CANCEL_CMD = "/ui:cancel";
 
 export function makeSessionKey(chatId: string, sessionId: string): string {
   return `${chatId}::${sessionId}`;
@@ -19,6 +21,8 @@ export function isSessionCommand(text: string): boolean {
   return (
     t === `${SESSION_CMD_PREFIX}new`
     || t === `${SESSION_CMD_PREFIX}end`
+    || t === `${SESSION_CMD_PREFIX}end-confirm`
+    || t === `${SESSION_CMD_PREFIX}end-cancel`
     || t === `${SESSION_CMD_PREFIX}stop`
     || t === `${SESSION_CMD_PREFIX}stop-cancel`
     || t === "/stop"
@@ -32,6 +36,8 @@ export function parseSessionCommand(
 ):
   | { kind: "new" }
   | { kind: "end" }
+  | { kind: "end-confirm" }
+  | { kind: "end-cancel" }
   | { kind: "stop" }
   | { kind: "stop-cancel" }
   | { kind: "switch"; sessionId: string }
@@ -39,6 +45,8 @@ export function parseSessionCommand(
   const t = text.trim();
   if (t === `${SESSION_CMD_PREFIX}new`) return { kind: "new" };
   if (t === `${SESSION_CMD_PREFIX}end`) return { kind: "end" };
+  if (t === `${SESSION_CMD_PREFIX}end-confirm`) return { kind: "end-confirm" };
+  if (t === `${SESSION_CMD_PREFIX}end-cancel`) return { kind: "end-cancel" };
   if (t === `${SESSION_CMD_PREFIX}stop` || t === "/stop" || t.startsWith("/stop ")) return { kind: "stop" };
   if (t === `${SESSION_CMD_PREFIX}stop-cancel`) return { kind: "stop-cancel" };
   const m = t.match(/^\/sess:(\d+)$/);

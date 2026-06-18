@@ -1,9 +1,10 @@
 import type { BotActionDefinition } from "./actions-config.js";
 import { ACTION_CMD_PREFIX, META_MANAGE, META_PAGE } from "./actions-constants.js";
+import { UI_CANCEL_CMD } from "./session-keys.js";
 import type { BotMessageButtonDto } from "./supra-bot-api.js";
 
 export const MAX_ACTION_BUTTONS = 10;
-export const MGMT_CATALOG_BUTTON_COUNT = 1;
+export const MGMT_CATALOG_BUTTON_COUNT = 2;
 
 export interface ActionCatalogPage {
   pageIndex: number;
@@ -17,6 +18,16 @@ const MGMT_BUTTON: BotMessageButtonDto = {
   color: "secondary",
 };
 
+/** Кнопка «Отмена» — закрывает окно каталога (удаляет сообщение с кнопками). */
+const CANCEL_BUTTON: BotMessageButtonDto = {
+  id: "act-cancel",
+  text: "Отмена",
+  action: UI_CANCEL_CMD,
+  color: "default",
+};
+
+const CATALOG_RESERVED_BUTTONS: BotMessageButtonDto[] = [MGMT_BUTTON, CANCEL_BUTTON];
+
 function buildCatalogPages(
   actions: BotActionDefinition[],
   reservedBottom: number,
@@ -24,7 +35,7 @@ function buildCatalogPages(
   pageActionPrefix = META_PAGE,
 ): ActionCatalogPage[] {
   if (!actions.length) {
-    return [{ pageIndex: 0, buttons: reservedBottom > 0 ? [MGMT_BUTTON] : [] }];
+    return [{ pageIndex: 0, buttons: reservedBottom > 0 ? [...CATALOG_RESERVED_BUTTONS] : [] }];
   }
 
   const pages: ActionCatalogPage[] = [];
@@ -65,7 +76,7 @@ function buildCatalogPages(
       });
     }
     if (reservedBottom > 0) {
-      buttons.push(MGMT_BUTTON);
+      buttons.push(...CATALOG_RESERVED_BUTTONS);
     }
 
     pages.push({ pageIndex, buttons });
@@ -92,7 +103,7 @@ export function getActionCatalogPage(
   pageIndex = 0,
 ): ActionCatalogPage {
   const pages = buildActionCatalogPages(actions);
-  if (!pages.length) return { pageIndex: 0, buttons: [MGMT_BUTTON] };
+  if (!pages.length) return { pageIndex: 0, buttons: [...CATALOG_RESERVED_BUTTONS] };
   const idx = Math.max(0, Math.min(pageIndex, pages.length - 1));
   return pages[idx]!;
 }
