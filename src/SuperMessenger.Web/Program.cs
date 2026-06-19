@@ -36,6 +36,7 @@ builder.Services.AddSingleton<BotApiService>(sp => new BotApiService(
     sp.GetRequiredService<ChatFileService>()));
 builder.Services.AddSingleton<BotWebSocketManager>();
 builder.Services.AddSingleton<BotInboxNotifier>();
+builder.Services.AddSingleton<MiniAppWebSocketManager>();
 builder.Services.AddSingleton<MiniAppChannelService>();
 builder.Services.AddSingleton<MiniAppSessionService>();
 builder.Services.AddHostedService<BotInboxCleanupService>();
@@ -68,7 +69,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Events.OnRedirectToLogin = ctx =>
         {
             if (ctx.Request.Path.StartsWithSegments("/api/bot-api") ||
-                ctx.Request.Path.StartsWithSegments("/ws/bot"))
+                ctx.Request.Path.StartsWithSegments("/ws/bot") ||
+                ctx.Request.Path.StartsWithSegments("/ws/mini-app"))
             {
                 ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return Task.CompletedTask;
@@ -85,7 +87,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Events.OnRedirectToAccessDenied = ctx =>
         {
             if (ctx.Request.Path.StartsWithSegments("/api/bot-api") ||
-                ctx.Request.Path.StartsWithSegments("/ws/bot"))
+                ctx.Request.Path.StartsWithSegments("/ws/bot") ||
+                ctx.Request.Path.StartsWithSegments("/ws/mini-app"))
             {
                 ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return Task.CompletedTask;
@@ -164,6 +167,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 app.UseRouting();
 app.UseWebSockets();
 app.UseMiddleware<BotWebSocketMiddleware>();
+app.UseMiddleware<MiniAppWebSocketMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<ProtectedStaticPageMiddleware>();

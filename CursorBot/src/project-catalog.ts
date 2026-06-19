@@ -7,16 +7,44 @@ export interface MenuProjectItem {
 
 export class ProjectCatalog {
   private readonly byId = new Map<string, BotProjectConfig>();
-  readonly defaultKey: string;
+  private defaultKeyValue: string;
 
   constructor(projects: BotProjectConfig[], defaultProjectId: string) {
+    this.defaultKeyValue = defaultProjectId.toLowerCase();
+    this.replaceAll(projects);
+    if (!this.byId.has(this.defaultKeyValue)) {
+      throw new Error(`ProjectCatalog: default project «${defaultProjectId}» not found`);
+    }
+  }
+
+  get defaultKey(): string {
+    return this.defaultKeyValue;
+  }
+
+  listAllProjects(): BotProjectConfig[] {
+    return [...this.byId.values()];
+  }
+
+  /** Полностью заменяет список проектов в памяти (без изменения default). */
+  replaceAll(projects: BotProjectConfig[]): void {
+    this.byId.clear();
     for (const project of projects) {
       this.byId.set(project.id.toLowerCase(), project);
     }
-    this.defaultKey = defaultProjectId.toLowerCase();
-    if (!this.byId.has(this.defaultKey)) {
-      throw new Error(`ProjectCatalog: default project «${defaultProjectId}» not found`);
+  }
+
+  /** Добавляет проект в каталог без перезапуска бота. */
+  addProject(project: BotProjectConfig): void {
+    const key = project.id.toLowerCase();
+    if (this.byId.has(key)) {
+      throw new Error(`Проект с id «${project.id}» уже существует`);
     }
+    for (const existing of this.byId.values()) {
+      if (existing.name.toLowerCase() === project.name.toLowerCase()) {
+        throw new Error(`Проект с названием «${project.name}» уже существует`);
+      }
+    }
+    this.byId.set(key, project);
   }
 
   get defaultProject(): BotProjectConfig {

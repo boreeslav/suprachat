@@ -126,6 +126,33 @@ npm start
 npm run dev
 ```
 
+## Автозапуск и устойчивость
+
+Бот супервизируется `scripts/watchdog.ps1`: при ненулевом коде выхода он поднимает процесс
+заново. Чтобы бот **не лежал насовсем** после случайного прерывания, на сигнал завершения
+(Ctrl+C, закрытие окна консоли, logoff) бот выходит кодом `42` («перезапустить»), а не `0`.
+
+**Штатная остановка** (чтобы watchdog НЕ перезапускал):
+
+```bat
+stop.cmd
+```
+
+Создаёт маркер `data/watchdog.stop` и гасит watchdog + процесс бота. Пока маркер существует,
+watchdog не перезапускает бот; автозапуск удалит маркер и поднимет бот при следующем входе.
+
+**Автозапуск при входе в систему** (переживает перезагрузку, не зависит от окна консоли):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-autostart.ps1          # зарегистрировать
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-autostart.ps1 -Start    # и сразу запустить
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\uninstall-autostart.ps1         # удалить автозапуск
+```
+
+Регистрирует Scheduled Task `CursorBot Watchdog` (триггер — вход пользователя, автоперезапуск
+при сбое, скрытое окно). Прав администратора не требует. Ограничение: при выходе из системы
+(logoff) бот останавливается и поднимается при следующем входе.
+
 ## Архитектура
 
 ```

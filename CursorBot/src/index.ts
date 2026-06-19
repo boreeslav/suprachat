@@ -1,4 +1,6 @@
+import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { BOT_RESTART_EXIT_CODE } from "./bot-restart.js";
 import { loadConfig } from "./config.js";
 import { CursorBridge } from "./cursor-bridge.js";
 import { installFileLogger } from "./file-logger.js";
@@ -127,20 +129,33 @@ async function main(): Promise<void> {
 
   const pingTimer = setInterval(() => api.pingWebSocket(), 60_000);
 
+  // Явный («штатный») стоп помечается файлом data/watchdog.stop (его создаёт stop-bot.ps1
+  // и проверяет watchdog.ps1). Если файла нет, сигнал считаем нештатным (закрытие окна
+  // консоли, logoff, случайный Ctrl+C) и выходим кодом 42 — watchdog поднимет бот заново,
+  // чтобы он не «лежал насовсем» после любого прерывания.
+  const stopFile = join(dirname(config.stateFile), "watchdog.stop");
+
   const shutdown = async (signal: string) => {
     if (shuttingDown) return;
     shuttingDown = true;
-    log(`Остановка (${signal})…`);
+    const intentional = existsSync(stopFile);
+    const exitCode = intentional ? 0 : BOT_RESTART_EXIT_CODE;
+    log(
+      `Остановка (${signal})… ${intentional ? "штатный стоп (код 0)" : `перезапуск через watchdog (код ${exitCode})`}`,
+    );
     clearInterval(pingTimer);
     persistState();
     api.disconnectWebSocket();
     await cursor.dispose({ cancelActiveRuns: false });
     await state.flush();
-    process.exit(0);
+    process.exit(exitCode);
   };
 
   process.on("SIGINT", () => void shutdown("SIGINT"));
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
+  // На Windows SIGHUP приходит при закрытии окна консоли, SIGBREAK — Ctrl+Break.
+  process.on("SIGHUP", () => void shutdown("SIGHUP"));
+  process.on("SIGBREAK", () => void shutdown("SIGBREAK"));
 
   log("CursorBot запущен. Ожидание сообщений…");
 

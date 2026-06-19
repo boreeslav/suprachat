@@ -147,7 +147,7 @@
 	border: 1px solid var(--m-menu-border);
 	border-radius: 10px;
 	min-width: 160px;
-	z-index: 100;
+	z-index: 10055;
 	box-shadow: 0 4px 20px rgba(0, 0, 0, .15);
 	transition: background .3s;
 }
@@ -222,10 +222,8 @@
 	border: 1px solid var(--m-menu-border);
 	border-radius: 10px;
 	min-width: 170px;
-	z-index: 101;
+	z-index: 10060;
 	box-shadow: 0 4px 20px rgba(0, 0, 0, .15);
-	max-height: 320px;
-	overflow-y: auto;
 }
 
 .mc-submenu--open {
@@ -4846,9 +4844,6 @@ html.sm-mobile-viewport .mapp-root.mapp-no-ui {
 	z-index: 9999;
 	min-width: 200px;
 	max-width: min(320px, calc(100vw - 16px));
-	max-height: min(320px, 50vh);
-	overflow-y: auto;
-	-webkit-overflow-scrolling: touch;
 	background: var(--m-menu-bg, #fff);
 	border: 1px solid var(--m-menu-border, #e5e5e5);
 	border-radius: 10px;
@@ -4856,6 +4851,10 @@ html.sm-mobile-viewport .mapp-root.mapp-no-ui {
 	padding: 4px 0;
 	font-size: 14px;
 	overflow: visible;
+}
+
+.mapp-chat-context-menu .mc-menu-scroll {
+	border-radius: 10px;
 }
 .mapp-context-menu-item {
 	display: flex;
@@ -4924,10 +4923,84 @@ html.sm-mobile-viewport .mapp-root.mapp-no-ui {
 	border-radius: 10px;
 	box-shadow: 0 4px 20px rgba(0,0,0,.12);
 	padding: 4px 0;
-	z-index: 1;
+	z-index: 10060;
+	overflow: visible;
 }
 .mapp-context-submenu--open {
 	display: block;
+}
+
+/* ===== SHARED MENU SCROLL AFFORDANCE ===== */
+/* Hidden scrollbars + hover-to-autoscroll arrows for any long menu. */
+.mc-scroll-menu {
+	position: relative;
+	overflow: visible;
+}
+
+.mc-menu-scroll {
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.mc-scroll-area {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+	-webkit-overflow-scrolling: touch;
+}
+
+.mc-scroll-area::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+	display: none;
+}
+
+.mc-scroll-arrow {
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 26px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+	opacity: 0;
+	z-index: 6;
+	color: var(--m-menu-text, #1c1c1e);
+	transition: opacity .15s ease;
+}
+
+.mc-scroll-arrow--visible {
+	opacity: .85;
+	pointer-events: auto;
+}
+
+.mc-scroll-arrow svg {
+	display: block;
+	filter: drop-shadow(0 0 2px var(--m-menu-bg, #fff));
+}
+
+.mc-scroll-arrow--top {
+	top: 0;
+	border-radius: 10px 10px 0 0;
+	background: linear-gradient(to bottom, var(--m-menu-bg, #fff) 35%, transparent);
+}
+
+.mc-scroll-arrow--bottom {
+	bottom: 0;
+	border-radius: 0 0 10px 10px;
+	background: linear-gradient(to top, var(--m-menu-bg, #fff) 35%, transparent);
+}
+
+.mc-scroll-arrow--visible:hover {
+	opacity: 1;
+}
+
+/* On touch devices the arrows are a passive hint; users swipe/scroll instead. */
+@media (hover: none) {
+	.mc-scroll-arrow {
+		pointer-events: none !important;
+	}
 }
 
 /* ===== MOBILE BOTTOM SHEET MENU ===== */
@@ -5053,6 +5126,14 @@ body.mapp-scroll-lock .mapp-bottom-sheet {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.mapp-sheet-list-host {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
 }
 
 .mapp-sheet-list {

@@ -19,6 +19,8 @@ import {
   parseActionCommand,
 } from "./action-handler.js";
 import { ActionMgmtHandler, isMetaActionId, parseMetaActionId } from "./action-mgmt-handler.js";
+import { ProjectAddHandler } from "./project-add-handler.js";
+import { PROJECT_ADD_CMD } from "./bot-menu.js";
 import { scheduleSafeRestart } from "./bot-restart.js";
 import { writeRestartNotice } from "./restart-notice.js";
 import { parseSessionCommand, parseSessionKey, makeSessionKey, isSessionCommand, SESSION_CMD_PREFIX, UI_CANCEL_CMD } from "./session-keys.js";
@@ -32,7 +34,6 @@ import {
   ThoughtStatusPublisher,
   type AgentProgressEvent,
 } from "./thought-status.js";
-
 /** id действия перезапуска из actions.json — обрабатывается внутри бота, без дочернего скрипта. */
 const RESTART_ACTION_ID = "bot-restart";
 
@@ -135,6 +136,7 @@ export class MessageHandler {
   private readonly assistantHandler: AssistantHandler;
   private readonly actionHandler: ActionHandler;
   private readonly actionMgmt: ActionMgmtHandler;
+  private readonly projectAdd: ProjectAddHandler;
 
   constructor(
     private readonly api: SupraBotApi,
@@ -150,6 +152,7 @@ export class MessageHandler {
     this.assistantHandler = new AssistantHandler(api, cursor, config.bot.assistant, config);
     this.actionHandler = new ActionHandler(api, config);
     this.actionMgmt = new ActionMgmtHandler(api, cursor, sessions, config);
+    this.projectAdd = new ProjectAddHandler(config, projects, cursor, sessions, menuManager);
   }
 
   private isAllowedUser(update: BotApiMessage): boolean {
@@ -181,7 +184,9 @@ export class MessageHandler {
     }
     if (text === "/model" || text.startsWith("/model ")) return true;
     if (text === "/project" || text.startsWith("/project ")) return true;
+    if (text === PROJECT_ADD_CMD || text.startsWith(`${PROJECT_ADD_CMD} `)) return true;
     if (update.buttonPress && text && isScriptActionUiCommand(text)) return true;
+    if (update.contentType === "web_app_data" && update.webAppData) return true;
     return false;
   }
 
@@ -213,6 +218,11 @@ export class MessageHandler {
     const text = isMcContentText(textRaw) ? "" : textRaw;
 
     if (this.isPrioritizedMessage(update, text)) {
+      await this.handleMessage(update, dedupeKey);
+      return;
+    }
+
+    if (this.projectAdd.hasPending(update.chatId)) {
       await this.handleMessage(update, dedupeKey);
       return;
     }
@@ -278,6 +288,24 @@ export class MessageHandler {
       }
 
       if (text && (await this.tryHandleActionInput(update, text))) {
+        return;
+      }
+
+      if (this.projectAdd.isAddCommand(text)) {
+        await this.deleteIncomingUserMessage(update);
+        await this.projectAdd.startAdd(update, (u, t) => this.reply(u, t).then(() => undefined));
+        return;
+      }
+
+      if (
+        text
+        && !text.startsWith("/")
+        && (await this.projectAdd.tryHandlePending(
+          update,
+          text,
+          (u, t) => this.reply(u, t).then(() => undefined),
+        ))
+      ) {
         return;
       }
 
@@ -525,6 +553,11 @@ export class MessageHandler {
       }
       if (this.actionMgmt.hasPending(update.chatId)) {
         this.actionMgmt.clearPending(update.chatId);
+        await this.reply(update, "Отменено.");
+        return true;
+      }
+      if (this.projectAdd.hasPending(update.chatId)) {
+        this.projectAdd.clearPending(update.chatId);
         await this.reply(update, "Отменено.");
         return true;
       }

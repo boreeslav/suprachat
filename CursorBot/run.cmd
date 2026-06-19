@@ -120,7 +120,8 @@ if exist "data\watchdog.pid" (
 )
 
 echo.
-echo [RUN] Запуск бота. Ctrl+C — остановка. После сбоя — перезапуск через %RESTART_SEC% с.
+echo [RUN] Запуск бота. После сбоя/прерывания — перезапуск через %RESTART_SEC% с.
+echo        Штатная остановка: stop.cmd (создаёт data\watchdog.stop). Ctrl+C перезапускает бот.
 echo.
 
 :run_loop

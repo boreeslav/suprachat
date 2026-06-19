@@ -1,5 +1,4 @@
-import { existsSync } from "node:fs";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   mergeAssistantConfig,
@@ -93,4 +92,39 @@ export function loadBotSettings(filePath: string): BotSettings {
     projects,
     assistant: mergeAssistantConfig(parsed.assistant),
   };
+}
+
+/** Добавляет проект в bot-config.json, сохраняя остальные поля файла. */
+export function appendProjectToSettings(
+  filePath: string,
+  project: BotProjectConfig,
+  storedPath: string,
+): void {
+  const absPath = resolve(filePath);
+  if (!existsSync(absPath)) {
+    throw new Error(`Файл настроек бота не найден: ${absPath}`);
+  }
+
+  let parsed: BotSettingsFile;
+  try {
+    parsed = JSON.parse(readFileSync(absPath, "utf8")) as BotSettingsFile;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Не удалось прочитать ${absPath}: ${msg}`);
+  }
+
+  const projects = [...(parsed.projects ?? [])];
+  const key = project.id.toLowerCase();
+  if (projects.some((p) => (p.id ?? "").trim().toLowerCase() === key)) {
+    throw new Error(`Проект с id «${project.id}» уже есть в ${absPath}`);
+  }
+
+  projects.push({
+    id: project.id,
+    name: project.name,
+    path: storedPath.trim(),
+  });
+  parsed.projects = projects;
+
+  writeFileSync(absPath, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
 }

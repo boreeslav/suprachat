@@ -14,6 +14,12 @@ public sealed class MiniAppChannelService
 
     private readonly ConcurrentDictionary<string, SessionChannel> _byToken = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<(Guid MessageId, Guid ViewerUserId), string> _byMessageUser = new();
+    private readonly MiniAppWebSocketManager _webSockets;
+
+    public MiniAppChannelService(MiniAppWebSocketManager webSockets)
+    {
+        _webSockets = webSockets;
+    }
 
     public void RegisterSession(MiniAppSessionService.MiniAppSession session)
     {
@@ -45,6 +51,7 @@ public sealed class MiniAppChannelService
             return (false, 0, "Сессия принадлежит другому боту");
 
         var seq = channel.Enqueue(payloadJson);
+        _ = _webSockets.SendDataAsync(sessionToken.Trim(), seq, payloadJson);
         return (true, seq, null);
     }
 

@@ -9,6 +9,7 @@
     "start:supervised": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/watchdog.ps1",
     "start:tsx": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
+    "feed": "tsx src/tggate-feed-demo.ts",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

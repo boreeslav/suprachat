@@ -2143,10 +2143,17 @@ class MessengerMenuBuilder {
 		buildMenu(items, rootEl, options = {}) {
 		const menu = document.createElement('div');
 		menu.className = 'mc-action-menu';
-		if (options.scrollable !== false) menu.classList.add('mc-action-menu--scrollable');
 		this.#themeManager.applyChatVars(menu);
 		if (rootEl) this.#themeManager.applyChatVars(rootEl);
 		items.forEach(def => menu.appendChild(this.#buildItem(def)));
+		if (options.scrollable !== false) {
+			menu.classList.add('mc-action-menu--scrollable');
+			requestAnimationFrame(() => {
+				if (!menu.isConnected) return;
+				const cap = Math.min(320, Math.round((window.innerHeight || 640) * 0.5));
+				makeMenuScrollable(menu, { maxHeight: cap });
+			});
+		}
 		return menu;
 	}
 
@@ -2354,6 +2361,218 @@ const MESSENGER_SHEET_CHECK_SVG = `<svg width="16" height="16" viewBox="0 0 24 2
 
 function isMobileSheetMenu() {
 	return window.innerWidth <= 1199;
+}
+
+/* ===========================================================================
+ * Shared menu infrastructure: viewport-aware positioning + graceful scrolling.
+ * Used by every desktop click-menu (header dropdown, context menus, submenus)
+ * and the mobile bottom sheet so nothing ever opens off-screen and long menus
+ * scroll without visible scrollbars (hover-to-autoscroll affordance on desktop,
+ * swipe/scroll on touch).
+ * ========================================================================= */
+
+const MENU_VIEWPORT_MARGIN = 8;
+const MENU_SCROLL_ITEM_THRESHOLD = 10;
+const MENU_AUTOSCROLL_SPEED = 9;
+const MENU_SCROLL_CHEVRON_UP = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg>`;
+const MENU_SCROLL_CHEVRON_DOWN = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+
+function getMenuViewport() {
+	return {
+		w: window.innerWidth || document.documentElement.clientWidth || 0,
+		h: window.innerHeight || document.documentElement.clientHeight || 0,
+	};
+}
+
+/** Measure pixel height that shows exactly `threshold` items (+ a peek of the next),
+ *  so a long menu reveals ~10.5 rows and the rest scrolls. Returns null when the
+ *  menu has `threshold` items or fewer. */
+function measureMenuItemsCap(scrollEl, threshold) {
+	const kids = Array.from(scrollEl.children).filter(el => el.nodeType === 1);
+	if (kids.length <= threshold) return null;
+	const ref = kids[threshold];
+	if (!ref) return null;
+	const baseTop = scrollEl.getBoundingClientRect().top - scrollEl.scrollTop;
+	const refRect = ref.getBoundingClientRect();
+	const h = (refRect.top - baseTop) + Math.round(refRect.height * 0.45);
+	const padBottom = parseFloat(getComputedStyle(scrollEl).paddingBottom) || 0;
+	return Math.max(Math.round(h + padBottom), 80);
+}
+
+/** Adds a hidden-scrollbar scroll area with top/bottom hover-autoscroll arrows.
+ *  Idempotent: safe to call repeatedly for reused menus. */
+function attachMenuScrollAffordance(scrollEl, hostEl) {
+	scrollEl.classList.add('mc-scroll-area');
+	if (scrollEl._menuScrollState) {
+		scrollEl._menuScrollState.update();
+		return scrollEl._menuScrollState.cleanup;
+	}
+
+	const topArrow = document.createElement('div');
+	topArrow.className = 'mc-scroll-arrow mc-scroll-arrow--top';
+	topArrow.innerHTML = MENU_SCROLL_CHEVRON_UP;
+	const bottomArrow = document.createElement('div');
+	bottomArrow.className = 'mc-scroll-arrow mc-scroll-arrow--bottom';
+	bottomArrow.innerHTML = MENU_SCROLL_CHEVRON_DOWN;
+	hostEl.appendChild(topArrow);
+	hostEl.appendChild(bottomArrow);
+
+	let raf = 0;
+	let dir = 0;
+	const tick = () => {
+		if (!dir) { raf = 0; return; }
+		scrollEl.scrollTop += dir * MENU_AUTOSCROLL_SPEED;
+		update();
+		raf = requestAnimationFrame(tick);
+	};
+	const start = (d) => { dir = d; if (!raf) raf = requestAnimationFrame(tick); };
+	const stop = () => { dir = 0; if (raf) { cancelAnimationFrame(raf); raf = 0; } };
+
+	function update() {
+		const max = scrollEl.scrollHeight - scrollEl.clientHeight;
+		const canScroll = max > 1;
+		const atTop = scrollEl.scrollTop <= 1;
+		const atBottom = scrollEl.scrollTop >= max - 1;
+		topArrow.classList.toggle('mc-scroll-arrow--visible', canScroll && !atTop);
+		bottomArrow.classList.toggle('mc-scroll-arrow--visible', canScroll && !atBottom);
+		if (dir < 0 && atTop) stop();
+		if (dir > 0 && atBottom) stop();
+	}
+
+	topArrow.addEventListener('pointerenter', () => start(-1));
+	topArrow.addEventListener('pointerleave', stop);
+	bottomArrow.addEventListener('pointerenter', () => start(1));
+	bottomArrow.addEventListener('pointerleave', stop);
+	topArrow.addEventListener('pointerdown', (e) => {
+		if (e.pointerType === 'touch') scrollEl.scrollBy({ top: -scrollEl.clientHeight * 0.7, behavior: 'smooth' });
+	});
+	bottomArrow.addEventListener('pointerdown', (e) => {
+		if (e.pointerType === 'touch') scrollEl.scrollBy({ top: scrollEl.clientHeight * 0.7, behavior: 'smooth' });
+	});
+	scrollEl.addEventListener('scroll', update, { passive: true });
+
+	let ro = null;
+	if (typeof ResizeObserver !== 'undefined') {
+		ro = new ResizeObserver(() => update());
+		ro.observe(scrollEl);
+	}
+	requestAnimationFrame(update);
+
+	const cleanup = () => { stop(); ro?.disconnect(); };
+	scrollEl._menuScrollState = { update, cleanup };
+	return cleanup;
+}
+
+/** Wraps a menu's direct children into a hidden-scrollbar scroll area, caps its
+ *  height (by item count and/or an explicit max) and wires the autoscroll arrows.
+ *  Returns the inner scroll element. Idempotent for reused menus. */
+function makeMenuScrollable(menuEl, { threshold = MENU_SCROLL_ITEM_THRESHOLD, maxHeight = null } = {}) {
+	let scroll = menuEl._menuScrollEl;
+	if (!scroll || scroll.parentNode !== menuEl) {
+		scroll = document.createElement('div');
+		scroll.className = 'mc-menu-scroll';
+		const kids = Array.from(menuEl.childNodes);
+		kids.forEach(k => scroll.appendChild(k));
+		menuEl.appendChild(scroll);
+		menuEl.classList.add('mc-scroll-menu');
+		menuEl._menuScrollEl = scroll;
+	}
+
+	scroll.style.maxHeight = '';
+	let cap = (typeof maxHeight === 'number' && isFinite(maxHeight)) ? maxHeight : null;
+	const byCount = measureMenuItemsCap(scroll, threshold);
+	if (byCount != null) cap = cap == null ? byCount : Math.min(cap, byCount);
+	if (cap != null) scroll.style.maxHeight = Math.max(Math.round(cap), 60) + 'px';
+
+	attachMenuScrollAffordance(scroll, menuEl);
+	return scroll;
+}
+
+/** Positions a floating menu (position:fixed, appended to body / a positioned
+ *  ancestor) so it always stays within the viewport; long menus get scrolling. */
+function placeFloatingMenu(menuEl, { anchorRect = null, point = null, align = 'start', prefer = 'below', threshold = MENU_SCROLL_ITEM_THRESHOLD } = {}) {
+	const margin = MENU_VIEWPORT_MARGIN;
+	const vp = getMenuViewport();
+	menuEl.style.position = 'fixed';
+	menuEl.style.right = 'auto';
+	menuEl.style.bottom = 'auto';
+	menuEl.style.left = '0px';
+	menuEl.style.top = '0px';
+	menuEl.style.maxHeight = '';
+
+	let rect = menuEl.getBoundingClientRect();
+	let natH = rect.height;
+
+	let x;
+	let y;
+	let availH;
+
+	if (anchorRect) {
+		const spaceBelow = vp.h - anchorRect.bottom - margin;
+		const spaceAbove = anchorRect.top - margin;
+		let placeAbove;
+		if (prefer === 'above') placeAbove = spaceAbove >= natH || spaceAbove >= spaceBelow;
+		else placeAbove = spaceBelow < natH && spaceAbove > spaceBelow;
+		availH = Math.max(placeAbove ? spaceAbove : spaceBelow, 96);
+		makeMenuScrollable(menuEl, { threshold, maxHeight: availH });
+		rect = menuEl.getBoundingClientRect();
+		y = placeAbove ? (anchorRect.top - rect.height - 6) : (anchorRect.bottom + 6);
+		x = (align === 'end') ? (anchorRect.right - rect.width) : anchorRect.left;
+	} else if (point) {
+		availH = vp.h - 2 * margin;
+		makeMenuScrollable(menuEl, { threshold, maxHeight: availH });
+		rect = menuEl.getBoundingClientRect();
+		x = point.x;
+		y = point.y;
+	} else {
+		availH = vp.h - 2 * margin;
+		makeMenuScrollable(menuEl, { threshold, maxHeight: availH });
+		rect = menuEl.getBoundingClientRect();
+		x = margin;
+		y = margin;
+	}
+
+	const mw = rect.width;
+	const mh = rect.height;
+	if (x + mw > vp.w - margin) x = vp.w - margin - mw;
+	if (x < margin) x = margin;
+	if (y + mh > vp.h - margin) y = vp.h - margin - mh;
+	if (y < margin) y = margin;
+
+	menuEl.style.left = Math.round(x) + 'px';
+	menuEl.style.top = Math.round(y) + 'px';
+}
+
+/** Positions a flyout submenu beside its parent item, flipping side / shifting
+ *  vertically to stay on-screen, with scrolling for long lists. */
+function placeFlyoutSubmenu(subEl, anchorRect, { threshold = MENU_SCROLL_ITEM_THRESHOLD } = {}) {
+	const margin = MENU_VIEWPORT_MARGIN;
+	const vp = getMenuViewport();
+	subEl.style.position = 'fixed';
+	subEl.style.right = 'auto';
+	subEl.style.bottom = 'auto';
+	subEl.style.left = '0px';
+	subEl.style.top = '0px';
+	subEl.style.maxHeight = '';
+
+	makeMenuScrollable(subEl, { threshold, maxHeight: vp.h - 2 * margin });
+	const rect = subEl.getBoundingClientRect();
+	const sw = rect.width;
+	const sh = rect.height;
+
+	let x = anchorRect.right - 1;
+	if (x + sw > vp.w - margin) {
+		const leftX = anchorRect.left - sw + 1;
+		x = leftX >= margin ? leftX : (vp.w - margin - sw);
+	}
+	if (x < margin) x = margin;
+
+	let y = anchorRect.top - 4;
+	if (y + sh > vp.h - margin) y = vp.h - margin - sh;
+	if (y < margin) y = margin;
+
+	subEl.style.left = Math.round(x) + 'px';
+	subEl.style.top = Math.round(y) + 'px';
 }
 
 let _lastPrimaryPointerType = 'mouse';
@@ -2621,8 +2840,15 @@ class MobileBottomSheetMenu {
 				list.appendChild(row);
 			});
 
-			sheet.append(grabZone, header, list);
-			requestAnimationFrame(() => onSheetReady?.(sheet));
+			const listHost = document.createElement('div');
+			listHost.className = 'mapp-sheet-list-host';
+			listHost.appendChild(list);
+
+			sheet.append(grabZone, header, listHost);
+			requestAnimationFrame(() => {
+				attachMenuScrollAffordance(list, listHost);
+				onSheetReady?.(sheet);
+			});
 		};
 
 		const teardown = () => {
@@ -3726,7 +3952,10 @@ function presentContextActionMenu(sheetItems, {
 				subMenu.appendChild(cItem);
 			});
 			subItem.appendChild(subMenu);
-			subItem.addEventListener('mouseenter', () => subMenu.classList.add('mapp-context-submenu--open'));
+			subItem.addEventListener('mouseenter', () => {
+				subMenu.classList.add('mapp-context-submenu--open');
+				placeFlyoutSubmenu(subMenu, subItem.getBoundingClientRect());
+			});
 			subItem.addEventListener('mouseleave', () => subMenu.classList.remove('mapp-context-submenu--open'));
 			menu.appendChild(subItem);
 		} else {
@@ -3736,31 +3965,13 @@ function presentContextActionMenu(sheetItems, {
 
 	document.body.appendChild(menu);
 
-	let x = clientX;
-	let y = clientY;
 	if (anchorEl instanceof HTMLElement) {
-		const rect = anchorEl.getBoundingClientRect();
-		const mw = menu.offsetWidth;
-		const mh = menu.offsetHeight;
-		x = rect.left;
-		y = rect.top - mh - 8;
-		if (y < 4) y = rect.bottom + 8;
-		if (x + mw > window.innerWidth) x = window.innerWidth - mw - 4;
-		if (x < 4) x = 4;
-	} else if (typeof x !== 'number' || typeof y !== 'number') {
-		x = 4;
-		y = 4;
+		placeFloatingMenu(menu, { anchorRect: anchorEl.getBoundingClientRect(), align: 'start', prefer: 'above' });
+	} else if (typeof clientX === 'number' && typeof clientY === 'number') {
+		placeFloatingMenu(menu, { point: { x: clientX, y: clientY } });
 	} else {
-		const mw = menu.offsetWidth;
-		const mh = menu.offsetHeight;
-		if (x + mw > window.innerWidth) x = window.innerWidth - mw - 4;
-		if (y + mh > window.innerHeight) y = window.innerHeight - mh - 4;
-		if (x < 4) x = 4;
-		if (y < 4) y = 4;
+		placeFloatingMenu(menu, {});
 	}
-
-	menu.style.left = x + 'px';
-	menu.style.top = y + 'px';
 	attachMenuDismiss(menu, closeMenu);
 	return closeMenu;
 }
@@ -17598,7 +17809,10 @@ class MessengerSidebar {
 					subMenu.appendChild(fItem);
 				});
 				folderItem.appendChild(subMenu);
-				folderItem.addEventListener('mouseenter', () => subMenu.classList.add('mapp-context-submenu--open'));
+				folderItem.addEventListener('mouseenter', () => {
+					subMenu.classList.add('mapp-context-submenu--open');
+					placeFlyoutSubmenu(subMenu, folderItem.getBoundingClientRect());
+				});
 				folderItem.addEventListener('mouseleave', () => subMenu.classList.remove('mapp-context-submenu--open'));
 				menu.appendChild(folderItem);
 			} else {
@@ -17607,14 +17821,7 @@ class MessengerSidebar {
 		});
 
 		document.body.appendChild(menu);
-		const mw = menu.offsetWidth;
-		const mh = menu.offsetHeight;
-		let x = e.clientX;
-		let y = e.clientY;
-		if (x + mw > window.innerWidth) x = window.innerWidth - mw - 4;
-		if (y + mh > window.innerHeight) y = window.innerHeight - mh - 4;
-		menu.style.left = x + 'px';
-		menu.style.top = y + 'px';
+		placeFloatingMenu(menu, { point: { x: e.clientX, y: e.clientY } });
 
 		attachMenuDismiss(menu, () => menu.remove());
 	}
@@ -27434,6 +27641,7 @@ class MessengerChatPanel {
 			if (!willOpen) {
 				dropdown.closeSubmenus?.();
 			} else {
+				placeFloatingMenu(dropdown, { anchorRect: dotsBtn.getBoundingClientRect(), align: 'end', prefer: 'below' });
 				dropdown._dismissCleanup?.();
 				dropdown._dismissCleanup = attachMenuDismiss(dropdown, () => {
 					dropdown.classList.remove('mc-menu--open');
@@ -28087,7 +28295,8 @@ class MessengerChatPanel {
 			menu.querySelectorAll('.mc-submenu--open').forEach(el => {
 				if (el !== submenu) el.classList.remove('mc-submenu--open');
 			});
-			submenu.classList.toggle('mc-submenu--open');
+			const opened = submenu.classList.toggle('mc-submenu--open');
+			if (opened) placeFlyoutSubmenu(submenu, encItem.getBoundingClientRect());
 		});
 		encItem.appendChild(submenu);
 		menu.appendChild(encItem);

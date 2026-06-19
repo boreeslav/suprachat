@@ -299,4 +299,17 @@ export class BotMenuManager {
       }
     }
   }
+
+  /** Перепубликует меню после изменения списка проектов (без перезапуска бота). */
+  async refreshAfterProjectsChanged(chatIds: string[]): Promise<void> {
+    this.globalPublished = false;
+    this.globalGroupPublished = false;
+    for (const chatId of chatIds) {
+      this.publishedFingerprints.delete(chatId);
+    }
+    await this.publishGlobal(true);
+    if (chatIds.length) {
+      await this.publishAllKnownChats(chatIds, true);
+    }
+  }
 }

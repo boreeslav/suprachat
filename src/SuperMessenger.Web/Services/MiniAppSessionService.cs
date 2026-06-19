@@ -10,10 +10,12 @@ public sealed class MiniAppSessionService
 
     private readonly ConcurrentDictionary<string, MiniAppSession> _sessions = new(StringComparer.Ordinal);
     private readonly MiniAppChannelService _channel;
+    private readonly MiniAppWebSocketManager _webSockets;
 
-    public MiniAppSessionService(MiniAppChannelService channel)
+    public MiniAppSessionService(MiniAppChannelService channel, MiniAppWebSocketManager webSockets)
     {
         _channel = channel;
+        _webSockets = webSockets;
     }
 
     public string CreateSession(
@@ -64,6 +66,7 @@ public sealed class MiniAppSessionService
     {
         _sessions.TryRemove(token, out _);
         _channel.UnregisterSession(token);
+        _webSockets.CloseSession(token);
     }
 
     void PurgeExpired()

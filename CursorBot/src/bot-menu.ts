@@ -32,6 +32,23 @@ function projectMenuItem(id: string, item: MenuProjectItem, activeKey: string): 
   };
 }
 
+export const PROJECT_ADD_CMD = "/project add";
+
+function buildProjectSubmenu(
+  projectItems: MenuProjectItem[],
+  activeKey: string,
+): BotApiMenuItemDto[] {
+  const items = projectItems.map((item, index) =>
+    projectMenuItem(`project-${index}`, item, activeKey),
+  );
+  items.push({
+    id: "project-add",
+    text: "Добавить",
+    message: PROJECT_ADD_CMD,
+  });
+  return items;
+}
+
 export function buildBotMenu(
   activeMode: CursorBotMode = "agent",
   activeModel: string = "auto",
@@ -63,15 +80,11 @@ export function buildBotMenu(
     });
   }
 
-  if (projectItems.length > 0) {
-    items.push({
-      id: "project",
-      text: "Проект",
-      submenu: projectItems.map((item, index) =>
-        projectMenuItem(`project-${index}`, item, activeProject),
-      ),
-    });
-  }
+  items.push({
+    id: "project",
+    text: "Проект",
+    submenu: buildProjectSubmenu(projectItems, activeProject),
+  });
 
   items.push(
     {

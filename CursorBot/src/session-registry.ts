@@ -31,6 +31,13 @@ export class SessionRegistry {
     this.state.ensureChatRoom(chatId);
   }
 
+  setRoomDefaultProject(chatId: string, projectId: string): void {
+    this.ensureRoom(chatId);
+    const room = this.state.getChatRoom(chatId)!;
+    room.defaultProjectId = projectId;
+    this.state.setChatRoom(chatId, room);
+  }
+
   getActiveSessionId(chatId: string): string | null {
     const room = this.state.getChatRoom(chatId);
     if (!room) return null;
@@ -197,5 +204,9 @@ export class SessionRegistry {
 
   flushState(): Promise<void> {
     return this.state.flush();
+  }
+
+  listKnownChatIds(): string[] {
+    return this.state.listChatRoomIds();
   }
 }
