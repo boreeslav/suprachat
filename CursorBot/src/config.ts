@@ -19,6 +19,8 @@ export interface AppConfig {
     thoughtMaxChars: number;
     /** Макс. размер входящего файла (байты). */
     maxFileBytes: number;
+    /** Мастер-пароль шифрования бота (опционально). Без него бот работает в открытом режиме. */
+    masterPassword: string | null;
   };
   cursor: {
     apiKey: string;
@@ -79,6 +81,7 @@ export function loadConfig(): AppConfig {
       thoughtUpdateIntervalMs: Number(process.env.SUPRA_THOUGHT_UPDATE_MS) || 3500,
       thoughtMaxChars: Number(process.env.SUPRA_THOUGHT_MAX_CHARS) || 600,
       maxFileBytes: Number(process.env.SUPRA_MAX_FILE_BYTES) || 100 * 1024 * 1024,
+      masterPassword: process.env.SUPRA_BOT_MASTER_PASSWORD?.trim() || null,
     },
     cursor: {
       apiKey: requireEnv("CURSOR_API_KEY"),

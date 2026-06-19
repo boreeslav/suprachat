@@ -76,6 +76,24 @@ public sealed class BotApiMeResponse
     public string? error { get; set; }
 }
 
+/// <summary>Состояние шифрования бота (для воспроизведения детерминированной RSA-пары на стороне бота).</summary>
+public sealed class BotApiEncryptionStatusResponse
+{
+    public bool success { get; set; }
+    public bool configured { get; set; }
+    public string? salt { get; set; }
+    public string? publicKey { get; set; }
+    public string? privateKeyBlob { get; set; }
+    public string? error { get; set; }
+}
+
+/// <summary>Результат публикации ключей шифрования бота.</summary>
+public sealed class BotApiEncryptionSetupResponse
+{
+    public bool success { get; set; }
+    public string? error { get; set; }
+}
+
 public sealed class BotApiSendActivityResponse
 {
     public bool success { get; set; }

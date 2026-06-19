@@ -15,6 +15,7 @@ import { deliverRestartNotice } from "./restart-notice.js";
 import { SessionRegistry } from "./session-registry.js";
 import { StateStore } from "./state-store.js";
 import { SupraBotApi } from "./supra-bot-api.js";
+import { initBotEncryption } from "./crypto/bot-encryption.js";
 
 installFileLogger(resolve(process.env.STATE_FILE?.trim() ? dirname(process.env.STATE_FILE.trim()) : "data", "bot.log"));
 installProcessGuard();
@@ -50,6 +51,14 @@ async function main(): Promise<void> {
   }
 
   log(`Бот: ${me.name} (${me.login}), id=${me.botUserId}`);
+
+  const encryption = await initBotEncryption(
+    api,
+    config.supra.masterPassword,
+    me.botUserId ?? "",
+    log,
+  );
+  log(`Шифрование бота: ${encryption ? "включено" : "выключено (открытый режим)"}`);
 
   const projectCatalog = new ProjectCatalog(
     config.bot.projects,

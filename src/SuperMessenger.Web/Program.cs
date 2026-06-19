@@ -33,7 +33,8 @@ builder.Services.AddSingleton<SupraMessengerService>();
 builder.Services.AddSingleton<BotApiService>(sp => new BotApiService(
     sp.GetRequiredService<IDataStore>(),
     sp.GetRequiredService<SupraMessengerService>(),
-    sp.GetRequiredService<ChatFileService>()));
+    sp.GetRequiredService<ChatFileService>(),
+    sp.GetRequiredService<SupraEncryptionService>()));
 builder.Services.AddSingleton<BotWebSocketManager>();
 builder.Services.AddSingleton<BotInboxNotifier>();
 builder.Services.AddSingleton<MiniAppWebSocketManager>();

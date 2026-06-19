@@ -71,6 +71,27 @@ export interface BotApiMeResponse {
   error?: string;
 }
 
+export interface BotApiEncryptionStatusResponse {
+  success: boolean;
+  configured?: boolean;
+  salt?: string | null;
+  publicKey?: string | null;
+  privateKeyBlob?: string | null;
+  error?: string;
+}
+
+export interface BotApiEncryptionSetupParams {
+  salt: string;
+  verifier: string;
+  publicKey: string;
+  privateKeyBlob: string;
+}
+
+export interface BotApiEncryptionSetupResponse {
+  success: boolean;
+  error?: string;
+}
+
 export interface BotApiSendWebAppDataResponse {
   success: boolean;
   seq?: number;
@@ -422,6 +443,18 @@ export class SupraBotApi {
 
   getMe(): Promise<BotApiMeResponse> {
     return this._request<BotApiMeResponse>("me", {}, "GET");
+  }
+
+  getEncryptionStatus(): Promise<BotApiEncryptionStatusResponse> {
+    return this._request<BotApiEncryptionStatusResponse>("encryptionStatus", {}, "GET");
+  }
+
+  setupEncryption(params: BotApiEncryptionSetupParams): Promise<BotApiEncryptionSetupResponse> {
+    return this._requestWithRetry<BotApiEncryptionSetupResponse>(
+      "encryptionSetup",
+      params as unknown as Record<string, unknown>,
+      "POST",
+    );
   }
 
   sendMessage(params: BotApiSendMessageParams): Promise<BotApiSendMessageResponse> {

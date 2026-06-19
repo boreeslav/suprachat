@@ -59,6 +59,33 @@ public sealed class BotApiController : ControllerBase
         return Ok(await _botApi.GetMeAsync(botUser, bot, ct));
     }
 
+    [HttpGet("encryptionStatus")]
+    [HttpPost("encryptionStatus")]
+    public async Task<IActionResult> EncryptionStatus(CancellationToken ct)
+    {
+        var p = await ReadParamsAsync(ct);
+        var auth = await AuthenticateParamsAsync(p, ct);
+        if (auth == null)
+            return Unauthorized(new BotApiEncryptionStatusResponse { success = false, error = "Unauthorized" });
+
+        var (botUser, _) = auth.Value;
+        return Ok(await _botApi.GetEncryptionStatusAsync(botUser, ct));
+    }
+
+    [HttpPost("encryptionSetup")]
+    public async Task<IActionResult> EncryptionSetup(CancellationToken ct)
+    {
+        var p = await ReadParamsAsync(ct);
+        var auth = await AuthenticateParamsAsync(p, ct);
+        if (auth == null)
+            return Unauthorized(new BotApiEncryptionSetupResponse { success = false, error = "Unauthorized" });
+
+        var (botUser, _) = auth.Value;
+        var response = await _botApi.SetupEncryptionAsync(
+            botUser, p.salt, p.verifier, p.publicKey, p.privateKeyBlob, ct);
+        return response.success ? Ok(response) : BadRequest(response);
+    }
+
     [HttpGet("sendMessage")]
     [HttpPost("sendMessage")]
     public async Task<IActionResult> SendMessage(CancellationToken ct)
@@ -917,6 +944,10 @@ public sealed class BotApiController : ControllerBase
             miniAppMessageId = Request.Query["miniAppMessageId"].ToString(),
             invisible = Request.Query["invisible"].ToString(),
             targetUserLogin = Request.Query["targetUserLogin"].ToString(),
+            salt = Request.Query["salt"].ToString(),
+            verifier = Request.Query["verifier"].ToString(),
+            publicKey = Request.Query["publicKey"].ToString(),
+            privateKeyBlob = Request.Query["privateKeyBlob"].ToString(),
         };
         result.photoFileIds = ParseQueryStringList(Request.Query["photoFileIds"]);
         result.attachmentFileIds = ParseQueryStringList(Request.Query["attachmentFileIds"]);
@@ -965,6 +996,10 @@ public sealed class BotApiController : ControllerBase
             result.miniAppMessageId = FirstNonEmpty(result.miniAppMessageId, GetString(root, "miniAppMessageId"));
             result.invisible = FirstNonEmpty(result.invisible, GetBoolString(root, "invisible"));
             result.targetUserLogin = FirstNonEmpty(result.targetUserLogin, GetString(root, "targetUserLogin"));
+            result.salt = FirstNonEmpty(result.salt, GetString(root, "salt"));
+            result.verifier = FirstNonEmpty(result.verifier, GetString(root, "verifier"));
+            result.publicKey = FirstNonEmpty(result.publicKey, GetString(root, "publicKey"));
+            result.privateKeyBlob = FirstNonEmpty(result.privateKeyBlob, GetString(root, "privateKeyBlob"));
             result.payload = root.TryGetProperty("payload", out var payloadEl)
                 ? JsonSerializer.Deserialize<object>(payloadEl.GetRawText(), MenuJsonOptions)
                 : result.payload;
@@ -1353,5 +1388,9 @@ public sealed class BotApiController : ControllerBase
         public BotApiMenuDto? assistantMenu { get; set; }
         public BotApiMenuDto? groupMenu { get; set; }
         public BotMiniAppManifestDto? miniApp { get; set; }
+        public string? salt { get; set; }
+        public string? verifier { get; set; }
+        public string? publicKey { get; set; }
+        public string? privateKeyBlob { get; set; }
     }
 }

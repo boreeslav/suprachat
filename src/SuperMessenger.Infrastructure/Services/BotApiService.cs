@@ -14,15 +14,18 @@ public sealed partial class BotApiService
     private readonly IDataStore _store;
     private readonly SupraMessengerService _messenger;
     private readonly ChatFileService _files;
+    private readonly SupraEncryptionService _encryption;
 
     public BotApiService(
         IDataStore store,
         SupraMessengerService messenger,
-        ChatFileService files)
+        ChatFileService files,
+        SupraEncryptionService encryption)
     {
         _store = store;
         _messenger = messenger;
         _files = files;
+        _encryption = encryption;
     }
 
     public async Task<(UserRecord botUser, BotRecord bot)?> AuthenticateAsync(
