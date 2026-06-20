@@ -773,13 +773,9 @@ public sealed partial class SupraMessengerService
         var chat = await _store.GetChannelBySlugAsync(slug, ct);
         if (chat == null) return [];
 
-        var messages = (await _store.GetMessagesByChatAsync(chat.Id, ct))
-            .Where(m => !m.DeletedForEveryone && !IsEncryptedPayload(m.Text))
-            .OrderByDescending(m => m.CreatedOn)
-            .ThenByDescending(m => m.Id)
-            .Take(Math.Max(1, Math.Min(limit, 100)))
-            .OrderBy(m => m.CreatedOn)
-            .ThenBy(m => m.Id)
+        var messages = OrderMessagesAsc(OrderMessagesDesc((await _store.GetMessagesByChatAsync(chat.Id, ct))
+            .Where(m => !m.DeletedForEveryone && !IsEncryptedPayload(m.Text)))
+            .Take(Math.Max(1, Math.Min(limit, 100))))
             .Select(m => new SupraPublicChannelMessageDto
             {
                 id = m.Id.ToString(),
@@ -799,10 +795,8 @@ public sealed partial class SupraMessengerService
         if (chat == null) return null;
         if (!Guid.TryParse(messageId, out var msgGuid)) return null;
 
-        var ordered = (await _store.GetMessagesByChatAsync(chat.Id, ct))
-            .Where(m => !m.DeletedForEveryone && !IsEncryptedPayload(m.Text))
-            .OrderBy(m => m.CreatedOn)
-            .ThenBy(m => m.Id)
+        var ordered = OrderMessagesAsc((await _store.GetMessagesByChatAsync(chat.Id, ct))
+            .Where(m => !m.DeletedForEveryone && !IsEncryptedPayload(m.Text)))
             .ToList();
 
         var idx = ordered.FindIndex(m => m.Id == msgGuid);

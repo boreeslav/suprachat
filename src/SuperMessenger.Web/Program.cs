@@ -50,6 +50,7 @@ builder.Services.AddSingleton(_ => new PushSubscriptionStore(dataRoot));
 builder.Services.AddSingleton(_ => new NotificationPreferencesStore(dataRoot));
 builder.Services.AddSingleton(_ => new MessengerUserPreferencesStore(dataRoot));
 builder.Services.AddSingleton<PushNotificationService>();
+builder.Services.AddSingleton<OfflineMessagePushService>();
 builder.Services.AddSingleton<PushDiagnosticLogStore>();
 builder.Services.AddSingleton<MessageInfoService>();
 builder.Services.AddSingleton<UserPresenceService>();
@@ -116,11 +117,15 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
+    var dataStore = scope.ServiceProvider.GetRequiredService<IDataStore>();
     var init = new DataInitializer(
-        scope.ServiceProvider.GetRequiredService<IDataStore>(),
+        dataStore,
         app.Configuration,
         scope.ServiceProvider.GetRequiredService<ILogger<DataInitializer>>());
     await init.InitializeAsync();
+
+    // Одноразовый бэкфилл монотонных Seq/Rev для сообщений, созданных до их появления.
+    await dataStore.EnsureMessageSequenceInitializedAsync();
 
     var appearance = scope.ServiceProvider.GetRequiredService<AppAppearanceService>();
     var contentSeeder = new AppAppearanceContentSeeder(appearance, dataRoot);

@@ -14541,10 +14541,27 @@ class MessengerUtils {
 		return String(msg?.serverId || msg?.id || '');
 	}
 
+	/** Серверный монотонный порядковый номер (>0), либо 0 если ещё неизвестен (optimistic). */
+	static messageSeq(msg) {
+		const s = Number(msg?.seq);
+		return Number.isFinite(s) && s > 0 ? s : 0;
+	}
+
 	static compareMessages(a, b) {
+		// Канонический порядок — по серверному seq. Если у обоих сообщений он известен,
+		// он определяет порядок однозначно и одинаково с сервером. Сообщения без seq
+		// (ещё не подтверждённые optimistic) сортируются по времени и всегда оказываются
+		// после уже подтверждённых с тем же временем — это корректно для «хвоста» ленты.
+		const sa = MessengerUtils.messageSeq(a);
+		const sb = MessengerUtils.messageSeq(b);
+		if (sa && sb) {
+			if (sa !== sb) return sa - sb;
+			return 0;
+		}
 		const ta = MessengerUtils.messageTimestampMs(a);
 		const tb = MessengerUtils.messageTimestampMs(b);
 		if (ta !== tb) return ta - tb;
+		if (sa !== sb) return sa - sb;
 		const idA = MessengerUtils.messageOrderId(a);
 		const idB = MessengerUtils.messageOrderId(b);
 		if (idA === idB) return 0;
@@ -14952,6 +14969,8 @@ class MessengerCache {
 			chatId,
 			id: msg.id,
 			serverId: msg.serverId ?? null,
+			seq: Number.isFinite(Number(msg.seq)) ? Number(msg.seq) : 0,
+			rev: Number.isFinite(Number(msg.rev)) ? Number(msg.rev) : 0,
 			senderId: msg.senderId ?? null,
 			senderName: msg.senderName ?? null,
 			senderAvatar: msg.senderAvatar ?? null,
@@ -15050,6 +15069,8 @@ class MessengerCache {
 		const msg = {
 			id: r.id,
 			serverId: r.serverId ?? null,
+			seq: Number.isFinite(Number(r.seq)) ? Number(r.seq) : 0,
+			rev: Number.isFinite(Number(r.rev)) ? Number(r.rev) : 0,
 			chatId: r.chatId,
 			senderId: r.senderId,
 			senderName: r.senderName,
@@ -15130,13 +15151,16 @@ class MessengerCache {
 				const msgStore = tx.objectStore(MessengerCache.STORE_MESSAGES);
 				const metaSt = tx.objectStore(MessengerCache.STORE_META);
 				let latestMsg = null;
+				let maxRevSeen = 0;
 				for (const { msg, record } of valid) {
 					msgStore.put(record);
 					if (!msg.isVirtual) {
 						const ts = record.timestamp;
-						const candidate = { id: msg.id, timestamp: new Date(ts) };
+						const candidate = { id: msg.id, seq: record.seq, timestamp: new Date(ts) };
 						if (!latestMsg || MessengerUtils.compareMessages(candidate, latestMsg) > 0)
 							latestMsg = candidate;
+						const rev = Number(record.rev) || 0;
+						if (rev > maxRevSeen) maxRevSeen = rev;
 					}
 				}
 				if (latestMsg !== null) {
@@ -15144,8 +15168,14 @@ class MessengerCache {
 					const metaReq = metaSt.get(chatId);
 					metaReq.onsuccess = (e) => {
 						const existing = e.target.result;
-						if (!existing || latestTs > (existing.lastTs ?? 0))
-							metaSt.put({ chatId, lastId: latestMsg.id, lastTs: latestTs });
+						const nextMaxRev = Math.max(existing?.maxRev ?? 0, maxRevSeen);
+						const advanceLast = !existing || latestTs > (existing.lastTs ?? 0);
+						metaSt.put({
+							chatId,
+							lastId: advanceLast ? latestMsg.id : (existing?.lastId ?? latestMsg.id),
+							lastTs: advanceLast ? latestTs : (existing?.lastTs ?? latestTs),
+							maxRev: nextMaxRev,
+						});
 					};
 				}
 				tx.oncomplete = () => resolve();
@@ -15210,6 +15240,37 @@ class MessengerCache {
 	async getLastMessageId(chatId) {
 		const meta = await this.getChatMeta(chatId);
 		return meta?.lastId ?? null;
+	}
+	async getMaxRev(chatId) {
+		const meta = await this.getChatMeta(chatId);
+		return Number(meta?.maxRev) || 0;
+	}
+	async setMaxRev(chatId, rev) {
+		const next = Number(rev) || 0;
+		if (next <= 0) return;
+		try {
+			const db = await this.#getDB();
+			await new Promise((resolve, reject) => {
+				const tx = db.transaction(MessengerCache.STORE_META, 'readwrite');
+				const store = tx.objectStore(MessengerCache.STORE_META);
+				const req = store.get(chatId);
+				req.onsuccess = (e) => {
+					const meta = e.target.result;
+					if (meta) {
+						if (next > (meta.maxRev ?? 0)) {
+							meta.maxRev = next;
+							store.put(meta);
+						}
+					} else {
+						store.put({ chatId, lastId: null, lastTs: 0, maxRev: next });
+					}
+				};
+				tx.oncomplete = () => resolve();
+				tx.onerror = (e) => reject(e.target.error);
+			});
+		} catch (err) {
+			console.warn('[MessengerCache] setMaxRev error:', err);
+		}
 	}
 	async updateMessageServerId(chatId, localId, serverId) {
 		try {
@@ -15290,7 +15351,12 @@ class MessengerCache {
 								return;
 							}
 							updated = true;
-							metaStore.put({ chatId, lastId: rec.id, lastTs: rec.timestamp });
+							metaStore.put({
+								chatId,
+								lastId: rec.id,
+								lastTs: rec.timestamp,
+								maxRev: meta?.maxRev ?? 0,
+							});
 						};
 					};
 				};
@@ -16130,6 +16196,12 @@ class MessengerMessageService {
 
 	async getLastCachedMessageId(chatId) {
 		return this.#cache.getLastMessageId(chatId);
+	}
+	async getCachedMaxRev(chatId) {
+		return this.#cache.getMaxRev(chatId);
+	}
+	async setCachedMaxRev(chatId, rev) {
+		return this.#cache.setMaxRev(chatId, rev);
 	}
 	async updateMessageServerId(chatId, localId, serverId) {
 		await this.#cache.updateMessageServerId(chatId, localId, serverId);
@@ -19128,14 +19200,20 @@ class MessengerAppView {
 
 	async #buildSyncCursors() {
 		const cursors = {};
-		if (!this.#msgService) return cursors;
+		const revCursors = {};
+		if (!this.#msgService) return { cursors, revCursors };
 		await Promise.all(this.#chats.map(async (chat) => {
 			try {
 				const lastId = await this.#msgService.getLastCachedMessageId(chat.id);
 				if (lastId) cursors[chat.id] = lastId;
+				// rev-курсор отправляем только когда он реально известен (>0). Для «старого»
+				// кеша без rev сервер сработает по fallback id-курсору и вернёт актуальный
+				// chatRev, которым мы инициализируем дельту — без полной перевыкачки истории.
+				const maxRev = await this.#msgService.getCachedMaxRev(chat.id);
+				if (maxRev > 0) revCursors[chat.id] = maxRev;
 			} catch { /* ignore */ }
 		}));
-		return cursors;
+		return { cursors, revCursors };
 	}
 
 	async #applySyncBundle(result, msgService, api, { reconcileActive = true } = {}) {
@@ -19160,6 +19238,25 @@ class MessengerAppView {
 			}
 		}));
 		if (senderAvatars.length) this.#prefetchAvatars(senderAvatars);
+		// Дельта-удаления (тумбстоны): доносим удаления для всех чатов, включая неактивные,
+		// чтобы бот, удаливший своё прошлое сообщение в офлайне, корректно убирал его после синка.
+		const deletions = Object.entries(result.deletedByChat || {});
+		await Promise.all(deletions.map(async ([chatId, ids]) => {
+			if (!ids?.length) return;
+			for (const id of ids) {
+				try {
+					// Сначала убираем из кеша (IndexedDB), затем из открытых панелей/превью.
+					const { storedId } = await msgService.deleteMessage(chatId, id);
+					this.deleteMessage(chatId, storedId || id, id);
+				} catch { /* ignore */ }
+			}
+		}));
+		// Сохраняем продвинутый rev-курсор на чат (даже если изменений не было или были только удаления).
+		if (result.chatRev) {
+			await Promise.all(Object.entries(result.chatRev).map(async ([chatId, rev]) => {
+				try { await msgService.setCachedMaxRev(chatId, rev); } catch { /* ignore */ }
+			}));
+		}
 		if (reconcileActive && this.#activeState?.chatId) {
 			const activeId = this.#activeState.chatId;
 			try {
@@ -19209,9 +19306,12 @@ class MessengerAppView {
 		}
 		this.#syncInFlight = (async () => {
 			try {
-				const cursors = options.chatCursors ?? await this.#buildSyncCursors();
+				const built = await this.#buildSyncCursors();
+				const cursors = options.chatCursors ?? built.cursors;
+				const revCursors = options.chatRevCursors ?? built.revCursors;
 				const result = await api.requestSync({
 					chatCursors: cursors,
+					chatRevCursors: revCursors,
 					includeProfiles: options.includeProfiles !== false,
 					includeEncryptionKeys: options.includeEncryptionKeys !== false,
 					messageLimit: options.messageLimit ?? 50,
@@ -23379,12 +23479,14 @@ class MessengerApiClient {
 
 	async requestSync({
 		chatCursors = {},
+		chatRevCursors = {},
 		includeProfiles = true,
 		includeEncryptionKeys = true,
 		messageLimit = 50,
 	} = {}) {
 		const r = await this.call('RequestSync', {
 			chatCursors,
+			chatRevCursors,
 			includeProfiles,
 			includeEncryptionKeys,
 			messageLimit,
@@ -23699,6 +23801,8 @@ class MessengerApiClient {
 	async #mapMessages(raw = [], chatId = null) {
 		const mapped = raw.map(m => ({
 			id: m.id,
+			seq: Number(m.seq) || 0,
+			rev: Number(m.rev) || 0,
 			senderId: m.senderId,
 			senderName: m.senderName,
 			senderAvatar: m.senderAvatar || null,
@@ -23740,9 +23844,10 @@ class MessengerApiClient {
 			if (!r?.success) throw new Error(r?.error || 'SendMessage failed');
 			return {
 				id: r.messageId,
+				seq: Number(r.seq) || 0,
 				status: r.status || 'sent',
 				text: text.trim(),
-				timestamp: new Date(),
+				timestamp: r.timestamp ? new Date(r.timestamp) : new Date(),
 				isOwn: true,
 				encryptionTier: 'basic',
 				replyToMessageId: plainOpts?.replyToMessageId || null,
@@ -23774,9 +23879,10 @@ class MessengerApiClient {
 		if (!r?.success) throw new Error(r?.error || 'SendMessage failed');
 		return {
 			id: r.messageId,
+			seq: Number(r.seq) || 0,
 			status: r.status || 'sent',
 			text,
-			timestamp: new Date(),
+			timestamp: r.timestamp ? new Date(r.timestamp) : new Date(),
 			isOwn: true,
 			encryptionTier: enc.encryptionTier,
 			_encText: enc.text,
@@ -24707,6 +24813,13 @@ class MessengerTransport {
 		if (state === 'Connected') {
 			this.#reportClientForeground();
 			this.reportActivity();
+			// Сокет жив, но пока приложение было в фоне, JS-таймеры/события могли быть
+			// заморожены и мы могли пропустить сообщения/удаления. Поэтому при возврате в
+			// foreground всегда запускаем догоняющую синхронизацию (она дебаунсится и
+			// дельта-курсоры делают её дешёвой), а не молча выходим.
+			try { this.#onConnectionRestored?.(); } catch (e) {
+				console.warn('[MessengerTransport] foreground resync error', e);
+			}
 			return;
 		}
 
@@ -32106,6 +32219,8 @@ class Messenger {
 					: this.#chatView.getCurrentUser()?.id;
 				const rawMsg = {
 					id: body.messageId,
+					seq: Number(body.seq) || 0,
+					rev: Number(body.rev) || 0,
 					senderId: body.senderId,
 					senderName: body.senderName,
 					senderAvatar: body.senderAvatar || null,

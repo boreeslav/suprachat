@@ -73,6 +73,10 @@ public sealed class SupraChatMessageDto
     public string senderName { get; set; } = "";
     public string? senderAvatar { get; set; }
     public DateTime timestamp { get; set; }
+    /// <summary>Канонический монотонный порядковый номер в рамках чата.</summary>
+    public long seq { get; set; }
+    /// <summary>Версия изменения в рамках чата (для дельта-синхронизации).</summary>
+    public long rev { get; set; }
     public string text { get; set; } = "";
     public string status { get; set; } = "";
     public bool isOwn { get; set; }
@@ -124,7 +128,10 @@ public sealed class SupraSyncEncryptionKeyDto
 
 public sealed class SupraRequestSyncRequest
 {
+  /// <summary>Устаревший курсор по messageId (используется как fallback, если нет rev-курсора).</summary>
   public Dictionary<string, string?>? chatCursors { get; set; }
+  /// <summary>Дельта-курсор по rev на чат: вернуть все изменения с rev больше указанного.</summary>
+  public Dictionary<string, long?>? chatRevCursors { get; set; }
   public bool includeProfiles { get; set; } = true;
   public bool includeEncryptionKeys { get; set; } = true;
   public int messageLimit { get; set; } = 50;
@@ -135,6 +142,10 @@ public sealed class SupraRequestSyncResponse
     public bool success { get; set; }
     public List<SupraChatDto> chats { get; set; } = [];
     public Dictionary<string, List<SupraChatMessageDto>> messagesByChat { get; set; } = new();
+    /// <summary>Идентификаторы сообщений, удалённых/ставших невидимыми с момента rev-курсора (тумбстоны).</summary>
+    public Dictionary<string, List<string>> deletedByChat { get; set; } = new();
+    /// <summary>Новый rev-курсор на чат, который клиент должен сохранить после применения дельты.</summary>
+    public Dictionary<string, long> chatRev { get; set; } = new();
     public Dictionary<string, SupraPublicProfileDto> profiles { get; set; } = new();
     public Dictionary<string, SupraSyncEncryptionKeyDto> encryptionKeys { get; set; } = new();
     public string? error { get; set; }
@@ -210,6 +221,10 @@ public sealed class SupraSendMessageResponse
     public bool success { get; set; }
     public string? messageId { get; set; }
     public string? status { get; set; }
+    /// <summary>Серверный порядковый номер созданного сообщения (для немедленной корректной сортировки optimistic).</summary>
+    public long seq { get; set; }
+    /// <summary>Серверное время создания (UTC) — клиент заменяет им своё локальное.</summary>
+    public DateTime? timestamp { get; set; }
     public string? error { get; set; }
     /// <summary>Диагностика Web Push — только для отправителя с ролью Admin.</summary>
     public object? pushDebug { get; set; }
@@ -257,6 +272,10 @@ public sealed class SupraWsNewMessagePayload
     public string? senderAvatar { get; set; }
     public string text { get; set; } = "";
     public DateTime timestamp { get; set; }
+    /// <summary>Канонический монотонный порядковый номер в рамках чата.</summary>
+    public long seq { get; set; }
+    /// <summary>Версия изменения в рамках чата (для дельта-синхронизации).</summary>
+    public long rev { get; set; }
     public string status { get; set; } = "";
     public bool isOwn { get; set; }
     public string? replyToMessageId { get; set; }

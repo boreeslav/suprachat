@@ -74,7 +74,7 @@ public sealed class AppAppearanceService
                 ? defaults.DefaultThemeName
                 : saved.DefaultThemeName.Trim(),
             UseThemeChatBg = saved.UseThemeChatBg ?? true,
-            EnableGroupEncryption = saved.EnableGroupEncryption ?? false,
+            EnableGroupEncryption = saved.EnableGroupEncryption ?? true,
             Base = MergeBase(saved.Base, defaults.Base),
             Themes = MergeThemes(saved.Themes, defaults.Themes),
         };
@@ -603,7 +603,7 @@ public sealed class AppAppearanceService
             : "/api/app/sound/outgoing",
         defaultThemeName = s.DefaultThemeName,
         useThemeChatBg = s.UseThemeChatBg ?? true,
-        enableGroupEncryption = s.EnableGroupEncryption ?? false,
+        enableGroupEncryption = s.EnableGroupEncryption ?? true,
         @base = new
         {
             accent = s.Base.Accent,

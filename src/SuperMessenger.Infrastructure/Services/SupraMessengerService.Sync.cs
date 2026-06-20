@@ -5,6 +5,9 @@ namespace SuperMessenger.Infrastructure.Services;
 
 public sealed partial class SupraMessengerService
 {
+    /// <summary>Максимум изменений на чат в одной дельта-выдаче RequestSync (защита от гигантских ответов).</summary>
+    const int DeltaSyncCap = 300;
+
     sealed class ChatListSnapshot
     {
         public required List<SupraChatDto> Chats { get; init; }
@@ -46,7 +49,7 @@ public sealed partial class SupraMessengerService
             .GroupBy(m => m.ChatId)
             .ToDictionary(
                 g => g.Key,
-                g => g.OrderBy(m => m.CreatedOn).ThenBy(m => m.Id).ToList());
+                g => OrderMessagesAsc(g).ToList());
 
         var result = new List<SupraChatDto>();
         var branchDtoById = new Dictionary<Guid, SupraChatDto>();
@@ -234,20 +237,81 @@ public sealed partial class SupraMessengerService
             };
 
             var cursors = request.chatCursors ?? new Dictionary<string, string?>();
+            var revCursors = request.chatRevCursors ?? new Dictionary<string, long?>();
             var limit = Math.Clamp(request.messageLimit, 1, 100);
+
+            // Все сообщения по чатам, включая тумбстоны (DeletedForEveryone) и скрытые —
+            // нужны для дельты по rev, которая доносит удаления для всех чатов.
+            var snapshotChatIds = snapshot.Chats
+                .Select(c => Guid.TryParse(c.id, out var g) ? g : Guid.Empty)
+                .Where(g => g != Guid.Empty)
+                .ToHashSet();
+            var allMessages = await _store.GetAllMessagesAsync(ct);
+            var hiddenIds = await GetDeletedMessageIdsForUserAsync(userId, ct);
+            var allByChat = allMessages
+                .Where(m => snapshotChatIds.Contains(m.ChatId))
+                .GroupBy(m => m.ChatId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            bool IsVisibleForDelta(SupraChatMessageRecord m) =>
+                !hiddenIds.Contains(m.Id) && !m.DeletedForEveryone && IsMessageVisibleToUser(m, userId);
 
             foreach (var chat in snapshot.Chats)
             {
                 if (!Guid.TryParse(chat.id, out var chatGuid)) continue;
+                SupraChatRecord? chatRecord = string.Equals(chat.type, "channel", StringComparison.OrdinalIgnoreCase)
+                    ? new SupraChatRecord { Type = "channel" }
+                    : null;
+
+                allByChat.TryGetValue(chatGuid, out var chatAll);
+                chatAll ??= [];
+                var maxRev = chatAll.Count > 0 ? chatAll.Max(m => Math.Max(m.Seq, m.Rev)) : 0;
+
+                revCursors.TryGetValue(chat.id, out var revCursorNullable);
+                if (revCursorNullable.HasValue)
+                {
+                    // Дельта-режим: все изменения с rev больше курсора (новые, изменённые, удалённые).
+                    var revCursor = revCursorNullable.Value;
+                    var changed = chatAll
+                        .Where(m => m.Rev > revCursor)
+                        .OrderBy(m => m.Rev)
+                        .ToList();
+
+                    long newCursor;
+                    if (changed.Count == 0)
+                    {
+                        newCursor = Math.Max(revCursor, maxRev);
+                    }
+                    else
+                    {
+                        var capped = changed.Count > DeltaSyncCap;
+                        var included = capped ? changed.Take(DeltaSyncCap).ToList() : changed;
+                        // Курсор продвигаем строго до последнего включённого изменения, чтобы
+                        // при ограничении не образовалось «дыр»; остаток придёт следующим синком.
+                        newCursor = capped ? included[^1].Rev : Math.Max(maxRev, included[^1].Rev);
+
+                        var upserts = OrderMessagesAsc(included.Where(IsVisibleForDelta))
+                            .Select(m => MapMessageDto(m, userId, snapshot.AvatarByUser, chatRecord))
+                            .ToList();
+                        var deleted = included
+                            .Where(m => !IsVisibleForDelta(m))
+                            .Select(m => m.Id.ToString())
+                            .ToList();
+                        if (upserts.Count > 0) response.messagesByChat[chat.id] = upserts;
+                        if (deleted.Count > 0) response.deletedByChat[chat.id] = deleted;
+                    }
+                    response.chatRev[chat.id] = newCursor;
+                    continue;
+                }
+
+                // Fallback: устаревший курсор по messageId (клиенты без rev-курсора).
+                response.chatRev[chat.id] = maxRev;
                 cursors.TryGetValue(chat.id, out var cursor);
                 if (string.IsNullOrWhiteSpace(cursor)) continue;
                 if (!snapshot.VisibleMessagesByChat.TryGetValue(chatGuid, out var ordered)) continue;
 
                 var slice = SliceMessagesAfterId(ordered, cursor, limit);
                 if (slice.Count == 0) continue;
-                SupraChatRecord? chatRecord = string.Equals(chat.type, "channel", StringComparison.OrdinalIgnoreCase)
-                    ? new SupraChatRecord { Type = "channel" }
-                    : null;
                 response.messagesByChat[chat.id] = slice
                     .Select(m => MapMessageDto(m, userId, snapshot.AvatarByUser, chatRecord))
                     .ToList();

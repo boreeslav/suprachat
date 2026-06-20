@@ -40,7 +40,7 @@ public sealed partial class SupraMessengerService
 
         var msgGuid = Guid.NewGuid();
         var now = DateTime.UtcNow;
-        await _store.SaveMessageAsync(new SupraChatMessageRecord
+        var record = new SupraChatMessageRecord
         {
             Id = msgGuid,
             ChatId = chat.Id,
@@ -49,7 +49,8 @@ public sealed partial class SupraMessengerService
             Text = text,
             Status = "read",
             CreatedOn = now,
-        }, ct);
+        };
+        await _store.SaveMessageAsync(record, ct);
 
         return new SupraWsNewMessagePayload
         {
@@ -60,6 +61,8 @@ public sealed partial class SupraMessengerService
             senderAvatar = null,
             text = text,
             timestamp = now,
+            seq = record.Seq,
+            rev = record.Rev,
             status = "read",
             isOwn = false,
         };

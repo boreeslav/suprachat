@@ -264,6 +264,7 @@ public static class AppAppearanceDefaults
             }
             """,
         DefaultThemeName = "Светлая",
+        EnableGroupEncryption = true,
         Base = new AppBaseColors(),
         Themes =
         [

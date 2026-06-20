@@ -41,6 +41,8 @@ public sealed partial class SupraMessengerService
             senderAvatar = avatarByUser.TryGetValue(m.SenderUserId, out var av) ? av : null,
             text = text,
             timestamp = m.CreatedOn,
+            seq = m.Seq,
+            rev = m.Rev,
             status = MessageStatusForClient(chat, m.Status),
             isOwn = m.SenderUserId == userId,
             replyToMessageId = m.ReplyToMessageId?.ToString(),
@@ -90,6 +92,8 @@ public sealed partial class SupraMessengerService
             senderAvatar = sender != null ? AvatarUrl(sender) : null,
             text = text,
             timestamp = m.CreatedOn,
+            seq = m.Seq,
+            rev = m.Rev,
             status = m.Status,
             isOwn = false,
             replyToMessageId = m.ReplyToMessageId?.ToString(),
@@ -306,6 +310,8 @@ public sealed partial class SupraMessengerService
                 success = true,
                 messageId = msgGuid.ToString(),
                 status = "sent",
+                seq = record.Seq,
+                timestamp = record.CreatedOn,
             }, payload);
         }
         catch (Exception ex)
@@ -457,9 +463,19 @@ public sealed partial class SupraMessengerService
 
     static int CompareMessageOrder(SupraChatMessageRecord a, SupraChatMessageRecord b)
     {
+        // Канонический порядок — по монотонному Seq. CreatedOn/Id остаются запасным
+        // tie-breaker для сообщений, ещё не получивших Seq (теоретически только до миграции).
+        if (a.Seq > 0 && b.Seq > 0 && a.Seq != b.Seq)
+            return a.Seq.CompareTo(b.Seq);
         var byTime = a.CreatedOn.CompareTo(b.CreatedOn);
         return byTime != 0 ? byTime : a.Id.CompareTo(b.Id);
     }
+
+    static IEnumerable<SupraChatMessageRecord> OrderMessagesAsc(IEnumerable<SupraChatMessageRecord> src)
+        => src.OrderBy(m => m.Seq).ThenBy(m => m.CreatedOn).ThenBy(m => m.Id);
+
+    static IEnumerable<SupraChatMessageRecord> OrderMessagesDesc(IEnumerable<SupraChatMessageRecord> src)
+        => src.OrderByDescending(m => m.Seq).ThenByDescending(m => m.CreatedOn).ThenByDescending(m => m.Id);
 
     static List<SupraChatMessageRecord> SliceAfterMessageId(
         List<SupraChatMessageRecord> orderedAsc,
@@ -484,10 +500,8 @@ public sealed partial class SupraMessengerService
         Guid chatGuid, Guid userId, CancellationToken ct)
     {
         var hiddenIds = await GetDeletedMessageIdsForUserAsync(userId, ct);
-        return (await _store.GetMessagesByChatAsync(chatGuid, ct))
-            .Where(m => !hiddenIds.Contains(m.Id) && !m.DeletedForEveryone && IsMessageVisibleToUser(m, userId))
-            .OrderBy(m => m.CreatedOn)
-            .ThenBy(m => m.Id)
+        return OrderMessagesAsc((await _store.GetMessagesByChatAsync(chatGuid, ct))
+            .Where(m => !hiddenIds.Contains(m.Id) && !m.DeletedForEveryone && IsMessageVisibleToUser(m, userId)))
             .ToList();
     }
 
@@ -529,13 +543,9 @@ public sealed partial class SupraMessengerService
             }
             else
             {
-                slice = ordered
-                    .OrderByDescending(m => m.CreatedOn)
-                    .ThenByDescending(m => m.Id)
+                slice = OrderMessagesAsc(OrderMessagesDesc(ordered)
                     .Skip(offset)
-                    .Take(count)
-                    .OrderBy(m => m.CreatedOn)
-                    .ThenBy(m => m.Id)
+                    .Take(count))
                     .ToList();
             }
 
@@ -646,13 +656,7 @@ public sealed partial class SupraMessengerService
             var tailLimit = takeCount > 0 ? takeCount : 50;
 
             var recentSlice = takeCount > 0
-                ? ordered
-                    .OrderByDescending(m => m.CreatedOn)
-                    .ThenByDescending(m => m.Id)
-                    .Take(takeCount)
-                    .OrderBy(m => m.CreatedOn)
-                    .ThenBy(m => m.Id)
-                    .ToList()
+                ? OrderMessagesAsc(OrderMessagesDesc(ordered).Take(takeCount)).ToList()
                 : [];
 
             List<SupraChatMessageRecord> tailSlice = [];
@@ -665,10 +669,8 @@ public sealed partial class SupraMessengerService
             }
 
             var recentIds = recentSlice.Select(m => m.Id).ToHashSet();
-            var messageRecords = recentSlice
-                .Concat(tailSlice.Where(m => !recentIds.Contains(m.Id)))
-                .OrderBy(m => m.CreatedOn)
-                .ThenBy(m => m.Id)
+            var messageRecords = OrderMessagesAsc(recentSlice
+                .Concat(tailSlice.Where(m => !recentIds.Contains(m.Id))))
                 .ToList();
 
             var messages = messageRecords.Select(m => MapMessageDto(m, userId, avatarByUser, chat)).ToList();

@@ -46,6 +46,16 @@ public sealed class SupraChatMessageRecord
     public string Text { get; set; } = "";
     public string Status { get; set; } = "sent";
     public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Монотонный порядковый номер сообщения в рамках чата — канонический ключ сортировки.
+    /// Назначается сервером один раз при создании и больше не меняется.
+    /// </summary>
+    public long Seq { get; set; }
+    /// <summary>
+    /// Монотонная версия изменения в рамках чата для дельта-синхронизации.
+    /// Растёт при любом изменении сообщения (создание, редактирование, удаление для всех).
+    /// </summary>
+    public long Rev { get; set; }
     public Guid? ReplyToMessageId { get; set; }
     public string? ReplyToSenderName { get; set; }
     public string? ReplyToTextPreview { get; set; }

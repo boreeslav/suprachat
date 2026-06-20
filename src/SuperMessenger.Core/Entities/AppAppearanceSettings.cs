@@ -42,8 +42,8 @@ public sealed class AppAppearanceSettings
     public string DefaultThemeName { get; set; } = "Светлая";
     /// <summary>When false, chat area does not use theme chatBg color or wallpaper.</summary>
     public bool? UseThemeChatBg { get; set; } = true;
-    /// <summary>When true, group chats use E2E encryption (auto keys, extra password UI). Default off.</summary>
-    public bool? EnableGroupEncryption { get; set; } = false;
+    /// <summary>When true, group chats use E2E encryption (auto keys, extra password UI). Default on.</summary>
+    public bool? EnableGroupEncryption { get; set; } = true;
     public AppBaseColors Base { get; set; } = new();
     public List<AppThemeSettings> Themes { get; set; } = [];
 }

@@ -260,7 +260,7 @@ public sealed class AdminController : ControllerBase
                 ? current.DefaultThemeName
                 : req.DefaultThemeName.Trim(),
             UseThemeChatBg = req.UseThemeChatBg ?? current.UseThemeChatBg ?? true,
-            EnableGroupEncryption = req.EnableGroupEncryption ?? current.EnableGroupEncryption ?? false,
+            EnableGroupEncryption = req.EnableGroupEncryption ?? current.EnableGroupEncryption ?? true,
             Base = req.Base != null ? MergeBaseDto(req.Base, current.Base) : current.Base,
             Themes = themes.Count > 0 ? themes : current.Themes,
         };

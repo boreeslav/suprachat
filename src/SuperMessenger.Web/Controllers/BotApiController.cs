@@ -23,6 +23,7 @@ public sealed class BotApiController : ControllerBase
     private readonly MiniAppChannelService _miniAppChannel;
     private readonly IDataStore _store;
     private readonly ChatImageProcessingService _images;
+    private readonly OfflineMessagePushService _offlinePush;
     private readonly string _avatarsRoot;
     private readonly string _filesRoot;
 
@@ -33,6 +34,7 @@ public sealed class BotApiController : ControllerBase
         MiniAppChannelService miniAppChannel,
         IDataStore store,
         ChatImageProcessingService images,
+        OfflineMessagePushService offlinePush,
         IConfiguration config)
     {
         _botApi = botApi;
@@ -41,6 +43,7 @@ public sealed class BotApiController : ControllerBase
         _miniAppChannel = miniAppChannel;
         _store = store;
         _images = images;
+        _offlinePush = offlinePush;
         var dataRoot = config["Data:Root"] ?? "data";
         _avatarsRoot = Path.Combine(dataRoot, "group-avatars");
         _filesRoot = config["Data:FilesPath"] ?? Path.Combine(dataRoot, "uploads");
@@ -130,6 +133,10 @@ public sealed class BotApiController : ControllerBase
         {
             var participants = await GetChatParticipantIdsAsync(chatGuid, ct);
             await _realtime.BroadcastToChatParticipantsAsync(participants, broadcast, ct);
+            // Сообщения бота должны доходить офлайн-участникам так же, как пользовательские:
+            // невидимые/служебные пропускаем (как и для обычных сообщений).
+            if (!broadcast.invisible)
+                await _offlinePush.PushNewMessageAsync(chatGuid, broadcast, participants, botUser.Id, ct);
         }
 
         return response.success ? Ok(response) : BadRequest(response);

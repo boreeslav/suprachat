@@ -232,20 +232,72 @@ public sealed class FileDataStore : IDataStore
             string.Equals(m.ClientLocalId, key, StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// Следующее значение монотонного per-chat счётчика (общего для Seq и Rev).
+    /// Гарантирует строго возрастающий порядок в рамках чата.
+    /// </summary>
+    static long NextChatCounter(List<SupraChatMessageRecord> list, Guid chatId)
+    {
+        long max = 0;
+        foreach (var m in list)
+        {
+            if (m.ChatId != chatId) continue;
+            if (m.Seq > max) max = m.Seq;
+            if (m.Rev > max) max = m.Rev;
+        }
+        return max + 1;
+    }
+
     public async Task SaveMessageAsync(SupraChatMessageRecord message, CancellationToken ct = default)
     {
-        var list = await _messages.ReadAllAsync(ct);
-        list.Add(message);
-        await _messages.WriteAllAsync(list, ct);
+        await _messages.MutateAsync<bool>(list =>
+        {
+            var next = NextChatCounter(list, message.ChatId);
+            message.Seq = next;
+            message.Rev = next;
+            list.Add(message);
+            return (true, true);
+        }, ct);
     }
 
     public async Task UpdateMessageAsync(SupraChatMessageRecord message, CancellationToken ct = default)
     {
-        var list = await _messages.ReadAllAsync(ct);
-        var idx = list.FindIndex(m => m.Id == message.Id);
-        if (idx < 0) return;
-        list[idx] = message;
-        await _messages.WriteAllAsync(list, ct);
+        await _messages.MutateAsync<bool>(list =>
+        {
+            var idx = list.FindIndex(m => m.Id == message.Id);
+            if (idx < 0) return (false, false);
+            // Любое изменение сообщения двигает версию для дельта-синхронизации,
+            // порядковый Seq при этом сохраняется.
+            message.Rev = NextChatCounter(list, message.ChatId);
+            list[idx] = message;
+            return (true, true);
+        }, ct);
+    }
+
+    public async Task EnsureMessageSequenceInitializedAsync(CancellationToken ct = default)
+    {
+        await _messages.MutateAsync<bool>(list =>
+        {
+            var changed = false;
+            foreach (var chatGroup in list.GroupBy(m => m.ChatId))
+            {
+                // Чат уже мигрирован, если хотя бы одно сообщение имеет назначенный Seq.
+                if (chatGroup.Any(m => m.Seq > 0)) continue;
+                var ordered = chatGroup
+                    .OrderBy(m => m.CreatedOn)
+                    .ThenBy(m => m.Id)
+                    .ToList();
+                long seq = 0;
+                foreach (var m in ordered)
+                {
+                    seq++;
+                    m.Seq = seq;
+                    m.Rev = seq;
+                    changed = true;
+                }
+            }
+            return (changed, changed);
+        }, ct);
     }
 
     public async Task<IReadOnlyList<SupraMessageUserDeletionRecord>> GetMessageUserDeletionsByUserAsync(

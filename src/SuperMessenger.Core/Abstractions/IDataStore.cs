@@ -38,6 +38,8 @@ public interface IDataStore
         Guid chatId, Guid senderUserId, string clientLocalId, CancellationToken ct = default);
     Task SaveMessageAsync(SupraChatMessageRecord message, CancellationToken ct = default);
     Task UpdateMessageAsync(SupraChatMessageRecord message, CancellationToken ct = default);
+    /// <summary>Одноразовый бэкфилл монотонных Seq/Rev для сообщений, созданных до их появления.</summary>
+    Task EnsureMessageSequenceInitializedAsync(CancellationToken ct = default);
     Task UpdateMessagesStatusAsync(Guid chatId, Guid readerUserId, string status, CancellationToken ct = default);
     Task DeleteMessagesByChatAsync(Guid chatId, CancellationToken ct = default);
 
