@@ -217,11 +217,12 @@ public sealed partial class BotApiService
 
             if (!string.IsNullOrEmpty(trimmedText) && SupraMessengerService.IsEncryptedPayload(trimmedText))
             {
-                // Шифрованный текст бот может отправлять только в личных чатах (Этап 2).
-                // Зашифрованные группы — отдельный этап.
+                // Шифрованный текст разрешён в личных чатах (Этап 2) и в зашифрованных
+                // группах с включённым пер-групповым переключателем (Этап 4).
                 var targetChat = await _store.GetChatByIdAsync(target.ChatId, ct);
-                if (targetChat == null || !string.Equals(targetChat.Type, "direct", StringComparison.OrdinalIgnoreCase))
-                    return (new BotApiSendMessageResponse { success = false, error = "Бот отправляет шифрованные сообщения только в личных чатах" }, null);
+                var isDirectChat = string.Equals(targetChat?.Type, "direct", StringComparison.OrdinalIgnoreCase);
+                if (targetChat == null || !(isDirectChat || targetChat.EncryptionEnabled))
+                    return (new BotApiSendMessageResponse { success = false, error = "Бот отправляет шифрованные сообщения только в личных чатах и зашифрованных группах" }, null);
             }
 
             List<BotMessageButtonDto>? normalizedButtons = null;
@@ -380,8 +381,9 @@ public sealed partial class BotApiService
             if (trimmedText != null && SupraMessengerService.IsEncryptedPayload(trimmedText))
             {
                 var targetChat = await _store.GetChatByIdAsync(chatGuid, ct);
-                if (targetChat == null || !string.Equals(targetChat.Type, "direct", StringComparison.OrdinalIgnoreCase))
-                    return (new BotApiEditMessageResponse { success = false, error = "Бот редактирует шифрованные сообщения только в личных чатах" }, null);
+                var isDirectChat = string.Equals(targetChat?.Type, "direct", StringComparison.OrdinalIgnoreCase);
+                if (targetChat == null || !(isDirectChat || targetChat.EncryptionEnabled))
+                    return (new BotApiEditMessageResponse { success = false, error = "Бот редактирует шифрованные сообщения только в личных чатах и зашифрованных группах" }, null);
             }
 
             List<BotMessageButtonDto>? normalizedButtons = null;
@@ -584,9 +586,9 @@ public sealed partial class BotApiService
         if (SupraMessengerService.IsBotUser(sender))
             return [];
 
-        // Шифрованный текст доставляется боту только в личном чате и только если бот
-        // поддерживает шифрование (опубликован публичный ключ) — он сам его расшифрует.
-        // Зашифрованные групповые сообщения — отдельный этап.
+        // Шифрованный текст доставляется боту, только если он способен его расшифровать:
+        // в личном чате — при наличии публичного ключа (Этап 2); в зашифрованной группе —
+        // при наличии собственного группового ключа (Этап 4). Бот сам расшифрует текст.
         var isEncrypted = SupraMessengerService.IsEncryptedPayload(message.Text);
         var isDirect = string.Equals(chat.Type, "direct", StringComparison.OrdinalIgnoreCase);
 
@@ -597,8 +599,13 @@ public sealed partial class BotApiService
             if (p.UserId == message.SenderUserId) continue;
             var u = await _store.GetUserByIdAsync(p.UserId, ct);
             if (!SupraMessengerService.IsBotUser(u)) continue;
-            if (isEncrypted && !(isDirect && !string.IsNullOrEmpty(u?.EncryptionPublicKey)))
-                continue;
+            if (isEncrypted)
+            {
+                var botSupportsEncryption = !string.IsNullOrEmpty(u?.EncryptionPublicKey);
+                var canDecrypt = botSupportsEncryption &&
+                    (isDirect || await _store.GetChatMemberKeyAsync(chat.Id, p.UserId, ct) != null);
+                if (!canDecrypt) continue;
+            }
 
             var inbox = new BotInboxMessageRecord
             {
