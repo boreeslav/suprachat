@@ -58,6 +58,9 @@ async function main(): Promise<void> {
     me.botUserId ?? "",
     log,
   );
+  if (encryption) {
+    api.attachEncryption(encryption.crypto);
+  }
   log(`Шифрование бота: ${encryption ? "включено" : "выключено (открытый режим)"}`);
 
   const projectCatalog = new ProjectCatalog(

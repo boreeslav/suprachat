@@ -62,6 +62,7 @@ public sealed partial class SupraMessengerService
             string? contactStatusText = null;
             DateTime? contactLastSeenAt = null;
             bool isBotContact = false;
+            bool botSupportsEncryption = false;
             string? botSlug = null;
             bool botEngaged = false;
             if (string.Equals(chat.Type, "direct", StringComparison.OrdinalIgnoreCase))
@@ -77,6 +78,7 @@ public sealed partial class SupraMessengerService
                     if (IsBotUser(other))
                     {
                         isBotContact = true;
+                        botSupportsEncryption = !string.IsNullOrEmpty(other.EncryptionPublicKey);
                         var bot = await _store.GetBotByUserIdAsync(other.Id, ct);
                         botSlug = bot?.Slug;
                         botEngaged = await IsBotChatEngagedAsync(userId, other.Id, chatId, ct);
@@ -124,6 +126,7 @@ public sealed partial class SupraMessengerService
                 hasGroupAutoKey = memberKey != null,
                 channelSlug = IsChannelChat(chat) ? chat.Slug : null,
                 isBotContact = isBotContact,
+                botSupportsEncryption = botSupportsEncryption,
                 botSlug = botSlug,
                 botEngaged = botEngaged,
                 isAdmin = isAdmin,

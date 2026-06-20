@@ -198,8 +198,15 @@ public sealed partial class SupraMessengerService
 
                     if (isBotChat || senderIsBot)
                     {
-                        if (IsEncryptedPayload(text) || string.Equals(encryptionTier, "protected", StringComparison.OrdinalIgnoreCase))
-                            return (new SupraSendMessageResponse { success = false, error = "Сообщения боту не шифруются" }, null);
+                        // Личный чат с ботом: шифрование разрешено, только если бот поддерживает
+                        // его (опубликован публичный ключ). Доп. пароль (tier protected) недоступен —
+                        // бот не владеет пользовательским паролем, поэтому такой ключ не выведет.
+                        var botParty = senderIsBot ? user : otherUser;
+                        var botSupportsEncryption = !string.IsNullOrEmpty(botParty?.EncryptionPublicKey);
+                        if (string.Equals(encryptionTier, "protected", StringComparison.OrdinalIgnoreCase))
+                            return (new SupraSendMessageResponse { success = false, error = "Чат с ботом не поддерживает дополнительный пароль шифрования" }, null);
+                        if (IsEncryptedPayload(text) && !botSupportsEncryption)
+                            return (new SupraSendMessageResponse { success = false, error = "Этот бот не поддерживает шифрование" }, null);
                     }
 
                     if (senderIsBot && otherId.HasValue)
@@ -255,7 +262,8 @@ public sealed partial class SupraMessengerService
             var isPlaintextChat = chat != null && (
                 IsChannelChat(chat) ||
                 (string.Equals(chat.Type, "direct", StringComparison.OrdinalIgnoreCase) &&
-                 await IsDirectBotChatAsync(chatGuid, ct)));
+                 await IsDirectBotChatAsync(chatGuid, ct) &&
+                 !await DirectBotChatSupportsEncryptionAsync(chatGuid, ct)));
             var record = new SupraChatMessageRecord
             {
                 Id = msgGuid,

@@ -746,4 +746,23 @@ public sealed partial class SupraMessengerService
         }
         return false;
     }
+
+    /// <summary>
+    /// true, если это личный чат, бот-участник которого поддерживает шифрование
+    /// (опубликован публичный ключ). Такой чат может шифроваться как обычный личный.
+    /// </summary>
+    public async Task<bool> DirectBotChatSupportsEncryptionAsync(Guid chatId, CancellationToken ct)
+    {
+        var chat = await _store.GetChatByIdAsync(chatId, ct);
+        if (chat == null || !string.Equals(chat.Type, "direct", StringComparison.OrdinalIgnoreCase))
+            return false;
+        var parts = await _store.GetParticipantsByChatAsync(chatId, ct);
+        foreach (var p in parts)
+        {
+            var u = await _store.GetUserByIdAsync(p.UserId, ct);
+            if (IsBotUser(u) && !string.IsNullOrEmpty(u?.EncryptionPublicKey))
+                return true;
+        }
+        return false;
+    }
 }

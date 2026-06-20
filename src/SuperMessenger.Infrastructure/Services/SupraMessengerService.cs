@@ -310,6 +310,7 @@ public sealed partial class SupraMessengerService
                         chatId = p.ChatId.ToString(),
                         chatName = target.DisplayName,
                         isBotContact = IsBotUser(target),
+                        botSupportsEncryption = IsBotUser(target) && !string.IsNullOrEmpty(target.EncryptionPublicKey),
                         botSlug = IsBotUser(target)
                             ? (await _store.GetBotByUserIdAsync(targetId, ct))?.Slug
                             : null,
@@ -348,6 +349,7 @@ public sealed partial class SupraMessengerService
                 chatId = chatGuid.ToString(),
                 chatName = target.DisplayName,
                 isBotContact = IsBotUser(target),
+                botSupportsEncryption = IsBotUser(target) && !string.IsNullOrEmpty(target.EncryptionPublicKey),
                 botSlug = botSlug,
                 botEngaged = false,
             }, new SupraWsNewChatPayload

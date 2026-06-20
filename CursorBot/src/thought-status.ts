@@ -19,7 +19,7 @@ export interface ThoughtFinalizeResult {
   messageId?: string;
 }
 
-type ReplyTarget = { userLogin?: string; chatId?: string };
+type ReplyTarget = { userLogin?: string; chatId?: string; encryptChatId?: string };
 
 function isRetryableError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);

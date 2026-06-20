@@ -19,6 +19,8 @@ public sealed class SupraChatDto
     public bool hasGroupAutoKey { get; set; }
     public string? channelSlug { get; set; }
     public bool isBotContact { get; set; }
+    /// <summary>Бот-контакт опубликовал публичный ключ → личный чат можно шифровать.</summary>
+    public bool botSupportsEncryption { get; set; }
     public string? botSlug { get; set; }
     public bool botEngaged { get; set; }
     public bool isAdmin { get; set; }
@@ -223,6 +225,7 @@ public sealed class SupraCreateChatResponse
     public string? chatId { get; set; }
     public string? chatName { get; set; }
     public bool isBotContact { get; set; }
+    public bool botSupportsEncryption { get; set; }
     public string? botSlug { get; set; }
     public bool botEngaged { get; set; }
     public string? error { get; set; }

@@ -94,6 +94,15 @@ public sealed class BotApiEncryptionSetupResponse
     public string? error { get; set; }
 }
 
+/// <summary>Обёрнутый под публичный ключ бота автопароль чата (для вывода ключа шифрования).</summary>
+public sealed class BotApiGroupKeyResponse
+{
+    public bool success { get; set; }
+    public bool found { get; set; }
+    public string? wrappedAutoPassword { get; set; }
+    public string? error { get; set; }
+}
+
 public sealed class BotApiSendActivityResponse
 {
     public bool success { get; set; }

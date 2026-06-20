@@ -102,7 +102,7 @@ function splitMessage(text: string, maxChars: number): string[] {
   return parts;
 }
 
-type ReplyTarget = { userLogin?: string; chatId?: string };
+type ReplyTarget = { userLogin?: string; chatId?: string; encryptChatId?: string };
 
 interface ActiveChatWork {
   sessionKey: string;
@@ -1959,7 +1959,8 @@ export class MessageHandler {
 
   private replyTarget(update: BotApiMessage): ReplyTarget {
     if (update.chatType === "direct" && update.senderLogin) {
-      return { userLogin: update.senderLogin };
+      // Адресуем по userLogin, но передаём chatId для шифрования исходящего текста.
+      return { userLogin: update.senderLogin, encryptChatId: update.chatId };
     }
     return { chatId: update.chatId };
   }

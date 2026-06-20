@@ -86,6 +86,20 @@ public sealed class BotApiController : ControllerBase
         return response.success ? Ok(response) : BadRequest(response);
     }
 
+    [HttpGet("getGroupKey")]
+    [HttpPost("getGroupKey")]
+    public async Task<IActionResult> GetGroupKey(CancellationToken ct)
+    {
+        var p = await ReadParamsAsync(ct);
+        var auth = await AuthenticateParamsAsync(p, ct);
+        if (auth == null)
+            return Unauthorized(new BotApiGroupKeyResponse { success = false, error = "Unauthorized" });
+
+        var (botUser, _) = auth.Value;
+        var response = await _botApi.GetGroupKeyAsync(botUser, p.chatId, ct);
+        return response.success ? Ok(response) : BadRequest(response);
+    }
+
     [HttpGet("sendMessage")]
     [HttpPost("sendMessage")]
     public async Task<IActionResult> SendMessage(CancellationToken ct)

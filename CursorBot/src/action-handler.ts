@@ -96,7 +96,7 @@ function parseScriptOutput(stdout: string): ScriptActionResult {
   return { text: trimmed };
 }
 
-type ReplyTarget = { userLogin?: string; chatId?: string };
+type ReplyTarget = { userLogin?: string; chatId?: string; encryptChatId?: string };
 
 export class ActionHandler {
   private readonly botRoot = cursorBotRoot();

@@ -22480,6 +22480,7 @@ class MessengerApiClient {
 			hasGroupAutoKey: !!c.hasGroupAutoKey,
 			channelSlug: c.channelSlug || null,
 			isBotContact: !!c.isBotContact,
+			botSupportsEncryption: !!c.botSupportsEncryption,
 			botSlug: c.botSlug || null,
 			botEngaged: !!c.botEngaged,
 			isAdmin: !!c.isAdmin,
@@ -22501,8 +22502,16 @@ class MessengerApiClient {
 		return chat ? !!chat.isBotContact : false;
 	}
 
+	// Чат с ботом, который поддерживает шифрование (опубликовал публичный ключ),
+	// шифруется как обычный личный чат. Бот без поддержки — по-прежнему plaintext.
+	#botChatSupportsEncryption(chatId) {
+		const chat = this.#chatsMeta.get(chatId);
+		return !!(chat && chat.isBotContact && chat.botSupportsEncryption);
+	}
+
 	#isPlaintextChatId(chatId) {
-		if (this.#isChannelChatId(chatId) || this.#isBotChatId(chatId)) return true;
+		if (this.#isChannelChatId(chatId)) return true;
+		if (this.#isBotChatId(chatId)) return !this.#botChatSupportsEncryption(chatId);
 		if (!MessengerThemeManager.isAdminGroupEncryptionEnabled()) {
 			const chat = this.#chatsMeta.get(chatId);
 			if (chat && (isMessengerGroupChatType(chat.type) || isGroupBranchChat(chat))) return true;
@@ -23921,6 +23930,7 @@ class MessengerApiClient {
 			avatar: null,
 			contactUserId: contactId,
 			isBotContact: !!r.isBotContact,
+			botSupportsEncryption: !!r.botSupportsEncryption,
 			botSlug: r.botSlug || null,
 			botEngaged: !!r.botEngaged,
 			lastMessage: '',

@@ -46,4 +46,23 @@ public sealed partial class BotApiService
             ? new BotApiEncryptionSetupResponse { success = true }
             : new BotApiEncryptionSetupResponse { success = false, error = error };
     }
+
+    /// <summary>
+    /// Обёрнутый под публичный ключ бота автопароль чата (RSA-OAEP). Бот развернёт его
+    /// своим приватным ключом и выведет AES-ключ чата — как у обычного участника.
+    /// </summary>
+    public async Task<BotApiGroupKeyResponse> GetGroupKeyAsync(
+        UserRecord botUser, string? chatId, CancellationToken ct = default)
+    {
+        if (!Guid.TryParse(chatId, out var chatGuid))
+            return new BotApiGroupKeyResponse { success = false, error = "Некорректный chatId" };
+
+        var wrapped = await _encryption.GetMyWrappedGroupAutoPasswordAsync(botUser.Id, chatGuid, ct);
+        return new BotApiGroupKeyResponse
+        {
+            success = true,
+            found = !string.IsNullOrEmpty(wrapped),
+            wrappedAutoPassword = wrapped,
+        };
+    }
 }

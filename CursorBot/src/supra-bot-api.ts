@@ -1,4 +1,5 @@
 import WebSocket from "ws";
+import { SupraBotCrypto, isEncrypted } from "./crypto/supra-bot-crypto.js";
 
 export interface BotMessageButtonDto {
   id?: string;
@@ -92,6 +93,13 @@ export interface BotApiEncryptionSetupResponse {
   error?: string;
 }
 
+export interface BotApiGroupKeyResponse {
+  success: boolean;
+  found?: boolean;
+  wrappedAutoPassword?: string | null;
+  error?: string;
+}
+
 export interface BotApiSendWebAppDataResponse {
   success: boolean;
   seq?: number;
@@ -128,6 +136,12 @@ export interface BotApiSendMessageParams {
   invisible?: boolean;
   /** Логин адресата личного сообщения в групповом чате — доставляется/видно только ему. */
   targetUserLogin?: string;
+  /**
+   * chatId для шифрования исходящего текста, когда сообщение адресуется по userLogin
+   * (в личных чатах reply идёт по userLogin, но ключ выводится по chatId).
+   * На сервер не отправляется.
+   */
+  encryptChatId?: string;
 }
 
 export interface BotMiniAppFileDto {
@@ -338,6 +352,11 @@ export class SupraBotApi {
   private _wsSyncing = false;
   private _wsPendingMessages: Array<{ update: BotApiMessage; envelope: unknown }> = [];
 
+  private _crypto: SupraBotCrypto | null = null;
+  /** Кэш ключей чатов: CryptoKey — чат шифруется; null — открытый (с TTL для перепроверки). */
+  private _chatKeyCache = new Map<string, { key: CryptoKey | null; at: number }>();
+  private static readonly PLAINTEXT_KEY_TTL_MS = 30_000;
+
   constructor(options: { baseUrl: string; login: string; token: string }) {
     if (!options.login || !options.token) {
       throw new Error("SupraBotApi: login и token обязательны");
@@ -445,6 +464,86 @@ export class SupraBotApi {
     return this._request<BotApiMeResponse>("me", {}, "GET");
   }
 
+  /** Подключает криптосессию бота — включает прозрачное шифрование/расшифровку текста. */
+  attachEncryption(crypto: SupraBotCrypto): void {
+    this._crypto = crypto;
+    this._chatKeyCache.clear();
+  }
+
+  getGroupKey(chatId: string): Promise<BotApiGroupKeyResponse> {
+    return this._request<BotApiGroupKeyResponse>("getGroupKey", { chatId }, "GET");
+  }
+
+  /**
+   * Ключ AES-GCM чата (выводится из обёрнутого автопароля). null — чат не шифруется
+   * (для бота нет ключа). Результат кэшируется; «открытый» статус — с TTL.
+   */
+  private async _chatKey(chatId: string | undefined): Promise<CryptoKey | null> {
+    if (!this._crypto || !chatId) return null;
+    const cached = this._chatKeyCache.get(chatId);
+    if (cached) {
+      if (cached.key) return cached.key;
+      if (Date.now() - cached.at < SupraBotApi.PLAINTEXT_KEY_TTL_MS) return null;
+    }
+    let key: CryptoKey | null = null;
+    try {
+      const r = await this.getGroupKey(chatId);
+      if (r.success && r.found && r.wrappedAutoPassword) {
+        const autoPassword = await this._crypto.unwrapAutoPassword(r.wrappedAutoPassword);
+        key = await this._crypto.deriveChatKey(autoPassword, chatId);
+      }
+    } catch {
+      key = null;
+    }
+    this._chatKeyCache.set(chatId, { key, at: Date.now() });
+    return key;
+  }
+
+  private _invalidateChatKey(chatId: string): void {
+    this._chatKeyCache.delete(chatId);
+  }
+
+  /** Шифрует текст для чата, если у бота есть ключ; иначе возвращает как есть. */
+  private async _encryptText(
+    chatId: string | undefined,
+    text: string | undefined,
+  ): Promise<string | undefined> {
+    if (!this._crypto || !chatId || !text || isEncrypted(text)) return text;
+    const key = await this._chatKey(chatId);
+    if (!key) return text;
+    try {
+      return await this._crypto.encryptText(text, key);
+    } catch {
+      return text;
+    }
+  }
+
+  /** Расшифровывает текст чата, если он зашифрован и у бота есть ключ. */
+  private async _decryptText(
+    chatId: string | undefined,
+    text: string | undefined,
+  ): Promise<string | undefined> {
+    if (!this._crypto || !chatId || !text || !isEncrypted(text)) return text;
+    let key = await this._chatKey(chatId);
+    if (key) {
+      try {
+        return await this._crypto.decryptText(text, key);
+      } catch {
+        // Возможно, ключ устарел — сбрасываем кэш и пробуем ещё раз.
+        this._invalidateChatKey(chatId);
+        key = await this._chatKey(chatId);
+        if (key) {
+          try {
+            return await this._crypto.decryptText(text, key);
+          } catch {
+            /* ниже вернём как есть */
+          }
+        }
+      }
+    }
+    return text;
+  }
+
   getEncryptionStatus(): Promise<BotApiEncryptionStatusResponse> {
     return this._request<BotApiEncryptionStatusResponse>("encryptionStatus", {}, "GET");
   }
@@ -457,10 +556,13 @@ export class SupraBotApi {
     );
   }
 
-  sendMessage(params: BotApiSendMessageParams): Promise<BotApiSendMessageResponse> {
+  async sendMessage(params: BotApiSendMessageParams): Promise<BotApiSendMessageResponse> {
+    const { encryptChatId, ...rest } = params;
+    const cryptoChatId = rest.chatId ?? encryptChatId;
+    const text = await this._encryptText(cryptoChatId, rest.text);
     return this._requestWithRetry<BotApiSendMessageResponse>(
       "sendMessage",
-      params as Record<string, unknown>,
+      { ...rest, text } as Record<string, unknown>,
       "POST",
     );
   }
@@ -560,13 +662,18 @@ export class SupraBotApi {
     return this._request<BotApiGetActivityResponse>("getActivity", params, "GET");
   }
 
-  editMessage(params: {
+  async editMessage(params: {
     chatId: string;
     messageId: string;
     text?: string;
     buttons?: BotMessageButtonDto[];
   }): Promise<BotApiEditMessageResponse> {
-    return this._request<BotApiEditMessageResponse>("editMessage", params, "POST");
+    const text = await this._encryptText(params.chatId, params.text);
+    return this._request<BotApiEditMessageResponse>(
+      "editMessage",
+      { ...params, text },
+      "POST",
+    );
   }
 
   deleteMessage(params: {
@@ -685,7 +792,24 @@ export class SupraBotApi {
     if (!this._wsHandlers.onMessage || !update) return;
     if (this._isDuplicateInboxUpdate(update)) return;
     this._noteInboxMessage(update);
-    this._wsHandlers.onMessage(update, envelope);
+    void this._emitDecrypted(update, envelope);
+  }
+
+  /** Расшифровывает текст/превью входящего сообщения (если нужно) и передаёт обработчику. */
+  private async _emitDecrypted(update: BotApiMessage, envelope: unknown): Promise<void> {
+    const handler = this._wsHandlers.onMessage;
+    if (!handler) return;
+    if (this._crypto && update.chatId) {
+      if (isEncrypted(update.text)) {
+        const dec = await this._decryptText(update.chatId, update.text);
+        if (dec != null) update.text = dec;
+      }
+      if (update.replyToTextPreview && isEncrypted(update.replyToTextPreview)) {
+        const dec = await this._decryptText(update.chatId, update.replyToTextPreview);
+        if (dec != null) update.replyToTextPreview = dec;
+      }
+    }
+    handler(update, envelope);
   }
 
   private _flushPendingWsMessages(): void {
@@ -713,7 +837,7 @@ export class SupraBotApi {
         for (const update of messages) {
           if (update?.id && !this._isDuplicateInboxUpdate(update)) {
             this._noteInboxMessage(update);
-            this._wsHandlers.onMessage(update, { type: "sync" });
+            await this._emitDecrypted(update, { type: "sync" });
             synced++;
           }
           if (update?.id) afterId = update.id;
