@@ -9042,8 +9042,11 @@ class MessengerGroupProfileModal {
 		}
 
 		let savedEncryptionEnabled = !!info.encryptionEnabled;
-		if (!info.isBranch && canEdit) {
-			const globalAllowed = MessengerThemeManager.isAdminGroupEncryptionEnabled();
+		const globalEncryptionAllowed = MessengerThemeManager.isAdminGroupEncryptionEnabled();
+		// При глобальной политике открытых групп (шифрование групп запрещено админом)
+		// блок шифрования не показываем вовсе. Исключение — уже зашифрованная группа:
+		// её оставляем управляемой, чтобы шифрование можно было выключить («открыть»).
+		if (!info.isBranch && canEdit && (globalEncryptionAllowed || savedEncryptionEnabled)) {
 			const encToggleCard = mkUiCard(this.#i18n.t('groupEncryptionToggle'));
 			const encToggleHint = this.#utils.mk('div', 'mapp-input-hint mapp-group-section-hint');
 			encToggleHint.textContent = this.#i18n.t('groupEncryptionToggleHint');
@@ -9053,15 +9056,6 @@ class MessengerGroupProfileModal {
 				{ checked: savedEncryptionEnabled },
 			);
 			encToggleCard.appendChild(encToggleRow);
-			// Включать шифрование можно только при глобальном разрешении; выключение
-			// (или уже включённая группа) — доступно всегда.
-			const lockEnableOff = !globalAllowed && !savedEncryptionEnabled;
-			if (lockEnableOff) {
-				encToggleChk.disabled = true;
-				const disabledHint = this.#utils.mk('div', 'mapp-input-hint mapp-group-section-hint');
-				disabledHint.textContent = this.#i18n.t('groupEncryptionDisabledByAdmin');
-				encToggleCard.appendChild(disabledHint);
-			}
 			content.appendChild(encToggleCard);
 			encToggleChk.addEventListener('change', async () => {
 				const enable = encToggleChk.checked;
