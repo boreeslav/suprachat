@@ -1107,6 +1107,7 @@ public sealed partial class SupraMessengerService
                 isCreator = chat.CreatorUserId == userId,
                 allowJoinByLink = chat.AllowJoinByLink,
                 requiresCustomGroupPassword = chat.RequiresCustomGroupPassword,
+                encryptionEnabled = chat.EncryptionEnabled,
                 hasGroupAutoKey = await _store.GetChatMemberKeyAsync(chat.Id, userId, ct) != null,
                 parentChatId = chat.ParentChatId?.ToString(),
                 branchSlug = chat.BranchSlug,
@@ -1191,6 +1192,38 @@ public sealed partial class SupraMessengerService
         catch (Exception ex)
         {
             return (new SupraUpdateGroupResponse { success = false, error = ex.Message }, null);
+        }
+    }
+
+    /// <summary>
+    /// Включает/выключает пер-групповое шифрование (только админ). Включение требует
+    /// глобального разрешения (<paramref name="globalEncryptionAllowed"/>); выключение
+    /// разрешено всегда. Распространение ключей участникам — на стороне клиента (этап UI).
+    /// </summary>
+    public async Task<SupraSetGroupEncryptionResponse> SetGroupEncryptionAsync(
+        UserRecord user, string chatId, bool enabled, bool globalEncryptionAllowed, CancellationToken ct = default)
+    {
+        try
+        {
+            var (chat, me, error) = await GetGroupAccessAsync(user.Id, chatId, ct);
+            if (error != null)
+                return new SupraSetGroupEncryptionResponse { success = false, error = error };
+            if (!me!.IsAdmin)
+                return new SupraSetGroupEncryptionResponse { success = false, error = "Только администратор может менять шифрование группы" };
+            if (enabled && !chat!.EncryptionEnabled && !globalEncryptionAllowed)
+                return new SupraSetGroupEncryptionResponse { success = false, error = "Шифрование групп отключено администратором сервера" };
+
+            if (chat!.EncryptionEnabled != enabled)
+            {
+                chat.EncryptionEnabled = enabled;
+                await _store.SaveChatAsync(chat, ct);
+            }
+
+            return new SupraSetGroupEncryptionResponse { success = true, encryptionEnabled = chat.EncryptionEnabled };
+        }
+        catch (Exception ex)
+        {
+            return new SupraSetGroupEncryptionResponse { success = false, error = ex.Message };
         }
     }
 
@@ -1449,6 +1482,7 @@ public sealed partial class SupraMessengerService
         chatName = chat.Name,
         chatAvatar = GroupAvatarUrl(chat),
         requiresCustomGroupPassword = chat.RequiresCustomGroupPassword,
+        encryptionEnabled = chat.EncryptionEnabled,
     };
 
     public async Task<SupraWsGroupUpdatedPayload?> GetGroupUpdatedPayloadAsync(

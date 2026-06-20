@@ -123,6 +123,7 @@ public sealed partial class SupraMessengerService
                 aggregatedLastMessageTime = last?.CreatedOn,
                 unreadCount = unread,
                 requiresCustomGroupPassword = chat.RequiresCustomGroupPassword,
+                encryptionEnabled = chat.EncryptionEnabled,
                 hasGroupAutoKey = memberKey != null,
                 channelSlug = IsChannelChat(chat) ? chat.Slug : null,
                 isBotContact = isBotContact,

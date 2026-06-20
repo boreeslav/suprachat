@@ -612,6 +612,7 @@ public sealed partial class BotApiService
                 SenderLogin = sender?.Login ?? "",
                 SenderName = message.SenderName,
                 Text = message.Text,
+                EncryptionEnabled = chat.EncryptionEnabled,
                 ReplyToMessageId = message.ReplyToMessageId,
                 ReplyToSenderName = message.ReplyToSenderName,
                 ReplyToTextPreview = message.ReplyToTextPreview,

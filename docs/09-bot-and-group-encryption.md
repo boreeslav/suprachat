@@ -101,11 +101,13 @@
 - **Проверка:** сборка сервера и бота — OK; self-test координатора бота ↔ forge (веб): бот→веб шифрование, веб→бот расшифровка, открытый чат без ключа, кэш ключа — все OK.
 - **Известное ограничение:** ответы режима «помощник» (`assistantReply`, по `sessionId`) пока plaintext; ответы основного диалога (`sendMessage`) шифруются.
 
-### Этап 3 — Пер-групповой переключатель (сервер + модель)
-- Добавить `SupraChatRecord.EncryptionEnabled` + дефолт/миграция (старые группы = false).
-- API мессенджера: метод включения/выключения шифрования группы (админ).
-- Бот-API: `getChatInfo` отдаёт `encryptionEnabled`; `getMessages`/WS помечают зашифрованные группы.
-- Требовать `E1:` для новых сообщений в зашифрованной группе.
+### Этап 3 — Пер-групповой переключатель (сервер + модель) — ✅ ВЫПОЛНЕНО
+- **Модель:** `SupraChatRecord.EncryptionEnabled` (bool, дефолт false). Миграция не нужна — `System.Text.Json` подставляет `false` для старых групп в `chats.json`.
+- **API мессенджера:** новое действие `SetGroupEncryption` (`SupraMessengerController` → `SupraMessengerService.SetGroupEncryptionAsync`). Только админ группы; **включение требует глобального разрешения** `EnableGroupEncryption` (читается через `AppAppearanceService.GetEffectiveAsync`), выключение разрешено всегда. После изменения — broadcast `SupraGroupUpdated`. Флаг отдаётся в `SupraChatDto`, `SupraGetGroupInfoResponse`, `SupraWsGroupUpdatedPayload`.
+- **Бот-API:** `BotApiGetChatInfoResponse.encryptionEnabled` (заполняется в `GetChatInfoAsync` для групп). Входящие сообщения помечаются `encryptionEnabled` (`BotInboxMessageRecord.EncryptionEnabled` → `BotApiMessageDto.encryptionEnabled` в `getMessages` и WS). Фактическая доставка `E1:` групповых сообщений боту — этап 4 (пока зашифрованные групповые сообщения в инбокс бота не кладутся).
+- **Гейт отправки:** в зашифрованной группе текстовые сообщения обязаны быть `E1:` (`SupraMessengerService.Messages.cs`). Исключения: боты без поддержки шифрования (могут слать plaintext — решение §6.2; полноценное групповое шифрование бота — этап 4) и медиа без текста (вложения остаются открытыми).
+- **Веб-клиент:** `encryptionEnabled` проброшен в `#mapChatDto` → `#chatsMeta`, в `updateChatMeta` и обработчик `SupraGroupUpdated`. Привязка `#isPlaintextChatId`/`#shouldEncryptChat` к пер-чатовому флагу и UI-переключатель — этап 5.
+- **Проверка:** сборка сервера и бота — OK, новых предупреждений/линта нет.
 
 ### Этап 4 — Бот в зашифрованной группе (обязательное шифрование)
 - Сервер: при включении шифрования группы — врап автопароля под публичный ключ бота-участника; бот-аутентифицированный `getGroupKey`; доставка `E1:` групповых сообщений в инбокс бота; релакс guard'ов для зашифрованных групп.

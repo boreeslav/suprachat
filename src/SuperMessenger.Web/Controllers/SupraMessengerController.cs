@@ -26,6 +26,7 @@ public sealed class SupraMessengerController : ControllerBase
     private readonly MessengerSyncService _sync;
     private readonly BotApiService _botApi;
     private readonly BotInboxNotifier _botInbox;
+    private readonly AppAppearanceService _appearance;
 
     public SupraMessengerController(
         SupraMessengerService messenger,
@@ -39,7 +40,8 @@ public sealed class SupraMessengerController : ControllerBase
         MessageInfoService messageInfo,
         MessengerSyncService sync,
         BotApiService botApi,
-        BotInboxNotifier botInbox)
+        BotInboxNotifier botInbox,
+        AppAppearanceService appearance)
     {
         _messenger = messenger;
         _current = current;
@@ -53,6 +55,7 @@ public sealed class SupraMessengerController : ControllerBase
         _sync = sync;
         _botApi = botApi;
         _botInbox = botInbox;
+        _appearance = appearance;
     }
 
     [HttpPost("{methodName}")]
@@ -153,6 +156,7 @@ public sealed class SupraMessengerController : ControllerBase
                 GetString(data, "chatId") ?? "",
                 ct),
             "UpdateGroup" => await HandleUpdateGroup(user, data, ct),
+            "SetGroupEncryption" => await HandleSetGroupEncryption(user, data, ct),
             "GetGroupLinkPreview" => await _messenger.GetGroupLinkPreviewAsync(
                 user.Id,
                 GetString(data, "chatId") ?? "",
@@ -866,6 +870,24 @@ public sealed class SupraMessengerController : ControllerBase
             if (systemEvent != null)
                 await BroadcastChatMessageAsync(cg, systemEvent, ct);
         }
+        return result;
+    }
+
+    private async Task<object> HandleSetGroupEncryption(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var chatId = GetString(data, "chatId") ?? "";
+        var enabled = false;
+        if (data.ValueKind == JsonValueKind.Object &&
+            data.TryGetProperty("enabled", out var enProp) &&
+            (enProp.ValueKind == JsonValueKind.True || enProp.ValueKind == JsonValueKind.False))
+            enabled = enProp.GetBoolean();
+
+        var effective = await _appearance.GetEffectiveAsync(ct);
+        var globalAllowed = effective.EnableGroupEncryption ?? false;
+
+        var result = await _messenger.SetGroupEncryptionAsync(user, chatId, enabled, globalAllowed, ct);
+        if (result.success && Guid.TryParse(chatId, out var cg))
+            await BroadcastGroupUpdatedAsync(cg, ct);
         return result;
     }
 

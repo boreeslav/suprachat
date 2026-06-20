@@ -43,6 +43,7 @@ public sealed partial class BotApiService
                     canPost = true,
                     canManageMembers = info.isAdmin,
                     allowJoinByLink = info.allowJoinByLink,
+                    encryptionEnabled = chat.EncryptionEnabled,
                     members = info.members.Select(m => new BotApiGroupMemberDto
                     {
                         id = m.id,

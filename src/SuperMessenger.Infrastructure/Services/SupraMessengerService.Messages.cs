@@ -237,6 +237,14 @@ public sealed partial class SupraMessengerService
             }
             else if (chat != null && IsGroupChat(chat))
             {
+                // В зашифрованной группе текстовые сообщения обязаны быть E1:.
+                // Боты без поддержки шифрования — исключение (могут слать plaintext,
+                // полноценное групповое шифрование бота — отдельный этап). Медиа без текста
+                // (вложения) остаются открытыми по дизайну.
+                if (chat.EncryptionEnabled && !IsBotUser(user) &&
+                    !string.IsNullOrEmpty(text) && !IsEncryptedPayload(text))
+                    return (new SupraSendMessageResponse { success = false, error = "В зашифрованной группе сообщения должны быть зашифрованы" }, null);
+
                 var recipients = await GetMessageRecipientUserIdsAsync(chatGuid, user.Id, ct);
                 if (recipients.Count == 0)
                 {

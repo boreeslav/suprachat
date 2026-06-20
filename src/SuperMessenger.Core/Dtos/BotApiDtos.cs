@@ -11,6 +11,8 @@ public sealed class BotApiMessageDto
     public string senderLogin { get; set; } = "";
     public string senderName { get; set; } = "";
     public string text { get; set; } = "";
+    /// <summary>Сообщение из зашифрованной группы (пер-групповой переключатель включён).</summary>
+    public bool encryptionEnabled { get; set; }
     /// <summary>text | image | photo_album | file</summary>
     public string contentType { get; set; } = "text";
     public string? caption { get; set; }
@@ -178,6 +180,8 @@ public sealed class BotApiGetChatInfoResponse
     public bool canManageMembers { get; set; }
     public string? myRole { get; set; }
     public bool allowJoinByLink { get; set; }
+    /// <summary>Пер-групповой переключатель шифрования включён для этой группы.</summary>
+    public bool encryptionEnabled { get; set; }
     public List<BotApiGroupMemberDto> members { get; set; } = [];
     public List<BotApiGroupBranchDto> branches { get; set; } = [];
     public string? error { get; set; }

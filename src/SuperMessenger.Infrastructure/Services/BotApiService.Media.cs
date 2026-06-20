@@ -210,6 +210,7 @@ public sealed partial class BotApiService
             senderId = m.SenderUserId.ToString(),
             senderLogin = m.SenderLogin,
             senderName = m.SenderName,
+            encryptionEnabled = m.EncryptionEnabled,
             timestamp = m.CreatedOn,
             replyToMessageId = m.ReplyToMessageId?.ToString(),
             replyToSenderName = m.ReplyToSenderName,

@@ -11,6 +11,8 @@ public sealed class SupraChatRecord
     public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
     /// <summary>Группа требует дополнительный пароль (задаётся вне сервера).</summary>
     public bool RequiresCustomGroupPassword { get; set; }
+    /// <summary>Пер-групповой переключатель шифрования. По умолчанию false (старые группы — открытые).</summary>
+    public bool EncryptionEnabled { get; set; }
     /// <summary>Уникальная ссылка канала (/@slug). Только для Type=channel.</summary>
     public string? Slug { get; set; }
     /// <summary>Описание канала.</summary>

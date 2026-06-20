@@ -13,6 +13,8 @@ public sealed class BotInboxMessageRecord
     public string SenderLogin { get; set; } = "";
     public string SenderName { get; set; } = "";
     public string Text { get; set; } = "";
+    /// <summary>Сообщение из зашифрованной группы (пер-групповой переключатель включён).</summary>
+    public bool EncryptionEnabled { get; set; }
     public Guid? ReplyToMessageId { get; set; }
     public string? ReplyToSenderName { get; set; }
     public string? ReplyToTextPreview { get; set; }

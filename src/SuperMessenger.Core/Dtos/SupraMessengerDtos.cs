@@ -16,6 +16,8 @@ public sealed class SupraChatDto
     public DateTime? aggregatedLastMessageTime { get; set; }
     public int unreadCount { get; set; }
     public bool requiresCustomGroupPassword { get; set; }
+    /// <summary>Пер-групповой переключатель шифрования включён для этой группы.</summary>
+    public bool encryptionEnabled { get; set; }
     public bool hasGroupAutoKey { get; set; }
     public string? channelSlug { get; set; }
     public bool isBotContact { get; set; }
@@ -487,6 +489,8 @@ public sealed class SupraGetGroupInfoResponse
     public bool isCreator { get; set; }
     public bool allowJoinByLink { get; set; }
     public bool requiresCustomGroupPassword { get; set; }
+    /// <summary>Пер-групповой переключатель шифрования включён для этой группы.</summary>
+    public bool encryptionEnabled { get; set; }
     public bool hasGroupAutoKey { get; set; }
     public string? parentChatId { get; set; }
     public string? branchSlug { get; set; }
@@ -529,6 +533,13 @@ public sealed class SupraUpdateGroupResponse
     public string? error { get; set; }
 }
 
+public sealed class SupraSetGroupEncryptionResponse
+{
+    public bool success { get; set; }
+    public bool encryptionEnabled { get; set; }
+    public string? error { get; set; }
+}
+
 public sealed class SupraCreateGroupBranchResponse
 {
     public bool success { get; set; }
@@ -559,6 +570,8 @@ public sealed class SupraWsGroupUpdatedPayload
     public string chatName { get; set; } = "";
     public string? chatAvatar { get; set; }
     public bool requiresCustomGroupPassword { get; set; }
+    /// <summary>Пер-групповой переключатель шифрования включён для этой группы.</summary>
+    public bool encryptionEnabled { get; set; }
 }
 
 /// <summary>Chat is no longer available to this user (left, removed from group, or chat deleted).</summary>

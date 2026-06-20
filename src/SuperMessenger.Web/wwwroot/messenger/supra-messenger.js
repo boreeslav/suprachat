@@ -21008,13 +21008,16 @@ class MessengerAppView {
 		await this.#assistantMgr.processPendingOnConnect();
 	}
 
-	updateChatMeta(chatId, { name, avatar, contactStatusText, requiresCustomGroupPassword } = {}) {
+	updateChatMeta(chatId, { name, avatar, contactStatusText, requiresCustomGroupPassword, encryptionEnabled } = {}) {
 		const c = this.#chats.find(x => x.id === chatId);
 		if (c) {
 			if (name != null) c.name = name;
 			if (avatar !== undefined) c.avatar = avatar;
 			if (requiresCustomGroupPassword != null) {
 				c.requiresCustomGroupPassword = !!requiresCustomGroupPassword;
+			}
+			if (encryptionEnabled != null) {
+				c.encryptionEnabled = !!encryptionEnabled;
 			}
 			if (contactStatusText !== undefined && c.type === 'direct') {
 				c.contactStatusText = contactStatusText;
@@ -21025,6 +21028,9 @@ class MessengerAppView {
 			if (avatar !== undefined) this.#activeChat.avatar = avatar;
 			if (requiresCustomGroupPassword != null) {
 				this.#activeChat.requiresCustomGroupPassword = !!requiresCustomGroupPassword;
+			}
+			if (encryptionEnabled != null) {
+				this.#activeChat.encryptionEnabled = !!encryptionEnabled;
 			}
 			if (contactStatusText !== undefined && this.#activeChat.type === 'direct') {
 				this.#activeChat.contactStatusText = contactStatusText;
@@ -22477,6 +22483,7 @@ class MessengerApiClient {
 				: null,
 			unreadCount: c.unreadCount || 0,
 			requiresCustomGroupPassword: !!c.requiresCustomGroupPassword,
+			encryptionEnabled: !!c.encryptionEnabled,
 			hasGroupAutoKey: !!c.hasGroupAutoKey,
 			channelSlug: c.channelSlug || null,
 			isBotContact: !!c.isBotContact,
@@ -32216,13 +32223,14 @@ class Messenger {
 				break;
 			}
 			case 'SupraGroupUpdated': {
-				const { chatId, chatName, chatAvatar, requiresCustomGroupPassword } = body;
+				const { chatId, chatName, chatAvatar, requiresCustomGroupPassword, encryptionEnabled } = body;
 				if (!chatId) break;
 				if (this.#mode === Messenger.MODE_APP) {
 					this.#appView.updateChatMeta(chatId, {
 						name: chatName,
 						avatar: chatAvatar ?? null,
 						requiresCustomGroupPassword,
+						encryptionEnabled,
 					});
 				}
 				break;
