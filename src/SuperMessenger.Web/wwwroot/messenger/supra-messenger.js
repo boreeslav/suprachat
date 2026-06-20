@@ -69,6 +69,14 @@ class MessengerI18n {
 			msgBasicTier: 'Без доп. пароля',
 			groupExtraPasswordToggle: 'Режим доп. пароля в группе',
 			groupExtraPasswordToggleHint: 'Сообщения без доп. пароля помечаются отдельно; защищённые видят только те, кому передали пароль',
+			groupEncryptionToggle: 'Шифрование группы',
+			groupEncryptionToggleHint: 'Сообщения группы шифруются end-to-end; ключи раздаются участникам (включая ботов с поддержкой шифрования)',
+			groupEncryptionDisabledByAdmin: 'Шифрование групп отключено администратором сервера',
+			groupEncryptionEnabling: 'Включаю шифрование и раздаю ключи…',
+			groupEncryptionEnabled: 'Шифрование группы включено',
+			groupEncryptionDisabled: 'Шифрование группы выключено',
+			groupEncryptionMissingKeys: 'Часть участников ещё не опубликовала ключи шифрования — они получат ключ автоматически после входа с мастер-паролем',
+			groupEncryptionNeedMaster: 'Чтобы включить шифрование, войдите с мастер-паролем',
 			searchContacts: 'Поиск контактов…',
 			searchChats: 'Поиск…',
 			writeMessage: 'Написать сообщение…',
@@ -595,6 +603,14 @@ class MessengerI18n {
 			msgBasicTier: 'Without extra password',
 			groupExtraPasswordToggle: 'Group extra-password mode',
 			groupExtraPasswordToggleHint: 'Messages without extra password are marked; protected ones need the shared password',
+			groupEncryptionToggle: 'Group encryption',
+			groupEncryptionToggleHint: 'Group messages are end-to-end encrypted; keys are shared with members (including encryption-capable bots)',
+			groupEncryptionDisabledByAdmin: 'Group encryption is disabled by the server administrator',
+			groupEncryptionEnabling: 'Enabling encryption and distributing keys…',
+			groupEncryptionEnabled: 'Group encryption enabled',
+			groupEncryptionDisabled: 'Group encryption disabled',
+			groupEncryptionMissingKeys: 'Some members have not published encryption keys yet — they will receive the key automatically after signing in with their master password',
+			groupEncryptionNeedMaster: 'To enable encryption, sign in with your master password',
 			searchContacts: 'Search contacts…',
 			searchChats: 'Search…',
 			writeMessage: 'Write a message…',
@@ -8914,7 +8930,7 @@ class MessengerGroupProfileModal {
 		}
 
 		const canEdit = !!info.canEdit;
-		if (canEdit && MessengerThemeManager.isAdminGroupEncryptionEnabled()) {
+		if (canEdit && info.encryptionEnabled) {
 			this.#api.distributeMissingGroupKeys(chat.id).catch(() => {});
 		}
 		const content = this.#utils.mk('div', 'mapp-group-profile-content');
@@ -9025,8 +9041,94 @@ class MessengerGroupProfileModal {
 			}));
 		}
 
+		let savedEncryptionEnabled = !!info.encryptionEnabled;
+		if (!info.isBranch && canEdit) {
+			const globalAllowed = MessengerThemeManager.isAdminGroupEncryptionEnabled();
+			const encToggleCard = mkUiCard(this.#i18n.t('groupEncryptionToggle'));
+			const encToggleHint = this.#utils.mk('div', 'mapp-input-hint mapp-group-section-hint');
+			encToggleHint.textContent = this.#i18n.t('groupEncryptionToggleHint');
+			encToggleCard.appendChild(encToggleHint);
+			const { row: encToggleRow, input: encToggleChk } = mkToggleField(
+				this.#i18n.t('groupEncryptionToggle'),
+				{ checked: savedEncryptionEnabled },
+			);
+			encToggleCard.appendChild(encToggleRow);
+			// Включать шифрование можно только при глобальном разрешении; выключение
+			// (или уже включённая группа) — доступно всегда.
+			const lockEnableOff = !globalAllowed && !savedEncryptionEnabled;
+			if (lockEnableOff) {
+				encToggleChk.disabled = true;
+				const disabledHint = this.#utils.mk('div', 'mapp-input-hint mapp-group-section-hint');
+				disabledHint.textContent = this.#i18n.t('groupEncryptionDisabledByAdmin');
+				encToggleCard.appendChild(disabledHint);
+			}
+			content.appendChild(encToggleCard);
+			encToggleChk.addEventListener('change', async () => {
+				const enable = encToggleChk.checked;
+				if (enable === savedEncryptionEnabled) return;
+				encToggleChk.disabled = true;
+				try {
+					if (enable) {
+						const crypto = this.#api.getCrypto?.() || window.supraCrypto;
+						if (!crypto) {
+							encToggleChk.checked = false;
+							await MessengerDialog.alert({
+								title: this.#i18n.t('groupEncryptionToggle'),
+								message: this.#i18n.t('groupEncryptionNeedMaster'),
+								themeManager: this.#themeManager,
+							});
+							return;
+						}
+						showSaveStatus(this.#i18n.t('groupEncryptionEnabling'), true);
+						await this.#api.setGroupEncryption(chat.id, true);
+						savedEncryptionEnabled = true;
+						info.encryptionEnabled = true;
+						chat.encryptionEnabled = true;
+						const meta = this.#api.chatMeta(chat.id);
+						if (meta) meta.encryptionEnabled = true;
+						// Раздать ключи всем участникам (включая ботов с поддержкой шифрования).
+						try {
+							await this.#api.ensureChatEncryptionKeys(chat, { distribute: true, force: true });
+						} catch (e) {
+							console.warn('[GroupProfile] ensureChatEncryptionKeys', e);
+						}
+						let missingCount = 0;
+						try {
+							const missRes = await fetch(
+								`/api/encryption/group-keys/${encodeURIComponent(chat.id)}/missing`,
+								{ credentials: 'same-origin' });
+							if (missRes.ok) {
+								const { userIds } = await missRes.json();
+								missingCount = userIds?.length || 0;
+							}
+						} catch { /* ignore */ }
+						showSaveStatus(
+							missingCount > 0
+								? this.#i18n.t('groupEncryptionMissingKeys')
+								: this.#i18n.t('groupEncryptionEnabled'),
+							missingCount === 0,
+						);
+					} else {
+						await this.#api.setGroupEncryption(chat.id, false);
+						savedEncryptionEnabled = false;
+						info.encryptionEnabled = false;
+						chat.encryptionEnabled = false;
+						const meta = this.#api.chatMeta(chat.id);
+						if (meta) meta.encryptionEnabled = false;
+						showSaveStatus(this.#i18n.t('groupEncryptionDisabled'), true);
+					}
+				} catch (e) {
+					encToggleChk.checked = savedEncryptionEnabled;
+					showSaveStatus(e.message || this.#i18n.t('groupSaveError'), false);
+				} finally {
+					const stillLocked = !MessengerThemeManager.isAdminGroupEncryptionEnabled() && !savedEncryptionEnabled;
+					encToggleChk.disabled = stillLocked;
+				}
+			});
+		}
+
 		let savedRequiresExtra = !!info.requiresCustomGroupPassword;
-		if (!info.isBranch && MessengerThemeManager.isAdminGroupEncryptionEnabled()) {
+		if (!info.isBranch && info.encryptionEnabled) {
 		const encCard = mkUiCard(this.#i18n.t('passwordSectionMaster'));
 		const encHint = this.#utils.mk('div', 'mapp-input-hint mapp-group-section-hint');
 		encHint.textContent = this.#i18n.t('groupExtraPasswordToggleHint');
@@ -12547,7 +12649,7 @@ class MessengerThemeManager {
 	static shouldShowChatEncryptionMenu(chat) {
 		if (!chat) return false;
 		const isGroup = chat.type === 'group' || chat.type === 'public_group' || chat.type === 'group_branch';
-		if (isGroup && !MessengerThemeManager.isAdminGroupEncryptionEnabled()) return false;
+		if (isGroup && !chat.encryptionEnabled) return false;
 		return true;
 	}
 
@@ -20275,7 +20377,7 @@ class MessengerAppView {
 		void (async () => {
 			try {
 				if (chatData.type === 'direct'
-					|| (this.#isGroupChat(chatData) && MessengerThemeManager.isAdminGroupEncryptionEnabled())) {
+					|| (this.#isGroupChat(chatData) && chatData.encryptionEnabled)) {
 					const keysCreated = await this.#api.ensureChatEncryptionKeys(chatData);
 					if (keysCreated) {
 						const pooled = this.#panelPool.get(chatId);
@@ -20288,7 +20390,7 @@ class MessengerAppView {
 						}
 					}
 				}
-				if (this.#isGroupChat(chatData) && MessengerThemeManager.isAdminGroupEncryptionEnabled()
+				if (this.#isGroupChat(chatData) && chatData.encryptionEnabled
 					&& !chatData.hasGroupAutoKey
 					&& this.#activeState?.chatId === chatId) {
 					await MessengerDialog.alert({
@@ -22519,9 +22621,11 @@ class MessengerApiClient {
 	#isPlaintextChatId(chatId) {
 		if (this.#isChannelChatId(chatId)) return true;
 		if (this.#isBotChatId(chatId)) return !this.#botChatSupportsEncryption(chatId);
-		if (!MessengerThemeManager.isAdminGroupEncryptionEnabled()) {
-			const chat = this.#chatsMeta.get(chatId);
-			if (chat && (isMessengerGroupChatType(chat.type) || isGroupBranchChat(chat))) return true;
+		const chat = this.#chatsMeta.get(chatId);
+		if (chat && (isMessengerGroupChatType(chat.type) || isGroupBranchChat(chat))) {
+			// Источник истины — пер-групповой флаг. Глобальная настройка лишь разрешает
+			// его включать; уже зашифрованная группа остаётся зашифрованной.
+			return !chat.encryptionEnabled;
 		}
 		return false;
 	}
@@ -22672,7 +22776,7 @@ class MessengerApiClient {
 		const chat = this.#chatsMeta.get(chatId);
 		if (!chat) return !!this.#crypto?.isExtraEncryptionEnabled(chatId);
 		const isGroup = chat.type === 'group' || chat.type === 'public_group' || chat.type === 'group_branch';
-		if (isGroup && !MessengerThemeManager.isAdminGroupEncryptionEnabled()) return false;
+		if (isGroup && !chat.encryptionEnabled) return false;
 		return !!this.#crypto?.isExtraEncryptionEnabled(chatId)
 			|| (isGroup && !!chat.requiresCustomGroupPassword);
 	}
@@ -23016,7 +23120,7 @@ class MessengerApiClient {
 			if (!this.#shouldIssueFreshChatKeys(missing, 2)) return false;
 			await this.#setupGroupKeys(chatId, [otherId]);
 		} else if (isMessengerGroupChatType(type)) {
-			if (!MessengerThemeManager.isAdminGroupEncryptionEnabled()) return false;
+			if (this.#isPlaintextChatId(chatId)) return false;
 			const info = await this.getGroupInfo(chatId);
 			const participantIds = (info.members || [])
 				.map(m => m.id)
@@ -23167,7 +23271,7 @@ class MessengerApiClient {
 	}
 
 	async #ensureGroupChatEncryptionKeys(chat, options = {}) {
-		if (!MessengerThemeManager.isAdminGroupEncryptionEnabled()) return false;
+		if (this.#isPlaintextChatId(chat.id)) return false;
 		const chatId = chat.id;
 		const shouldDistribute = options.distribute !== false;
 		if (options.force) {
@@ -23979,20 +24083,12 @@ class MessengerApiClient {
 			requiresCustomGroupPassword: !!groupOptions.requiresCustomPassword,
 			isAdmin: true,
 			isGroupCreator: true,
+			encryptionEnabled: false,
 		};
 		this.#chatsMeta.set(chat.id, chat);
-		if (MessengerThemeManager.isAdminGroupEncryptionEnabled()) {
-			try {
-				const setup = await this.#setupGroupKeys(chat.id, participantContactIds, groupOptions);
-				chat.hasGroupAutoKey = true;
-				if (setup?.missingCount > 0) {
-					chat.keySetupWarning = setup.missingCount;
-				}
-			} catch (e) {
-				console.warn('[MessengerApiClient] createGroup setup keys', e);
-				chat.keySetupError = e;
-			}
-		}
+		// Новые группы создаются открытыми: пер-групповой переключатель по умолчанию
+		// выключен. Шифрование и раздача ключей включаются админом позже в настройках
+		// группы (setGroupEncryption → ensureChatEncryptionKeys).
 		return chat;
 	}
 
@@ -24037,6 +24133,15 @@ class MessengerApiClient {
 		if (requiresCustomGroupPassword != null) payload.requiresCustomGroupPassword = requiresCustomGroupPassword;
 		const r = await this.call('UpdateGroup', payload);
 		if (!r?.success) throw new Error(r?.error || 'UpdateGroup failed');
+		return r;
+	}
+
+	async setGroupEncryption(chatId, enabled) {
+		const r = await this.call('SetGroupEncryption', { chatId, enabled: !!enabled });
+		if (!r?.success) throw new Error(r?.error || 'SetGroupEncryption failed');
+		const meta = this.#chatsMeta.get(chatId);
+		if (meta) meta.encryptionEnabled = !!r.encryptionEnabled;
+		this.#clearChatKeyCaches(chatId);
 		return r;
 	}
 
