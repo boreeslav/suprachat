@@ -52,7 +52,7 @@ const HELP_TEXT = `Команды Cursor-бота:
 /project list — список проектов
 /status — статус активной сессии
 /stop или /sess:stop — остановить текущую задачу агента (меню «Сессии» → «Стоп»)
-/actions — каталог кнопок-действий (скрипты и задачи агента)
+/actions — каталог действий (или меню «Действия» → подменю со скриптами и задачами агента)
 
 До ${5} параллельных сессий на чат. Фоновые сессии продолжают работу; их ответы появятся при переключении.
 Любой другой текст отправляется агенту в активную сессию.
@@ -570,7 +570,8 @@ export class MessageHandler {
         (u, t) => this.reply(u, t).then(() => undefined),
         async () => {
           await this.clearChatActivities(update);
-          await this.scheduleBotRestart("action-mgmt");
+          // Каталог действий изменился — сразу обновляем подменю «Действия» (без перезапуска бота).
+          await this.menuManager.publishForChat(update.chatId, update.chatType, true);
         },
       )
     ) {
@@ -1846,8 +1847,17 @@ export class MessageHandler {
     isStillActive?: () => boolean,
   ): Promise<void> {
     if (reply.status === "error") {
-      if (thoughtStatus) await thoughtStatus.finalize("");
+      // Сообщение об ошибке — тоже новое сообщение; пузырь мыслей удаляем после доставки.
+      let bubbleMessageId: string | undefined;
+      if (thoughtStatus) {
+        const finalized = await thoughtStatus.finalize("");
+        bubbleMessageId = finalized.messageId;
+      }
       await this.deliverAgentReply(update, sessionKey, reply, isStillActive);
+      if (thoughtStatus && bubbleMessageId) {
+        await sleep(1000);
+        await thoughtStatus.deleteBubble(bubbleMessageId);
+      }
       return;
     }
 
@@ -1863,25 +1873,34 @@ export class MessageHandler {
       return;
     }
 
-    let startIdx = 0;
+    // Пузырь мыслей нельзя превращать в ответ через edit: правка не поднимает счётчик
+    // непрочитанных у получателя (после «мыслей» индикатор не появлялся). Поэтому ответ
+    // всегда доставляем новыми сообщениями, а пузырь удаляем после доставки.
+    let bubbleMessageId: string | undefined;
     if (thoughtStatus) {
       const finalized = await thoughtStatus.finalize(chunks[0]!);
-      if (finalized.converted) {
-        console.log(
-          `[handler] answer delivered via thought edit (${sessionKey}, message ${finalized.messageId}, run ${reply.runId})`,
-        );
-        startIdx = 1;
-      }
+      bubbleMessageId = finalized.messageId;
     }
 
-    for (let i = startIdx; i < chunks.length; i++) {
-      if (isStillActive && !isStillActive()) return;
-      await this.deliverAgentReply(
-        update,
-        sessionKey,
-        { ...reply, text: chunks[i]! },
-        isStillActive,
-      );
+    let delivered = false;
+    try {
+      for (let i = 0; i < chunks.length; i++) {
+        if (isStillActive && !isStillActive()) return;
+        await this.deliverAgentReply(
+          update,
+          sessionKey,
+          { ...reply, text: chunks[i]! },
+          isStillActive,
+        );
+      }
+      delivered = true;
+    } finally {
+      // Задержка 1с между действиями (доставка ответа → удаление пузыря): новое
+      // сообщение-ответ успевает поднять индикатор непрочитанных до исчезновения пузыря.
+      if (thoughtStatus && bubbleMessageId) {
+        if (delivered) await sleep(1000);
+        await thoughtStatus.deleteBubble(bubbleMessageId);
+      }
     }
   }
 

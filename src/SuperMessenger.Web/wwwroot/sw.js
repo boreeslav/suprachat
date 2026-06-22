@@ -57,7 +57,13 @@ const PRECACHE_PATHS = [
 
 const STATIC_EXT = /\.(?:js|mjs|css|woff2?|ttf|otf|eot|png|jpg|jpeg|gif|svg|webp|ico|map|wasm)$/i;
 
-/** Загрузчик и ядро — всегда с сети, иначе stale-while-revalidate отдаёт старый loader. */
+/**
+ * Загрузчик и ядро — сначала с сети (свежий код после деплоя), но с таймаутом:
+ * при плохом/медленном интернете сеть может висеть десятки секунд, поэтому если
+ * за NETWORK_FIRST_TIMEOUT_MS ответа нет — отдаём версионированный кеш (он идентичен
+ * сетевому для текущего билда), чтобы приложение стартовало из офлайн-кеша, а не висло.
+ */
+const NETWORK_FIRST_TIMEOUT_MS = 3000;
 const NETWORK_FIRST_PATHS = [
 	'/sw.js',
 	'/messenger/app-script-cache.js',
@@ -226,17 +232,32 @@ self.addEventListener('fetch', (event) => {
 
 async function networkFirst(req) {
 	const cache = await caches.open(CACHE_NAME);
-	try {
-		const res = await fetch(req);
-		if (res && res.ok && (res.type === 'basic' || res.type === 'default')) {
-			cache.put(req, res.clone()).catch(() => { /* ignore quota */ });
-		}
-		return res;
-	} catch (_) {
-		const cached = await cache.match(req);
-		if (cached) return cached;
-		return new Response('Offline', { status: 503, statusText: 'Offline' });
+	const cached = await cache.match(req);
+
+	const network = fetch(req)
+		.then((res) => {
+			if (res && res.ok && (res.type === 'basic' || res.type === 'default')) {
+				cache.put(req, res.clone()).catch(() => { /* ignore quota */ });
+			}
+			return res;
+		})
+		.catch(() => null);
+
+	// Кеш есть → даём сети ограниченное время. Если не успела (плохой интернет) —
+	// отдаём кеш сразу, фоновое обновление продолжается и попадёт в кеш для след. загрузки.
+	if (cached) {
+		const raced = await Promise.race([
+			network,
+			new Promise((resolve) => setTimeout(() => resolve(null), NETWORK_FIRST_TIMEOUT_MS)),
+		]);
+		if (raced) return raced;
+		network.catch(() => { /* ignore background errors */ });
+		return cached;
 	}
+
+	const fresh = await network;
+	if (fresh) return fresh;
+	return new Response('Offline', { status: 503, statusText: 'Offline' });
 }
 
 async function matchCachedHtml(req, cache) {

@@ -82,7 +82,7 @@ async function main(): Promise<void> {
 
   const cursor = new CursorBridge(config.cursor, state, modelCatalog, projectCatalog);
   const sessions = new SessionRegistry(state, projectCatalog.defaultKey);
-  const menuManager = new BotMenuManager(api, cursor, sessions, modelCatalog, projectCatalog);
+  const menuManager = new BotMenuManager(api, cursor, sessions, modelCatalog, projectCatalog, config.bot.configPath);
   await menuManager.publishGlobal(true);
   const knownChatIds = state.listChatRoomIds();
   for (const pending of state.listPendingRuns()) {

@@ -15,7 +15,7 @@ export interface ThoughtStatusOptions {
 }
 
 export interface ThoughtFinalizeResult {
-  converted: boolean;
+  /** id пузыря мыслей, если он был создан — вызывающий код удаляет его после доставки ответа. */
   messageId?: string;
 }
 
@@ -249,11 +249,15 @@ export class ThoughtStatusPublisher {
   }
 
   /**
-   * Завершает публикацию мыслей: ждёт worker, превращает пузырь мыслей в финальный ответ
-   * (edit без маркера) вместо delete+send — устраняет гонку, когда delete сносил финальный текст.
+   * Завершает публикацию мыслей: ждёт worker и возвращает id пузыря мыслей.
+   *
+   * Раньше пузырь превращался в финальный ответ через edit, но правка не поднимает
+   * счётчик непрочитанных у получателя — после «мыслей» ответ приходил без индикатора.
+   * Теперь ответ всегда доставляется отдельными новыми сообщениями (вызывающий код),
+   * а пузырь мыслей удаляется ПОСЛЕ доставки ответа через {@link deleteBubble}.
    */
-  async finalize(finalText: string): Promise<ThoughtFinalizeResult> {
-    if (this.disposed) return { converted: false };
+  async finalize(_finalText: string): Promise<ThoughtFinalizeResult> {
+    if (this.disposed) return {};
 
     this.disposed = true;
     this.latestPending = null;
@@ -263,36 +267,33 @@ export class ThoughtStatusPublisher {
     this.messageId = undefined;
     this.buffer = "";
 
-    const trimmed = finalText.trim();
     if (!messageId) {
       console.log("[thought-status] finalize: no thought bubble, will send new message");
-      return { converted: false };
-    }
-    if (!trimmed) {
-      this.deleteThoughtMessage(messageId, "finalize-empty");
-      return { converted: false };
+      return {};
     }
 
+    // Ответ всегда уходит новыми сообщениями. id пузыря возвращаем, чтобы вызывающий код
+    // удалил его уже после доставки ответа.
+    return { messageId };
+  }
+
+  /**
+   * Удаляет пузырь мыслей после доставки ответа. Делается отдельным шагом
+   * (с задержкой со стороны вызывающего кода), чтобы новое сообщение-ответ успело
+   * поднять счётчик непрочитанных, прежде чем исчезнет пузырь.
+   */
+  async deleteBubble(messageId: string): Promise<void> {
+    if (!messageId) return;
+    this.thoughtMessageIds.delete(messageId);
     try {
-      const result = await this.api.editMessage({
+      await this.api.deleteMessage({
         chatId: this.update.chatId,
         messageId,
-        text: trimmed,
+        deleteForEveryone: true,
       });
-      if (!result.success) {
-        console.warn("[thought-status] finalize edit failed:", result.error ?? "unknown");
-        this.deleteThoughtMessage(messageId, "finalize-edit-failed");
-        return { converted: false };
-      }
-      this.thoughtMessageIds.delete(messageId);
-      console.log(
-        `[thought-status] finalized thought ${messageId} as answer (${trimmed.length} chars, chat ${this.update.chatId})`,
-      );
-      return { converted: true, messageId };
+      console.log(`[thought-status] deleted thought bubble ${messageId} after reply (chat ${this.update.chatId})`);
     } catch (err) {
-      console.warn("[thought-status] finalize edit error:", err instanceof Error ? err.message : err);
-      this.deleteThoughtMessage(messageId, "finalize-edit-error");
-      return { converted: false };
+      console.warn("[thought-status] post-reply delete failed:", err instanceof Error ? err.message : err);
     }
   }
 

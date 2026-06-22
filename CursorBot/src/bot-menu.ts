@@ -1,9 +1,16 @@
 import type { CursorBotMode } from "./cursor-mode.js";
 import { formatModeLabel } from "./cursor-mode.js";
 import { SESSION_CMD_PREFIX } from "./session-keys.js";
+import { ACTION_CMD_PREFIX, META_MANAGE } from "./actions-constants.js";
 import type { MenuModelItem } from "./model-catalog.js";
 import type { MenuProjectItem } from "./project-catalog.js";
 import type { BotApiMenuDto, BotApiMenuItemDto } from "./supra-bot-api.js";
+
+/** Пункт подменю «Действия»: id + название кнопки действия из actions.json. */
+export interface MenuActionItem {
+  id: string;
+  title: string;
+}
 
 function modeMenuItem(id: string, mode: CursorBotMode, activeMode: CursorBotMode): BotApiMenuItemDto {
   const active = mode === activeMode;
@@ -34,6 +41,24 @@ function projectMenuItem(id: string, item: MenuProjectItem, activeKey: string): 
 
 export const PROJECT_ADD_CMD = "/project add";
 
+/**
+ * Подменю «Действия» в основном меню: каждое действие запускается напрямую,
+ * последний пункт «Управление» открывает добавление/редактирование/удаление (как раньше).
+ */
+function buildActionsSubmenu(actionItems: MenuActionItem[]): BotApiMenuItemDto[] {
+  const items: BotApiMenuItemDto[] = actionItems.map((action, index) => ({
+    id: `action-${index}`,
+    text: action.title,
+    message: `${ACTION_CMD_PREFIX}${action.id}`,
+  }));
+  items.push({
+    id: "action-manage",
+    text: "⚙️ Управление",
+    message: `${ACTION_CMD_PREFIX}${META_MANAGE}`,
+  });
+  return items;
+}
+
 function buildProjectSubmenu(
   projectItems: MenuProjectItem[],
   activeKey: string,
@@ -57,6 +82,7 @@ export function buildBotMenu(
   activeProject: string = "",
   sessionItems: BotApiMenuItemDto[] = [],
   activeSessionId: string | null = null,
+  actionItems: MenuActionItem[] = [],
 ): BotApiMenuDto {
   const items: BotApiMenuItemDto[] = [
     { id: "help", text: "Справка", message: "/help" },
@@ -102,7 +128,7 @@ export function buildBotMenu(
         modelMenuItem(`model-${index}`, item, activeModel),
       ),
     },
-    { id: "actions", text: "Действия", message: "/actions" },
+    { id: "actions", text: "Действия", submenu: buildActionsSubmenu(actionItems) },
     { id: "status", text: "Статус", message: "/status" },
   );
 
@@ -114,6 +140,7 @@ export function buildDefaultBotMenu(
   modelItems: MenuModelItem[] = [],
   projectItems: MenuProjectItem[] = [],
   defaultProjectId = "",
+  actionItems: MenuActionItem[] = [],
 ): BotApiMenuDto {
-  return buildBotMenu("agent", "auto", modelItems, projectItems, defaultProjectId);
+  return buildBotMenu("agent", "auto", modelItems, projectItems, defaultProjectId, [], null, actionItems);
 }

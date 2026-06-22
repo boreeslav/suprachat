@@ -1,5 +1,6 @@
-import { buildBotMenu, buildDefaultBotMenu } from "./bot-menu.js";
+import { buildBotMenu, buildDefaultBotMenu, type MenuActionItem } from "./bot-menu.js";
 import { isGroupChatType } from "./chat-type.js";
+import { loadActionsConfig } from "./actions-config.js";
 import { buildSessionSubmenuItems } from "./session-picker.js";
 import type { CursorBridge } from "./cursor-bridge.js";
 import type { ModelCatalog } from "./model-catalog.js";
@@ -32,7 +33,18 @@ export class BotMenuManager {
     private readonly sessions: SessionRegistry,
     private readonly models: ModelCatalog,
     private readonly projects: ProjectCatalog,
+    private readonly configPath: string,
   ) {}
+
+  /** Действия из actions.json для подменю «Действия». Файл читается при каждом построении меню. */
+  private loadActionItems(): MenuActionItem[] {
+    try {
+      return loadActionsConfig(this.configPath).map((a) => ({ id: a.id, title: a.title }));
+    } catch (err) {
+      console.warn("[menu] loadActions failed:", err instanceof Error ? err.message : err);
+      return [];
+    }
+  }
 
   rememberChatType(chatId: string, chatType: string | undefined | null): void {
     if (!chatId || !chatType) return;
@@ -118,6 +130,7 @@ export class BotMenuManager {
       sessionKey ? this.cursor.getProjectId(sessionKey) : this.projects.defaultKey,
       buildSessionSubmenuItems(this.sessions, chatId),
       this.sessions.getActiveSessionId(chatId),
+      this.loadActionItems(),
     );
   }
 
@@ -127,6 +140,7 @@ export class BotMenuManager {
       this.models.getMenuModels(),
       this.projects.listMenuProjects(),
       this.projects.defaultKey,
+      this.loadActionItems(),
     );
     const fingerprint = menuFingerprint(menu);
 
