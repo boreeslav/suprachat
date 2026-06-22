@@ -468,8 +468,11 @@ class MessengerI18n {
 			msgActionForward: 'Переслать',
 			msgActionCopy: 'Скопировать текст',
 			msgActionOpenLink: 'Перейти по ссылке',
+			msgActionCopyLink: 'Копировать ссылку',
 			msgLinkOpenTitle: 'Перейти по ссылке?',
 			msgLinkOpenGo: 'Перейти',
+			msgLinkOpenCopy: 'Копировать',
+			msgLinkCopied: 'Ссылка скопирована',
 			msgActionSelect: 'Выбрать',
 			msgActionDelete: 'Удалить',
 			msgActionInfo: 'Информация',
@@ -996,8 +999,11 @@ class MessengerI18n {
 			msgActionForward: 'Forward',
 			msgActionCopy: 'Copy text',
 			msgActionOpenLink: 'Open link',
+			msgActionCopyLink: 'Copy link',
 			msgLinkOpenTitle: 'Open link?',
 			msgLinkOpenGo: 'Open',
+			msgLinkOpenCopy: 'Copy',
+			msgLinkCopied: 'Link copied',
 			msgActionSelect: 'Select',
 			msgActionDelete: 'Delete',
 			msgActionInfo: 'Info',
@@ -1573,9 +1579,12 @@ class MessengerDialog {
 			type = MessengerDialog.TYPE_WARNING,
 			confirmLabel = 'OK',
 			cancelLabel = 'Cancel',
+			extraLabel = '',
+			onExtra = null,
 			stackActions = false,
 			themeManager = null,
 		} = options;
+		const verticalActions = stackActions || !!extraLabel;
 
 		return new Promise((resolve) => {
 			const overlay = document.createElement('div');
@@ -1600,7 +1609,7 @@ class MessengerDialog {
 			msgEl.textContent = message;
 
 			const actions = document.createElement('div');
-			actions.className = stackActions
+			actions.className = verticalActions
 				? 'mc-dialog-actions mc-dialog-actions--vertical'
 				: 'mc-dialog-actions';
 
@@ -1612,6 +1621,13 @@ class MessengerDialog {
 			confirmBtn.className = `mc-dialog-btn ${type === MessengerDialog.TYPE_DANGER ? 'mc-dialog-btn--danger' : 'mc-dialog-btn--confirm'}`;
 			confirmBtn.textContent = confirmLabel;
 
+			let extraBtn = null;
+			if (extraLabel) {
+				extraBtn = document.createElement('button');
+				extraBtn.className = 'mc-dialog-btn mc-dialog-btn--cancel';
+				extraBtn.textContent = extraLabel;
+			}
+
 			if (title) dialog.appendChild(titleEl);
 			dialog.append(iconEl, msgEl);
 			if (preview) {
@@ -1620,8 +1636,10 @@ class MessengerDialog {
 				previewEl.textContent = preview;
 				dialog.appendChild(previewEl);
 			}
-			if (stackActions) {
-				actions.append(confirmBtn, cancelBtn);
+			if (verticalActions) {
+				actions.append(confirmBtn);
+				if (extraBtn) actions.append(extraBtn);
+				actions.append(cancelBtn);
 			} else {
 				actions.append(cancelBtn, confirmBtn);
 			}
@@ -1636,6 +1654,16 @@ class MessengerDialog {
 
 			confirmBtn.addEventListener('click', () => close(true));
 			cancelBtn.addEventListener('click', () => close(false));
+			if (extraBtn) {
+				extraBtn.addEventListener('click', () => {
+					try {
+						if (typeof onExtra === 'function') onExtra();
+					} catch (e) {
+						console.warn('[MessengerDialog] onExtra', e);
+					}
+					close(false);
+				});
+			}
 			overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
 			document.addEventListener('keydown', function handler(e) {
 				if (e.key === 'Escape') { document.removeEventListener('keydown', handler); close(false); }
@@ -25960,6 +25988,31 @@ function formatMessageLinkActionLabel(i18n, href) {
 	return `${prefix}: ${href}`;
 }
 
+function formatMessageLinkCopyLabel(i18n, href) {
+	const prefix = i18n?.t('msgActionCopyLink') || 'Copy link';
+	return `${prefix}: ${href}`;
+}
+
+async function copyMessageLinkToClipboard(href, { themeManager = null, i18n = null, notify = true } = {}) {
+	const normalized = normalizeMessageLinkHref(href) || href;
+	if (!normalized) return false;
+	try {
+		await navigator.clipboard?.writeText?.(normalized);
+	} catch (e) {
+		console.warn('[messenger] copy link', e);
+		return false;
+	}
+	if (notify) {
+		MessengerDialog.showNotice(
+			i18n?.t('msgLinkCopied') || 'Link copied',
+			i18n?.t('confirm') || 'OK',
+			null,
+			themeManager,
+		);
+	}
+	return true;
+}
+
 async function confirmOpenMessageLink(href, { themeManager = null, i18n = null } = {}) {
 	const normalized = normalizeMessageLinkHref(href);
 	if (!normalized) return false;
@@ -25969,6 +26022,8 @@ async function confirmOpenMessageLink(href, { themeManager = null, i18n = null }
 		type: MessengerDialog.TYPE_INFO,
 		confirmLabel: i18n?.t('msgLinkOpenGo') || 'Open',
 		cancelLabel: i18n?.t('cancel') || 'Cancel',
+		extraLabel: i18n?.t('msgLinkOpenCopy') || 'Copy',
+		onExtra: () => copyMessageLinkToClipboard(normalized, { themeManager, i18n }),
 		themeManager,
 	});
 	if (!ok) return false;
@@ -29157,6 +29212,16 @@ class MessengerChatPanel {
 						}
 						return this.#handleExternalMessageLink(href);
 					},
+				});
+				sheetItems.push({
+					icon: this.#icons.copy(),
+					label: formatMessageLinkCopyLabel(this.#i18n, href),
+					danger: false,
+					truncate: true,
+					action: () => copyMessageLinkToClipboard(href, {
+						themeManager: this.#themeManager,
+						i18n: this.#i18n,
+					}),
 				});
 			}
 			if (this.#api.canForwardMessage(msg)) {
