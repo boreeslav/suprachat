@@ -215,6 +215,9 @@ public sealed partial class SupraMessengerService
                 BranchSlug = branchSlug,
                 BranchOrder = nextOrder,
                 RequiresCustomGroupPassword = root.RequiresCustomGroupPassword,
+                // Ветка наследует шифрование родителя — иначе сообщения новой ветки
+                // ушли бы открытым текстом в уже зашифрованной группе.
+                EncryptionEnabled = root.EncryptionEnabled,
             }, ct);
 
             var rootParticipants = await _store.GetParticipantsByChatAsync(rootId, ct);
@@ -239,6 +242,8 @@ public sealed partial class SupraMessengerService
                 slug = branchSlug,
                 avatar = null,
                 parentChatId = rootId.ToString(),
+                encryptionEnabled = root.EncryptionEnabled,
+                requiresCustomGroupPassword = root.RequiresCustomGroupPassword,
             }, notifies);
         }
         catch (Exception ex)
@@ -410,6 +415,8 @@ public sealed partial class SupraMessengerService
             chatAvatar = chat != null ? GroupAvatarUrl(chat) : null,
             parentChatId = chat?.ParentChatId?.ToString(),
             branchSlug = chat?.BranchSlug,
+            encryptionEnabled = chat?.EncryptionEnabled ?? false,
+            requiresCustomGroupPassword = chat?.RequiresCustomGroupPassword ?? false,
         };
     }
 }

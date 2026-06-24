@@ -46,6 +46,20 @@ Content-Type: application/json
 	</div>
 
 	<div class="card">
+		<h2>Форматирование и ссылки-команды</h2>
+		<p>Текст сообщений поддерживает <strong>Markdown</strong> (жирный, код, списки, ссылки). Ссылки на тот же хост обрабатываются клиентом без новой вкладки.</p>
+		<h3>Навигация</h3>
+		<p><code>https://host/@login</code> — профиль; <code>/@channel-slug</code> — канал; UUID — группа.</p>
+		<h3>Отправка команды по клику</h3>
+		<p>Формат: <code>https://host/send?text=/start</code> (в URL текст кодируется, например <code>%2Fstart</code>).</p>
+		<p>Клик отправляет текст в <strong>текущий</strong> чат. Нажать может любой участник, но только если сообщение с ссылкой отправил <strong>бот</strong> (в личном чате или группе) или <strong>админ/создатель</strong> группы.</p>
+		<pre>const href = `https://example.com/send?text=${encodeURIComponent('/start')}`;
+const text = `Нажмите [Старт](${href}), чтобы начать.`;
+await api.sendMessage({ userLogin: 'ivan', text });</pre>
+		<p class="note">Отличие от <code>buttons</code>: ссылка-команда не даёт <code>buttonPress</code> в inbox — приходит обычное текстовое сообщение.</p>
+	</div>
+
+	<div class="card">
 		<h2>REST — сообщения и inbox</h2>
 		<table>
 			<thead><tr><th>Метод</th><th>Назначение</th></tr></thead>
@@ -63,7 +77,7 @@ Content-Type: application/json
 				<tr><td><code>GET/POST /api/bot-api/getMessages</code></td><td>Inbox: <code>count</code>, <code>offset</code>, <code>afterMessageId</code></td></tr>
 			</tbody>
 		</table>
-		<p class="note">Адресат: <code>userLogin</code> (личный чат) или <code>chatId</code> (группа/канал). Зашифрованные сообщения в inbox не попадают.</p>
+		<p class="note">Адресат: <code>userLogin</code> (личный чат) или <code>chatId</code> (группа/канал). В открытом режиме зашифрованные сообщения в inbox не попадают; в приватном режиме (опубликован публичный ключ бота) — см. раздел «Шифрование» в <code>docs/07-bot-api.md</code>.</p>
 	</div>
 
 	<div class="card">
@@ -170,12 +184,27 @@ await api.setMenu({ menu: { items: [{ text: 'Справка', message: '/help' }
 	</div>
 
 	<div class="card">
+		<h2>Шифрование (приватный режим)</h2>
+		<p>Бот может работать в двух режимах: открытый (plaintext) и приватный (<code>E1:</code> + RSA/AES, как у пользователей). Включение: <code>encryptionSetup</code> после публикации ключей; групповой ключ — <code>getGroupKey</code>.</p>
+		<table>
+			<thead><tr><th>Метод</th><th>Назначение</th></tr></thead>
+			<tbody>
+				<tr><td><code>GET/POST /api/bot-api/encryptionStatus</code></td><td>Состояние ключей бота</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/encryptionSetup</code></td><td>Публикация salt, verifier, publicKey, privateKeyBlob</td></tr>
+				<tr><td><code>GET/POST /api/bot-api/getGroupKey</code></td><td>Обёрнутый автопароль чата (личный / зашифрованная группа)</td></tr>
+			</tbody>
+		</table>
+		<p class="note">Медиа, inline-кнопки, подписи и mini-app всегда передаются в открытом виде.</p>
+	</div>
+
+	<div class="card">
 		<h2>Ограничения</h2>
 		<ul>
-			<li>Только незашифрованные исходящие сообщения (без префикса <code>E1:</code>).</li>
+			<li>Без приватного режима — только незашифрованный текст (без префикса <code>E1:</code>).</li>
 			<li>Inbox на сервере — <strong>1 сутки</strong>.</li>
 			<li>Личный чат по <code>userLogin</code> — только если пользователь уже начал диалог с ботом.</li>
 			<li>Inline-кнопки: при нажатии в inbox приходит <code>buttonPress</code> с <code>sourceMessageId</code>, <code>buttonId</code>, <code>action</code>.</li>
+			<li>Ссылки <code>/send?text=…</code> — обычное текстовое сообщение в inbox (без <code>buttonPress</code>).</li>
 			<li>Активные статусы в открытом чате также приходят в <code>SyncChatPanel</code> (поле <code>activities</code>).</li>
 		</ul>
 	</div>

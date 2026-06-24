@@ -28,6 +28,7 @@ public sealed class SupraMessengerController : ControllerBase
     private readonly BotInboxNotifier _botInbox;
     private readonly AppAppearanceService _appearance;
     private readonly OfflineMessagePushService _offlinePush;
+    private readonly SupraEncryptionService _encryption;
 
     public SupraMessengerController(
         SupraMessengerService messenger,
@@ -43,7 +44,8 @@ public sealed class SupraMessengerController : ControllerBase
         BotApiService botApi,
         BotInboxNotifier botInbox,
         AppAppearanceService appearance,
-        OfflineMessagePushService offlinePush)
+        OfflineMessagePushService offlinePush,
+        SupraEncryptionService encryption)
     {
         _messenger = messenger;
         _current = current;
@@ -59,6 +61,7 @@ public sealed class SupraMessengerController : ControllerBase
         _botInbox = botInbox;
         _appearance = appearance;
         _offlinePush = offlinePush;
+        _encryption = encryption;
     }
 
     [HttpPost("{methodName}")]
@@ -160,6 +163,7 @@ public sealed class SupraMessengerController : ControllerBase
                 ct),
             "UpdateGroup" => await HandleUpdateGroup(user, data, ct),
             "SetGroupEncryption" => await HandleSetGroupEncryption(user, data, ct),
+            "RequestGroupKey" => await HandleRequestGroupKey(user, data, ct),
             "GetGroupLinkPreview" => await _messenger.GetGroupLinkPreviewAsync(
                 user.Id,
                 GetString(data, "chatId") ?? "",
@@ -597,6 +601,14 @@ public sealed class SupraMessengerController : ControllerBase
                     : prop.Value.GetString();
             }
         }
+        if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("encryptionKeyChatIds", out var ekcEl)
+            && ekcEl.ValueKind == JsonValueKind.Array)
+        {
+            request.encryptionKeyChatIds = ekcEl.EnumerateArray()
+                .Where(e => e.ValueKind == JsonValueKind.String)
+                .Select(e => e.GetString()!)
+                .ToList();
+        }
         if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("chatRevCursors", out var revEl)
             && revEl.ValueKind == JsonValueKind.Object)
         {
@@ -629,6 +641,8 @@ public sealed class SupraMessengerController : ControllerBase
             GetOptionalInt(data, "count"),
             GetString(data, "afterMessageId"),
             GetBool(data, "markAsRead"),
+            GetString(data, "indexFromMessageId"),
+            GetBool(data, "includeSyncIndex"),
             ct);
         if (response.markedRead)
             await BroadcastMarkReadSideEffectsAsync(user.Id, chatIdStr, response.success, updates, ct);
@@ -825,8 +839,51 @@ public sealed class SupraMessengerController : ControllerBase
 
         var result = await _messenger.SetGroupEncryptionAsync(user, chatId, enabled, globalAllowed, ct);
         if (result.success && Guid.TryParse(chatId, out var cg))
+        {
             await BroadcastGroupUpdatedAsync(cg, ct);
+            // Ветки наследуют шифрование родителя — уведомляем их участников,
+            // чтобы клиент сразу переключил ветки в зашифрованный режим.
+            foreach (var branchId in result.affectedBranchChatIds)
+                if (Guid.TryParse(branchId, out var bg))
+                    await BroadcastGroupUpdatedAsync(bg, ct);
+        }
         return result;
+    }
+
+    /// <summary>
+    /// Участник зашифрованной группы без ключа просит выдать ему ключ. Оповещаем тех
+    /// участников, у кого ключ уже есть и кто сейчас онлайн — их клиент выполнит раздачу
+    /// (RSA-обёртку авто-пароля под публичный ключ запросившего). Сервер ключи не создаёт.
+    /// </summary>
+    private async Task<object> HandleRequestGroupKey(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var chatIdStr = GetString(data, "chatId") ?? "";
+        if (!Guid.TryParse(chatIdStr, out var chatId))
+            return new { success = false, error = "Некорректный chatId" };
+
+        var chat = await _store.GetChatByIdAsync(chatId, ct);
+        if (chat == null)
+            return new { success = false, error = "Чат не найден" };
+        if (!await _store.IsParticipantAsync(chatId, user.Id, ct))
+            return new { success = false, error = "Нет доступа к чату" };
+        if (!chat.EncryptionEnabled)
+            return new { success = true, notified = 0 };
+
+        var holders = await _encryption.GetMembersWithGroupKeyAsync(chatId, ct);
+        var payload = new SupraWsGroupKeyRequestedPayload
+        {
+            chatId = chatId.ToString(),
+            requesterUserId = user.Id.ToString(),
+        };
+        var notified = 0;
+        foreach (var holderId in holders)
+        {
+            if (holderId == user.Id) continue;
+            if (!_presence.IsConnected(holderId)) continue;
+            await _realtime.SendToUserAsync(holderId, payload, ct);
+            notified++;
+        }
+        return new { success = true, notified };
     }
 
     private async Task<object> HandleCreateGroupBranch(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
@@ -844,6 +901,8 @@ public sealed class SupraMessengerController : ControllerBase
                 await _realtime.SendToUserAsync(uid, notify, ct);
             if (Guid.TryParse(parentChatId, out var pg))
                 await BroadcastGroupUpdatedAsync(pg, ct);
+            if (Guid.TryParse(response.chatId, out var branchGuid))
+                await BroadcastGroupUpdatedAsync(branchGuid, ct);
         }
         return response;
     }

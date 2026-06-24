@@ -127,6 +127,10 @@ using (var scope = app.Services.CreateScope())
     // Одноразовый бэкфилл монотонных Seq/Rev для сообщений, созданных до их появления.
     await dataStore.EnsureMessageSequenceInitializedAsync();
 
+    // Одноразовый бэкфилл: ветки наследуют флаг шифрования родительской группы
+    // (иначе сообщения веток уже зашифрованной группы шли бы открытым текстом).
+    await dataStore.EnsureBranchEncryptionInheritedAsync();
+
     var appearance = scope.ServiceProvider.GetRequiredService<AppAppearanceService>();
     var contentSeeder = new AppAppearanceContentSeeder(appearance, dataRoot);
     await contentSeeder.TrySeedOnceAsync();

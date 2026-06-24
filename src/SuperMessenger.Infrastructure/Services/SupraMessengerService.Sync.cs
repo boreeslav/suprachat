@@ -334,9 +334,15 @@ public sealed partial class SupraMessengerService
 
             if (request.includeEncryptionKeys && encryptionKeyBuilder != null)
             {
+                var onlyForChats = request.encryptionKeyChatIds != null
+                    ? new HashSet<string>(request.encryptionKeyChatIds)
+                    : null;
                 foreach (var chat in snapshot.Chats)
                 {
                     if (!Guid.TryParse(chat.id, out var chatGuid)) continue;
+                    // Клиент присылает список чатов без ключа: для остальных ключ у него уже есть,
+                    // повторно гонять зашифрованные блобы на каждый синк не нужно.
+                    if (onlyForChats != null && !onlyForChats.Contains(chat.id)) continue;
                     response.encryptionKeys[chat.id] = await encryptionKeyBuilder(userId, chatGuid, ct);
                 }
             }

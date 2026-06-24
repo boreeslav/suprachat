@@ -12,7 +12,7 @@
 | [06-network-sync.md](06-network-sync.md) | Сетевая логика: RequestSync, кеш, SignalR, hot path |
 | [07-bot-api.md](07-bot-api.md) | Bot API: REST, WebSocket, примеры интеграции |
 | [08-mini-apps.md](08-mini-apps.md) | Mini Apps: iframe, bridge API, кеш, план реализации |
-| [09-bot-and-group-encryption.md](09-bot-and-group-encryption.md) | План: шифрование для ботов и пер-групповой переключатель |
+| [09-bot-and-group-encryption.md](09-bot-and-group-encryption.md) | Шифрование ботов и пер-групповой переключатель (реализовано, этапы 0–6) |
 | [PWA-УСТАНОВКА.md](PWA-УСТАНОВКА.md) | Установка PWA и push-уведомления |
 | [../CHANGELOG.md](../CHANGELOG.md) | История изменений по версиям |
 

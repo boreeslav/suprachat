@@ -300,6 +300,25 @@ public sealed class FileDataStore : IDataStore
         }, ct);
     }
 
+    public async Task EnsureBranchEncryptionInheritedAsync(CancellationToken ct = default)
+    {
+        await _chats.MutateAsync<bool>(list =>
+        {
+            var byId = list.ToDictionary(c => c.Id);
+            var changed = false;
+            foreach (var chat in list)
+            {
+                if (!string.Equals(chat.Type, "group_branch", StringComparison.OrdinalIgnoreCase)) continue;
+                if (chat.ParentChatId is not Guid parentId) continue;
+                if (!byId.TryGetValue(parentId, out var parent)) continue;
+                if (chat.EncryptionEnabled == parent.EncryptionEnabled) continue;
+                chat.EncryptionEnabled = parent.EncryptionEnabled;
+                changed = true;
+            }
+            return (changed, changed);
+        }, ct);
+    }
+
     public async Task<IReadOnlyList<SupraMessageUserDeletionRecord>> GetMessageUserDeletionsByUserAsync(
         Guid userId, CancellationToken ct = default)
         => (await _messageUserDeletions.ReadAllAsync(ct)).Where(d => d.UserId == userId).ToList();

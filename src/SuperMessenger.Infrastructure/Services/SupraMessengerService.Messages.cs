@@ -605,12 +605,30 @@ public sealed partial class SupraMessengerService
         }
     }
 
+    /// <summary>
+    /// Порядконезависимая XOR-контрольная сумма набора id сообщений (16 байт → hex).
+    /// Идентично считается на клиенте, что позволяет пропускать reconcile, когда кеш совпал.
+    /// </summary>
+    static string ComputeSyncChecksum(IEnumerable<Guid> ids)
+    {
+        Span<byte> acc = stackalloc byte[16];
+        foreach (var id in ids)
+        {
+            var hex = id.ToString("N");
+            for (int i = 0; i < 16; i++)
+                acc[i] ^= byte.Parse(hex.AsSpan(i * 2, 2), System.Globalization.NumberStyles.HexNumber);
+        }
+        return Convert.ToHexString(acc).ToLowerInvariant();
+    }
+
     public async Task<(SupraSyncChatPanelResponse response, List<(SupraWsStatusPayload payload, Guid senderUserId)> readUpdates)> SyncChatPanelAsync(
         Guid userId,
         string chatId,
         int? count,
         string? afterMessageId,
         bool markAsRead,
+        string? indexFromMessageId = null,
+        bool includeSyncIndex = false,
         CancellationToken ct = default)
     {
         try
@@ -621,59 +639,57 @@ public sealed partial class SupraMessengerService
 
             var wantsSync = count is > 0 || !string.IsNullOrWhiteSpace(afterMessageId);
 
-            if (markAsRead && !wantsSync)
-            {
-                var (markResponse, updates) = await MarkMessagesReadAsync(userId, chatId, ct);
-                return (new SupraSyncChatPanelResponse
-                {
-                    success = markResponse.success,
-                    markedRead = markResponse.success,
-                    error = markResponse.error,
-                }, updates);
-            }
-
-            if (!wantsSync)
-            {
-                return (new SupraSyncChatPanelResponse
-                {
-                    success = false,
-                    error = "Укажите count или afterMessageId для синхронизации, либо markAsRead для прочтения",
-                }, []);
-            }
-
             var avatarByUser = (await _store.GetUsersAsync(ct))
                 .ToDictionary(u => u.Id, AvatarUrl);
             var chat = await _store.GetChatByIdAsync(chatGuid, ct);
             var ordered = await GetVisibleMessagesOrderedAsync(chatGuid, userId, ct);
 
-            var syncEntries = ordered.Select(m => new SupraMessageSyncEntryDto
+            // Окно индекса для reconcile: от самого старого сообщения в кеше клиента (indexFromMessageId)
+            // и до конца чата. Если id не передан/не найден — берём весь чат (безопасный фолбэк).
+            var indexWindow = ordered;
+            if (!string.IsNullOrWhiteSpace(indexFromMessageId) && Guid.TryParse(indexFromMessageId, out var fromGuid))
             {
-                id = m.Id.ToString(),
-                timestamp = m.CreatedOn,
-            }).ToList();
-
-            var takeCount = count ?? 0;
-            var tailLimit = takeCount > 0 ? takeCount : 50;
-
-            var recentSlice = takeCount > 0
-                ? OrderMessagesAsc(OrderMessagesDesc(ordered).Take(takeCount)).ToList()
-                : [];
-
-            List<SupraChatMessageRecord> tailSlice = [];
-            if (!string.IsNullOrWhiteSpace(afterMessageId) && Guid.TryParse(afterMessageId, out var afterGuid))
-            {
-                var anchor = await _store.GetMessageByIdAsync(afterGuid, ct);
-                tailSlice = SliceAfterMessageId(ordered, afterGuid, anchor, chatGuid)
-                    .Take(tailLimit)
-                    .ToList();
+                var fromIdx = ordered.FindIndex(m => m.Id == fromGuid);
+                if (fromIdx > 0)
+                    indexWindow = ordered.Skip(fromIdx).ToList();
             }
 
-            var recentIds = recentSlice.Select(m => m.Id).ToHashSet();
-            var messageRecords = OrderMessagesAsc(recentSlice
-                .Concat(tailSlice.Where(m => !recentIds.Contains(m.Id))))
-                .ToList();
+            var syncIndexCount = indexWindow.Count;
+            var syncIndexChecksum = ComputeSyncChecksum(indexWindow.Select(m => m.Id));
+            var syncEntries = includeSyncIndex
+                ? indexWindow.Select(m => new SupraMessageSyncEntryDto
+                {
+                    id = m.Id.ToString(),
+                    timestamp = m.CreatedOn,
+                }).ToList()
+                : new List<SupraMessageSyncEntryDto>();
 
-            var messages = messageRecords.Select(m => MapMessageDto(m, userId, avatarByUser, chat)).ToList();
+            var messages = new List<SupraChatMessageDto>();
+            if (wantsSync)
+            {
+                var takeCount = count ?? 0;
+                var tailLimit = takeCount > 0 ? takeCount : 50;
+
+                var recentSlice = takeCount > 0
+                    ? OrderMessagesAsc(OrderMessagesDesc(ordered).Take(takeCount)).ToList()
+                    : [];
+
+                List<SupraChatMessageRecord> tailSlice = [];
+                if (!string.IsNullOrWhiteSpace(afterMessageId) && Guid.TryParse(afterMessageId, out var afterGuid))
+                {
+                    var anchor = await _store.GetMessageByIdAsync(afterGuid, ct);
+                    tailSlice = SliceAfterMessageId(ordered, afterGuid, anchor, chatGuid)
+                        .Take(tailLimit)
+                        .ToList();
+                }
+
+                var recentIds = recentSlice.Select(m => m.Id).ToHashSet();
+                var messageRecords = OrderMessagesAsc(recentSlice
+                    .Concat(tailSlice.Where(m => !recentIds.Contains(m.Id))))
+                    .ToList();
+
+                messages = messageRecords.Select(m => MapMessageDto(m, userId, avatarByUser, chat)).ToList();
+            }
 
             var readUpdates = new List<(SupraWsStatusPayload payload, Guid senderUserId)>();
             var markedRead = false;
@@ -689,6 +705,8 @@ public sealed partial class SupraMessengerService
                 success = true,
                 messages = messages,
                 syncIndex = syncEntries,
+                syncIndexCount = syncIndexCount,
+                syncIndexChecksum = syncIndexChecksum,
                 activities = _activities.GetActiveForChat(chatGuid),
                 markedRead = markedRead,
             }, readUpdates);

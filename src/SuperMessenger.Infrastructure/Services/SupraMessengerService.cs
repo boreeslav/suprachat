@@ -1222,7 +1222,25 @@ public sealed partial class SupraMessengerService
                 await _store.SaveChatAsync(chat, ct);
             }
 
-            return new SupraSetGroupEncryptionResponse { success = true, encryptionEnabled = chat.EncryptionEnabled };
+            // Ветки наследуют шифрование родителя: переключатель есть только у корневой
+            // группы, но сообщения веток должны шифроваться так же, как в основном чате.
+            // Без каскада ветки оставались бы открытыми (баг: plaintext в ветках
+            // зашифрованной группы).
+            var affectedBranches = new List<string>();
+            foreach (var branch in await _store.GetGroupBranchesByParentAsync(chat.Id, ct))
+            {
+                if (branch.EncryptionEnabled == enabled) continue;
+                branch.EncryptionEnabled = enabled;
+                await _store.SaveChatAsync(branch, ct);
+                affectedBranches.Add(branch.Id.ToString());
+            }
+
+            return new SupraSetGroupEncryptionResponse
+            {
+                success = true,
+                encryptionEnabled = chat.EncryptionEnabled,
+                affectedBranchChatIds = affectedBranches,
+            };
         }
         catch (Exception ex)
         {

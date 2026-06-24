@@ -472,6 +472,13 @@
 	display: block;
 }
 
+/* Открытое (незашифрованное) сообщение в зашифрованной группе — красный
+   перечёркнутый замок, чтобы было заметно на фоне зашифрованных. */
+.mc-msg-tier-lock--open {
+	color: #e5484d;
+	opacity: .85;
+}
+
 .mc-reply-bar {
 	display: flex;
 	align-items: center;
@@ -783,6 +790,10 @@
 	text-decoration-color: currentColor;
 	text-underline-offset: 2px;
 	cursor: pointer;
+}
+
+.mc-msg-send-link {
+	text-decoration-style: dashed;
 }
 
 .mc-msg-text--short-end {
@@ -3074,8 +3085,9 @@
 }
 
 .mapp-chat-item-preview--locked {
-	flex: 0 0 auto;
-	max-width: none;
+	flex: 1;
+	min-width: 0;
+	max-width: 100%;
 }
 
 .mapp-chat-item-preview--typing {

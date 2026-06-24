@@ -134,6 +134,11 @@ public sealed class SupraRequestSyncRequest
   public Dictionary<string, long?>? chatRevCursors { get; set; }
   public bool includeProfiles { get; set; } = true;
   public bool includeEncryptionKeys { get; set; } = true;
+  /// <summary>
+  /// Если задан — ключи шифрования возвращаются только для перечисленных чатов
+  /// (клиент запрашивает лишь те, по которым ещё не получил ключ). null = все чаты (обратная совместимость).
+  /// </summary>
+  public List<string>? encryptionKeyChatIds { get; set; }
   public int messageLimit { get; set; } = 50;
 }
 
@@ -210,7 +215,15 @@ public sealed class SupraSyncChatPanelResponse
 {
     public bool success { get; set; }
     public List<SupraChatMessageDto> messages { get; set; } = [];
+    /// <summary>
+    /// Полный индекс reconcile. Заполняется только по явному запросу (includeSyncIndex),
+    /// иначе клиенту отдаётся лёгкая сводка (syncIndexCount + syncIndexChecksum).
+    /// </summary>
     public List<SupraMessageSyncEntryDto> syncIndex { get; set; } = [];
+    /// <summary>Количество видимых сообщений в окне индекса (от indexFromMessageId до конца чата).</summary>
+    public int syncIndexCount { get; set; }
+    /// <summary>Порядконезависимая XOR-контрольная сумма id сообщений в окне индекса (hex). Клиент сверяет со своим кешем.</summary>
+    public string syncIndexChecksum { get; set; } = "";
     public List<SupraChatActivityDto> activities { get; set; } = [];
     public bool markedRead { get; set; }
     public string? error { get; set; }
@@ -388,6 +401,8 @@ public sealed class SupraWsNewChatPayload
     public string? botSlug { get; set; }
     public string? parentChatId { get; set; }
     public string? branchSlug { get; set; }
+    public bool encryptionEnabled { get; set; }
+    public bool requiresCustomGroupPassword { get; set; }
 }
 
 public sealed class SupraWsUserActivityPayload
@@ -556,6 +571,8 @@ public sealed class SupraSetGroupEncryptionResponse
 {
     public bool success { get; set; }
     public bool encryptionEnabled { get; set; }
+    /// <summary>Ветки группы, которым каскадом изменили флаг шифрования (для рассылки обновлений).</summary>
+    public List<string> affectedBranchChatIds { get; set; } = [];
     public string? error { get; set; }
 }
 
@@ -567,6 +584,8 @@ public sealed class SupraCreateGroupBranchResponse
     public string? slug { get; set; }
     public string? avatar { get; set; }
     public string? parentChatId { get; set; }
+    public bool encryptionEnabled { get; set; }
+    public bool requiresCustomGroupPassword { get; set; }
     public string? error { get; set; }
 }
 
@@ -591,6 +610,27 @@ public sealed class SupraWsGroupUpdatedPayload
     public bool requiresCustomGroupPassword { get; set; }
     /// <summary>Пер-групповой переключатель шифрования включён для этой группы.</summary>
     public bool encryptionEnabled { get; set; }
+}
+
+/// <summary>
+/// Участник зашифрованной группы без ключа просит выдать ему ключ. Рассылается тем
+/// участникам, у кого ключ уже есть и кто сейчас онлайн — они выполняют раздачу.
+/// </summary>
+public sealed class SupraWsGroupKeyRequestedPayload
+{
+    public string type { get; set; } = "SupraGroupKeyRequested";
+    public string chatId { get; set; } = "";
+    public string requesterUserId { get; set; } = "";
+}
+
+/// <summary>
+/// Ключи группы для участника обновлены на сервере (кто-то выполнил раздачу).
+/// Получатель должен перечитать свой обёрнутый ключ и расшифровать сообщения.
+/// </summary>
+public sealed class SupraWsGroupKeysUpdatedPayload
+{
+    public string type { get; set; } = "SupraGroupKeysUpdated";
+    public string chatId { get; set; } = "";
 }
 
 /// <summary>Chat is no longer available to this user (left, removed from group, or chat deleted).</summary>

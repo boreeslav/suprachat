@@ -128,6 +128,16 @@ public sealed class SupraEncryptionService
         return participants.Where(p => !hasKey.Contains(p.UserId)).Select(p => p.UserId).ToList();
     }
 
+    /// <summary>Участники чата, у которых уже есть обёрнутый групповой ключ (могут раздать его другим).</summary>
+    public async Task<List<Guid>> GetMembersWithGroupKeyAsync(Guid chatId, CancellationToken ct = default)
+    {
+        var participants = (await _store.GetParticipantsByChatAsync(chatId, ct))
+            .Select(p => p.UserId)
+            .ToHashSet();
+        var keys = await _store.GetChatMemberKeysByChatAsync(chatId, ct);
+        return keys.Select(k => k.UserId).Where(participants.Contains).Distinct().ToList();
+    }
+
     /// <summary>Clears server-side encryption for user and removes their wrapped group keys.</summary>
     public async Task ResetMasterEncryptionAsync(UserRecord user, CancellationToken ct = default)
     {

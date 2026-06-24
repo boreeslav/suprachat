@@ -534,6 +534,27 @@ new Messenger(selector, mode, options)
 
 ---
 
+## Ссылки в сообщениях
+
+Парсинг и обработка кликов — в `supra-messenger.js` (модуль рендера сообщений).
+
+| Функция | Описание |
+|---------|----------|
+| `parseMessengerDeepLink(href)` | Навигация: `/@slug`, ветка, `?m=` |
+| `parseMessengerSendLink(href)` | Ссылка-команда: `/send?text=` или `?t=` |
+| `buildMessengerSendLink(text)` | Сборка URL команды для текущего origin |
+| `isMessengerInternalLink(href)` | Deep link или send link |
+| `canActivateMessengerSendLink(state, msg, memberIndex?)` | Активна ли send-ссылка в этом сообщении (от бота или админа группы) |
+| `buildGroupMemberIndex(info)` | Индекс участников группы для проверки админов |
+| `renderMessengerMessageHtml(text)` | Markdown → HTML + linkify |
+| `normalizeMessageAnchorsInHtml(html)` | Классы `mc-msg-internal-link`, `mc-msg-send-link` |
+
+**Обработка клика:** `MessengerChatPanel.#bindMessageRowEvents` → `#handleMessengerSendLink` → `_composerOnSend` (отправка как из поля ввода).
+
+**CSS:** `mc-msg-internal-link` — навигация; `mc-msg-send-link` — пунктирное подчёркивание для команд.
+
+---
+
 ## file-uploader.js
 
 Supra-совместимый загрузчик (используется при интеграции; в standalone — через `MessengerFileHandler` + `/api/files/upload`).
@@ -550,6 +571,8 @@ Supra-совместимый загрузчик (используется при
 | `mapp-chat-list-track` | Карусель папок |
 | `mapp-network-dot--*` | Индикатор сети |
 | `mc-header-sub` | Подзаголовок чата (статус) |
+| `mc-msg-internal-link` | Внутренняя навигационная ссылка в тексте сообщения |
+| `mc-msg-send-link` | Ссылка-команда `/send?text=…` (пунктир) |
 | `mapp-sidebar-user-status` | Статус под своим именем |
 
 ---

@@ -40,6 +40,8 @@ public interface IDataStore
     Task UpdateMessageAsync(SupraChatMessageRecord message, CancellationToken ct = default);
     /// <summary>Одноразовый бэкфилл монотонных Seq/Rev для сообщений, созданных до их появления.</summary>
     Task EnsureMessageSequenceInitializedAsync(CancellationToken ct = default);
+    /// <summary>Одноразовый бэкфилл: ветки наследуют флаг шифрования родительской группы.</summary>
+    Task EnsureBranchEncryptionInheritedAsync(CancellationToken ct = default);
     Task UpdateMessagesStatusAsync(Guid chatId, Guid readerUserId, string status, CancellationToken ct = default);
     Task DeleteMessagesByChatAsync(Guid chatId, CancellationToken ct = default);
 

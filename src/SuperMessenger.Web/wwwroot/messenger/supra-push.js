@@ -18,6 +18,11 @@
 	const LS_ENABLED_KEY = 'sm-push-enabled';
 
 	let vapidKeyPromise = null;
+	// Чтобы не слать /push/subscribe на каждую активацию окна: подписка меняется
+	// редко, а реальные изменения ловит pushsubscriptionchange. Переотправляем
+	// не чаще, чем раз в RECONNECT_RESUBSCRIBE_COOLDOWN_MS.
+	const RECONNECT_RESUBSCRIBE_COOLDOWN_MS = 30 * 60 * 1000;
+	let lastSubscribeSyncAt = 0;
 	// Локальный кеш настроек уведомлений (нужен для синхронной проверки при показе
 	// локального уведомления). Источник истины — сервер.
 	let prefs = { globalMuted: false, mutedChatIds: [] };
@@ -136,6 +141,7 @@
 			});
 		}
 		await postSubscription(sub);
+		lastSubscribeSyncAt = Date.now();
 		return sub;
 	}
 
@@ -302,6 +308,10 @@
 		if (!isSupported()) return;
 		if (getPermission() !== 'granted') return;
 		if (getEnabledFlag() === '0') return;
+		// Активация окна происходит часто — переотправляем подписку с кулдауном.
+		if (lastSubscribeSyncAt && (Date.now() - lastSubscribeSyncAt) < RECONNECT_RESUBSCRIBE_COOLDOWN_MS) {
+			return;
+		}
 		try {
 			await ensureSubscribed();
 		} catch (e) {

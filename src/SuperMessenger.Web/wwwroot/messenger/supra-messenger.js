@@ -468,6 +468,7 @@ class MessengerI18n {
 			msgActionForward: 'Переслать',
 			msgActionCopy: 'Скопировать текст',
 			msgActionOpenLink: 'Перейти по ссылке',
+			msgActionSendCommand: 'Отправить команду',
 			msgActionCopyLink: 'Копировать ссылку',
 			msgLinkOpenTitle: 'Перейти по ссылке?',
 			msgLinkOpenGo: 'Перейти',
@@ -999,6 +1000,7 @@ class MessengerI18n {
 			msgActionForward: 'Forward',
 			msgActionCopy: 'Copy text',
 			msgActionOpenLink: 'Open link',
+			msgActionSendCommand: 'Send command',
 			msgActionCopyLink: 'Copy link',
 			msgLinkOpenTitle: 'Open link?',
 			msgLinkOpenGo: 'Open',
@@ -1327,6 +1329,9 @@ class MessengerIcons {
 	}
 	lockClosedSmall() {
 		return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
+	}
+	lockOpenSmall() {
+		return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.4-1.9"/><line x1="3.5" y1="3.5" x2="20.5" y2="20.5"/></svg>`;
 	}
 	shieldBadge() {
 		return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polygon points="12 7.5 13.8 11.5 18 12.1 15 14.8 15.8 19 12 16.8 8.2 19 9 14.8 6 12.1 10.2 11.5 12 7.5" fill="currentColor" stroke="none"/></svg>`;
@@ -3218,6 +3223,34 @@ function isGroupBranchChat(chat) {
 	return chat?.type === 'group_branch' || !!chat?.parentChatId;
 }
 
+/** Ветка наследует шифрование родительской группы, если флаг ещё не пришёл с сервера. */
+function resolveGroupBranchEncryptionMeta(chat, chatsOrLookup) {
+	if (!chat || !isGroupBranchChat(chat)) return chat;
+	if (chat.encryptionEnabled) return chat;
+	const parentId = chat.parentChatId;
+	if (!parentId) return chat;
+	const parent = typeof chatsOrLookup === 'function'
+		? chatsOrLookup(parentId)
+		: (Array.isArray(chatsOrLookup)
+			? chatsOrLookup.find(c => c.id === parentId)
+			: chatsOrLookup?.get?.(parentId));
+	if (!parent?.encryptionEnabled) return chat;
+	return {
+		...chat,
+		encryptionEnabled: true,
+		requiresCustomGroupPassword: chat.requiresCustomGroupPassword ?? !!parent.requiresCustomGroupPassword,
+	};
+}
+
+async function setupNewGroupBranchEncryption(api, branchChat) {
+	if (!api || !branchChat?.id || !branchChat.encryptionEnabled) return;
+	try {
+		await api.ensureChatEncryptionKeys(branchChat, { distribute: true, force: true });
+	} catch (e) {
+		console.warn('[GroupBranch] setup encryption keys', e);
+	}
+}
+
 function showMessageAvatarsForPanel(state) {
 	return !!(state?.isGroupChat || state?.isGroupBranchChat);
 }
@@ -3299,20 +3332,47 @@ function computeGroupAggregatedPreview(groupChat, branches) {
 	};
 }
 
+function groupBranchEntryFromChat(c) {
+	return {
+		id: c.id,
+		name: c.name || '',
+		slug: c.branchSlug || c.slug || '',
+		avatar: c.avatar || null,
+		lastMessage: c.lastMessage || '',
+		lastMessageTime: c.lastMessageTime || null,
+		unreadCount: c.unreadCount || 0,
+		order: c.branchOrder ?? c.order ?? 0,
+	};
+}
+
+function mergeGroupBranchEntries(baseBranches, allChats, parentId) {
+	const parentKey = String(parentId || '').toLowerCase();
+	const liveById = new Map();
+	for (const c of allChats || []) {
+		if (String(c.parentChatId || '').toLowerCase() !== parentKey || !isGroupBranchChat(c)) continue;
+		liveById.set(c.id, groupBranchEntryFromChat(c));
+	}
+	const merged = new Map((baseBranches || []).map(b => [b.id, { ...b }]));
+	for (const [id, live] of liveById) {
+		const existing = merged.get(id);
+		merged.set(id, existing
+			? {
+				...existing,
+				...live,
+				unreadCount: live.unreadCount ?? existing.unreadCount ?? 0,
+			}
+			: live);
+	}
+	return [...merged.values()].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+}
+
 function collectBranchesForGroup(groupChat, allChats) {
 	if (!groupChat?.id) return [];
-	if (Array.isArray(groupChat.branches) && groupChat.branches.length) {
-		return groupChat.branches;
+	const base = Array.isArray(groupChat.branches) ? groupChat.branches : [];
+	if (!allChats?.length) {
+		return base.length ? base.map(b => ({ ...b })) : [];
 	}
-	const parentId = String(groupChat.id).toLowerCase();
-	return (allChats || [])
-		.filter(c => String(c.parentChatId || '').toLowerCase() === parentId && isGroupBranchChat(c))
-		.map(c => ({
-			id: c.id,
-			lastMessage: c.lastMessage || '',
-			lastMessageTime: c.lastMessageTime || null,
-			unreadCount: c.unreadCount || 0,
-		}));
+	return mergeGroupBranchEntries(base, allChats, groupChat.id);
 }
 
 function applyGroupAggregatedPreview(groupChat, allChats) {
@@ -3360,17 +3420,15 @@ function syncParentGroupBranchEntry(chats, branchChat) {
 	if (!parentId || !Array.isArray(chats)) return null;
 	const parent = chats.find(c => c.id === parentId);
 	if (!parent) return null;
-	const branches = parent.branches || [];
+	const branches = [...(parent.branches || [])];
 	const idx = branches.findIndex(b => b.id === branchChat.id);
+	const entry = groupBranchEntryFromChat(branchChat);
 	if (idx >= 0) {
-		branches[idx] = {
-			...branches[idx],
-			lastMessage: branchChat.lastMessage || '',
-			lastMessageTime: branchChat.lastMessageTime || null,
-			unreadCount: branchChat.unreadCount || 0,
-		};
-		parent.branches = branches;
+		branches[idx] = { ...branches[idx], ...entry };
+	} else {
+		branches.push(entry);
 	}
+	parent.branches = branches.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 	applyGroupAggregatedPreview(parent, chats);
 	return parent;
 }
@@ -3470,8 +3528,94 @@ function parseMessengerDeepLink(href) {
 	}
 }
 
+function parseMessengerSendLink(href) {
+	const normalized = normalizeMessageLinkHref(href);
+	if (!normalized || !messengerLinkHostsMatch(normalized)) return null;
+	try {
+		const parsed = new URL(normalized);
+		if (!/^\/send\/?$/i.test(parsed.pathname)) return null;
+		const text = (parsed.searchParams.get('text') || parsed.searchParams.get('t') || '').trim();
+		if (!text) return null;
+		return { text };
+	} catch {
+		return null;
+	}
+}
+
+function isMessengerSendLink(href) {
+	return !!parseMessengerSendLink(href);
+}
+
+function buildMessengerSendLink(text) {
+	const msg = String(text || '').trim();
+	if (!msg) return null;
+	return `${messengerDisplayOrigin()}/send?text=${encodeURIComponent(msg)}`;
+}
+
 function isMessengerInternalLink(href) {
-	return !!parseMessengerDeepLink(href);
+	return !!parseMessengerDeepLink(href) || isMessengerSendLink(href);
+}
+
+function collectGroupBotUserIds(state) {
+	const ids = new Set();
+	const addMenus = (menus) => {
+		normalizeGroupBotMenus(menus).forEach((bot) => {
+			const id = String(bot?.botUserId || '').trim();
+			if (id) ids.add(id);
+		});
+	};
+	addMenus(state?.groupBotMenus);
+	addMenus(state?._composerChat?.groupBotMenus);
+	return ids;
+}
+
+function buildGroupMemberIndex(info) {
+	const index = new Map();
+	if (!info) return index;
+	for (const member of info.members || []) {
+		const id = String(member?.id || '').trim();
+		if (!id) continue;
+		index.set(id, {
+			isAdmin: !!member.isAdmin,
+			isCreator: !!member.isCreator,
+			login: String(member.login || '').trim(),
+		});
+	}
+	const creatorId = String(info.creatorUserId || '').trim();
+	if (creatorId) {
+		const cur = index.get(creatorId) || { isAdmin: false, isCreator: false };
+		index.set(creatorId, { isAdmin: cur.isAdmin || true, isCreator: true });
+	}
+	return index;
+}
+
+function isMessengerBotSender(state, msg) {
+	const senderId = String(msg?.senderId || '').trim();
+	if (!senderId || msg?.isOwn) return false;
+	if (state?.isBotChat) return true;
+	if (collectGroupBotUserIds(state).has(senderId)) return true;
+	const member = state?._groupMemberIndex?.get(senderId);
+	const login = String(member?.login || '').trim();
+	return !!login && /_bot$/i.test(login);
+}
+
+function isMessengerGroupAdminSender(msg, memberIndex) {
+	const senderId = String(msg?.senderId || '').trim();
+	if (!senderId || !memberIndex) return false;
+	const member = memberIndex.get(senderId);
+	return !!(member?.isAdmin || member?.isCreator);
+}
+
+function canActivateMessengerSendLink(state, msg, memberIndex = null) {
+	if (!state || !msg || msg.deletedForEveryone) return false;
+	if (state.isChannelChat) return false;
+	if (state.isBotChat) return isMessengerBotSender(state, msg);
+	if (state.isGroupChat || state.isGroupBranchChat) {
+		if (isMessengerBotSender(state, msg)) return true;
+		if (isMessengerGroupAdminSender(msg, memberIndex)) return true;
+		return false;
+	}
+	return false;
 }
 
 function openExternalLink(href) {
@@ -3790,6 +3934,7 @@ class MessengerBotAssistantManager {
 	}
 
 	async processPendingOnConnect() {
+		if (!this.#prefs.assistantEnabled) return;
 		try {
 			const r = await this.#api.getPendingAssistantReplies();
 			for (const item of r?.replies || []) {
@@ -4134,6 +4279,101 @@ function chatListPreviewThumbFileIds(previewEl) {
 		.filter(Boolean);
 }
 
+function chatListPreviewTimeMs(value) {
+	if (!value) return 0;
+	const d = value instanceof Date ? value : new Date(value);
+	const ms = d.getTime();
+	return Number.isFinite(ms) ? ms : 0;
+}
+
+function chatListPreviewIsExplicitLock(text) {
+	return text === SupraCrypto.LOCKED_PREVIEW || text === SupraCrypto.LOCKED_OTHER;
+}
+
+function chatListPreviewIsEncrypted(text) {
+	return typeof SupraCrypto !== 'undefined'
+		&& !!text
+		&& SupraCrypto.isEncrypted(text);
+}
+
+function chatListPreviewIsLockedText(text) {
+	if (!text || typeof text !== 'string') return false;
+	if (chatListPreviewIsExplicitLock(text)) return true;
+	return chatListPreviewIsEncrypted(text);
+}
+
+function chatListPreviewIsReadable(text) {
+	return typeof text === 'string' && text.length > 0 && !chatListPreviewIsLockedText(text);
+}
+
+function chatListPreviewEncryptedSource(chat) {
+	if (!chat) return null;
+	if (chat._pendingEncPreview && chatListPreviewIsEncrypted(chat._pendingEncPreview)) {
+		return chat._pendingEncPreview;
+	}
+	const raw = chat.lastMessage || '';
+	return chatListPreviewIsEncrypted(raw) ? raw : null;
+}
+
+function preserveChatListPreviewFields(incoming, existing) {
+	if (!incoming || !existing) return incoming;
+	const merged = { ...incoming };
+	const inMsg = incoming.lastMessage || '';
+	const exMsg = existing.lastMessage || '';
+	const inTs = chatListPreviewTimeMs(incoming.lastMessageTime);
+	const exTs = chatListPreviewTimeMs(existing.lastMessageTime);
+
+	if (chatListPreviewIsExplicitLock(inMsg) && inTs >= exTs) {
+		merged.lastMessage = inMsg;
+		delete merged._pendingEncPreview;
+	} else if (chatListPreviewIsReadable(exMsg)) {
+		if (chatListPreviewIsLockedText(inMsg)) {
+			if (inTs <= exTs) {
+				merged.lastMessage = exMsg;
+				merged.lastMessageTime = existing.lastMessageTime;
+			} else {
+				merged.lastMessage = exMsg;
+				merged.lastMessageTime = incoming.lastMessageTime || existing.lastMessageTime;
+				if (chatListPreviewIsEncrypted(inMsg)) merged._pendingEncPreview = inMsg;
+			}
+		}
+	} else if (existing._pendingEncPreview && chatListPreviewIsReadable(merged.lastMessage)) {
+		merged._pendingEncPreview = existing._pendingEncPreview;
+	}
+
+	if (isRootGroupChat(merged)) {
+		const inAgg = incoming.aggregatedLastMessage || '';
+		const exAgg = existing.aggregatedLastMessage || '';
+		const inAggTs = chatListPreviewTimeMs(incoming.aggregatedLastMessageTime);
+		const exAggTs = chatListPreviewTimeMs(existing.aggregatedLastMessageTime);
+		if (chatListPreviewIsExplicitLock(inAgg) && inAggTs >= exAggTs) {
+			merged.aggregatedLastMessage = inAgg;
+		} else if (chatListPreviewIsReadable(exAgg) && chatListPreviewIsLockedText(inAgg)) {
+			if (inAggTs <= exAggTs) {
+				merged.aggregatedLastMessage = exAgg;
+				merged.aggregatedLastMessageTime = existing.aggregatedLastMessageTime;
+			} else {
+				merged.aggregatedLastMessage = exAgg;
+				merged.aggregatedLastMessageTime = incoming.aggregatedLastMessageTime || existing.aggregatedLastMessageTime;
+			}
+		}
+	}
+
+	return merged;
+}
+
+function chatListPreviewDomStickyText(previewEl) {
+	if (!previewEl || previewEl.classList.contains('mapp-chat-item-preview--typing')) return null;
+	if (previewEl.classList.contains('mapp-chat-item-preview--locked')) return null;
+	if (previewEl.classList.contains('mapp-chat-item-preview--media')) {
+		const cap = previewEl.querySelector('.mapp-chat-item-preview-caption')?.textContent?.trim();
+		if (cap) return cap;
+		return previewEl.dataset.previewText || null;
+	}
+	const text = (previewEl.textContent || '').trim();
+	return text || previewEl.dataset.previewText || null;
+}
+
 function chatListPreviewMediaCaption(storedText) {
 	const parsed = MessengerCustomMessage.parse(storedText);
 	if (parsed?.contentType === MessengerCustomMessage.CONTENT_TYPES.PHOTO_ALBUM) {
@@ -4173,6 +4413,20 @@ function buildChatListPreviewInfo({
 	}
 	const preview = MessengerChatListPreview.getDisplay(storedText, i18n);
 	if (preview.locked) {
+		const sticky = chatListPreviewDomStickyText(previewEl);
+		if (previewEl?.classList.contains('mapp-chat-item-preview--media')
+			&& chatListPreviewThumbFileIds(previewEl).length) {
+			return {
+				text: sticky || preview.text,
+				typing: false,
+				locked: false,
+				media: true,
+				caption: sticky || '',
+			};
+		}
+		if (sticky) {
+			return { text: sticky, typing: false, locked: false };
+		}
 		return { text: preview.text, typing: false, locked: true };
 	}
 	if (chatListPreviewCanKeepMediaThumbs(previewEl, storedText)) {
@@ -4256,6 +4510,7 @@ function applyChatListPreviewEl(previewEl, previewInfo, i18n) {
 	}
 	previewEl.replaceChildren();
 	previewEl.textContent = previewInfo.text || '';
+	previewEl.dataset.previewText = previewInfo.text || '';
 }
 
 function isChatNotificationMuted(chatId) {
@@ -7049,6 +7304,7 @@ function buildGroupBranchSettingsPanel({
 	section.append(title, hint, list);
 
 	let branches = [];
+	let parentGroupInfo = null;
 
 	const render = () => {
 		list.innerHTML = '';
@@ -7181,9 +7437,17 @@ function buildGroupBranchSettingsPanel({
 			if (!name?.trim()) return;
 			try {
 				const r = await api.createGroupBranch(parentChatId, name.trim());
-				if (MessengerThemeManager.isAdminGroupEncryptionEnabled()) {
-					api.distributeMissingGroupKeys(r.chatId).catch(() => {});
-				}
+				const branchChat = resolveGroupBranchEncryptionMeta({
+					id: r.chatId,
+					type: 'group_branch',
+					parentChatId,
+					encryptionEnabled: !!r.encryptionEnabled,
+					requiresCustomGroupPassword: !!r.requiresCustomGroupPassword,
+				}, (id) => (id === parentChatId ? {
+					encryptionEnabled: !!parentGroupInfo?.encryptionEnabled,
+					requiresCustomGroupPassword: !!parentGroupInfo?.requiresCustomGroupPassword,
+				} : null));
+				await setupNewGroupBranchEncryption(api, branchChat);
 				onChanged?.();
 				onBranchCreated?.(r);
 				await reload();
@@ -7203,6 +7467,7 @@ function buildGroupBranchSettingsPanel({
 		try {
 			const data = await api.getGroupInfo(parentChatId);
 			if (!data?.success) throw new Error(data?.error || 'GetGroupInfo failed');
+			parentGroupInfo = data;
 			branches = (data.branches || []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 			render();
 		} catch (e) {
@@ -9504,7 +9769,7 @@ class MessengerGroupProfileModal {
 								await this.#api.blockUser(member.id);
 								await callbacks.onUserBlocked?.(member.id);
 								memberIds.delete(member.id);
-								const refreshed = await this.#api.getGroupInfo(chat.id);
+								const refreshed = await this.#api.getGroupInfo(chat.id, { force: true });
 								if (refreshed?.success) renderMembers(refreshed.members);
 							} catch (e) {
 								console.warn('[GroupProfile] blockUser', e);
@@ -14791,9 +15056,14 @@ class MessengerOfflineStore {
 	static saveChats(userId, chats) {
 		if (!userId || !Array.isArray(chats)) return;
 		try {
+			const persisted = chats.map((c) => {
+				if (!c || !c._pendingEncPreview) return c;
+				const { _pendingEncPreview, ...rest } = c;
+				return rest;
+			});
 			localStorage.setItem(
 				MessengerOfflineStore.CHATS_PREFIX + userId,
-				JSON.stringify({ chats, savedAt: Date.now() })
+				JSON.stringify({ chats: persisted, savedAt: Date.now() })
 			);
 		} catch (_) { /* ignore quota */ }
 	}
@@ -14993,6 +15263,11 @@ class MessengerCache {
 		if (encReply == null && replyToTextPreview && SupraCrypto.isEncrypted(replyToTextPreview)) {
 			encReply = replyToTextPreview;
 		}
+		// Признак «сообщение было зашифровано» нужно хранить отдельно: для tier=basic
+		// шифртекст в кэше не сохраняется (текст лежит plaintext), поэтому без флага
+		// после перезахода/в кэше теряется информация о шифровании и замок становится
+		// красным. Флаг переживает циклы save/load даже когда _encText уже нет.
+		const wasEnc = !!encText || !!msg._wasEncrypted;
 		return {
 			chatId,
 			id: msg.id,
@@ -15017,6 +15292,7 @@ class MessengerCache {
 			encryptionTier: msg.encryptionTier || 'basic',
 			_encText: encText,
 			_encReplyPreview: encReply,
+			enc: wasEnc ? 1 : 0,
 			bodyEnc: null,
 			_lc: 0,
 			buttons: normalizeMessageButtons(msg.buttons),
@@ -15124,6 +15400,9 @@ class MessengerCache {
 				msg._encReplyPreview = r.replyToTextPreview;
 			}
 		}
+		// Восстанавливаем признак шифрования для tier=basic (шифртекст в кэше не лежит):
+		// без него замок у зашифрованных сообщений станет красным после перезахода.
+		if (r.enc) msg._wasEncrypted = true;
 		return msg;
 	}
 	open() {
@@ -16031,16 +16310,18 @@ class MessengerMessageService {
 	}
 	async syncNewMessages(chatId, api, pageSize = 50, { markAsRead = false } = {}) {
 		const lastId = await this.#cache.getLastMessageId(chatId);
+		const oldestId = await this.#getOldestCachedId(chatId);
 		let newMsgs = [];
 		try {
 			const panel = await api.syncChatPanel(chatId, {
 				afterMessageId: lastId,
 				markAsRead,
+				indexFromMessageId: oldestId,
 			});
 			if (!panel?.success) throw new Error(panel?.error || 'SyncChatPanel failed');
 			newMsgs = panel.messages || [];
 			if (newMsgs.length) await this.ingest(chatId, newMsgs, api);
-			const reconcile = await this.reconcileWithServerIndex(chatId, api, lastId, panel.syncIndex);
+			const reconcile = await this.reconcileWithServerIndex(chatId, api, lastId, panel.syncIndexSummary);
 			return {
 				messages: newMsgs,
 				reconcile: reconcile || { historyCleared: false, removedIds: [] },
@@ -16100,9 +16381,53 @@ class MessengerMessageService {
 		return indexEntries.slice(idx + 1);
 	}
 
-	async reconcileWithServerIndex(chatId, api, afterMessageId = null, preloadedIndex = null) {
+	/**
+	 * Порядконезависимая XOR-сводка id сообщений кеша (16 байт → hex) + количество.
+	 * Должна совпадать с серверной ComputeSyncChecksum по тому же набору id.
+	 * Возвращает null, если в кеше есть сообщение с не-GUID id (оптимистичные/локальные) —
+	 * тогда считаем сводку несравнимой и форсируем полный reconcile (безопасно).
+	 */
+	#computeSyncSummary(cachedMessages) {
+		const acc = new Uint8Array(16);
+		let count = 0;
+		for (const m of cachedMessages) {
+			if (m.isVirtual) continue;
+			const hex = String(m.id).replace(/-/g, '').toLowerCase();
+			if (hex.length !== 32 || /[^0-9a-f]/.test(hex)) return null;
+			for (let i = 0; i < 16; i++) {
+				acc[i] ^= parseInt(hex.substr(i * 2, 2), 16);
+			}
+			count++;
+		}
+		let checksum = '';
+		for (let i = 0; i < 16; i++) checksum += acc[i].toString(16).padStart(2, '0');
+		return { count, checksum };
+	}
+
+	async #getOldestCachedId(chatId) {
 		try {
-			const fullIndex = preloadedIndex ?? await api.getMessageSyncIndex(chatId, null);
+			const all = await this.#cache.getMessages(chatId);
+			for (const m of all) {
+				if (!m.isVirtual) return m.id;
+			}
+		} catch { /* ignore */ }
+		return null;
+	}
+
+	async reconcileWithServerIndex(chatId, api, afterMessageId = null, summary = null) {
+		try {
+			// Быстрый путь: серверная сводка совпала с локальным кешем — расхождений нет,
+			// полный индекс качать не нужно (главная экономия трафика).
+			if (summary && summary.checksum != null && summary.count != null) {
+				const cachedForSummary = await this.#cache.getMessages(chatId);
+				const local = this.#computeSyncSummary(cachedForSummary);
+				if (local && local.count === summary.count && local.checksum === summary.checksum) {
+					return { historyCleared: false, removedIds: [] };
+				}
+			}
+
+			// Расхождение (или сводки нет) — тянем полный индекс и сверяем как раньше.
+			const fullIndex = await api.getMessageSyncIndex(chatId, null);
 			const serverIds = new Set((fullIndex || []).map(e => e.id));
 
 			if (!fullIndex?.length) {
@@ -16181,19 +16506,57 @@ class MessengerMessageService {
 		let activities = [];
 		try {
 			const lastId = await this.#cache.getLastMessageId(chatId);
+			const oldestId = await this.#getOldestCachedId(chatId);
 			const panel = await api.syncChatPanel(chatId, {
 				count: pageSize,
 				afterMessageId: lastId,
 				markAsRead,
+				indexFromMessageId: oldestId,
 			});
 			if (!panel?.success) throw new Error(panel?.error || 'SyncChatPanel failed');
 			markedRead = !!panel.markedRead;
 			activities = panel.activities || [];
 			if (panel.messages?.length) await this.ingest(chatId, panel.messages, api);
-			reconcile = await this.reconcileWithServerIndex(chatId, api, lastId, panel.syncIndex)
+			reconcile = await this.reconcileWithServerIndex(chatId, api, lastId, panel.syncIndexSummary)
 				|| reconcile;
 		} catch (err) {
 			console.warn('[MessengerMessageService] syncRecentFromServer error:', err);
+		}
+		return {
+			all: await this.getDisplayMessages(chatId, api),
+			historyCleared: !!reconcile.historyCleared,
+			removedIds: reconcile.removedIds || [],
+			markedRead,
+			activities,
+		};
+	}
+
+	/**
+	 * Лёгкая сверка активного чата после того, как RequestSync уже доставил дельту по rev
+	 * (новые/изменённые/удалённые сообщения). Здесь НЕ перезапрашиваем последние N сообщений
+	 * (это сделала rev-дельта) — только догоняем «хвост» после lastId, прочитываем чат и
+	 * сверяем индекс по лёгкой сводке. Полный индекс тянется лишь при реальном расхождении.
+	 */
+	async reconcileActiveAfterDelta(chatId, api, { markAsRead = false } = {}) {
+		let reconcile = { historyCleared: false, removedIds: [] };
+		let markedRead = false;
+		let activities = [];
+		try {
+			const lastId = await this.#cache.getLastMessageId(chatId);
+			const oldestId = await this.#getOldestCachedId(chatId);
+			const panel = await api.syncChatPanel(chatId, {
+				afterMessageId: lastId,
+				markAsRead,
+				indexFromMessageId: oldestId,
+			});
+			if (!panel?.success) throw new Error(panel?.error || 'SyncChatPanel failed');
+			markedRead = !!panel.markedRead;
+			activities = panel.activities || [];
+			if (panel.messages?.length) await this.ingest(chatId, panel.messages, api);
+			reconcile = await this.reconcileWithServerIndex(chatId, api, lastId, panel.syncIndexSummary)
+				|| reconcile;
+		} catch (err) {
+			console.warn('[MessengerMessageService] reconcileActiveAfterDelta error:', err);
 		}
 		return {
 			all: await this.getDisplayMessages(chatId, api),
@@ -17400,23 +17763,7 @@ class MessengerSidebar {
 
 	#getBranchesForGroup(chat) {
 		if (!chat?.id) return [];
-		const parentId = String(chat.id).toLowerCase();
-		let branches = Array.isArray(chat.branches) ? [...chat.branches] : [];
-		if (!branches.length) {
-			branches = this.#allChatsRef
-				.filter(c => String(c.parentChatId || '').toLowerCase() === parentId && isGroupBranchChat(c))
-				.map(c => ({
-					id: c.id,
-					name: c.name || '',
-					slug: c.branchSlug || '',
-					avatar: c.avatar || null,
-					lastMessage: c.lastMessage || '',
-					lastMessageTime: c.lastMessageTime || null,
-					unreadCount: c.unreadCount || 0,
-					order: c.branchOrder ?? 0,
-				}));
-		}
-		return branches.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+		return collectBranchesForGroup(chat, this.#allChatsRef);
 	}
 
 	#refreshChatListPanels() {
@@ -18171,6 +18518,7 @@ class MessengerAppView {
 	#previewDecryptQueue = [];
 	#previewScrollBound = false;
 	#previewCacheSyncScheduled = false;
+	#previewDecryptKickScheduled = false;
 	#pendingMarkRead = new Set();
 	/** messageId mini app, которые уже были авто-открыты в этой сессии. */
 	#autoOpenedMiniApps = new Set();
@@ -18180,7 +18528,12 @@ class MessengerAppView {
 	#markReadSyncTimer = new Map();
 	#syncInFlight = null;
 	#lastSyncAt = 0;
+	#profilesSyncedAt = 0;
 	static SYNC_DEBOUNCE_MS = 2500;
+	/** Минимальный интервал между полными RequestSync при возврате во вкладку, когда сокет не рвался. */
+	static FOREGROUND_SYNC_MIN_MS = 30000;
+	/** Как часто (макс.) перезапрашивать профили контактов — между этим они кешируются на клиенте. */
+	static PROFILES_REFRESH_MS = 5 * 60 * 1000;
 	static BOOT_SYNC_MESSAGE_LIMIT = 15;
 	static PREVIEW_BOOT_BATCH = 6;
 	static PREVIEW_SCROLL_BATCH = 3;
@@ -18416,6 +18769,7 @@ class MessengerAppView {
 
 	acknowledgeMarkRead(chatId) {
 		this.#pendingMarkRead.delete(chatId);
+		this.clearUnread(chatId);
 		this.#clearPanelUnreadVisual(chatId);
 	}
 
@@ -18489,7 +18843,7 @@ class MessengerAppView {
 						MessengerChatListPreview.preferPreviewSource(msg, listPreviewSource),
 						msg.timestamp
 					);
-					this.#renderChatList();
+					this.#patchChatListPreviewItem(chat);
 				}
 				return;
 			}
@@ -18512,7 +18866,7 @@ class MessengerAppView {
 						MessengerChatListPreview.preferPreviewSource(msg, listPreviewSource),
 						msg.timestamp
 					);
-					this.#renderChatList();
+					this.#patchChatListPreviewItem(chat);
 				}
 				return;
 			}
@@ -18540,7 +18894,7 @@ class MessengerAppView {
 						MessengerChatListPreview.preferPreviewSource(msg, listPreviewSource),
 						msg.timestamp
 					);
-					this.#renderChatList();
+					this.#patchChatListPreviewItem(chat);
 				}
 				return;
 			}
@@ -18961,10 +19315,63 @@ class MessengerAppView {
 	}
 
 	#encryptedPreviewChats() {
-		return (this.#chats || []).filter((c) => {
-			const raw = c?.lastMessage;
-			return raw && SupraCrypto.isEncrypted(raw);
-		});
+		return (this.#chats || []).filter((c) => !!chatListPreviewEncryptedSource(c));
+	}
+
+	#queueChatPreviewDecrypt(chatId) {
+		if (!chatId) return;
+		if (!this.#previewDecryptQueue.includes(chatId)) {
+			this.#previewDecryptQueue.push(chatId);
+		}
+		if (this.#previewDecryptKickScheduled) return;
+		this.#previewDecryptKickScheduled = true;
+		const kick = () => {
+			this.#previewDecryptKickScheduled = false;
+			void this.#decryptNextPreviewBatch();
+		};
+		if (typeof requestIdleCallback === 'function') {
+			requestIdleCallback(kick, { timeout: 1200 });
+		} else {
+			setTimeout(kick, 80);
+		}
+	}
+
+	#patchChatListItemsForIds(ids) {
+		if (!ids?.size) return;
+		const activeChat = this.#activeChatForSidebar();
+		const seenParents = new Set();
+		for (const c of this.#chats) {
+			if (!ids.has(c.id)) continue;
+			this.#sidebar.patchChatListItem(c, activeChat);
+			if (isGroupBranchChat(c) && c.parentChatId && !seenParents.has(c.parentChatId)) {
+				seenParents.add(c.parentChatId);
+				const parent = this.#chats.find(p => p.id === c.parentChatId);
+				if (parent) this.#sidebar.patchChatListItem(parent, activeChat);
+			}
+		}
+	}
+
+	#persistChatsCache() {
+		if (this.#currentUser?.id && this.#chats?.length) {
+			MessengerOfflineStore.saveChats(this.#currentUser.id, this.#chats);
+		}
+	}
+
+	#patchChatListPreviewItem(chat) {
+		if (!chat) return;
+		const activeChat = this.#activeChatForSidebar();
+		if (isGroupBranchChat(chat)) {
+			syncParentGroupBranchEntry(this.#chats, chat);
+			this.#sidebar.patchChatListItem(chat, activeChat);
+			const parent = this.#chats.find(c => c.id === chat.parentChatId);
+			if (parent) this.#sidebar.patchChatListItem(parent, activeChat);
+		} else if (isRootGroupChat(chat)) {
+			applyGroupAggregatedPreview(chat, this.#chats);
+			this.#sidebar.patchChatListItem(chat, activeChat);
+		} else {
+			this.#sidebar.patchChatListItem(chat, activeChat);
+		}
+		this.#persistChatsCache();
 	}
 
 	#visibleChatListIds() {
@@ -19005,7 +19412,8 @@ class MessengerAppView {
 		const batch = this.#chats.filter((c) => batchIds.has(c.id));
 		if (!batch.length) return;
 		await this.#api.decryptChatListPreviews(batch);
-		this.#renderChatList();
+		this.#patchChatListItemsForIds(batchIds);
+		this.#persistChatsCache();
 		if (this.#previewDecryptQueue.length) {
 			await (SupraCrypto?.yieldToMain?.() ?? Promise.resolve());
 			if (typeof requestIdleCallback === 'function') {
@@ -19059,6 +19467,7 @@ class MessengerAppView {
 			const chat = this.#chats.find(c => c.id === id);
 			if (chat) this.#sidebar.patchChatListItem(chat, activeChat);
 		}
+		this.#persistChatsCache();
 	}
 
 	async #runProgressivePreviewDecrypt(options = {}) {
@@ -19081,7 +19490,8 @@ class MessengerAppView {
 		}
 		if (firstBatch.length && this.#api?.decryptChatListPreviews) {
 			await this.#api.decryptChatListPreviews(firstBatch);
-			this.#renderChatList();
+			this.#patchChatListItemsForIds(new Set(firstBatch.map((c) => c.id)));
+			this.#persistChatsCache();
 		}
 		this.#previewDecryptQueue = encrypted
 			.filter((c) => !seen.has(c.id))
@@ -19114,41 +19524,107 @@ class MessengerAppView {
 
 	#applyCachedPreviewIfBetter(chat, last) {
 		const stored = MessengerChatListPreview.storageText(last);
-		if (!stored || MessengerChatListPreview.isLockedStorage(stored)) return false;
+		if (!stored) return false;
 		const lastTs = MessengerUtils.messageTimestampMs(last);
-		const currentTs = chat.lastMessageTime
-			? new Date(chat.lastMessageTime).getTime()
-			: 0;
+		const currentTs = chatListPreviewTimeMs(chat.lastMessageTime);
 		const currentPreview = chat.lastMessage || '';
-		const serverPreviewLocked = MessengerChatListPreview.isLockedStorage(currentPreview)
-			|| currentPreview === SupraCrypto.LOCKED_PREVIEW
-			|| currentPreview === SupraCrypto.LOCKED_OTHER;
+
+		if (chatListPreviewIsEncrypted(stored)) {
+			if (chatListPreviewIsReadable(currentPreview)) {
+				if (lastTs >= currentTs) {
+					chat._pendingEncPreview = stored;
+					if (lastTs > currentTs) {
+						chat.lastMessageTime = last.timestamp instanceof Date
+							? last.timestamp
+							: new Date(last.timestamp);
+					}
+					this.#queueChatPreviewDecrypt(chat.id);
+					return true;
+				}
+				return false;
+			}
+			if (lastTs < currentTs) return false;
+			chat.lastMessage = stored;
+			chat.lastMessageTime = last.timestamp instanceof Date
+				? last.timestamp
+				: new Date(last.timestamp);
+			chat._pendingEncPreview = stored;
+			return false;
+		}
+
+		if (chatListPreviewIsExplicitLock(stored)) {
+			if (lastTs < currentTs) return false;
+			chat.lastMessage = stored;
+			chat.lastMessageTime = last.timestamp instanceof Date
+				? last.timestamp
+				: new Date(last.timestamp);
+			delete chat._pendingEncPreview;
+			return true;
+		}
+
+		const serverPreviewLocked = chatListPreviewIsLockedText(currentPreview);
 		if (lastTs < currentTs) return false;
 		if (lastTs === currentTs && !serverPreviewLocked) return false;
 		chat.lastMessage = stored;
 		chat.lastMessageTime = last.timestamp instanceof Date
 			? last.timestamp
 			: new Date(last.timestamp);
+		delete chat._pendingEncPreview;
 		return true;
 	}
 
 	#applyCachedPreviewFromLast(chat, last) {
+		if (this.#applyCachedPreviewIfBetter(chat, last)) return true;
 		if (!last) {
-			chat.lastMessage = '';
-			chat.lastMessageTime = null;
+			if (!chatListPreviewIsReadable(chat.lastMessage || '')) {
+				chat.lastMessage = '';
+				chat.lastMessageTime = null;
+				delete chat._pendingEncPreview;
+			}
 			return true;
 		}
 		const stored = MessengerChatListPreview.storageText(last);
 		if (stored === null) {
-			chat.lastMessage = '';
-			chat.lastMessageTime = null;
+			if (!chatListPreviewIsReadable(chat.lastMessage || '')) {
+				chat.lastMessage = '';
+				chat.lastMessageTime = null;
+				delete chat._pendingEncPreview;
+			}
 			return true;
 		}
-		chat.lastMessage = stored;
-		chat.lastMessageTime = last.timestamp instanceof Date
-			? last.timestamp
-			: new Date(last.timestamp);
-		return true;
+		const lastTs = MessengerUtils.messageTimestampMs(last);
+		const curTs = chatListPreviewTimeMs(chat.lastMessageTime);
+		const curPreview = chat.lastMessage || '';
+		if (chatListPreviewIsEncrypted(stored) && chatListPreviewIsReadable(curPreview)) {
+			if (lastTs >= curTs) {
+				chat._pendingEncPreview = stored;
+				if (lastTs > curTs) {
+					chat.lastMessageTime = last.timestamp instanceof Date
+						? last.timestamp
+						: new Date(last.timestamp);
+				}
+				this.#queueChatPreviewDecrypt(chat.id);
+			}
+			return false;
+		}
+		if (chatListPreviewIsExplicitLock(stored) && lastTs >= curTs) {
+			chat.lastMessage = stored;
+			chat.lastMessageTime = last.timestamp instanceof Date
+				? last.timestamp
+				: new Date(last.timestamp);
+			delete chat._pendingEncPreview;
+			return true;
+		}
+		if (!chatListPreviewIsReadable(curPreview) && lastTs >= curTs) {
+			chat.lastMessage = stored;
+			chat.lastMessageTime = last.timestamp instanceof Date
+				? last.timestamp
+				: new Date(last.timestamp);
+			if (chatListPreviewIsEncrypted(stored)) chat._pendingEncPreview = stored;
+			else delete chat._pendingEncPreview;
+			return true;
+		}
+		return false;
 	}
 
 	async #runRefreshLastMessagePreviews() {
@@ -19156,9 +19632,10 @@ class MessengerAppView {
 		const encrypted = this.#encryptedPreviewChats();
 		if (encrypted.length && this.#api?.decryptChatListPreviews) {
 			await this.#api.decryptChatListPreviews(encrypted);
+			this.#patchChatListItemsForIds(new Set(encrypted.map((c) => c.id)));
+			this.#persistChatsCache();
 		}
 		this.#previewDecryptQueue = [];
-		this.#renderChatList();
 	}
 
 	async refreshLastMessagePreviews() {
@@ -19175,8 +19652,34 @@ class MessengerAppView {
 			? previewSrc
 			: MessengerChatListPreview.storageText(previewSrc);
 		if (stored === null) return;
+		const newTs = chatListPreviewTimeMs(timestamp);
+		const curTs = chatListPreviewTimeMs(chat.lastMessageTime);
+		const curPreview = chat.lastMessage || '';
+		const tsValue = timestamp instanceof Date ? timestamp : new Date(timestamp);
+
+		if (chatListPreviewIsExplicitLock(stored) && newTs >= curTs) {
+			chat.lastMessage = stored;
+			chat.lastMessageTime = tsValue;
+			delete chat._pendingEncPreview;
+			return;
+		}
+		if (newTs < curTs) return;
+
+		if (chatListPreviewIsEncrypted(stored)) {
+			if (chatListPreviewIsReadable(curPreview)) {
+				chat.lastMessageTime = tsValue;
+				chat._pendingEncPreview = stored;
+				this.#queueChatPreviewDecrypt(chatId);
+				return;
+			}
+			chat.lastMessage = stored;
+			chat.lastMessageTime = tsValue;
+			return;
+		}
+
 		chat.lastMessage = stored;
-		chat.lastMessageTime = timestamp instanceof Date ? timestamp : new Date(timestamp);
+		chat.lastMessageTime = tsValue;
+		delete chat._pendingEncPreview;
 	}
 
 	async refreshChatListPreview(chatId) {
@@ -19185,13 +19688,17 @@ class MessengerAppView {
 		try {
 			const messages = await this.#cachedMessagesForPreview(chatId);
 			const last = MessengerChatListPreview.pickLastVisibleMessage(messages);
-			this.#applyCachedPreviewFromLast(chat, last);
+			if (last) {
+				this.#applyCachedPreviewIfBetter(chat, last);
+			} else {
+				this.#applyCachedPreviewFromLast(chat, last);
+			}
 			if (isGroupBranchChat(chat)) {
 				syncParentGroupBranchEntry(this.#chats, chat);
 			} else if (isRootGroupChat(chat)) {
 				applyGroupAggregatedPreview(chat, this.#chats);
 			}
-			if (this.#api?.decryptChatListPreviews) {
+			if (chatListPreviewEncryptedSource(chat) && this.#api?.decryptChatListPreviews) {
 				await this.#api.decryptChatListPreviews([chat]).catch(() => {});
 			}
 			const activeChat = this.#activeChatForSidebar();
@@ -19200,6 +19707,7 @@ class MessengerAppView {
 				const parent = this.#chats.find(c => c.id === chat.parentChatId);
 				if (parent) this.#sidebar.patchChatListItem(parent, activeChat);
 			}
+			this.#persistChatsCache();
 		} catch (e) {
 			console.warn('[MessengerAppView] refreshChatListPreview cache', e);
 		}
@@ -19289,7 +19797,9 @@ class MessengerAppView {
 			const activeId = this.#activeState.chatId;
 			try {
 				const markAsRead = this.shouldMarkReadForSync(activeId);
-				const result = await msgService.syncRecentFromServer(activeId, api, 50, { markAsRead });
+				// RequestSync уже принёс дельту активного чата по rev — не перезапрашиваем
+				// последние 50 сообщений повторно, делаем лёгкую сверку (хвост + сводка индекса).
+				const result = await msgService.reconcileActiveAfterDelta(activeId, api, { markAsRead });
 				if (result.markedRead) this.acknowledgeMarkRead(activeId);
 				this.applyChatActivities(activeId, result.activities);
 				if (result.historyCleared) {
@@ -19326,10 +19836,21 @@ class MessengerAppView {
 		}
 	}
 
+	#computeMissingKeyChatIds() {
+		// До первой загрузки списка чатов — null (сервер пришлёт ключи по всем чатам).
+		if (!this.#chats?.length) return undefined;
+		const ids = [];
+		for (const c of this.#chats) {
+			if (c?.encryptionEnabled && !c.hasGroupAutoKey) ids.push(c.id);
+		}
+		return ids;
+	}
+
 	async requestSyncBundle(msgService, api, options = {}) {
 		if (this.#syncInFlight) return this.#syncInFlight;
 		const now = Date.now();
-		if (!options.force && now - this.#lastSyncAt < MessengerAppView.SYNC_DEBOUNCE_MS) {
+		const minInterval = options.minIntervalMs ?? MessengerAppView.SYNC_DEBOUNCE_MS;
+		if (!options.force && now - this.#lastSyncAt < minInterval) {
 			return null;
 		}
 		this.#syncInFlight = (async () => {
@@ -19337,16 +19858,23 @@ class MessengerAppView {
 				const built = await this.#buildSyncCursors();
 				const cursors = options.chatCursors ?? built.cursors;
 				const revCursors = options.chatRevCursors ?? built.revCursors;
+				// Профили кешируются на клиенте — перезапрашиваем их не чаще PROFILES_REFRESH_MS.
+				const includeProfiles = options.includeProfiles !== false
+					&& (now - this.#profilesSyncedAt >= MessengerAppView.PROFILES_REFRESH_MS);
 				const result = await api.requestSync({
 					chatCursors: cursors,
 					chatRevCursors: revCursors,
-					includeProfiles: options.includeProfiles !== false,
+					includeProfiles,
 					includeEncryptionKeys: options.includeEncryptionKeys !== false,
+					encryptionKeyChatIds: options.includeEncryptionKeys !== false
+						? this.#computeMissingKeyChatIds()
+						: undefined,
 					messageLimit: options.messageLimit ?? 50,
 				});
 				await this.#applySyncBundle(result, msgService, api, {
 					reconcileActive: options.reconcileActive !== false,
 				});
+				if (includeProfiles && result?.success) this.#profilesSyncedAt = Date.now();
 				this.#lastSyncAt = Date.now();
 				return result;
 			} catch (e) {
@@ -19361,7 +19889,12 @@ class MessengerAppView {
 
 	setChats(chats) {
 		this.#chatsBootLoading = false;
-		const normalized = normalizeGroupChatsTree(chats);
+		const prevById = new Map((this.#chats || []).map(c => [c.id, c]));
+		const merged = (chats || []).map((c) => {
+			const prev = prevById.get(c.id);
+			return prev ? preserveChatListPreviewFields(c, prev) : c;
+		});
+		const normalized = normalizeGroupChatsTree(merged);
 		for (const c of normalized) {
 			if (c.unreadCount > 0 && this.#activeChat?.id === c.id && this.#isChatVisible(c.id)) {
 				this.#pendingMarkRead.add(c.id);
@@ -20515,11 +21048,9 @@ class MessengerAppView {
 				if (this.#isGroupChat(chatData) && chatData.encryptionEnabled
 					&& !chatData.hasGroupAutoKey
 					&& this.#activeState?.chatId === chatId) {
-					await MessengerDialog.alert({
-						title: this.#i18n.t('masterPasswordLock'),
-						message: 'Ключ группы ещё не выдан. Попросите администратора открыть группу или добавить вас снова.',
-						themeManager: this.#themeManager,
-					});
+					// Без блокирующего окна: тихо просим ключ у онлайн-участников. Когда кто-то
+					// раздаст — придёт WS SupraGroupKeysUpdated и сообщения расшифруются сами.
+					this.#api.requestGroupKey(chatId).catch(() => {});
 				}
 			} catch (e) {
 				console.warn('[MessengerAppView] ensureChatKeysInBackground', e);
@@ -20589,6 +21120,8 @@ class MessengerAppView {
 				parentChatId: r.parentChatId || null,
 				branchSlug: r.slug || null,
 				avatar: r.avatar || null,
+				encryptionEnabled: !!r.encryptionEnabled,
+				requiresCustomGroupPassword: !!r.requiresCustomGroupPassword,
 				lastMessage: '',
 				lastMessageTime: null,
 				unreadCount: 0,
@@ -20596,6 +21129,10 @@ class MessengerAppView {
 			this.#chats.push(branchChat);
 			this.#chats = normalizeGroupChatsTree(this.#chats);
 		}
+		branchChat = resolveGroupBranchEncryptionMeta(branchChat, this.#chats);
+		const idx = this.#chats.findIndex(c => c.id === r.chatId);
+		if (idx >= 0) this.#chats[idx] = { ...this.#chats[idx], ...branchChat };
+		this.#api?.syncChatsMeta?.(this.#chats);
 		this.#renderChatList();
 		this.#openChat(this.#chats.find(c => c.id === r.chatId) || branchChat);
 	}
@@ -20612,10 +21149,20 @@ class MessengerAppView {
 		if (!name?.trim()) return;
 		try {
 			const r = await this.#api.createGroupBranch(chat.id, name.trim());
-			if (MessengerThemeManager.isAdminGroupEncryptionEnabled()) {
-				this.#api.distributeMissingGroupKeys(r.chatId).catch(() => {});
-			}
 			await this.#openBranchAfterCreate(r);
+			const branchChat = resolveGroupBranchEncryptionMeta(
+				this.#chats.find(c => c.id === r.chatId) || {
+					id: r.chatId,
+					name: r.name || '',
+					type: 'group_branch',
+					parentChatId: r.parentChatId || chat.id,
+					branchSlug: r.slug || null,
+					encryptionEnabled: !!r.encryptionEnabled,
+					requiresCustomGroupPassword: !!r.requiresCustomGroupPassword,
+				},
+				this.#chats
+			);
+			await setupNewGroupBranchEncryption(this.#api, branchChat);
 		} catch (e) {
 			await MessengerDialog.alert({
 				title: this.#i18n.t('groupSaveError'),
@@ -21260,6 +21807,11 @@ class MessengerAppView {
 				this.#activeChat.contactStatusText = contactStatusText;
 			}
 		}
+		this.#api?.syncChatsMeta?.(this.#chats);
+		const updated = this.#chats.find(x => x.id === chatId);
+		if (updated?.encryptionEnabled && isGroupBranchChat(updated)) {
+			setupNewGroupBranchEncryption(this.#api, updated).catch(() => {});
+		}
 		this.#renderChatList();
 		if (this.#activeState?.chatId === chatId) {
 			const headerName = this.#activeState.el?.querySelector('.mc-header-name');
@@ -21862,7 +22414,15 @@ class MessengerAppView {
 			}
 		} catch (e) {
 			console.warn('[MessengerAppView] loadFolders error', e);
-			this.#sidebar.setFolders([], []);
+			// При сетевой ошибке НЕ сбрасываем папки в пустые — иначе теряется
+			// признак архива и архивные чаты попадают в «Все чаты». Оставляем
+			// уже применённые папки, при наличии — восстанавливаем из кэша.
+			const cached = this.#currentUser?.id
+				? MessengerOfflineStore.loadFolders(this.#currentUser.id)
+				: null;
+			if (cached?.folders) {
+				this.#sidebar.setFolders(cached.folders, cached.members || []);
+			}
 		}
 	}
 
@@ -22259,7 +22819,7 @@ class MessengerAppView {
 		const chat = this.#chats.find(c => c.id === chatId);
 		if (!chat) return;
 		await this.#setChatListPreview(chat, chatId, msgOrText, timestamp);
-		this.#renderChatList();
+		this.#patchChatListPreviewItem(chat);
 	}
 
 	#isMessageAlreadyInPanel(state, msgId) {
@@ -22318,12 +22878,7 @@ class MessengerAppView {
 					msg.timestamp
 				)
 					.then(() => {
-						if (isGroupBranchChat(chat)) {
-							syncParentGroupBranchEntry(this.#chats, chat);
-						} else if (isRootGroupChat(chat)) {
-							applyGroupAggregatedPreview(chat, this.#chats);
-						}
-						this.#renderChatList();
+						this.#patchChatListPreviewItem(chat);
 					})
 					.catch(e => console.warn('[MessengerAppView] receiveMessage preview', e));
 			}
@@ -22463,18 +23018,76 @@ class MessengerAppView {
 	applyMessageDeletedForEveryone(chatId, messageId) {
 		this.deleteMessage(chatId, messageId, messageId);
 	}
-	async syncAfterReconnect(msgService, api) {
+	async syncAfterReconnect(msgService, api, { wasDisconnected = true } = {}) {
 		try {
-			const result = await this.requestSyncBundle(msgService, api);
+			const result = await this.requestSyncBundle(msgService, api, {
+				// Если сокет не рвался (просто вернули вкладку) — увеличенный throttle:
+				// живые события приходят по WS, тяжёлый RequestSync на каждый фокус не нужен.
+				minIntervalMs: wasDisconnected ? undefined : MessengerAppView.FOREGROUND_SYNC_MIN_MS,
+			});
+			if (result) {
+				await this.#assistantMgr?.processPendingOnConnect();
+				return;
+			}
+			// Синк пропущен троттлингом. Сокет жив и синк был недавно — полагаемся на WS,
+			// никаких дополнительных запросов не делаем.
+			if (!wasDisconnected) return;
+			// Реальное переподключение, но синк задебаунсился совсем недавно — всё равно
+			// догоняем отложенные ответы помощников и активную панель.
 			await this.#assistantMgr?.processPendingOnConnect();
-			if (result) return;
 			const chatId = this.#activeState?.chatId;
 			if (chatId && this.#isChatVisible(chatId)) {
 				await this.#panelFactory.backgroundSyncPanelMessages(chatId, this.#activeState);
 			}
+			this.#reconcileGroupKeysAfterSync();
 		} catch (e) {
 			console.warn('[MessengerAppView] syncAfterReconnect', e);
 		}
+	}
+
+	/**
+	 * После догоняющей синхронизации: для зашифрованных групп без ключа просим ключ у
+	 * онлайн-участников, а где ключ есть — раздаём недостающим (новичкам, опубликовавшим
+	 * публичный ключ за время оффлайна). Делает раздачу ключей надёжной без участия админа.
+	 */
+	#reconcileGroupKeysAfterSync() {
+		try {
+			const api = this.#api;
+			if (!api?.getCrypto()?.isUnlocked) return;
+			for (const c of this.#chats || []) {
+				if (!c?.encryptionEnabled) continue;
+				if (c.hasGroupAutoKey) {
+					api.distributeMissingGroupKeys(c.id).catch(() => {});
+				} else {
+					api.requestGroupKey(c.id).catch(() => {});
+				}
+			}
+		} catch (e) {
+			console.warn('[MessengerAppView] reconcileGroupKeysAfterSync', e);
+		}
+	}
+
+	/**
+	 * WS: мне выдали ключ группы. Перечитываем ключ и обновляем активную панель + превью.
+	 */
+	async handleGroupKeysUpdated(chatId) {
+		if (!chatId) return;
+		const ok = await this.#api.onGroupKeysUpdated(chatId);
+		if (!ok) return;
+		const chat = this.#chats.find(c => c.id === chatId);
+		if (chat) chat.hasGroupAutoKey = true;
+		if (this.#activeState && this.#isChatVisible(this.#activeState.chatId)
+			&& this.#api.getCrypto()?.isUnlocked) {
+			try {
+				await this.#panelFactory.refreshEncryptedMessagesDisplay(
+					this.#activeState,
+					this.#activeState.chatId
+				);
+			} catch (e) {
+				console.warn('[MessengerAppView] handleGroupKeysUpdated refresh', e);
+			}
+		}
+		this.scheduleRefreshLastMessagePreviews();
 	}
 	receiveActivity(chatId, userId, userName, activityType, active, activityMessage = null, expiresAt = null) {
 		const chat = this.#chats.find(c => c.id === chatId);
@@ -22580,17 +23193,22 @@ class MessengerAppView {
 		return { text: this.#i18n.t('typingShort'), typingText: null };
 	}
 	addChat(chat) {
-		if (chat?.parentChatId || chat?.type === 'group_branch') {
-			const idx = this.#chats.findIndex(c => c.id === chat.id);
+		const resolved = resolveGroupBranchEncryptionMeta(chat, this.#chats);
+		if (resolved?.parentChatId || resolved?.type === 'group_branch') {
+			const idx = this.#chats.findIndex(c => c.id === resolved.id);
 			if (idx >= 0) {
-				this.#chats[idx] = { ...this.#chats[idx], ...chat };
+				this.#chats[idx] = { ...this.#chats[idx], ...resolved };
 			} else {
-				this.#chats.push(chat);
+				this.#chats.push(resolved);
 			}
 			this.#chats = normalizeGroupChatsTree(this.#chats);
-			const branchChat = this.#chats.find(c => c.id === chat.id);
+			const branchChat = this.#chats.find(c => c.id === resolved.id);
 			if (branchChat) syncParentGroupBranchEntry(this.#chats, branchChat);
 			this.#api?.syncChatsMeta?.(this.#chats);
+			if (resolved.encryptionEnabled) {
+				const forKeys = branchChat || resolved;
+				setupNewGroupBranchEncryption(this.#api, forKeys).catch(() => {});
+			}
 			if (this.#currentUser?.id) {
 				MessengerOfflineStore.saveChats(this.#currentUser.id, this.#chats);
 			}
@@ -22658,8 +23276,16 @@ class MessengerApiClient {
 	#chatKeyStatus = new Map();
 	#distributeLastAt = new Map();
 	#distributeInFlight = new Map();
+	/** chatId → ts последнего запроса ключа у других участников (антиспам) */
+	#keyRequestLastAt = new Map();
 	#markReadInFlight = new Map();
+	/** chatId → Promise — схлопывает параллельные GetGroupInfo по одному чату */
+	#groupInfoInFlight = new Map();
+	/** chatId → { value, at } — короткий кеш, чтобы открытие панели не слало 3 запроса */
+	#groupInfoCache = new Map();
 	static DISTRIBUTE_COOLDOWN_MS = 5 * 60 * 1000;
+	static KEY_REQUEST_COOLDOWN_MS = 15 * 1000;
+	static GROUP_INFO_TTL_MS = 4000;
 
 	setCrypto(crypto) {
 		this.#crypto = crypto;
@@ -22740,10 +23366,16 @@ class MessengerApiClient {
 		return !!(chat && chat.isBotContact && chat.botSupportsEncryption);
 	}
 
+	#resolveChatEncryptionMeta(chatId) {
+		const chat = this.#chatsMeta.get(chatId);
+		if (!chat) return null;
+		return resolveGroupBranchEncryptionMeta(chat, this.#chatsMeta);
+	}
+
 	#isPlaintextChatId(chatId) {
 		if (this.#isChannelChatId(chatId)) return true;
 		if (this.#isBotChatId(chatId)) return !this.#botChatSupportsEncryption(chatId);
-		const chat = this.#chatsMeta.get(chatId);
+		const chat = this.#resolveChatEncryptionMeta(chatId);
 		if (chat && (isMessengerGroupChatType(chat.type) || isGroupBranchChat(chat))) {
 			// Источник истины — пер-групповой флаг. Глобальная настройка лишь разрешает
 			// его включать; уже зашифрованная группа остаётся зашифрованной.
@@ -22759,11 +23391,24 @@ class MessengerApiClient {
 
 	syncChatsMeta(chats) {
 		if (!Array.isArray(chats) || !chats.length) return;
-		this.#updateChatsMeta(chats);
+		const byId = new Map(chats.map(c => [c.id, c]));
+		for (const c of chats) {
+			const resolved = resolveGroupBranchEncryptionMeta(c, (id) => byId.get(id));
+			this.#chatsMeta.set(resolved.id, resolved);
+		}
 	}
 
 	chatMeta(chatId) {
 		return this.#chatsMeta.get(chatId) || null;
+	}
+
+	// Чат — зашифрованная группа или её ветка (ветки наследуют флаг родителя на сервере).
+	// Используется для пометки сообщений замочком (зашифровано / открытый текст).
+	isEncryptedGroupChat(chatId) {
+		const chat = this.#resolveChatEncryptionMeta(chatId);
+		if (!chat) return false;
+		if (!(isMessengerGroupChatType(chat.type) || isGroupBranchChat(chat))) return false;
+		return !!chat.encryptionEnabled;
 	}
 
 	async #chatKeyFor(chatOrId) {
@@ -22841,7 +23486,7 @@ class MessengerApiClient {
 	async prepareMessagesForCache(chatId, messages) {
 		if (!messages?.length) return messages || [];
 		if (this.#isPlaintextChatId(chatId)) return messages;
-		const chat = this.#chatsMeta.get(chatId);
+		const chat = this.#resolveChatEncryptionMeta(chatId);
 		let keysEnsured = false;
 		const out = [];
 		for (const m of messages) {
@@ -22895,7 +23540,7 @@ class MessengerApiClient {
 	}
 
 	chatUsesExtraPasswordMode(chatId) {
-		const chat = this.#chatsMeta.get(chatId);
+		const chat = this.#resolveChatEncryptionMeta(chatId);
 		if (!chat) return !!this.#crypto?.isExtraEncryptionEnabled(chatId);
 		const isGroup = chat.type === 'group' || chat.type === 'public_group' || chat.type === 'group_branch';
 		if (isGroup && !chat.encryptionEnabled) return false;
@@ -23036,7 +23681,7 @@ class MessengerApiClient {
 
 	async #encryptOutgoing(chatId, text, options = {}, tierOverride = null) {
 		if (!this.#crypto) throw new Error('Мастер-пароль не введён');
-		const chat = this.#chatsMeta.get(chatId);
+		const chat = this.#resolveChatEncryptionMeta(chatId);
 		if (!chat) throw this.#encryptionKeyError('Нет ключа шифрования для чата', 'chat-meta');
 		const tier = tierOverride || (this.#crypto.getCustomPassword(chatId) ? 'protected' : 'basic');
 		const key = await this.#obtainOutgoingChatKey(chat, tier);
@@ -23145,6 +23790,42 @@ class MessengerApiClient {
 		return task;
 	}
 
+	/**
+	 * Я — участник без ключа: прошу сервер уведомить онлайн-держателей ключа, чтобы они
+	 * выполнили раздачу под мой публичный ключ. Анти-спам через KEY_REQUEST_COOLDOWN_MS.
+	 */
+	async requestGroupKey(chatId) {
+		if (!chatId || this.#isPlaintextChatId(chatId)) return;
+		if (!this.#crypto || !this.#currentUserId) return;
+		const last = this.#keyRequestLastAt.get(chatId) || 0;
+		if (Date.now() - last < MessengerApiClient.KEY_REQUEST_COOLDOWN_MS) return;
+		this.#keyRequestLastAt.set(chatId, Date.now());
+		try {
+			await this.call('RequestGroupKey', { chatId });
+		} catch (e) {
+			console.warn('[MessengerApiClient] requestGroupKey', e);
+		}
+	}
+
+	/**
+	 * Пришёл WS SupraGroupKeysUpdated: кто-то выдал мне ключ. Сбрасываем кеши, чтобы
+	 * перечитать свежий обёрнутый ключ с сервера. Возвращает true, если ключ теперь доступен.
+	 */
+	async onGroupKeysUpdated(chatId) {
+		if (!chatId || !this.#crypto || !this.#currentUserId) return false;
+		this.#syncWrappedKeys.delete(chatId);
+		this.#clearChatKeyCaches(chatId);
+		const probe = await this.#probeMyWrappedGroupKey(chatId);
+		if (probe.found && probe.unwrapOk) {
+			this.#chatKeyStatus.set(chatId, { hasKey: true, checkedAt: Date.now() });
+			const meta = this.#chatsMeta.get(chatId);
+			if (meta) meta.hasGroupAutoKey = true;
+			this.#crypto.invalidateChatKey(chatId);
+			return true;
+		}
+		return false;
+	}
+
 	async #distributeMissingGroupKeysInner(chatId) {
 		const missRes = await fetch(`/api/encryption/group-keys/${encodeURIComponent(chatId)}/missing`, {
 			credentials: 'same-origin',
@@ -23186,6 +23867,7 @@ class MessengerApiClient {
 	#clearChatKeyCaches(chatId) {
 		this.#chatKeyStatus.delete(chatId);
 		this.#crypto?.invalidateChatKey(chatId);
+		this.invalidateGroupInfo(chatId);
 	}
 
 	async #probeMyWrappedGroupKey(chatId) {
@@ -23393,8 +24075,9 @@ class MessengerApiClient {
 	}
 
 	async #ensureGroupChatEncryptionKeys(chat, options = {}) {
-		if (this.#isPlaintextChatId(chat.id)) return false;
-		const chatId = chat.id;
+		const resolved = resolveGroupBranchEncryptionMeta(chat, this.#chatsMeta);
+		if (this.#isPlaintextChatId(resolved.id)) return false;
+		const chatId = resolved.id;
 		const shouldDistribute = options.distribute !== false;
 		if (options.force) {
 			this.#clearChatKeyCaches(chatId);
@@ -23510,15 +24193,19 @@ class MessengerApiClient {
 		chatRevCursors = {},
 		includeProfiles = true,
 		includeEncryptionKeys = true,
+		encryptionKeyChatIds = undefined,
 		messageLimit = 50,
 	} = {}) {
-		const r = await this.call('RequestSync', {
+		const body = {
 			chatCursors,
 			chatRevCursors,
 			includeProfiles,
 			includeEncryptionKeys,
 			messageLimit,
-		});
+		};
+		// Если задан список — сервер вернёт ключи только по этим чатам (которых у клиента ещё нет).
+		if (Array.isArray(encryptionKeyChatIds)) body.encryptionKeyChatIds = encryptionKeyChatIds;
+		const r = await this.call('RequestSync', body);
 		if (!r?.success) throw new Error(r?.error || 'RequestSync failed');
 		if (r.chats?.length) {
 			r.chats = r.chats.map(c => this.#mapChatDto(c));
@@ -23561,21 +24248,33 @@ class MessengerApiClient {
 		if (!this.#crypto || !chats?.length) return chats;
 		for (const chat of chats) {
 			try {
-				const raw = chat?.lastMessage;
-				if (!raw || !SupraCrypto.isEncrypted(raw)) continue;
-				const prevPreview = chat.lastMessage;
-				const prevReadable = prevPreview
-					&& prevPreview !== SupraCrypto.LOCKED_PREVIEW
-					&& prevPreview !== SupraCrypto.LOCKED_OTHER
-					&& !MessengerChatListPreview.isLockedStorage(prevPreview);
+				const encRaw = chatListPreviewEncryptedSource(chat);
+				if (!encRaw) continue;
+				const prevDisplay = chat.lastMessage || '';
+				const prevReadable = chatListPreviewIsReadable(prevDisplay);
+				const hadPending = !!chat._pendingEncPreview;
 				const chatId = chat.id;
 				const hasKey = chat.hasGroupAutoKey || this.#chatKeyStatus.get(chatId)?.hasKey;
 				if (!hasKey) {
 					await this.ensureChatEncryptionKeys(chat, { distribute: false });
 				}
-				const decrypted = await this.#decryptChatPreviewLastMessage(chat);
-				if (decrypted === SupraCrypto.LOCKED_PREVIEW && prevReadable) continue;
-				chat.lastMessage = decrypted;
+				const decrypted = await this.#decryptChatPreviewLastMessage({ ...chat, lastMessage: encRaw });
+				if (decrypted === SupraCrypto.LOCKED_PREVIEW) {
+					if (hadPending && prevReadable) {
+						chat.lastMessage = SupraCrypto.LOCKED_PREVIEW;
+						delete chat._pendingEncPreview;
+					} else if (prevReadable && !hadPending) {
+						continue;
+					} else {
+						chat.lastMessage = SupraCrypto.LOCKED_PREVIEW;
+						delete chat._pendingEncPreview;
+					}
+					continue;
+				}
+				if (decrypted && !SupraCrypto.isEncrypted(decrypted)) {
+					chat.lastMessage = decrypted;
+					delete chat._pendingEncPreview;
+				}
 			} catch (e) {
 				console.warn('[MessengerApiClient] decryptChatListPreviews', chat.id, e);
 			}
@@ -23781,11 +24480,13 @@ class MessengerApiClient {
 		}
 	}
 
-	async syncChatPanel(chatId, { count, afterMessageId, markAsRead = false } = {}) {
+	async syncChatPanel(chatId, { count, afterMessageId, markAsRead = false, indexFromMessageId, includeSyncIndex = false } = {}) {
 		const payload = { chatId };
 		if (markAsRead) payload.markAsRead = true;
 		if (count != null) payload.count = count;
 		if (afterMessageId) payload.afterMessageId = afterMessageId;
+		if (indexFromMessageId) payload.indexFromMessageId = indexFromMessageId;
+		if (includeSyncIndex) payload.includeSyncIndex = true;
 		const r = await this.call('SyncChatPanel', payload);
 		if (!r?.success) throw new Error(r?.error || 'SyncChatPanel failed');
 		const hasMessages = Array.isArray(r.messages) && r.messages.length > 0;
@@ -23795,10 +24496,15 @@ class MessengerApiClient {
 			messages: hasMessages
 				? MessengerUtils.sortMessages(await this.#mapMessages(r.messages, chatId))
 				: [],
+			// Полный индекс приходит только при includeSyncIndex; иначе работаем по лёгкой сводке.
 			syncIndex: (r.syncIndex || []).map(e => ({
 				id: e.id,
 				timestamp: new Date(e.timestamp),
 			})),
+			syncIndexSummary: {
+				count: typeof r.syncIndexCount === 'number' ? r.syncIndexCount : null,
+				checksum: typeof r.syncIndexChecksum === 'string' ? r.syncIndexChecksum : null,
+			},
 			activities: (r.activities || []).map(a => ({
 				userId: a.userId,
 				userName: a.userName || '',
@@ -24243,15 +24949,39 @@ class MessengerApiClient {
 		}
 	}
 
-	async getGroupInfo(chatId) {
-		const r = await this.call('GetGroupInfo', { chatId });
-		if (!r?.success) throw new Error(r?.error || 'GetGroupInfo failed');
-		const meta = this.#chatsMeta.get(chatId);
-		if (meta) {
-			meta.isAdmin = !!r.isAdmin;
-			meta.isGroupCreator = !!r.isCreator;
+	invalidateGroupInfo(chatId) {
+		this.#groupInfoCache.delete(chatId);
+		this.#groupInfoInFlight.delete(chatId);
+	}
+
+	async getGroupInfo(chatId, { force = false } = {}) {
+		if (!force) {
+			const cached = this.#groupInfoCache.get(chatId);
+			if (cached && (Date.now() - cached.at) < MessengerApiClient.GROUP_INFO_TTL_MS) {
+				return cached.value;
+			}
+			const inFlight = this.#groupInfoInFlight.get(chatId);
+			if (inFlight) return inFlight;
 		}
-		return r;
+		const promise = (async () => {
+			const r = await this.call('GetGroupInfo', { chatId });
+			if (!r?.success) throw new Error(r?.error || 'GetGroupInfo failed');
+			const meta = this.#chatsMeta.get(chatId);
+			if (meta) {
+				meta.isAdmin = !!r.isAdmin;
+				meta.isGroupCreator = !!r.isCreator;
+			}
+			this.#groupInfoCache.set(chatId, { value: r, at: Date.now() });
+			return r;
+		})();
+		this.#groupInfoInFlight.set(chatId, promise);
+		try {
+			return await promise;
+		} finally {
+			if (this.#groupInfoInFlight.get(chatId) === promise) {
+				this.#groupInfoInFlight.delete(chatId);
+			}
+		}
 	}
 
 	async updateGroup(chatId, { name, allowJoinByLink, requiresCustomGroupPassword } = {}) {
@@ -24261,6 +24991,7 @@ class MessengerApiClient {
 		if (requiresCustomGroupPassword != null) payload.requiresCustomGroupPassword = requiresCustomGroupPassword;
 		const r = await this.call('UpdateGroup', payload);
 		if (!r?.success) throw new Error(r?.error || 'UpdateGroup failed');
+		this.invalidateGroupInfo(chatId);
 		return r;
 	}
 
@@ -24308,6 +25039,7 @@ class MessengerApiClient {
 		});
 		const data = await r.json().catch(() => ({}));
 		if (!r.ok) throw new Error(data.error || 'Upload failed');
+		this.invalidateGroupInfo(chatId);
 		return data;
 	}
 
@@ -24352,6 +25084,7 @@ class MessengerApiClient {
 			memberIds: JSON.stringify(memberIds),
 		});
 		if (!r?.success) throw new Error(r?.error || 'AddGroupMembers failed');
+		this.invalidateGroupInfo(chatId);
 		await this.distributeMissingGroupKeys(chatId, { force: true });
 		return r;
 	}
@@ -24618,12 +25351,14 @@ class MessengerApiClient {
 	async removeGroupMember(chatId, memberUserId) {
 		const r = await this.call('RemoveGroupMember', { chatId, memberUserId });
 		if (!r?.success) throw new Error(r?.error || 'RemoveGroupMember failed');
+		this.invalidateGroupInfo(chatId);
 		return r;
 	}
 
 	async setGroupMemberAdmin(chatId, memberUserId, isAdmin) {
 		const r = await this.call('SetGroupMemberAdmin', { chatId, memberUserId, isAdmin });
 		if (!r?.success) throw new Error(r?.error || 'SetGroupMemberAdmin failed');
+		this.invalidateGroupInfo(chatId);
 		return r;
 	}
 }
@@ -24691,7 +25426,8 @@ class MessengerTransport {
 		this.reportActivity();
 		this.#startHeartbeat();
 		if (this.#hadConnectedOnce) {
-			try { this.#onConnectionRestored?.(); } catch (e) {
+			// Реальное переподключение (сокет рвался) — нужна полноценная догоняющая синхронизация.
+			try { this.#onConnectionRestored?.(true); } catch (e) {
 				console.warn('[MessengerTransport] onConnectionRestored error', e);
 			}
 		} else {
@@ -24841,11 +25577,11 @@ class MessengerTransport {
 		if (state === 'Connected') {
 			this.#reportClientForeground();
 			this.reportActivity();
-			// Сокет жив, но пока приложение было в фоне, JS-таймеры/события могли быть
-			// заморожены и мы могли пропустить сообщения/удаления. Поэтому при возврате в
-			// foreground всегда запускаем догоняющую синхронизацию (она дебаунсится и
-			// дельта-курсоры делают её дешёвой), а не молча выходим.
-			try { this.#onConnectionRestored?.(); } catch (e) {
+			// Сокет жив (вкладку вернули в foreground без разрыва). Сообщения/удаления и так
+			// приходят по WS, поэтому полноценный RequestSync здесь не нужен на каждый фокус —
+			// передаём wasDisconnected=false, чтобы вызывающая сторона применила увеличенный
+			// throttle и не гоняла тяжёлый синк лишний раз.
+			try { this.#onConnectionRestored?.(false); } catch (e) {
 				console.warn('[MessengerTransport] foreground resync error', e);
 			}
 			return;
@@ -25750,7 +26486,10 @@ function messageUrlToAnchor(displayHtml, hrefRaw) {
 		.replace(/"/g, '&quot;')
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;');
-	if (isMessengerInternalLink(href)) {
+	if (isMessengerSendLink(href)) {
+		return `<a href="${safeHref}" rel="noopener noreferrer" class="mc-msg-internal-link mc-msg-send-link">${displayHtml}</a>`;
+	}
+	if (parseMessengerDeepLink(href)) {
 		return `<a href="${safeHref}" rel="noopener noreferrer" class="mc-msg-internal-link">${displayHtml}</a>`;
 	}
 	return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${displayHtml}</a>`;
@@ -25841,8 +26580,12 @@ function renderMessengerMessageHtmlLegacy(text) {
 				.replace(/"/g, '&quot;')
 				.replace(/</g, '&lt;')
 				.replace(/>/g, '&gt;');
-			const internal = isMessengerInternalLink(href);
-			const cls = internal ? ' class="mc-msg-internal-link"' : '';
+			const sendLink = isMessengerSendLink(href);
+			const deepLink = !sendLink && !!parseMessengerDeepLink(href);
+			const internal = sendLink || deepLink;
+			const cls = sendLink
+				? ' class="mc-msg-internal-link mc-msg-send-link"'
+				: (deepLink ? ' class="mc-msg-internal-link"' : '');
 			const target = internal ? '' : ' target="_blank"';
 			return `<a href="${safeHref}"${target} rel="noopener noreferrer"${cls}>${label}</a>`;
 		} catch (e) {
@@ -25878,12 +26621,15 @@ function normalizeMessageAnchorsInHtml(html) {
 		}
 		anchor.setAttribute('href', href);
 		anchor.setAttribute('rel', 'noopener noreferrer');
-		if (isMessengerInternalLink(href)) {
+		const sendLink = isMessengerSendLink(href);
+		const deepLink = !sendLink && !!parseMessengerDeepLink(href);
+		if (sendLink || deepLink) {
 			anchor.classList.add('mc-msg-internal-link');
+			anchor.classList.toggle('mc-msg-send-link', sendLink);
 			anchor.removeAttribute('target');
 		} else {
 			anchor.setAttribute('target', '_blank');
-			anchor.classList.remove('mc-msg-internal-link');
+			anchor.classList.remove('mc-msg-internal-link', 'mc-msg-send-link');
 		}
 	});
 	root.querySelectorAll('table').forEach((table) => {
@@ -25986,6 +26732,11 @@ function resolveMessageLinks(row, text) {
 function formatMessageLinkActionLabel(i18n, href) {
 	const prefix = i18n?.t('msgActionOpenLink') || 'Open link';
 	return `${prefix}: ${href}`;
+}
+
+function formatMessageSendLinkActionLabel(i18n, text) {
+	const prefix = i18n?.t('msgActionSendCommand') || 'Send command';
+	return `${prefix}: ${text}`;
 }
 
 function formatMessageLinkCopyLabel(i18n, href) {
@@ -26186,13 +26937,45 @@ class MessengerMessageRenderer {
 		bubble.insertBefore(textEl, footer || null);
 	}
 
-	#syncTierLock(footer, msg, isMine) {
+	#messageIsEncrypted(msg) {
+		if (!msg) return false;
+		if ((msg.encryptionTier || 'basic').toLowerCase() === 'protected') return true;
+		if (msg._encText) return true;
+		// Сообщения из кэша (basic) уже расшифрованы и не содержат шифртекст —
+		// опираемся на сохранённый признак, иначе замок ошибочно станет красным.
+		if (msg._wasEncrypted) return true;
+		return typeof SupraCrypto !== 'undefined' && SupraCrypto.isEncrypted(msg.text);
+	}
+
+	#syncTierLock(footer, msg, isMine, chatEncrypted) {
 		if (!footer) return;
 		footer.querySelector('.mc-msg-tier-lock')?.remove();
+		if (msg?.deletedForEveryone) return;
+		// Контекст «чат зашифрован» стампится на строке при создании (createMsgEl),
+		// чтобы пути обновления (updateMsgContent/refresh) могли его восстановить без
+		// проброса renderOpts.
+		if (chatEncrypted === undefined) {
+			chatEncrypted = footer.closest('.mc-msg-row')?.dataset.chatEnc === '1';
+		}
 		const tier = (msg.encryptionTier || 'basic').toLowerCase();
-		if (tier !== 'protected') return;
-		const lockEl = this.#utils.mk('span', 'mc-msg-tier-lock');
-		lockEl.innerHTML = this.#icons.lockClosedSmall();
+		const encrypted = this.#messageIsEncrypted(msg);
+		// В зашифрованной группе помечаем каждое сообщение: серый замок — зашифровано,
+		// красный перечёркнутый — открытый текст. Вне зашифрованных чатов оставляем
+		// прежнее поведение (значок только у tier=protected).
+		let kind = null;
+		if (chatEncrypted) kind = encrypted ? 'closed' : 'open';
+		else if (tier === 'protected') kind = 'closed';
+		if (!kind) return;
+		const lockEl = this.#utils.mk(
+			'span',
+			'mc-msg-tier-lock' + (kind === 'open' ? ' mc-msg-tier-lock--open' : '')
+		);
+		lockEl.innerHTML = kind === 'open'
+			? this.#icons.lockOpenSmall()
+			: this.#icons.lockClosedSmall();
+		lockEl.title = kind === 'open'
+			? (this.#i18n.t('msgNotEncrypted') || 'Сообщение не зашифровано')
+			: (this.#i18n.t('msgEncrypted') || 'Сообщение зашифровано');
 		const anchor = isMine
 			? (footer.querySelector('.mc-msg-status') || footer.lastChild)
 			: (footer.querySelector('.mc-msg-time') || footer.lastChild);
@@ -26322,9 +27105,11 @@ class MessengerMessageRenderer {
 
 	createMsgEl(msg, currentUser, avatarCache, onAvatarClick, onQuoteClick = null, showMessageAvatars = true, renderOpts = null) {
 		const channelPublic = !!renderOpts?.channelPublic;
+		const chatEncrypted = !!renderOpts?.chatEncrypted;
 		const isMine = !!msg.isOwn;
 		const isDeleted = !!msg.deletedForEveryone;
 		const row = this.#utils.mk('div', `mc-msg-row ${isMine ? 'mc-msg-row--mine' : 'mc-msg-row--other'}`);
+		if (chatEncrypted) row.dataset.chatEnc = '1';
 		if (msg.senderId) row.dataset.senderId = msg.senderId;
 		row.dataset.msgId = msg.id;
 		const ts = msg.timestamp instanceof Date ? msg.timestamp.getTime() : new Date(msg.timestamp).getTime();
@@ -26385,7 +27170,7 @@ class MessengerMessageRenderer {
 			this.setStatusIcon(statusEl, st);
 			footer.appendChild(statusEl);
 		}
-		this.#syncTierLock(footer, msg, isMine);
+		this.#syncTierLock(footer, msg, isMine, chatEncrypted);
 		bubble.appendChild(footer);
 		this.#syncShortEndPadding(bubble, msg);
 		this.#syncWideBubble(bubble, msg);
@@ -26871,6 +27656,7 @@ class MessengerChatPanel {
 	#msgRenderOpts(state) {
 		return {
 			channelPublic: messengerChannelUsesPublicFiles(state),
+			chatEncrypted: !!this.#api?.isEncryptedGroupChat?.(state.chatId),
 			onButtonPress: (msg, btn, btnEl) => this.#onMessageButtonPress(state, msg, btn, btnEl),
 		};
 	}
@@ -26935,6 +27721,51 @@ class MessengerChatPanel {
 			btnEl.disabled = false;
 			btnEl.classList.remove('mc-msg-btn--busy');
 		}
+	}
+
+	async #syncGroupMemberIndex(state, info) {
+		if (!state || !info) return;
+		state._groupMemberIndex = buildGroupMemberIndex(info);
+	}
+
+	async #ensureGroupMemberIndex(state) {
+		if (state?._groupMemberIndex) return state._groupMemberIndex;
+		if (!state?.isGroupChat && !state?.isGroupBranchChat) return null;
+		try {
+			const info = await this.#api.getGroupInfo(state.chatId);
+			if (info?.success) this.#syncGroupMemberIndex(state, info);
+		} catch (e) {
+			console.warn('[MessengerChatPanel] group member index', e);
+		}
+		return state._groupMemberIndex || null;
+	}
+
+	async #canActivateMessengerSendLink(state, msg) {
+		if (canActivateMessengerSendLink(state, msg, state?._groupMemberIndex || null)) return true;
+		if (!state?.isGroupChat && !state?.isGroupBranchChat) return false;
+		const index = await this.#ensureGroupMemberIndex(state);
+		return canActivateMessengerSendLink(state, msg, index);
+	}
+
+	async #handleMessengerSendLink(state, href, msg) {
+		if (!(await this.#canActivateMessengerSendLink(state, msg))) return;
+		const parsed = parseMessengerSendLink(href);
+		if (!parsed?.text) return;
+		if (this.#connectionStateMgr?.state !== MessengerConnectionStateManager.STATE_CONNECTED) {
+			MessengerDialog.showNotice(
+				this.#i18n.t('offlineSendBlocked'),
+				this.#i18n.t('close'),
+				null,
+				this.#themeManager
+			);
+			return;
+		}
+		if (state.editDraft) this.clearComposerDraft(state);
+		const onSend = state._composerOnSend;
+		const field = state.inputField;
+		if (typeof onSend !== 'function' || !field) return;
+		field.value = parsed.text;
+		await onSend(state.chatId, field, state.msgArea);
 	}
 
 	#formatActivityText(activities, i18n) {
@@ -28131,6 +28962,9 @@ class MessengerChatPanel {
 			void this.#resolveGroupCanDeleteForEveryone(state);
 		}
 		this.#bindMessageInteractions(state);
+		if (state.isGroupChat || state.isGroupBranchChat) {
+			void this.#ensureGroupMemberIndex(state);
+		}
 		scrollDownBtn.addEventListener('click', () => {
 			if (state.quoteView) {
 				this.#jumpToLatest(chat.id, state);
@@ -29072,6 +29906,13 @@ class MessengerChatPanel {
 			const link = e.target.closest(MESSAGE_LINK_SELECTOR);
 			if (!link) return;
 			const href = link.getAttribute('href');
+			if (isMessengerSendLink(href)) {
+				e.preventDefault();
+				e.stopPropagation();
+				const currentMsg = this.#resolveRowMessage(state, row, msg);
+				void this.#handleMessengerSendLink(state, href, currentMsg);
+				return;
+			}
 			if (parseMessengerDeepLink(href)) {
 				e.preventDefault();
 				e.stopPropagation();
@@ -29200,19 +30041,30 @@ class MessengerChatPanel {
 			}
 			push(this.#icons.reply(), 'msgActionReply', false, () => this.setReplyDraft(state, msg));
 			for (const href of resolveMessageLinks(row, msg.text)) {
+				const sendTarget = parseMessengerSendLink(href);
 				const internal = !!parseMessengerDeepLink(href);
-				sheetItems.push({
-					icon: internal ? this.#icons.forward() : this.#icons.externalLink(),
-					label: formatMessageLinkActionLabel(this.#i18n, href),
-					danger: false,
-					truncate: true,
-					action: () => {
-						if (internal && typeof state.onDeepLinkNavigate === 'function') {
-							return state.onDeepLinkNavigate(href);
-						}
-						return this.#handleExternalMessageLink(href);
-					},
-				});
+				if (sendTarget) {
+					sheetItems.push({
+						icon: this.#icons.send(),
+						label: formatMessageSendLinkActionLabel(this.#i18n, sendTarget.text),
+						danger: false,
+						truncate: true,
+						action: () => this.#handleMessengerSendLink(state, href, msg),
+					});
+				} else {
+					sheetItems.push({
+						icon: internal ? this.#icons.forward() : this.#icons.externalLink(),
+						label: formatMessageLinkActionLabel(this.#i18n, href),
+						danger: false,
+						truncate: true,
+						action: () => {
+							if (internal && typeof state.onDeepLinkNavigate === 'function') {
+								return state.onDeepLinkNavigate(href);
+							}
+							return this.#handleExternalMessageLink(href);
+						},
+					});
+				}
 				sheetItems.push({
 					icon: this.#icons.copy(),
 					label: formatMessageLinkCopyLabel(this.#i18n, href),
@@ -29507,6 +30359,7 @@ class MessengerChatPanel {
 		try {
 			const info = await this.#api.getGroupInfo(state.chatId);
 			if (info?.success) {
+				this.#syncGroupMemberIndex(state, info);
 				state.groupCanModerate = !!(info.isAdmin || info.isCreator);
 				return state.groupCanModerate;
 			}
@@ -31913,8 +32766,8 @@ class Messenger {
 			options.wsUrl || null,
 			connectionStateInst
 		);
-		transportInst.setOnConnectionRestored(() => {
-			this.#syncAfterReconnect();
+		transportInst.setOnConnectionRestored((wasDisconnected = true) => {
+			this.#syncAfterReconnect(wasDisconnected);
 			try { window.SupraPush?.syncOnReconnect?.(); } catch (_) { /* ignore */ }
 		});
 		this.#i18n = i18nInst;
@@ -32077,7 +32930,9 @@ class Messenger {
 			if (cachedFolders) {
 				this.#appView.applyCachedFolders(cachedFolders.folders, cachedFolders.members);
 			}
-			await this.#appView.loadFolders().catch(() => {});
+			// Старт строго из кэша: не ждём сеть. Папки догружаются в фоне и применяются
+			// по факту ответа сервера (иначе плохая сеть держит сплэш и белый экран).
+			void this.#appView.loadFolders().catch(() => {});
 			const cachedChats = MessengerOfflineStore.loadChats(user.id);
 			if (cachedChats?.length) {
 				this.#appView.setChats(cachedChats);
@@ -32167,10 +33022,10 @@ class Messenger {
 			}
 		});
 	}
-	async #syncAfterReconnect() {
+	async #syncAfterReconnect(wasDisconnected = true) {
 		try {
 			if (this.#mode === Messenger.MODE_APP) {
-				await this.#appView.syncAfterReconnect(this.#msgService, this.#api);
+				await this.#appView.syncAfterReconnect(this.#msgService, this.#api, { wasDisconnected });
 			} else if (this.#chatView.chatMeta?.id) {
 				const chatId = this.#chatView.chatMeta.id;
 				const result = await this.#msgService.syncChatAfterOffline(chatId, this.#api);
@@ -32416,6 +33271,8 @@ class Messenger {
 						botSlug: body.botSlug || null,
 						parentChatId: body.parentChatId || null,
 						branchSlug: body.branchSlug || null,
+						encryptionEnabled: !!body.encryptionEnabled,
+						requiresCustomGroupPassword: !!body.requiresCustomGroupPassword,
 						lastMessage: '',
 						lastMessageTime: null,
 						unreadCount: 0,
@@ -32558,6 +33415,29 @@ class Messenger {
 						.catch(e => console.warn('[Messenger] SupraChatRemoved', e));
 				} else if (this.#chatView.chatMeta?.id === chatId) {
 					window.location.href = '/';
+				}
+				break;
+			}
+			case 'SupraGroupKeyRequested': {
+				// Я — держатель ключа: онлайн-участник без ключа просит выдать ему ключ.
+				const { chatId } = body;
+				if (!chatId) break;
+				if (this.#api?.getCrypto()?.isUnlocked) {
+					this.#api.distributeMissingGroupKeys(chatId, { force: true })
+						.catch(e => console.warn('[Messenger] SupraGroupKeyRequested', e));
+				}
+				break;
+			}
+			case 'SupraGroupKeysUpdated': {
+				// Мне выдали ключ: перечитать обёрнутый ключ и обновить отображение.
+				const { chatId } = body;
+				if (!chatId) break;
+				if (this.#mode === Messenger.MODE_APP) {
+					void this.#appView.handleGroupKeysUpdated(chatId)
+						.catch(e => console.warn('[Messenger] SupraGroupKeysUpdated', e));
+				} else if (this.#chatView.chatMeta?.id === chatId) {
+					void this.#api.onGroupKeysUpdated(chatId).catch(e =>
+						console.warn('[Messenger] SupraGroupKeysUpdated (chat)', e));
 				}
 				break;
 			}

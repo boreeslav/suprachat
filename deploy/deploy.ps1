@@ -178,7 +178,11 @@ function Invoke-RemoteDeployStream {
         [string]$RemoteCmd
     )
 
+    # Publish the "build may take 5-20 min" notice, THEN go quiet: the server is the
+    # same host we publish status to, and it is down during the rebuild. No requests
+    # are sent until Resume-DeployStatus is called after the container is back.
     Send-DeployStatus remote_wait
+    Suspend-DeployStatus
 
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = $Plink
@@ -382,6 +386,9 @@ $remoteCmd = "chmod +x /tmp/sm-deploy.sh; bash /tmp/sm-deploy.sh"
 $remoteExit = Invoke-RemoteDeployStream -Plink $plink -Remote $remote -RemoteCmd $remoteCmd
 if ($remoteExit -ne 0) { throw "plink deploy failed: $remoteExit" }
 
+# Container is back up - leave the quiet window and deliver buffered status.
+Resume-DeployStatus
+
 Write-Step "Verify HTTP"
 # docker-compose binds APP_PORT to 127.0.0.1 only; checks must run on the server (or via PUBLIC_URL).
 $serverAppBase = "http://127.0.0.1:${AppPort}"
@@ -432,6 +439,9 @@ $ver = if ($script:DeployAppVersion) { $script:DeployAppVersion } else { '?' }
 Send-DeployStatus done @($doneUrl, $ver)
 } catch {
     $err = $_.Exception.Message
+    # Lift the quiet window so the failure status is actually delivered (best-effort).
+    Resume-DeployStatus
     Send-DeployStatus failed @($err)
+    Flush-DeployStatus
     throw
 }

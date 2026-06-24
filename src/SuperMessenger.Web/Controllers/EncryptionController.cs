@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SuperMessenger.Core.Dtos;
 using SuperMessenger.Infrastructure.Services;
 using SuperMessenger.Web.Services;
 
@@ -12,11 +13,16 @@ public sealed class EncryptionController : ControllerBase
 {
     private readonly SupraEncryptionService _encryption;
     private readonly CurrentUserAccessor _current;
+    private readonly RealtimeNotifier _realtime;
 
-    public EncryptionController(SupraEncryptionService encryption, CurrentUserAccessor current)
+    public EncryptionController(
+        SupraEncryptionService encryption,
+        CurrentUserAccessor current,
+        RealtimeNotifier realtime)
     {
         _encryption = encryption;
         _current = current;
+        _realtime = realtime;
     }
 
     [HttpGet("status")]
@@ -83,6 +89,16 @@ public sealed class EncryptionController : ControllerBase
         var (ok, error) = await _encryption.SaveGroupMemberKeysAsync(
             user, chatId, entries, req.RequiresCustomPassword, ct);
         if (!ok) return BadRequest(new { error });
+
+        // Сообщаем тем, кому только что выдали ключ, чтобы их клиент сразу перечитал
+        // обёрнутый ключ и расшифровал сообщения (без ожидания следующего синка/перезахода).
+        var payload = new SupraWsGroupKeysUpdatedPayload { chatId = chatId.ToString() };
+        foreach (var recipientId in entries.Select(e => e.Item1).Distinct())
+        {
+            if (recipientId == user.Id) continue;
+            await _realtime.SendToUserAsync(recipientId, payload, ct);
+        }
+
         return Ok(new { success = true });
     }
 
