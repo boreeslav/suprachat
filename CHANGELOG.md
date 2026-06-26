@@ -3,6 +3,19 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/).  
 Версионирование: `major.minor.patch` (см. `deploy/release.json`).
 
+## [1.2.56] — 2026-06-26
+
+### Добавлено
+
+- **Закреплённые сообщения** — глобальные (`scope=all`, модераторы) и личные (`scope=self`); API `GetPinnedMessages`, `PinMessage`, `UnpinMessage`; поле `pinnedMessages` в `SyncChatPanel`; WS `SupraMessagePinned` / `SupraMessageUnpinned`. Документация: [docs/11-pinned-messages.md](docs/11-pinned-messages.md).
+- **Copy-тег markdown** `[copy]…[/copy]` — клик копирует текст, серый фон, без выделения сообщения. Документация: [docs/10-message-markup.md](docs/10-message-markup.md).
+- **Основная ветка группы** в списке веток (`isMain`, `mainBranchName`, `mainBranchOrder`); переименование и сортировка через `UpdateGroupBranch` / `ReorderGroupBranches`.
+- Скрипты деплоя: `deploy-all.ps1`, `setup-new-server.ps1`, `restore-data.ps1`; в `deploy.ps1` — `-SkipBuild`, host key из конфига, retry HTTP-проверок.
+
+### Изменено
+
+- Документация: разделы по разметке, закрепам, веткам, деплою.
+
 ## [1.2.0] — 2026-06-15
 
 ### Добавлено

@@ -87,7 +87,10 @@
 |------------|-----------|-------|
 | `GetMessages` | chatId, offset, count **или** afterMessageId, count | messages[] |
 | `GetMessageSyncIndex` | chatId, afterMessageId? | sync index |
-| `SyncChatPanel` | chatId, afterMessageId?, messageLimit? | messages, profiles, keys |
+| `SyncChatPanel` | chatId, afterMessageId?, messageLimit? | messages, profiles, keys, **pinnedMessages**, activities |
+| `GetPinnedMessages` | chatId | pinned[] (id + метаданные) |
+| `PinMessage` | chatId, messageId | success, scope (`all` \| `self`) |
+| `UnpinMessage` | chatId, messageId | success |
 | `GetMessagesAround` | chatId, messageId, before?, after? | messages[] |
 | `GetMessageInfo` | chatId, messageId | message info (read by) |
 | `SendMessage` | chatId, text, localId | messageId, status |
@@ -136,10 +139,10 @@
 | MethodName | Параметры | Ответ |
 |------------|-----------|-------|
 | `CreateGroupBranch` | parentChatId, name, slug? | chatId |
-| `UpdateGroupBranch` | chatId, name?, slug? | success |
+| `UpdateGroupBranch` | chatId, name?, slug? | success (для **корневой** группы — переименование основной ветки, `mainBranchName`) |
 | `DeleteGroupBranch` | chatId | success |
 | `GetGroupBranchLinkPreview` | parentChatId, slug | preview |
-| `ReorderGroupBranches` | parentChatId, branchIds (JSON) | success |
+| `ReorderGroupBranches` | parentChatId, branchIds (JSON) | success (в списке — id корневой группы + id веток; порядок → `mainBranchOrder` / `branchOrder`) |
 
 ### Каналы
 
@@ -357,6 +360,7 @@ WebSocket: `/ws/bot?login=&token=`
 ### WebSocket
 
 - `SupraWsNewMessagePayload`, `SupraWsMessageEditedPayload`, `SupraWsMessageDeletedPayload`
+- `SupraWsMessagePinnedPayload`, `SupraWsMessageUnpinnedPayload` — закреп/откреп (см. [11-pinned-messages.md](11-pinned-messages.md))
 - `SupraWsStatusPayload`, `SupraWsNewChatPayload`
 - `SupraWsUserActivityPayload`, `SupraWsChatHistoryClearedPayload`
 - `SupraWsPresencePayload`, `SupraWsGroupUpdatedPayload`, `SupraWsChannelUpdatedPayload`

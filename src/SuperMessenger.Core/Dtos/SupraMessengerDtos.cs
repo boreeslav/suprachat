@@ -30,6 +30,8 @@ public sealed class SupraChatDto
     public string? parentChatId { get; set; }
     public string? branchSlug { get; set; }
     public int branchOrder { get; set; }
+    public string? mainBranchName { get; set; }
+    public int mainBranchOrder { get; set; }
     public List<SupraGroupBranchDto>? branches { get; set; }
 }
 
@@ -43,6 +45,7 @@ public sealed class SupraGroupBranchDto
     public DateTime? lastMessageTime { get; set; }
     public int unreadCount { get; set; }
     public int order { get; set; }
+    public bool isMain { get; set; }
 }
 
 public sealed class SupraContactDto
@@ -201,6 +204,34 @@ public sealed class SupraGetMessageSyncIndexResponse
     public string? error { get; set; }
 }
 
+/// <summary>Закреплённое сообщение: только идентификатор и метаданные, без содержимого
+/// (клиент берёт текст из локальной БД или дозагружает сообщение по id).</summary>
+public sealed class SupraPinnedMessageDto
+{
+    public string messageId { get; set; } = "";
+    /// <summary>Порядковый номер сообщения в чате — для хронологической сортировки на клиенте.</summary>
+    public long seq { get; set; }
+    public DateTime pinnedAt { get; set; }
+    public string pinnedBy { get; set; } = "";
+    /// <summary>all — закреп для всех; self — личный закреп только для текущего пользователя.</summary>
+    public string scope { get; set; } = "all";
+}
+
+public sealed class SupraGetPinnedMessagesResponse
+{
+    public bool success { get; set; }
+    public List<SupraPinnedMessageDto> pinned { get; set; } = [];
+    public string? error { get; set; }
+}
+
+public sealed class SupraPinMessageResponse
+{
+    public bool success { get; set; }
+    /// <summary>all — закреплено для всех; self — закреплено только для себя.</summary>
+    public string scope { get; set; } = "all";
+    public string? error { get; set; }
+}
+
 public sealed class SupraChatActivityDto
 {
     public string userId { get; set; } = "";
@@ -225,6 +256,8 @@ public sealed class SupraSyncChatPanelResponse
     /// <summary>Порядконезависимая XOR-контрольная сумма id сообщений в окне индекса (hex). Клиент сверяет со своим кешем.</summary>
     public string syncIndexChecksum { get; set; } = "";
     public List<SupraChatActivityDto> activities { get; set; } = [];
+    /// <summary>Закреплённые сообщения чата для текущего пользователя (id + метаданные, без содержимого).</summary>
+    public List<SupraPinnedMessageDto> pinnedMessages { get; set; } = [];
     public bool markedRead { get; set; }
     public string? error { get; set; }
 }
@@ -372,6 +405,27 @@ public sealed class SupraWsDeleteMessagePayload
     public string chatId { get; set; } = "";
     public string messageId { get; set; } = "";
     public string deleteScope { get; set; } = "me";
+}
+
+/// <summary>Сообщение закреплено. scope=all рассылается всем участникам; scope=self — только сессиям самого пользователя.</summary>
+public sealed class SupraWsMessagePinnedPayload
+{
+    public string type { get; set; } = "SupraMessagePinned";
+    public string chatId { get; set; } = "";
+    public string messageId { get; set; } = "";
+    public long seq { get; set; }
+    public DateTime pinnedAt { get; set; }
+    public string pinnedBy { get; set; } = "";
+    public string scope { get; set; } = "all";
+}
+
+/// <summary>Сообщение откреплено. scope=all — у всех; self — только у самого пользователя.</summary>
+public sealed class SupraWsMessageUnpinnedPayload
+{
+    public string type { get; set; } = "SupraMessageUnpinned";
+    public string chatId { get; set; } = "";
+    public string messageId { get; set; } = "";
+    public string scope { get; set; } = "all";
 }
 
 public sealed class SupraWsStatusPayload
@@ -531,6 +585,8 @@ public sealed class SupraGetGroupInfoResponse
     public bool isBranch { get; set; }
     public string? description { get; set; }
     public List<SupraGroupBranchDto> branches { get; set; } = [];
+    public string? mainBranchName { get; set; }
+    public int mainBranchOrder { get; set; }
     public List<SupraGroupBotMenuDto> groupBotMenus { get; set; } = [];
     /// <summary>Устаревшее: первый бот из groupBotMenus (для совместимости).</summary>
     public SupraGroupBotMenuDto? groupBotMenu { get; set; }

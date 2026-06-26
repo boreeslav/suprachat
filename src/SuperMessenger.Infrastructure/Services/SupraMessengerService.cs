@@ -1119,6 +1119,8 @@ public sealed partial class SupraMessengerService
                 branches = IsRootGroupChat(chat)
                     ? await BuildBranchDtosForRootAsync(chat.Id, userId, new Dictionary<Guid, List<SupraChatMessageRecord>>(), ct)
                     : [],
+                mainBranchName = IsRootGroupChat(chat) ? chat.MainBranchName : null,
+                mainBranchOrder = IsRootGroupChat(chat) ? chat.MainBranchOrder : 0,
                 groupBotMenus = menus,
                 groupBotMenu = menus.Count == 1 ? menus[0] : null,
             };

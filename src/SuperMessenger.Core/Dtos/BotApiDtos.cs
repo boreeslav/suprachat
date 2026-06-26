@@ -205,6 +205,7 @@ public sealed class BotApiGroupBranchDto
     public string slug { get; set; } = "";
     public string? avatar { get; set; }
     public int order { get; set; }
+    public bool isMain { get; set; }
 }
 
 public sealed class BotApiUpdateGroupResponse

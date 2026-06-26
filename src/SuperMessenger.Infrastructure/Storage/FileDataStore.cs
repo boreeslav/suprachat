@@ -18,6 +18,8 @@ public sealed class FileDataStore : IDataStore
     private readonly JsonFileCollectionStore<SupraChatRestrictionRecord> _chatRestrictions;
     private readonly JsonFileCollectionStore<SupraMessageUserDeletionRecord> _messageUserDeletions;
     private readonly JsonFileCollectionStore<SupraMessageReadReceiptRecord> _messageReadReceipts;
+    private readonly JsonFileCollectionStore<SupraPinnedMessageRecord> _pinnedMessages;
+    private readonly JsonFileCollectionStore<SupraPinnedMessageUserRecord> _pinnedMessageUsers;
     private readonly JsonFileCollectionStore<SupraChatMemberKeyRecord> _chatMemberKeys;
     private readonly JsonFileCollectionStore<LoginChangeRecord> _loginChanges;
     private readonly JsonFileCollectionStore<BotRecord> _bots;
@@ -39,6 +41,8 @@ public sealed class FileDataStore : IDataStore
         _messages = new(Path.Combine(dataRoot, "messages.json"));
         _messageUserDeletions = new(Path.Combine(dataRoot, "message-user-deletions.json"));
         _messageReadReceipts = new(Path.Combine(dataRoot, "message-read-receipts.json"));
+        _pinnedMessages = new(Path.Combine(dataRoot, "pinned-messages.json"));
+        _pinnedMessageUsers = new(Path.Combine(dataRoot, "pinned-message-users.json"));
         _files = new(Path.Combine(dataRoot, "files.json"));
         _messageFileReferences = new(Path.Combine(dataRoot, "message-file-references.json"));
         _folders = new(Path.Combine(dataRoot, "folders.json"));
@@ -361,6 +365,74 @@ public sealed class FileDataStore : IDataStore
         await _messageReadReceipts.WriteAllAsync(list, ct);
     }
 
+    public async Task<IReadOnlyList<SupraPinnedMessageRecord>> GetPinnedMessagesByChatAsync(
+        Guid chatId, CancellationToken ct = default)
+        => (await _pinnedMessages.ReadAllAsync(ct)).Where(p => p.ChatId == chatId).ToList();
+
+    public async Task SavePinnedMessageAsync(SupraPinnedMessageRecord record, CancellationToken ct = default)
+    {
+        var list = await _pinnedMessages.ReadAllAsync(ct);
+        var idx = list.FindIndex(p => p.ChatId == record.ChatId && p.MessageId == record.MessageId);
+        if (idx >= 0) return; // глобальный закреп уже существует — не дублируем и не сбрасываем автора/время
+        list.Add(record);
+        await _pinnedMessages.WriteAllAsync(list, ct);
+    }
+
+    public async Task DeletePinnedMessageAsync(Guid chatId, Guid messageId, CancellationToken ct = default)
+    {
+        var list = await _pinnedMessages.ReadAllAsync(ct);
+        var kept = list.Where(p => !(p.ChatId == chatId && p.MessageId == messageId)).ToList();
+        if (kept.Count == list.Count) return;
+        await _pinnedMessages.WriteAllAsync(kept, ct);
+    }
+
+    public async Task DeletePinnedMessagesByChatAsync(Guid chatId, CancellationToken ct = default)
+    {
+        var list = await _pinnedMessages.ReadAllAsync(ct);
+        var kept = list.Where(p => p.ChatId != chatId).ToList();
+        if (kept.Count == list.Count) return;
+        await _pinnedMessages.WriteAllAsync(kept, ct);
+    }
+
+    public async Task<IReadOnlyList<SupraPinnedMessageUserRecord>> GetPinnedMessageUserRecordsByChatUserAsync(
+        Guid chatId, Guid userId, CancellationToken ct = default)
+        => (await _pinnedMessageUsers.ReadAllAsync(ct))
+            .Where(p => p.ChatId == chatId && p.UserId == userId)
+            .ToList();
+
+    public async Task SavePinnedMessageUserAsync(SupraPinnedMessageUserRecord record, CancellationToken ct = default)
+    {
+        var list = await _pinnedMessageUsers.ReadAllAsync(ct);
+        var idx = list.FindIndex(p => p.ChatId == record.ChatId && p.MessageId == record.MessageId && p.UserId == record.UserId);
+        if (idx >= 0) list[idx] = record;
+        else list.Add(record);
+        await _pinnedMessageUsers.WriteAllAsync(list, ct);
+    }
+
+    public async Task DeletePinnedMessageUserAsync(Guid chatId, Guid messageId, Guid userId, CancellationToken ct = default)
+    {
+        var list = await _pinnedMessageUsers.ReadAllAsync(ct);
+        var kept = list.Where(p => !(p.ChatId == chatId && p.MessageId == messageId && p.UserId == userId)).ToList();
+        if (kept.Count == list.Count) return;
+        await _pinnedMessageUsers.WriteAllAsync(kept, ct);
+    }
+
+    public async Task DeletePinnedMessageUserByMessageAsync(Guid chatId, Guid messageId, CancellationToken ct = default)
+    {
+        var list = await _pinnedMessageUsers.ReadAllAsync(ct);
+        var kept = list.Where(p => !(p.ChatId == chatId && p.MessageId == messageId)).ToList();
+        if (kept.Count == list.Count) return;
+        await _pinnedMessageUsers.WriteAllAsync(kept, ct);
+    }
+
+    public async Task DeletePinnedMessageUserRecordsByChatAsync(Guid chatId, CancellationToken ct = default)
+    {
+        var list = await _pinnedMessageUsers.ReadAllAsync(ct);
+        var kept = list.Where(p => p.ChatId != chatId).ToList();
+        if (kept.Count == list.Count) return;
+        await _pinnedMessageUsers.WriteAllAsync(kept, ct);
+    }
+
     public async Task UpdateMessagesStatusAsync(Guid chatId, Guid readerUserId, string status, CancellationToken ct = default)
     {
         var list = await _messages.ReadAllAsync(ct);
@@ -382,6 +454,9 @@ public sealed class FileDataStore : IDataStore
         var list = await _messages.ReadAllAsync(ct);
         list.RemoveAll(m => m.ChatId == chatId);
         await _messages.WriteAllAsync(list, ct);
+        // Закрепы ссылаются на сообщения этого чата — после очистки истории они невалидны.
+        await DeletePinnedMessagesByChatAsync(chatId, ct);
+        await DeletePinnedMessageUserRecordsByChatAsync(chatId, ct);
     }
 
     public async Task DeleteParticipantAsync(Guid chatId, Guid userId, CancellationToken ct = default)
@@ -405,6 +480,8 @@ public sealed class FileDataStore : IDataStore
         msgs.RemoveAll(m => m.ChatId == chatId);
         await _messages.WriteAllAsync(msgs, ct);
 
+        await DeletePinnedMessagesByChatAsync(chatId, ct);
+        await DeletePinnedMessageUserRecordsByChatAsync(chatId, ct);
         await DeleteChatMemberKeysByChatAsync(chatId, ct);
     }
 

@@ -562,6 +562,209 @@
 	opacity: .9;
 }
 
+/* Панель закреплённых сообщений (под шапкой чата). */
+.mc-pinned {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 10px;
+	background: var(--m-header-bg, #fff);
+	border-bottom: 1px solid var(--m-header-border, rgba(0, 0, 0, .1));
+	color: var(--m-header-text, #1c1c1e);
+	flex-shrink: 0;
+	position: relative;
+	z-index: 40;
+}
+
+.mc-pinned[hidden] {
+	display: none;
+}
+
+.mc-pinned-accent {
+	width: 3px;
+	align-self: stretch;
+	min-height: 28px;
+	border-radius: 3px;
+	background: var(--m-accent, #4a9eff);
+	flex-shrink: 0;
+}
+
+.mc-pinned-body {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	cursor: pointer;
+}
+
+.mc-pinned-title {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--m-sender-name, var(--m-accent, #4a9eff));
+	line-height: 1.2;
+}
+
+.mc-pinned-counter {
+	font-weight: 500;
+	opacity: .7;
+	font-size: 11px;
+}
+
+.mc-pinned-counter[hidden] {
+	display: none;
+}
+
+.mc-pinned-preview {
+	font-size: 13px;
+	opacity: .85;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	line-height: 1.3;
+}
+
+.mc-pinned-preview--image {
+	display: flex;
+	align-items: center;
+	white-space: normal;
+	overflow: visible;
+	opacity: 1;
+}
+
+.mc-pinned-nav {
+	display: flex;
+	flex-direction: row;
+	gap: 4px;
+	flex-shrink: 0;
+}
+
+.mc-pinned-nav[hidden] {
+	display: none;
+}
+
+.mc-pinned-nav-btn {
+	border: none;
+	background: transparent;
+	color: var(--m-header-text, inherit);
+	cursor: pointer;
+	opacity: .65;
+	padding: 2px;
+	border-radius: 6px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.mc-pinned-nav-btn:hover:not(:disabled) {
+	opacity: 1;
+	background: var(--m-other-bubble-bg, rgba(0, 0, 0, .06));
+}
+
+.mc-pinned-nav-btn:disabled {
+	opacity: .25;
+	cursor: default;
+}
+
+.mc-pinned-action {
+	border: none;
+	background: transparent;
+	color: var(--m-header-text, inherit);
+	cursor: pointer;
+	opacity: .65;
+	padding: 4px;
+	border-radius: 6px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.mc-pinned-action:hover {
+	opacity: 1;
+	background: var(--m-other-bubble-bg, rgba(0, 0, 0, .06));
+}
+
+.mc-pinned-action svg {
+	display: block;
+}
+
+/* Развёрнутое состояние: панель растёт под текст, но не выше половины окна. */
+.mc-pinned--expanded {
+	align-items: flex-start;
+	padding-top: 8px;
+	padding-bottom: 8px;
+}
+
+.mc-pinned--expanded .mc-pinned-body {
+	overflow: visible;
+}
+
+.mc-pinned--expanded .mc-pinned-preview {
+	white-space: pre-wrap;
+	word-break: break-word;
+	overflow-x: hidden;
+	overflow-y: auto;
+	max-height: 50vh;
+	-webkit-overflow-scrolling: touch;
+}
+
+.mc-pinned--expanded .mc-pinned-preview .mc-msg-quote-text {
+	white-space: pre-wrap;
+	word-break: break-word;
+	overflow: visible;
+	text-overflow: unset;
+	max-width: none;
+	opacity: 1;
+	font-size: 13px;
+	line-height: 1.35;
+}
+
+.mc-pinned--expanded .mc-pinned-preview.mc-pinned-preview--image,
+.mc-pinned--expanded .mc-pinned-preview .mc-msg-quote-preview--image {
+	white-space: normal;
+	overflow: visible;
+	max-height: none;
+}
+
+.mc-pinned--expanded.mc-pinned--multi .mc-pinned-nav {
+	flex-direction: column;
+}
+
+/* Markdown оригинального сообщения внутри развёрнутого закрепа. */
+.mc-pinned--expanded .mc-pinned-preview .mc-pinned-md {
+	white-space: pre-wrap;
+	word-break: break-word;
+	overflow: visible;
+	text-overflow: unset;
+	max-width: none;
+	opacity: 1;
+	font-size: 13px;
+	line-height: 1.35;
+}
+
+.mc-pinned-md > :first-child {
+	margin-top: 0;
+}
+
+.mc-pinned-md > :last-child {
+	margin-bottom: 0;
+}
+
+.mc-pinned-md a {
+	color: var(--m-other-bubble-link, var(--m-accent, #2688eb));
+	text-decoration: underline;
+	text-decoration-color: currentColor;
+	text-underline-offset: 2px;
+	cursor: pointer;
+	word-break: break-word;
+}
+
+.mc-pinned-md a:hover {
+	opacity: .85;
+}
+
 .mc-select-bar {
 	display: flex;
 	align-items: center;
@@ -715,6 +918,38 @@
 	padding: 1px 4px;
 	border-radius: 4px;
 	background: rgba(0, 0, 0, .08);
+}
+
+.mc-msg-copy {
+	display: inline;
+	padding: 1px 5px;
+	border-radius: 4px;
+	background: rgba(127, 127, 127, .22);
+	color: inherit;
+	cursor: pointer;
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.mc-msg-row--mine .mc-msg-copy {
+	background: rgba(255, 255, 255, .16);
+}
+
+.mc-msg-copy:hover {
+	background: rgba(127, 127, 127, .32);
+}
+
+.mc-msg-row--mine .mc-msg-copy:hover {
+	background: rgba(255, 255, 255, .24);
+}
+
+.mc-msg-copy--copied {
+	background: rgba(127, 127, 127, .38);
+}
+
+.mc-msg-row--mine .mc-msg-copy--copied {
+	background: rgba(255, 255, 255, .3);
 }
 
 .mc-msg-row--mine .mc-msg-code {
@@ -5381,84 +5616,7 @@ body.mapp-scroll-lock .mapp-bottom-sheet {
 }
 .mapp-folder-tab-icon {
 	font-size: 14px;
-}
-
-/* ===== DESKTOP LAYOUT (folders sidebar) ===== */
-@media (min-width: 1200px) {
-	.mapp-root.mapp-desktop .mapp-sidebar {
-		display: flex;
-		flex-direction: row;
-		min-width: 0;
-	}
-
-	.mapp-root.mapp-desktop .mapp-folders-bar {
-		width: 68px;
-		min-width: 68px;
-		overflow-x: hidden;
-		overflow-y: auto;
-		padding: 8px 4px;
-		border-bottom: none;
-		border-right: 1px solid var(--mapp-border, #e5e5e5);
-	}
-
-	.mapp-root.mapp-desktop .mapp-folders-bar-track {
-		flex-direction: column;
-		align-items: center;
-		gap: 2px;
-		width: 100%;
-	}
-
-	.mapp-root.mapp-desktop .mapp-folder-slider {
-		display: none;
-	}
-
-	.mapp-root.mapp-desktop .mapp-folder-tab {
-		flex-direction: column;
-		padding: 6px 4px;
-		width: 52px;
-		height: 52px;
-		min-width: 52px;
-		min-height: 52px;
-		justify-content: center;
-		align-items: center;
-		text-align: center;
-		font-size: 10px;
-		border-radius: 0;
-		gap: 2px;
-		box-sizing: border-box;
-	}
-
-	.mapp-root.mapp-desktop .mapp-folder-tab--active,
-	.mapp-root.mapp-desktop .mapp-folder-tab--active:hover,
-	.mapp-root.mapp-desktop .mapp-folder-tab--active:active {
-		border-radius: 10px;
-		background: var(--mapp-accent, #2196f3);
-		color: #fff;
-		border-color: var(--mapp-accent, #2196f3);
-	}
-
-	.mapp-root.mapp-desktop .mapp-folder-tab-label {
-		display: block;
-		max-width: 100%;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		line-height: 1.1;
-	}
-
-	.mapp-root.mapp-desktop .mapp-folder-tab-icon {
-		font-size: 16px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.mapp-root.mapp-desktop .mapp-sidebar-main {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: column;
-	}
+	display: none;
 }
 
 /* ===== SEARCH CLEAR BTN ===== */
@@ -6302,6 +6460,9 @@ body.mapp-scroll-lock .mapp-bottom-sheet {
 	background: var(--mapp-hover, #f0f0f0);
 	color: #c62828;
 }
+.mapp-folder-settings-item--main .mapp-folder-settings-name {
+	padding-right: 28px;
+}
 
 /* ===== CONTACT PROFILE ===== */
 .mapp-contact-profile-body {
@@ -6666,18 +6827,6 @@ body.mapp-scroll-lock .mapp-root {
 .mapp-folder-tab--active .mapp-folder-tab-badge {
 	background: rgba(255,255,255,.25);
 	color: #fff;
-}
-
-/* ===== FOLDER ICONS: desktop only ===== */
-.mapp-folder-tab-icon {
-	display: none;
-}
-@media (min-width: 1200px) {
-	.mapp-root.mapp-desktop .mapp-folder-tab-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
 }
 
 /* ===== PRIVACY PICKER ROW ===== */

@@ -60,6 +60,7 @@ public sealed partial class BotApiService
                         slug = b.slug,
                         avatar = b.avatar,
                         order = b.order,
+                        isMain = b.isMain,
                     }).ToList(),
                 };
             }

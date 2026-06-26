@@ -534,7 +534,9 @@ new Messenger(selector, mode, options)
 
 ---
 
-## Ссылки в сообщениях
+## Ссылки и разметка в сообщениях
+
+Полное описание markdown и спецтегов: **[10-message-markup.md](10-message-markup.md)**.
 
 Парсинг и обработка кликов — в `supra-messenger.js` (модуль рендера сообщений).
 
@@ -548,10 +550,28 @@ new Messenger(selector, mode, options)
 | `buildGroupMemberIndex(info)` | Индекс участников группы для проверки админов |
 | `renderMessengerMessageHtml(text)` | Markdown → HTML + linkify |
 | `normalizeMessageAnchorsInHtml(html)` | Классы `mc-msg-internal-link`, `mc-msg-send-link` |
+| `interceptMessengerCopyTagClick(e, { i18n })` | Клик по `.mc-msg-copy` → clipboard |
+| `copyMessageCopyTagToClipboard(el, { i18n })` | Копирование текста copy-тега |
+| `copyMessageLinkToClipboard(href, …)` | Копирование URL из меню сообщения / диалога ссылки |
 
-**Обработка клика:** `MessengerChatPanel.#bindMessageRowEvents` → `#handleMessengerSendLink` → `_composerOnSend` (отправка как из поля ввода).
+**Обработка клика:** `MessengerChatPanel.#bindMessageRowEvents` → send link / deep link / copy-тег / внешняя ссылка.
 
-**CSS:** `mc-msg-internal-link` — навигация; `mc-msg-send-link` — пунктирное подчёркивание для команд.
+**CSS:** `mc-msg-internal-link` — навигация; `mc-msg-send-link` — пунктир для команд; `mc-msg-copy` — серый copy-тег.
+
+---
+
+## Закреплённые сообщения (UI)
+
+См. [11-pinned-messages.md](11-pinned-messages.md).
+
+| Элемент | Описание |
+|---------|----------|
+| `.mc-pinned` | Полоска закрепа над лентой |
+| `.mc-pinned-preview`, `.mc-pinned-md` | Превью / развёрнутый markdown |
+| `#renderPinnedBar` / `#bindPinnedBar` | Отрисовка и события панели |
+| `normalizePinnedList(list)` | Нормализация ответа сервера |
+
+API клиента: `pinMessage`, `unpinMessage`, `getPinnedMessages` (в `MessengerApiClient`).
 
 ---
 
@@ -573,6 +593,8 @@ Supra-совместимый загрузчик (используется при
 | `mc-header-sub` | Подзаголовок чата (статус) |
 | `mc-msg-internal-link` | Внутренняя навигационная ссылка в тексте сообщения |
 | `mc-msg-send-link` | Ссылка-команда `/send?text=…` (пунктир) |
+| `mc-msg-copy` | Copy-тег `[copy]…[/copy]` (серый фон, клик → буфер) |
+| `mc-pinned`, `mc-pinned-preview` | Полоска закреплённого сообщения |
 | `mapp-sidebar-user-status` | Статус под своим именем |
 
 ---

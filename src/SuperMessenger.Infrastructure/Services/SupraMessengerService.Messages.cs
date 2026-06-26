@@ -700,6 +700,8 @@ public sealed partial class SupraMessengerService
                 readUpdates = updates;
             }
 
+            var pinnedMessages = await GetEffectivePinnedDtosAsync(chatGuid, userId, ct);
+
             return (new SupraSyncChatPanelResponse
             {
                 success = true,
@@ -708,6 +710,7 @@ public sealed partial class SupraMessengerService
                 syncIndexCount = syncIndexCount,
                 syncIndexChecksum = syncIndexChecksum,
                 activities = _activities.GetActiveForChat(chatGuid),
+                pinnedMessages = pinnedMessages,
                 markedRead = markedRead,
             }, readUpdates);
         }

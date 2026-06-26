@@ -11,7 +11,8 @@ param(
     [string]$AdminLogin = '',
     [string]$AdminPassword = '',
     [string]$PublicUrl = '',
-    [string]$Protocol = ''
+    [string]$Protocol = '',
+    [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -88,17 +89,38 @@ function Install-Putty {
     & winget install --id PuTTY.PuTTY -e --accept-package-agreements --accept-source-agreements
 }
 
-function Ensure-PuttyHostKey([string]$Plink, [string]$Remote) {
+function Get-PlinkExtraArgs([string]$TargetHost) {
+    $args = @()
+    $hk = $env:SM_DEPLOY_HOSTKEY
+    if ($TargetHost -eq $deployConfig['SM_DEPLOY_HOST_NEW'] -and -not [string]::IsNullOrWhiteSpace($deployConfig['SM_DEPLOY_HOSTKEY_NEW'])) {
+        $hk = $deployConfig['SM_DEPLOY_HOSTKEY_NEW']
+    }
+    if (-not [string]::IsNullOrWhiteSpace($hk)) {
+        $args += @('-hostkey', $hk)
+    }
+    return $args
+}
+
+function Invoke-Plink {
+    param([string]$Plink, [string]$Remote, [string[]]$ExtraArgs, [string]$RemoteCmd)
+    $base = @('-pw', $ServerPassword, '-batch') + $ExtraArgs
+    if ($RemoteCmd) {
+        return & $Plink @base $Remote $RemoteCmd 2>&1
+    }
+    return & $Plink @base $Remote 2>&1
+}
+
+function Ensure-PuttyHostKey([string]$Plink, [string]$Remote, [string[]]$ExtraArgs) {
     Write-Step "SSH host key check: $Remote"
-    $null = & $Plink -pw $ServerPassword -batch $Remote "echo ok" 2>&1
+    $null = Invoke-Plink -Plink $Plink -Remote $Remote -ExtraArgs $ExtraArgs -RemoteCmd 'echo ok'
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  Accepting host key (first connect)..." -ForegroundColor Yellow
         cmd /c "echo y| `"$Plink`" -pw $ServerPassword $Remote exit" 2>$null
     }
 }
 
-function Invoke-ServerHttpCheck([string]$Plink, [string]$Remote, [string]$BashCommand, [string]$Label) {
-    & $Plink -pw $ServerPassword -batch $Remote $BashCommand 2>&1 | Out-Null
+function Invoke-ServerHttpCheck([string]$Plink, [string]$Remote, [string[]]$ExtraArgs, [string]$BashCommand, [string]$Label) {
+    Invoke-Plink -Plink $Plink -Remote $Remote -ExtraArgs $ExtraArgs -RemoteCmd $BashCommand | Out-Null
     if ($LASTEXITCODE -ne 0) {
         throw "$Label failed on server (127.0.0.1:$AppPort)"
     }
@@ -174,6 +196,7 @@ function Invoke-RemoteDeployStream {
         [string]$Plink,
         [Parameter(Mandatory = $true)]
         [string]$Remote,
+        [string[]]$ExtraArgs = @(),
         [Parameter(Mandatory = $true)]
         [string]$RemoteCmd
     )
@@ -186,7 +209,10 @@ function Invoke-RemoteDeployStream {
 
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = $Plink
-    $psi.Arguments = "-pw $ServerPassword -batch $Remote $RemoteCmd"
+    $argList = @('-pw', $ServerPassword, '-batch') + $ExtraArgs + @($Remote, $RemoteCmd)
+    $psi.Arguments = ($argList | ForEach-Object {
+        if ($_ -match '\s') { '"' + ($_ -replace '"', '""') + '"' } else { $_ }
+    }) -join ' '
     $psi.UseShellExecute = $false
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
@@ -339,6 +365,7 @@ $script:DeployAppVersion = ''
 Reset-DeployStatusPublisher
 
 try {
+if (-not $SkipBuild) {
 Write-Step "Build deploy tree (tmp/deploy)"
 . (Join-Path $DeployDir 'apply-release.ps1')
 if (Test-Path $BuildDir) { Remove-Item $BuildDir -Recurse -Force }
@@ -352,8 +379,17 @@ Pop-Location
 $archiveMb = [math]::Round((Get-Item $ArchivePath).Length / 1MB, 2)
 Write-Host "  Archive size: $archiveMb MB (path: $ArchivePath)" -ForegroundColor DarkGray
 Send-DeployStatus archive_ready @($archiveMb)
+} else {
+Write-Step "Reuse deploy archive (SkipBuild)"
+if (-not (Test-Path $ArchivePath)) {
+    throw "Deploy archive not found: $ArchivePath (run full deploy first)"
+}
+$archiveMb = [math]::Round((Get-Item $ArchivePath).Length / 1MB, 2)
+Write-Host "  Archive size: $archiveMb MB (path: $ArchivePath)" -ForegroundColor DarkGray
+}
 Build-RemoteScript $shPath
 $remote = "${ServerUser}@${ServerHost}"
+$plinkExtra = Get-PlinkExtraArgs $ServerHost
 
 $plink = Resolve-PuttyExe "plink"
 $pscp = Resolve-PuttyExe "pscp"
@@ -366,15 +402,15 @@ if (-not $plink -or -not $pscp) { throw "plink/pscp not found after install" }
 Write-Host "  plink: $plink" -ForegroundColor DarkGray
 Write-Host "  pscp:  $pscp" -ForegroundColor DarkGray
 
-Ensure-PuttyHostKey $plink $remote
+Ensure-PuttyHostKey $plink $remote $plinkExtra
 
 Write-Step "Upload archive"
-& $pscp -pw $ServerPassword -batch $ArchivePath "${remote}:/tmp/$ArchiveName"
+& $pscp -pw $ServerPassword -batch @($plinkExtra) $ArchivePath "${remote}:/tmp/$ArchiveName"
 if ($LASTEXITCODE -ne 0) { throw "pscp archive failed: $LASTEXITCODE" }
 Send-DeployStatus archive_uploaded
 
 Write-Step "Upload deploy script"
-& $pscp -pw $ServerPassword -batch $shPath "${remote}:/tmp/sm-deploy.sh"
+& $pscp -pw $ServerPassword -batch @($plinkExtra) $shPath "${remote}:/tmp/sm-deploy.sh"
 if ($LASTEXITCODE -ne 0) { throw "pscp script failed: $LASTEXITCODE" }
 Send-DeployStatus script_uploaded
 
@@ -383,11 +419,33 @@ Write-Host "  First Docker build: 5-20 min. Output streams below." -ForegroundCo
 Write-Host ""
 
 $remoteCmd = "chmod +x /tmp/sm-deploy.sh; bash /tmp/sm-deploy.sh"
-$remoteExit = Invoke-RemoteDeployStream -Plink $plink -Remote $remote -RemoteCmd $remoteCmd
+$remoteExit = Invoke-RemoteDeployStream -Plink $plink -Remote $remote -ExtraArgs $plinkExtra -RemoteCmd $remoteCmd
 if ($remoteExit -ne 0) { throw "plink deploy failed: $remoteExit" }
 
 # Container is back up - leave the quiet window and deliver buffered status.
 Resume-DeployStatus
+
+function Invoke-ServerHttpCheckWithRetry {
+    param(
+        [string]$Plink,
+        [string]$Remote,
+        [string[]]$ExtraArgs,
+        [string]$BashCommand,
+        [string]$Label,
+        [int]$Attempts = 8,
+        [int]$DelaySec = 3
+    )
+    for ($i = 1; $i -le $Attempts; $i++) {
+        try {
+            Invoke-ServerHttpCheck $Plink $Remote $ExtraArgs $BashCommand $Label
+            return
+        } catch {
+            if ($i -ge $Attempts) { throw $_ }
+            Write-Host "  $Label not ready (attempt $i/$Attempts), retry in ${DelaySec}s..." -ForegroundColor Yellow
+            Start-Sleep -Seconds $DelaySec
+        }
+    }
+}
 
 Write-Step "Verify HTTP"
 # docker-compose binds APP_PORT to 127.0.0.1 only; checks must run on the server (or via PUBLIC_URL).
@@ -397,7 +455,7 @@ Write-Host "  Docker publishes ${serverAppBase} (not ${ServerHost}:${AppPort} fr
 $cryptoPath = '/messenger/vendor/supra-webcrypto.bundle.js'
 $cryptoCmd = 'f=$(mktemp); curl -sf --max-time 20 -o "$f" http://127.0.0.1:' + $AppPort + $cryptoPath + ' && test $(wc -c < "$f") -gt 50000 && grep -q SupraWebCryptoPolyfill "$f"; e=$?; rm -f "$f"; exit $e'
 try {
-    Invoke-ServerHttpCheck $plink $remote $cryptoCmd 'Web Crypto bundle'
+    Invoke-ServerHttpCheckWithRetry $plink $remote $plinkExtra $cryptoCmd 'Web Crypto bundle'
     Write-Host "  OK ${serverAppBase}${cryptoPath}" -ForegroundColor Green
 } catch {
     throw "Web Crypto bundle check failed: $_"
@@ -405,7 +463,7 @@ try {
 
 $loginCmd = 'curl -sf --max-time 20 -o /dev/null -w "%{http_code}" http://127.0.0.1:' + $AppPort + '/login.html | grep -q 200'
 try {
-    Invoke-ServerHttpCheck $plink $remote $loginCmd 'login.html'
+    Invoke-ServerHttpCheckWithRetry $plink $remote $plinkExtra $loginCmd 'login.html'
     Write-Host "  OK ${serverAppBase}/login.html -> 200" -ForegroundColor Green
 } catch {
     throw "login.html check failed: $_"
@@ -415,7 +473,7 @@ $cssPath = '/messenger/supra-messenger.css'
 $cssGrep = 'grep -q mapp-modal-group-name-wrap "$f" && grep -q mapp-modal-tab--active "$f" && grep -q mc-action-menu-item "$f"'
 $cssCmd = 'f=$(mktemp); curl -sf --max-time 20 -o "$f" http://127.0.0.1:' + $AppPort + $cssPath + ' && ' + $cssGrep + '; e=$?; rm -f "$f"; exit $e'
 try {
-    Invoke-ServerHttpCheck $plink $remote $cssCmd 'messenger CSS'
+    Invoke-ServerHttpCheckWithRetry $plink $remote $plinkExtra $cssCmd 'messenger CSS'
     Write-Host "  OK ${serverAppBase}${cssPath} (messenger styles verified)" -ForegroundColor Green
 } catch {
     throw "CSS verification failed: $_"

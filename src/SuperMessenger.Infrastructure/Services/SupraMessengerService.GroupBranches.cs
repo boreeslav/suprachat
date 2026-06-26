@@ -145,14 +145,41 @@ public sealed partial class SupraMessengerService
         Dictionary<Guid, List<SupraChatMessageRecord>> visibleByChat,
         CancellationToken ct)
     {
+        var root = await _store.GetChatByIdAsync(rootGroupId, ct);
+        if (root == null || !IsRootGroupChat(root)) return [];
+
+        visibleByChat.TryGetValue(rootGroupId, out var rootMsgs);
+        var rootLast = rootMsgs?.LastOrDefault();
+        var mainUnread = rootMsgs?.Count(m => m.SenderUserId != userId && m.Status != "read") ?? 0;
+
+        var result = new List<SupraGroupBranchDto>
+        {
+            new()
+            {
+                id = root.Id.ToString(),
+                name = root.MainBranchName ?? "",
+                slug = "",
+                avatar = GroupAvatarUrl(root),
+                lastMessage = rootLast?.Text ?? "",
+                lastMessageTime = rootLast?.CreatedOn,
+                unreadCount = mainUnread,
+                order = root.MainBranchOrder,
+                isMain = true,
+            },
+        };
+
         var branches = await _store.GetGroupBranchesByParentAsync(rootGroupId, ct);
-        var result = new List<SupraGroupBranchDto>();
         foreach (var branch in branches.OrderBy(b => b.BranchOrder).ThenBy(b => b.CreatedOn).ThenBy(b => b.Name))
         {
             visibleByChat.TryGetValue(branch.Id, out var msgs);
             result.Add(BuildBranchDto(branch, msgs, userId, false));
         }
-        return result;
+
+        return result
+            .OrderBy(b => b.order)
+            .ThenBy(b => b.isMain ? 0 : 1)
+            .ThenBy(b => b.name)
+            .ToList();
     }
 
     async Task<string> GenerateBranchSlugAsync(Guid parentChatId, string name, CancellationToken ct)
@@ -201,8 +228,8 @@ public sealed partial class SupraMessengerService
 
             var existingBranches = await _store.GetGroupBranchesByParentAsync(rootId, ct);
             var nextOrder = existingBranches.Count == 0
-                ? 0
-                : existingBranches.Max(b => b.BranchOrder) + 1;
+                ? 1
+                : Math.Max(existingBranches.Max(b => b.BranchOrder), root.MainBranchOrder) + 1;
 
             var branchId = Guid.NewGuid();
             await _store.SaveChatAsync(new SupraChatRecord
@@ -291,7 +318,38 @@ public sealed partial class SupraMessengerService
                 return (new SupraUpdateGroupResponse { success = false, error = "Некорректный chatId" }, null);
 
             var branch = await _store.GetChatByIdAsync(branchGuid, ct);
-            if (branch == null || !IsGroupBranchChat(branch))
+            if (branch == null)
+                return (new SupraUpdateGroupResponse { success = false, error = "Ветка не найдена" }, null);
+
+            if (IsRootGroupChat(branch))
+            {
+                var (_, mainMe, accessError) = await GetGroupAccessAsync(user.Id, branchGuid.ToString(), ct);
+                if (accessError != null)
+                    return (new SupraUpdateGroupResponse { success = false, error = accessError }, null);
+                if (!mainMe!.IsAdmin)
+                    return (new SupraUpdateGroupResponse { success = false, error = "Только администратор может изменять ветку" }, null);
+
+                if (name != null)
+                {
+                    var trimmed = name.Trim();
+                    if (!string.Equals(branch.MainBranchName ?? "", trimmed, StringComparison.Ordinal))
+                    {
+                        branch.MainBranchName = trimmed;
+                        await _store.SaveChatAsync(branch, ct);
+                    }
+                }
+
+                return (new SupraUpdateGroupResponse
+                {
+                    success = true,
+                    name = branch.MainBranchName ?? "",
+                    avatar = GroupAvatarUrl(branch),
+                    allowJoinByLink = branch.AllowJoinByLink,
+                    requiresCustomGroupPassword = branch.RequiresCustomGroupPassword,
+                }, null);
+            }
+
+            if (!IsGroupBranchChat(branch))
                 return (new SupraUpdateGroupResponse { success = false, error = "Ветка не найдена" }, null);
 
             var (chat, me, error) = await GetGroupAccessAsync(user.Id, branchGuid.ToString(), ct);
@@ -376,21 +434,36 @@ public sealed partial class SupraMessengerService
                 return new SupraSimpleResponse { success = false, error = "Только администратор может изменять ветки" };
 
             var rootId = root!.Id;
+            var rootIdStr = rootId.ToString();
             var branches = (await _store.GetGroupBranchesByParentAsync(rootId, ct)).ToList();
-            var branchIdSet = branches.Select(b => b.Id.ToString()).ToHashSet();
+            var branchIdSet = branches.Select(b => b.Id.ToString()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            branchIdSet.Add(rootIdStr);
             var ordered = new List<Guid>();
             foreach (var idStr in branchIds)
             {
+                if (string.Equals(idStr, rootIdStr, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!ordered.Contains(rootId)) ordered.Add(rootId);
+                    continue;
+                }
                 if (!Guid.TryParse(idStr, out var gid) || !branchIdSet.Contains(idStr))
                     continue;
                 if (!ordered.Contains(gid)) ordered.Add(gid);
             }
+            if (!ordered.Contains(rootId)) ordered.Add(rootId);
             foreach (var branch in branches)
             {
                 if (!ordered.Contains(branch.Id)) ordered.Add(branch.Id);
             }
             for (var i = 0; i < ordered.Count; i++)
             {
+                if (ordered[i] == rootId)
+                {
+                    if (root.MainBranchOrder == i) continue;
+                    root.MainBranchOrder = i;
+                    await _store.SaveChatAsync(root, ct);
+                    continue;
+                }
                 var branch = branches.First(b => b.Id == ordered[i]);
                 if (branch.BranchOrder == i) continue;
                 branch.BranchOrder = i;

@@ -53,6 +53,16 @@ public interface IDataStore
     Task<IReadOnlyList<SupraMessageReadReceiptRecord>> GetReadReceiptsByMessageAsync(Guid messageId, CancellationToken ct = default);
     Task UpsertMessageReadReceiptAsync(SupraMessageReadReceiptRecord receipt, CancellationToken ct = default);
 
+    Task<IReadOnlyList<SupraPinnedMessageRecord>> GetPinnedMessagesByChatAsync(Guid chatId, CancellationToken ct = default);
+    Task SavePinnedMessageAsync(SupraPinnedMessageRecord record, CancellationToken ct = default);
+    Task DeletePinnedMessageAsync(Guid chatId, Guid messageId, CancellationToken ct = default);
+    Task DeletePinnedMessagesByChatAsync(Guid chatId, CancellationToken ct = default);
+    Task<IReadOnlyList<SupraPinnedMessageUserRecord>> GetPinnedMessageUserRecordsByChatUserAsync(Guid chatId, Guid userId, CancellationToken ct = default);
+    Task SavePinnedMessageUserAsync(SupraPinnedMessageUserRecord record, CancellationToken ct = default);
+    Task DeletePinnedMessageUserAsync(Guid chatId, Guid messageId, Guid userId, CancellationToken ct = default);
+    Task DeletePinnedMessageUserByMessageAsync(Guid chatId, Guid messageId, CancellationToken ct = default);
+    Task DeletePinnedMessageUserRecordsByChatAsync(Guid chatId, CancellationToken ct = default);
+
     Task DeleteParticipantAsync(Guid chatId, Guid userId, CancellationToken ct = default);
     Task DeleteChatAsync(Guid chatId, CancellationToken ct = default);
 

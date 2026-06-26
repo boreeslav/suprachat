@@ -138,6 +138,8 @@ public sealed partial class SupraMessengerService
                 parentChatId = chat.ParentChatId?.ToString(),
                 branchSlug = chat.BranchSlug,
                 branchOrder = chat.BranchOrder,
+                mainBranchName = IsRootGroupChat(chat) ? chat.MainBranchName : null,
+                mainBranchOrder = IsRootGroupChat(chat) ? chat.MainBranchOrder : 0,
             };
 
             if (IsGroupBranchChat(chat))
@@ -160,6 +162,7 @@ public sealed partial class SupraMessengerService
 
             foreach (var branch in branches)
             {
+                if (branch.isMain) continue;
                 dto.unreadCount += branch.unreadCount;
                 if (branch.lastMessageTime.HasValue &&
                     (!dto.aggregatedLastMessageTime.HasValue || branch.lastMessageTime > dto.aggregatedLastMessageTime))

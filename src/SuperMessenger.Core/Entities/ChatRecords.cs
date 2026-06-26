@@ -25,6 +25,10 @@ public sealed class SupraChatRecord
     public string? BranchSlug { get; set; }
     /// <summary>Порядок ветки внутри группы (Type=group_branch).</summary>
     public int BranchOrder { get; set; }
+    /// <summary>Отображаемое имя основной ветки (пусто — клиентский default «Основная»).</summary>
+    public string? MainBranchName { get; set; }
+    /// <summary>Порядок основной ветки среди всех веток группы.</summary>
+    public int MainBranchOrder { get; set; }
 }
 
 public sealed class SupraChatParticipantRecord
@@ -82,6 +86,36 @@ public sealed class SupraMessageUserDeletionRecord
 {
     public Guid MessageId { get; set; }
     public Guid UserId { get; set; }
+}
+
+/// <summary>
+/// Глобальный закреп сообщения в чате (виден всем участникам).
+/// Создаётся пользователем с правом закреплять «для всех» (админ группы/ветки,
+/// владелец канала, любой участник личного чата).
+/// </summary>
+public sealed class SupraPinnedMessageRecord
+{
+    public Guid Id { get; set; }
+    public Guid ChatId { get; set; }
+    public Guid MessageId { get; set; }
+    public Guid PinnedByUserId { get; set; }
+    public DateTime PinnedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Персональный слой закрепа: либо личный закреп сообщения только для себя
+/// (State = "pinned"), либо скрытие глобального закрепа только у себя (State = "hidden").
+/// На пару (ChatId, MessageId, UserId) допускается одна запись.
+/// </summary>
+public sealed class SupraPinnedMessageUserRecord
+{
+    public Guid Id { get; set; }
+    public Guid ChatId { get; set; }
+    public Guid MessageId { get; set; }
+    public Guid UserId { get; set; }
+    /// <summary>pinned — личный закреп; hidden — скрыт глобальный закреп.</summary>
+    public string State { get; set; } = "pinned";
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>Фиксация прочтения сообщения конкретным пользователем (для групп и детальной статистики).</summary>

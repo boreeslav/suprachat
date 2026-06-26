@@ -118,6 +118,12 @@ public sealed class SupraMessengerController : ControllerBase
             "PressMessageButton" => await HandlePressMessageButton(user, data, ct),
             "EditMessage" => await HandleEditMessage(user, data, ct),
             "DeleteMessage" => await HandleDeleteMessage(user, data, ct),
+            "GetPinnedMessages" => await _messenger.GetPinnedMessagesAsync(
+                user.Id,
+                GetString(data, "chatId") ?? "",
+                ct),
+            "PinMessage" => await HandlePinMessage(user, data, ct),
+            "UnpinMessage" => await HandleUnpinMessage(user, data, ct),
             "BatchRequest" => await HandleBatchRequest(user, data, ct),
             "ForwardMessage" => await HandleForwardMessage(user, data, ct),
             "MarkMessagesRead" => await HandleMarkRead(user, data, ct),
@@ -451,6 +457,10 @@ public sealed class SupraMessengerController : ControllerBase
         {
             try
             {
+                // Сообщение удалено для всех — снимаем его закрепы, чтобы не висели.
+                if (Guid.TryParse(broadcast.messageId, out var deletedMsgId))
+                    await _messenger.RemovePinsForDeletedMessageAsync(chatId, deletedMsgId, ct);
+
                 var participants = await _messenger.GetAllParticipantUserIdsAsync(chatId, ct);
                 foreach (var uid in participants)
                     await _realtime.SendToUserAsync(uid, broadcast, ct);
@@ -461,6 +471,55 @@ public sealed class SupraMessengerController : ControllerBase
             }
         }
         return response;
+    }
+
+    private async Task<object> HandlePinMessage(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var (response, payload, broadcastAll) = await _messenger.PinMessageAsync(
+            user,
+            GetString(data, "chatId") ?? "",
+            GetString(data, "messageId") ?? "",
+            ct);
+        await DispatchPinEventAsync(user.Id, payload, broadcastAll, response.success, ct);
+        return response;
+    }
+
+    private async Task<object> HandleUnpinMessage(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
+    {
+        var (response, payload, broadcastAll) = await _messenger.UnpinMessageAsync(
+            user,
+            GetString(data, "chatId") ?? "",
+            GetString(data, "messageId") ?? "",
+            ct);
+        await DispatchPinEventAsync(user.Id, payload, broadcastAll, response.success, ct);
+        return response;
+    }
+
+    /// <summary>
+    /// Рассылает событие (от)закрепления: scope=all — всем участникам чата,
+    /// scope=self — только сессиям самого пользователя (синхронизация устройств).
+    /// </summary>
+    private async Task DispatchPinEventAsync(
+        Guid userId, object? payload, bool broadcastAll, bool success, CancellationToken ct)
+    {
+        if (!success || payload == null) return;
+        try
+        {
+            string? chatIdStr = payload switch
+            {
+                SupraWsMessagePinnedPayload p => p.chatId,
+                SupraWsMessageUnpinnedPayload u => u.chatId,
+                _ => null,
+            };
+            if (broadcastAll && Guid.TryParse(chatIdStr, out var chatId))
+                await BroadcastToAllChatParticipantsAsync(chatId, payload, ct);
+            else
+                await _realtime.SendToUserAsync(userId, payload, ct);
+        }
+        catch
+        {
+            // Закреп уже сохранён — сбой доставки WS не должен валить запрос.
+        }
     }
 
     private async Task<object> HandleBatchRequest(Core.Entities.UserRecord user, JsonElement data, CancellationToken ct)
@@ -482,6 +541,8 @@ public sealed class SupraMessengerController : ControllerBase
         foreach (var broadcast in sideEffects.DeleteBroadcasts)
         {
             if (!Guid.TryParse(broadcast.chatId, out var chatId)) continue;
+            if (Guid.TryParse(broadcast.messageId, out var deletedMsgId))
+                await _messenger.RemovePinsForDeletedMessageAsync(chatId, deletedMsgId, ct);
             var participants = await _messenger.GetAllParticipantUserIdsAsync(chatId, ct);
             foreach (var uid in participants)
                 await _realtime.SendToUserAsync(uid, broadcast, ct);

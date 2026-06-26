@@ -13,6 +13,8 @@
 | [07-bot-api.md](07-bot-api.md) | Bot API: REST, WebSocket, примеры интеграции |
 | [08-mini-apps.md](08-mini-apps.md) | Mini Apps: iframe, bridge API, кеш, план реализации |
 | [09-bot-and-group-encryption.md](09-bot-and-group-encryption.md) | Шифрование ботов и пер-групповой переключатель (реализовано, этапы 0–6) |
+| [10-message-markup.md](10-message-markup.md) | Markdown и спецтеги текста сообщений (`[copy]`, ссылки, linkify) |
+| [11-pinned-messages.md](11-pinned-messages.md) | Закреплённые сообщения: API, scope all/self, UI |
 | [PWA-УСТАНОВКА.md](PWA-УСТАНОВКА.md) | Установка PWA и push-уведомления |
 | [../CHANGELOG.md](../CHANGELOG.md) | История изменений по версиям |
 
