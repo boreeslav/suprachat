@@ -41,21 +41,26 @@ docker compose up -d --build
 
 1. Установите [PuTTY](https://www.putty.org/) (`plink`, `pscp` в PATH).
 2. На сервере: Docker и Docker Compose.
-3. Запустите `.\deploy.cmd` — при первом запуске создаётся `tmp/deploy/deploy.env` (шаблон можно скопировать из `deploy/deploy.env.example`). Папка `tmp/` в git не коммитится.
+3. Запустите `.\deploy.cmd` — при первом запуске создаётся `tmp/deploy/deploy.env` (шаблон можно скопировать из `tmp/deploy/deploy.env.example`). Папка `tmp/` в git не коммитится.
 4. Перед упаковкой автоматически собираются vendor-бандлы (`supra-webcrypto`, `SupraMarkdown`, SignalR, QR).
 
 ### Скрипты деплоя
 
 | Скрипт | Назначение |
 |--------|------------|
-| `deploy/deploy.ps1` | Сборка архива, загрузка на сервер, Docker deploy, HTTP-проверки |
-| `deploy/deploy-all.ps1` | Один build → деплой на **основной** и **новый** сервер (`-SkipBuild` на втором) |
-| `deploy/setup-new-server.ps1` | Полная настройка нового сервера: backup со старого, deploy, nginx, restore data |
+| `deploy/deploy.ps1` | Сборка архива, загрузка на **один** сервер, Docker deploy, HTTP-проверки |
+| `deploy/deploy-all.ps1` | Один build → деплой на **основной** (`SM_DEPLOY_HOST`), затем вопрос про **резервный** (`SM_DEPLOY_HOST_RESERVE`) |
+| `deploy/setup-new-server.ps1` | Полная настройка основного сервера: backup с резервного, deploy, nginx, restore data |
 | `deploy/restore-data.ps1` | Восстановление `data/` из tar.gz в Docker volume на удалённом сервере |
 | `deploy/backup-data.ps1` | Резервная копия `data/` с сервера |
 
-Параметры `deploy.ps1`: `-SkipBuild` (переиспользовать готовый архив), `-ServerHost` / `-ServerUser` / `-ServerPassword` для альтернативного сервера.  
-SSH host key: `SM_DEPLOY_HOSTKEY` / `SM_DEPLOY_HOSTKEY_NEW` в `deploy.env`. После деплоя — повторные HTTP-проверки с задержкой (контейнер может подниматься 10–30 с).
+**Серверы в `tmp/deploy/deploy.env`:**
+- `SM_DEPLOY_HOST` — **основной** сервер, деплой всегда сразу
+- `SM_DEPLOY_HOST_RESERVE` — **резервный** сервер, деплой только после подтверждения
+- `SM_DEPLOY_PUBLIC_URL` / `SM_DEPLOY_DOMAIN` — публичный URL и домен для nginx/Let's Encrypt
+
+`deploy.cmd` вызывает `deploy-all.ps1`. Параметры: `-SkipReserve` (только основной), `-IncludeReserve` (оба без вопроса), `-SkipBuild` (переиспользовать архив).  
+SSH host key: `SM_DEPLOY_HOSTKEY` / `SM_DEPLOY_HOSTKEY_RESERVE`. После деплоя — повторные HTTP-проверки с задержкой (контейнер может подниматься 10–30 с).
 
 ## Архитектура данных
 

@@ -17,7 +17,7 @@ if not exist "%~dp0tmp\deploy\deploy.env" (
 echo   Build artifacts: tmp\deploy\
 echo.
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0deploy\deploy.ps1" %*
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0deploy\deploy-all.ps1" %*
 set "EXITCODE=%ERRORLEVEL%"
 
 echo.

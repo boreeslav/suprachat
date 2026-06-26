@@ -9,7 +9,8 @@ param(
     [string]$ServerHost = '',
     [string]$ServerUser = '',
     [string]$ServerPassword = '',
-    [switch]$UseNewServer
+    [switch]$UseNewServer,
+    [switch]$UseReserveServer
 )
 
 $ErrorActionPreference = "Stop"
@@ -33,10 +34,14 @@ Write-Host ""
 Write-Host "Loading deploy configuration..." -ForegroundColor DarkGray
 $deployConfig = Read-DeployEnvFile $script:DeployEnvPath
 
-if ($UseNewServer) {
-    $ServerHost = Resolve-RestoreSetting $deployConfig 'SM_DEPLOY_HOST_NEW' $ServerHost $PSBoundParameters.ContainsKey('ServerHost')
-    $ServerUser = Resolve-RestoreSetting $deployConfig 'SM_DEPLOY_USER_NEW' $ServerUser $PSBoundParameters.ContainsKey('ServerUser') 'root'
-    $ServerPassword = Resolve-RestoreSetting $deployConfig 'SM_DEPLOY_PASSWORD_NEW' $ServerPassword $PSBoundParameters.ContainsKey('ServerPassword')
+$useReserve = $UseReserveServer -or $UseNewServer
+if ($useReserve) {
+    $reserve = Get-DeployReserveSettings $deployConfig
+    if ($null -eq $reserve) { throw 'Reserve server is not configured (SM_DEPLOY_HOST_RESERVE)' }
+    $ServerHost = Resolve-RestoreSetting $deployConfig 'SM_DEPLOY_HOST_RESERVE' $ServerHost $PSBoundParameters.ContainsKey('ServerHost')
+    if ([string]::IsNullOrWhiteSpace($ServerHost)) { $ServerHost = $reserve.Host }
+    $ServerUser = Resolve-RestoreSetting $deployConfig 'SM_DEPLOY_USER_RESERVE' $ServerUser $PSBoundParameters.ContainsKey('ServerUser') $reserve.User
+    $ServerPassword = Resolve-RestoreSetting $deployConfig 'SM_DEPLOY_PASSWORD_RESERVE' $ServerPassword $PSBoundParameters.ContainsKey('ServerPassword') $reserve.Password
 } else {
     $ServerHost = Resolve-RestoreSetting $deployConfig 'SM_DEPLOY_HOST' $ServerHost $PSBoundParameters.ContainsKey('ServerHost')
     $ServerUser = Resolve-RestoreSetting $deployConfig 'SM_DEPLOY_USER' $ServerUser $PSBoundParameters.ContainsKey('ServerUser') 'root'
@@ -64,10 +69,7 @@ $plink = Resolve-PuttyExe "plink"
 $pscp = Resolve-PuttyExe "pscp"
 if (-not $plink -or -not $pscp) { throw "plink/pscp not found (install PuTTY)" }
 
-$hostKey = Resolve-RestoreSetting $deployConfig 'SM_DEPLOY_HOSTKEY_NEW' '' $false
-if ([string]::IsNullOrWhiteSpace($hostKey) -and $ServerHost -eq 'your-server.example.com') {
-    $hostKey = 'SHA256:REDACTED_HOSTKEY'
-}
+$hostKey = Get-DeployHostKey -Config $deployConfig -TargetHost $ServerHost
 $plinkArgs = @('-pw', $ServerPassword, '-batch')
 if (-not [string]::IsNullOrWhiteSpace($hostKey)) { $plinkArgs += @('-hostkey', $hostKey) }
 

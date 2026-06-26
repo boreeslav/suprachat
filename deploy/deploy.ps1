@@ -1,5 +1,5 @@
 # SuperMessenger - deploy to remote Linux (Docker) with live PuTTY output
-# Usage: .\deploy\deploy.ps1  or  deploy.cmd
+# Usage: .\deploy\deploy.ps1  or  deploy.cmd (calls deploy-all.ps1)
 # Settings: tmp\deploy\deploy.env (see tmp\deploy\deploy.env.example)
 # Build artifacts: tmp\deploy\ (archive, staging tree, remote script)
 
@@ -91,10 +91,7 @@ function Install-Putty {
 
 function Get-PlinkExtraArgs([string]$TargetHost) {
     $args = @()
-    $hk = $env:SM_DEPLOY_HOSTKEY
-    if ($TargetHost -eq $deployConfig['SM_DEPLOY_HOST_NEW'] -and -not [string]::IsNullOrWhiteSpace($deployConfig['SM_DEPLOY_HOSTKEY_NEW'])) {
-        $hk = $deployConfig['SM_DEPLOY_HOSTKEY_NEW']
-    }
+    $hk = Get-DeployHostKey -Config $deployConfig -TargetHost $TargetHost
     if (-not [string]::IsNullOrWhiteSpace($hk)) {
         $args += @('-hostkey', $hk)
     }
